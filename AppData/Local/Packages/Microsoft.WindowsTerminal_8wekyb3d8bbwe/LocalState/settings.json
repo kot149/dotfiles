@@ -54,11 +54,14 @@
             "id": "User.nextTab.0"
         }
     ],
+    "centerOnLaunch": true,
     "copyFormatting": "none",
     "copyOnSelect": true,
     "defaultInputScope": "alphanumericHalfWidth",
     "defaultProfile": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
-    "initialRows": 30,
+    "initialCols": 150,
+    "initialPosition": "1500,750",
+    "initialRows": 40,
     "keybindings": 
     [
         {
