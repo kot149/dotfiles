@@ -1,0 +1,37 @@
+# `sheldon` configuration file
+# ----------------------------
+#
+# You can modify this file directly or you can use one of the following
+# `sheldon` commands which are provided to assist in editing the config file:
+#
+# - `sheldon add` to add a new plugin to the config file
+# - `sheldon edit` to open up the config file in the default editor
+# - `sheldon remove` to remove a plugin from the config file
+#
+# See the documentation for more https://github.com/rossmacarthur/sheldon#readme
+
+shell = "zsh"
+
+
+[plugins]
+
+[plugins.zsh-autosuggetions]
+git = "https://github.com/zsh-users/zsh-autosuggestions"
+
+[plugins.zsh-syntax-highlighting]
+git = "https://github.com/zsh-users/zsh-syntax-highlighting"
+
+[plugins.zsh-shift-select]
+git = "https://github.com/jirutka/zsh-shift-select"
+
+[plugins.zsh-bd]
+git = "https://github.com/Tarrasch/zsh-bd"
+
+[plugins.zsh-completions]
+git = "https://github.com/zsh-users/zsh-completions"
+
+
+# For example:
+#
+# [plugins.base16]
+# github = "chriskempson/base16-shell"
