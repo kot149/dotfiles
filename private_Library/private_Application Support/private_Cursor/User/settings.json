@@ -1,0 +1,676 @@
+{
+    "files.autoSave": "off",
+    "files.trimTrailingWhitespace": true,
+    "editor.renderControlCharacters": true,
+    "files.autoGuessEncoding": true,
+    "terminal.integrated.profiles.windows": {
+        "Clink": {
+            "path": "C:\\windows\\system32\\cmd.exe",
+            "args": [
+                "/K",
+                "C:\\Program Files (x86)\\clink\\clink.bat",
+                "inject"
+            ],
+            "sourse": "PowerShell",
+            "overrideName": true
+        },
+        "Clink2": {
+            "path": "C:\\Program Files (x86)\\clink\\clink_x86.exe",
+            "args": [
+                "inject"
+            ],
+            "sourse": "PowerShell",
+            "overrideName": true
+        },
+        "PowerShell 7": {
+            "path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+            "sourse": "PowerShell",
+            "overrideName": true
+        },
+        "Command Prompt (Fix Encoding)": {
+            "path": "C:\\windows\\system32\\cmd.exe",
+            "sourse": "PowerShell",
+            "args": [
+                "-NoExit",
+                "/K",
+                "doskey /macrofile=C:\\Users\\Etirwjkf\\cmd_macros.txt"
+            ],
+            "overrideName": true,
+            "env": {},
+            "icon": "terminal-cmd",
+            "color": "terminal.ansiRed"
+        },
+        "QMK_MSYS": {
+            "path": "C:/QMK_MSYS/usr/bin/bash.exe",
+            "env": {
+                "MSYSTEM": "MINGW64",
+                "CHERE_INVOKING": "1"
+            },
+            "args": [
+                "--login"
+            ]
+        },
+        "MSYS2 Bash": {
+            "path": [
+                "C:\\msys64\\usr\\bin\\bash.exe"
+            ],
+            "args": [
+                "--login"
+            ],
+            "env": {
+                "MSYSTEM": "MINGW64",
+                "CHERE_INVOKING": "1"
+            },
+            "icon": "terminal-bash",
+            "color": "terminal.ansiCyan"
+        },
+        "Git Bash": {
+            "path": "C:\\Program Files\\Git\\git-bash.exe",
+            "sourse": "Git",
+            "overrideName": true,
+            "env": {},
+            "icon": "terminal-cmd",
+            "color": "terminal.ansiRed"
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "PowerShell 7",
+    "timing.hoverTimestamp.targetFormat": [
+        "YYYY/MM/DD HH:mm:ss"
+    ],
+    "timing.customFormats": [
+        {
+            "format": "YYYY/MM/DD HH:mm:ss",
+            "description": "YYYY/MM/DD HH:mm:ss",
+            "detail": "YYYY/MM/DD HH:mm:ss"
+        }
+    ],
+    "timing.hoverDuration.useISOTargetFormat": true,
+    "timing.hoverDuration.enabled": false,
+    "[python]": {
+        "gitlens.codeLens.symbolScopes": [
+            "!Module"
+        ],
+        "editor.wordBasedSuggestions": "off",
+        "editor.formatOnType": true
+    },
+    "[seesaawiki]": {
+        "editor.wordSeparators": "./\\()\"'-:,.;<>~!@#$%^&*|+=[]{}`~?。．、，　：；（）「」［］｛｝《》！？＜＞てにをはがのともへでや"
+    },
+    "[latex]": {
+        "editor.wordWrap": "on",
+        "editor.wordSeparators": "./\\()\"'-:,.;<>~!@#$%^&*|+=[]{}`~?。．、，（）「」［］｛｝《》てにをはがのともへでや",
+        "editor.insertSpaces": false,
+        "editor.detectIndentation": true,
+        "editor.suggestSelection": "recentlyUsedByPrefix",
+        "editor.suggest.snippetsPreventQuickSuggestions": false,
+        "editor.quickSuggestions": {
+            "other": true,
+            "comments": false,
+            "strings": false
+        },
+        "editor.bracketPairColorization.enabled": true,
+        "editor.unicodeHighlight.invisibleCharacters": true,
+        "editor.unicodeHighlight.allowedCharacters": {
+            "，": true,
+            "．": true,
+            "！": true,
+            "？": true,
+            "［": true,
+            "］": true,
+            "｛": true,
+            "｝": true,
+            "＜": true,
+            "＞": true
+        },
+        "editor.defaultFormatter": "James-Yu.latex-workshop"
+    },
+    "latex-workshop.latex.clean.fileTypes": [
+        "*.aux",
+        "*.bbl",
+        "*.blg",
+        "*.idx",
+        "*.ind",
+        "*.lof",
+        "*.lot",
+        "*.out",
+        "*.toc",
+        "*.acn",
+        "*.acr",
+        "*.alg",
+        "*.glg",
+        "*.glo",
+        "*.gls",
+        "*.fls",
+        "*.log",
+        "*.fdb_latexmk",
+        "*.snm",
+        "*.synctex(busy)",
+        "*.synctex.gz(busy)",
+        "*.nav",
+        "*.vrb",
+        "*.cpt"
+    ],
+    "latex-workshop.latex.recipe.default": "lastUsed",
+    "latex-workshop.latex.autoClean.run": "onBuilt",
+    "latex-workshop.latex.autoBuild.run": "never",
+    "latex-workshop.latex.autoBuild.interval": 0,
+    "latex-workshop.view.pdf.viewer": "tab",
+    "latex-workshop.intellisense.package.enabled": true,
+    "latex-workshop.intellisense.unimathsymbols.enabled": true,
+    "latex-workshop.intellisense.package.extra": [
+        "bm",
+        "mymath",
+        "physics"
+    ],
+    "latex-workshop.hover.preview.mathjax.extensions": [
+        "boldsymbol",
+        "cases",
+        "physics"
+    ],
+    "latex-workshop.hover.preview.newcommand.newcommandFile": "C:\\texlive\\latex-workshop\\math-preview_newcommand.tex",
+    "latex-workshop.latex.outDir": "out",
+    "latex-workshop.latexindent.path": "latexindent",
+    "latex-workshop.latexindent.args": [
+        "-c",
+        "%DIR%/",
+        "%TMPFILE%",
+        "-l",
+        "%DIR%/latexindent.yaml",
+        "-r"
+    ],
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "LuaLaTeX",
+            "tools": [
+                "lualatex"
+            ]
+        },
+        {
+            "name": "LuaLaTeX Twice Compile",
+            "tools": [
+                "lualatex",
+                "lualatex halt-on-error"
+            ]
+        },
+        {
+            "name": "卒業研究報告書",
+            "tools": [
+                "platex",
+                "pbibtex",
+                "platex",
+                "platex",
+                "dvipdfmx"
+            ]
+        },
+        {
+            "name": "LuaLaTex -> pdfcrop (no margins)",
+            "tools": [
+                "lualatex",
+                "pdfcrop (no margins)"
+            ]
+        },
+        {
+            "name": "LuaLaTex -> pdfcrop (with margins)",
+            "tools": [
+                "lualatex",
+                "pdfcrop (with margins)"
+            ]
+        },
+        {
+            "name": "latexindent",
+            "tools": [
+                "latexindent"
+            ]
+        },
+        {
+            "name": "Convert to PNG",
+            "tools": [
+                "pdf2png"
+            ]
+        },
+        {
+            "name": "Convert to SVG",
+            "tools": [
+                "pdf2svg"
+            ]
+        }
+    ],
+    "latex-workshop.latex.tools": [
+        {
+            "name": "lualatex",
+            "command": "lualatex",
+            "args": [
+                "-shell-escape",
+                "--cmdx",
+                "-file-line-error",
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "--output-directory=%OUTDIR%",
+                "%DOC%"
+            ]
+        },
+        {
+            "name": "lualatex halt-on-error",
+            "command": "lualatex",
+            "args": [
+                "--cmdx",
+                "-halt-on-error",
+                "-synctex=1",
+                "--output-directory=%OUTDIR%",
+                "%DOC%"
+            ]
+        },
+        {
+            "name": "latexmk-lualatex",
+            "command": "latexmk",
+            "args": [
+                "-norc",
+                "-cd",
+                "-lualatex",
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-outdir=%OUTDIR%",
+                "%DOC%"
+            ]
+        },
+        {
+            "name": "platex",
+            "command": "platex",
+            "args": [
+                "-interaction=nonstopmode",
+                "-halt-on-error",
+                "-synctex=1",
+                "--output-directory=%OUTDIR%",
+                "%DOC%"
+            ]
+        },
+        {
+            "name": "pbibtex",
+            "command": "pbibtex",
+            "args": [
+                "%OUTDIR%\\%DOCFILE%"
+            ]
+        },
+        {
+            "name": "dvipdfmx",
+            "command": "dvipdfmx",
+            "args": [
+                "%OUTDIR%\\%DOCFILE%.dvi",
+                "-o",
+                "%OUTDIR%\\%DOCFILE%.pdf"
+            ]
+        },
+        {
+            "name": "latexindent",
+            "command": "latexindent",
+            "args": [
+                "-c",
+                "%DIR%",
+                "%DOC_EXT%",
+                "-l",
+                "%DIR%/latexindent.yaml",
+                "-r",
+                "-w"
+            ]
+        },
+        {
+            "name": "pdf2png",
+            "command": "pdftocairo",
+            "args": [
+                "-png",
+                "-r",
+                "300",
+                "%OUTDIR%\\%DOCFILE%.pdf",
+                "%OUTDIR%\\%DOCFILE%"
+            ]
+        },
+        {
+            "name": "pdf2svg",
+            "command": "pdftocairo",
+            "args": [
+                "-svg",
+                "%OUTDIR%\\%DOCFILE%.pdf",
+                "%OUTDIR%\\%DOCFILE%.svg"
+            ]
+        },
+        {
+            "name": "pdfcrop (no margins)",
+            "command": "pdfcrop",
+            "args": [
+                "%OUTDIR%\\%DOCFILE%.pdf",
+                "%OUTDIR%\\%DOCFILE%.pdf"
+            ]
+        },
+        {
+            "name": "pdfcrop (with margins)",
+            "command": "pdfcrop",
+            "args": [
+                "--margins",
+                "5",
+                "%OUTDIR%\\%DOCFILE%.pdf",
+                "%OUTDIR%\\%DOCFILE%.pdf"
+            ]
+        },
+        {
+            "name": "latexmk-lualatex(legacy)",
+            "command": "latexmk",
+            "args": [
+                "-norc",
+                "-cd",
+                "-lualatex",
+                "-e",
+                "$lualatex=q/lualatex %O -synctex=1 -interaction=nonstopmode -file-line-error %S/",
+                "-e",
+                "$bibtex=q/upbibtex %O %B/",
+                "-e",
+                "$biber=q/biber %O --bblencoding=utf8 -u -U --output_safechars %B/",
+                "-e",
+                "$makeindex=q/upmendex %O -o %D %S/",
+                "-gg",
+                "-outdir=%OUTDIR%",
+                "%DOC%"
+            ]
+        }
+    ],
+    "git.enableSmartCommit": true,
+    "editor.insertSpaces": false,
+    "workbench.editorAssociations": {
+        "*.pdf": "latex-workshop-pdf-hook",
+        "*.png": "imagePreview.previewEditor"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "editor.suggestSelection": "first",
+    "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+    "files.exclude": {
+        "**/.classpath": true,
+        "**/.factorypath": true,
+        "**/.git": false,
+        "**/.project": true,
+        "**/.settings": true
+    },
+    "explorer.confirmDragAndDrop": false,
+    "mssql.connections": [],
+    "editor.unicodeHighlight.nonBasicASCII": false,
+    "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "wordcounter.side.left": [],
+    "wordcounter.side.right": [
+        "word",
+        "char"
+    ],
+    "wordcounter.include_eol_chars": false,
+    "wordcounter.text.char": "char",
+    "wordcounter.text.chars": "chars",
+    "wordcounter.text.word": "word",
+    "wordcounter.text.paragraph": "paragraph",
+    "wordcounter.text.words": "words",
+    "wordcounter.text.paragraphs": "paragraphs",
+    "wordcounter.text.lines": "lines",
+    "wordcounter.text.line": "line",
+    "indentRainbow.colors": [
+        "rgba(255,255,64,0.07)",
+        "rgba(127,255,127,0.07)",
+        "rgba(255,127,255,0.07)",
+        "rgba(79,236,236,0.07)"
+    ],
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": true,
+        "strings": true
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "files.trimFinalNewlines": true,
+    "editor.renderWhitespace": "boundary",
+    "editor.bracketPairColorization.enabled": true,
+    "editor.wordWrap": "on",
+    "editor.mouseWheelZoom": true,
+    "editor.roundedSelection": false,
+    "editor.find.autoFindInSelection": "multiline",
+    "window.title": "${dirty}${activeEditorShort}${separator}${rootName}${separator}${appName}${separator}${remoteName}",
+    "search.showLineNumbers": true,
+    "search.smartCase": true,
+    "Lua.telemetry.enable": true,
+    "cSpell.enableFiletypes": [
+        "!c"
+    ],
+    "C_Cpp.clang_format_style": "{BasedOnStyle: Google, TabWidth: 4, UseTab: ForIndentation}",
+    "files.associations": {
+        "*.exp": "tcl",
+        "*.ahk1": "ahk"
+    },
+    "todo-tree.general.tags": [
+        "BUG",
+        "HACK",
+        "FIXME",
+        "TODO",
+        "XXX",
+        "[ ]",
+        "[x]",
+        "To-Do !!!",
+        "To-Do",
+        "TO-DO !!!",
+        "TO-DO"
+    ],
+    "todohighlight.isCaseSensitive": false,
+    "vscode-office.openOutline": false,
+    "vsnotes.defaultNotePath": "C:\\Users\\Etirwjkf\\Documents\\Notes",
+    "vsnotes.templates": [
+        "tags"
+    ],
+    "vsnotes.tokens": [
+        {
+            "type": "datetime",
+            "token": "{dt}",
+            "format": "YYYY-MM-DD",
+            "description": "Insert formatted datetime."
+        },
+        {
+            "type": "title",
+            "token": "{title}",
+            "description": "Insert note title from input box.",
+            "format": "Untitled"
+        },
+        {
+            "type": "extension",
+            "token": "{ext}",
+            "description": "Insert file vsnotes.",
+            "format": "md"
+        }
+    ],
+    "vsnotes.defaultNoteTitle": "{title}_{dt}.{ext}",
+    "markdownlint.config": {
+        "default": true,
+        "MD007": {
+            "indent": 4
+        },
+        "no-hard-tabs": false,
+        "no-inline-html": {
+            "allowed_elements": [
+                "dl",
+                "dd",
+                "dt"
+            ]
+        }
+    },
+    "pasteImage.path": "${currentFileDir}/images/${currentFileNameWithoutExt}",
+    "pasteImage.defaultName": "YMMDD-HHmmss",
+    "markdown-preview-enhanced.previewTheme": "github-light.css",
+    "markdown-preview-enhanced.mathInlineDelimiters": [
+        [
+            "$",
+            "$"
+        ]
+    ],
+    "markdown-preview-enhanced.mathBlockDelimiters": [
+        [
+            "\\[",
+            "\\]"
+        ]
+    ],
+    "markdown-preview-enhanced.mathRenderingOption": "MathJax",
+    "code-runner.runInTerminal": true,
+    "code-runner.executorMap": {
+        "_scilab": "cd $dir && \"C:\\Program Files\\scilab-6.0.2\\bin\\WScilex-cli.exe\" -l en_US -nb -f $fileName",
+        "scilab": "exec('$fileName',-1);",
+        "python": "python $fullFileName",
+        "ahk": "& 'C:\\Program Files\\AutoHotkey\\v1.1.37.01\\AutoHotkeyU64_UIA.exe' $fullFileName",
+        "ahk2": "AutoHotkey64_UIA"
+    },
+    "peacock.showColorInStatusBar": false,
+    "bracketLens.prefix": " -> ",
+    "workbench.tree.indent": 20,
+    "workbench.tree.expandMode": "doubleClick",
+    "errorLens.gutterIconsEnabled": true,
+    "bracketLens.mode": "auto",
+    "explorer.confirmUndo": "verbose",
+    "explorer.fileNesting.enabled": true,
+    "errorLens.scrollbarHackEnabled": true,
+    "workbench.colorCustomizations": {
+        "tab.activeBackground": "#004cff33",
+        "tab.activeBorder": "#0084ff",
+        "editor.lineHighlightBackground": "#1073cf50",
+        "editor.lineHighlightBorder": "#1073cfff",
+        "editor.selectionBackground": "#FFFF0040",
+        "editor.selectionHighlightBorder": "#FFFF00C0",
+        "editor.selectionHighlightBackground": "#FFFF0030",
+        "editorStickyScroll.background": "#332765",
+        "editorStickyScrollHover.background": "#504083",
+        "editor.foldBackground": "#ffff0040"
+    },
+    "editor.renderLineHighlight": "all",
+    "vsicons.dontShowNewVersionMessage": true,
+    "hediet.vscode-drawio.codeLinkActivated": false,
+    "githubPullRequests.createOnPublishBranch": "never",
+    "todohighlight.maxFilesForSearch": 100,
+    "todohighlight.keywordsPattern": "(?<=(?://|/\\*|#|%) ?)(\\*+ ??TO-?DO ??\\**)",
+    "vscode-json-editor.theme": "light",
+    "editor.accessibilitySupport": "off",
+    "bracketLens.line": "start-line-number",
+    "editor.showFoldingControls": "always",
+    "workbench.editor.showTabs": "multiple",
+    "git.openRepositoryInParentFolders": "never",
+    "editor.unicodeHighlight.ambiguousCharacters": false,
+    "editor.unicodeHighlight.invisibleCharacters": false,
+    "editor.inlayHints.enabled": "off",
+    "diffEditor.wordWrap": "on",
+    "blockman.n04Sub05MinDistanceBetweenRightSideEdges": 5,
+    "blockman.n04Sub06AdditionalPaddingRight": 0,
+    "blockman.n18CustomColorOfFocusedBlockBorder": "#FFFF00C0",
+    "blockman.n21BorderRadius": 2.5,
+    "blockman.n24AnalyzeRoundBrackets": true,
+    "blockman.n23AnalyzeSquareBrackets": true,
+    "blockman.n19CustomColorOfBlockBorder": "#FFFF0080",
+    "remote.SSH.remotePlatform": {
+        "133.16.39.51": "linux",
+        "WR17": "linux",
+        "ssh_server": "linux",
+        "GDX-S": "linux",
+        "WR17i": "linux"
+    },
+    "redhat.telemetry.enabled": false,
+    "VSCodeNotion.accessToken": "v02%3Auser_token_or_cookies%3Ah-zXbiZejzrR5sP05Akis0LEz-cJqL3xoNdvmzN4UmYHE8KVzvU2sXLGbDW9QQZMGr3qnCZYSa4xgTQdtv7mi0IZncV0FQ6n3P84pHBXW-bxK1Qfm1T47BM-unOGdojkaQts",
+    "vscode-color-picker.languages": [
+        "seesaawiki"
+    ],
+    "notebook.output.wordWrap": true,
+    "open-php-html-js-in-browser.selectedBrowser": "Chrome",
+    "open-php-html-js-in-browser.customBrowserPath": "C:\\Users\\Etirwjkf\\AppData\\Local\\Vivaldi\\Application\\vivaldi.exe",
+    "open-php-html-js-in-browser.documentRootFolder": "C:\\Users\\Etirwjkf\\",
+    "open-php-html-js-in-browser.urlToOpen": "custom",
+    "open-php-html-js-in-browser.customHost": "localhost:8888",
+    "liveServer.settings.donotShowInfoMsg": true,
+    "terminal.integrated.fontFamily": "Inconsolata Nerd Font",
+    "terminal.integrated.fontSize": 15,
+    "cSpell.enabled": false,
+    "workbench.editor.tabSizing": "shrink",
+    "editor.wordSeparators": "`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?、　。！？「」【】『』（）",
+    "editor.autoClosingBrackets": "always",
+    "editor.minimap.enabled": false,
+    "code-runner.enableAppInsights": false,
+    "code-runner.ignoreSelection": true,
+    "code-runner.saveFileBeforeRun": true,
+    "code-runner.showRunCommandInEditorContextMenu": false,
+    "git.confirmSync": false,
+    "workbench.tree.enableStickyScroll": true,
+    "editor.stickyScroll.enabled": true,
+    "editor.stickyTabStops": true,
+    "[xslt]": {
+        "editor.semanticHighlighting.enabled": true
+    },
+    "replacerules.rules": {
+        "Replace 、to ，": {
+            "find": "、",
+            "replace": "，",
+            "flags": "g"
+        },
+        "Replace 。to ．": {
+            "find": "。",
+            "replace": "．",
+            "flags": "g"
+        }
+    },
+    "replacerules.rulesets": {
+        "Replace [、。] to [，．]": {
+            "rules": [
+                "Replace 、to ，",
+                "Replace 。to ．"
+            ]
+        }
+    },
+    "markdown-preview-enhanced.enablePreviewZenMode": false,
+    "markdown.editor.pasteUrlAsFormattedLink.enabled": "smart",
+    "editor.tabCompletion": "on",
+    "cmake.showOptionsMovedNotification": false,
+    "workbench.colorTheme": "Default Dark+",
+    "git.autofetch": true,
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
+    },
+    "ixv.workflowAPIKey.ai-analysis-review": "app-tEBmKJFqWNJKnN0r2sax5I3W",
+    // "workbench.activityBar.orientation": "vertical",
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "ixv-cline.allowedCommands": [],
+    "gitlens.views.scm.grouped.views": {
+        "commits": true,
+        "branches": true,
+        "remotes": true,
+        "stashes": true,
+        "tags": true,
+        "worktrees": true,
+        "contributors": true,
+        "repositories": false,
+        "searchAndCompare": true,
+        "launchpad": false
+    },
+    "ixv-code.allowedCommands": [
+        "npm test",
+        "npm install",
+        "tsc",
+        "git log",
+        "git diff",
+        "git show"
+    ],
+    "print.folder.fileNames": true,
+    "print.folder.include": [],
+    "print.folder.exclude": [
+        "{bin,obj,out}",
+        "node_modules",
+        "data",
+        "**/*.{bin,exe,dll,hex,pdb,pdf,pfx,png,jpg,gif,bmp,suo,design}"
+    ],
+    "print.folder.maxLines": 1200,
+    "print.folder.maxFiles": 30,
+    "print.folder.includeFileList": false,
+    "markdown-preview-github-styles.colorTheme": "light"
+}
