@@ -16,9 +16,13 @@ if(-not $env:path.Split(';').Contains('.')){
 ###################################
 # Modules
 ###################################
+# Completions
+Set-PSReadLineKeyHandler -Chord Tab -Function MenuComplete
 Import-Module syntax-highlighting
 Import-Module git-completion
-Set-PSReadLineKeyHandler -Chord Tab -Function MenuComplete
+Invoke-Expression -Command $(gh completion -s powershell | Out-String)
+Invoke-Expression -Command $(uv generate-shell-completion powershell | Out-String)
+Import-Module DockerCompletion
 
 #f45873b3-b655-43a6-b217-97c00aa0db58 PowerToys CommandNotFound module
 Import-Module -Name Microsoft.WinGet.CommandNotFound
