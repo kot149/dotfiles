@@ -20,19 +20,20 @@ if(-not $env:path.Split(';').Contains('.')){
 Set-PSReadLineKeyHandler -Chord Tab -Function MenuComplete
 Import-Module syntax-highlighting
 Import-Module git-completion
-Invoke-Expression -Command $(gh completion -s powershell | Out-String)
-Invoke-Expression -Command $(uv generate-shell-completion powershell | Out-String)
 Import-Module DockerCompletion
 # WinGet
 Register-ArgumentCompleter -Native -CommandName winget -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
-        [Console]::InputEncoding = [Console]::OutputEncoding = $OutputEncoding = [System.Text.Utf8Encoding]::new()
-        $Local:word = $wordToComplete.Replace('"', '""')
-        $Local:ast = $commandAst.ToString().Replace('"', '""')
-        winget complete --word="$Local:word" --commandline "$Local:ast" --position $cursorPosition | ForEach-Object {
-            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
-        }
+    [Console]::InputEncoding = [Console]::OutputEncoding = $OutputEncoding = [System.Text.Utf8Encoding]::new()
+    $Local:word = $wordToComplete.Replace('"', '""')
+    $Local:ast = $commandAst.ToString().Replace('"', '""')
+    winget complete --word="$Local:word" --commandline "$Local:ast" --position $cursorPosition | ForEach-Object {
+        [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+    }
 }
+Invoke-Expression -Command $(gh completion -s powershell | Out-String)
+Invoke-Expression -Command $(uv generate-shell-completion powershell | Out-String)
+Invoke-Expression -Command $(chezmoi completion powershell | Out-String)
 
 #f45873b3-b655-43a6-b217-97c00aa0db58 PowerToys CommandNotFound module
 Import-Module -Name Microsoft.WinGet.CommandNotFound
