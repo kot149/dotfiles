@@ -47,10 +47,3 @@ function unset() {
     $key = $args[0];
     remove-item "env:${key}";
 }
-
-#region conda initialize
-# !! Contents within this block are managed by 'conda init' !!
-If (Test-Path "C:\Users\Ku0143\anaconda3\Scripts\conda.exe") {
-    (& "C:\Users\Ku0143\anaconda3\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | ?{$_} | Invoke-Expression
-}
-#endregion
