@@ -4,7 +4,11 @@ To apply:
 1. [install chezmoi](https://www.chezmoi.io/install/)
    - Linux:
      ```sh
-     sh -c "$(curl -fsLS https://get.chezmoi.io)"
+     sh -c "$(curl -fsLS get.chezmoi.io)" -- -b $HOME/.local/bin
+     ```
+     If fails due to `unable to resolve host address ‘get.chezmoi.io’`, download https://get.chezmoi.io then
+     ```sh
+      ./install_chezmoi.sh -b $HOME/.local/bin
      ```
    - Window:
      ```pwsh
