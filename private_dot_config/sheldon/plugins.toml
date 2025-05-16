@@ -12,26 +12,37 @@
 
 shell = "zsh"
 
+[plugins.zsh-defer]
+github = "romkatv/zsh-defer"
+
+[templates]
+defer = "{% for file in files %}zsh-defer source \"{{ file }}\"\n{% endfor %}"
 
 [plugins]
 
+[plugins.compinit]
+inline = 'autoload -Uz compinit && zsh-defer compinit'
+
 [plugins.zsh-autosuggetions]
 git = "https://github.com/zsh-users/zsh-autosuggestions"
-
-[plugins.zsh-syntax-highlighting]
-git = "https://github.com/zsh-users/zsh-syntax-highlighting"
-
-[plugins.zsh-shift-select]
-git = "https://github.com/jirutka/zsh-shift-select"
-
-[plugins.zsh-bd]
-git = "https://github.com/Tarrasch/zsh-bd"
+apply = ['defer']
 
 [plugins.zsh-completions]
 git = "https://github.com/zsh-users/zsh-completions"
+apply = ['defer']
 
+[plugins.zsh-syntax-highlighting]
+git = "https://github.com/zsh-users/zsh-syntax-highlighting"
+apply = ['defer']
 
-# For example:
-#
-# [plugins.base16]
-# github = "chriskempson/base16-shell"
+[plugins.zsh-shift-select]
+git = "https://github.com/jirutka/zsh-shift-select"
+apply = ['defer']
+
+[plugins.zsh-bd]
+git = "https://github.com/Tarrasch/zsh-bd"
+apply = ['defer']
+
+[plugins.completions]
+local = '~/.zsh/completion'
+apply = ['defer', "fpath"]

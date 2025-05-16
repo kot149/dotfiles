@@ -27,9 +27,6 @@ zstyle ":completion:*:commands" rehash 1
 # ディレクトリ名だけでcdする
 setopt auto_cd
 
-autoload -Uz compinit
-compinit
-
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
