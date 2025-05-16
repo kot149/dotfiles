@@ -1,0 +1,23 @@
+# Windowsでなければ、Windows用の設定を無視
+{{- if ne .chezmoi.os "windows" }}
+AppData/Roaming/Code/User/settings.json
+AppData/Roaming/Cursor/User/settings.json
+{{- end }}
+
+# macOSでなければ、macOS用の設定を無視
+{{- if ne .chezmoi.os "darwin" }}
+Library/Application Support/Code/User/settings.json
+Library/Application Support/Cursor/User/settings.json
+{{- end }}
+
+# Linuxでなければ、Linux用の設定を無視
+{{- if ne .chezmoi.os "linux" }}
+.config/Code/User/settings.json
+.config/Cursor/User/settings.json
+{{- end }}
+
+# Windowsでなければ、PowerShellプロファイルを無視
+{{- if ne .chezmoi.os "windows" }}
+Documents/PowerShell/Microsoft.PowerShell_profile.ps1
+Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1
+{{- end }}
