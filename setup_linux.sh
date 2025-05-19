@@ -4,6 +4,10 @@ sudo apt update
 sudo apt upgrade -y
 sudo apt autoremove -y
 
+# Install zsh
+sudo apt install zsh -y
+chsh -s $(which zsh)
+
 # Setup git
 sudo apt install gh
 gh auth login
