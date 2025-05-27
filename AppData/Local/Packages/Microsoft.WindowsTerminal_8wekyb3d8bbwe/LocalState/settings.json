@@ -145,6 +145,16 @@
                 "source": "Windows.Terminal.PowershellCore"
             },
             {
+                "commandline": "wsl",
+                "guid": "{51855cb2-8cce-5362-8f54-464b92b32386}",
+                "hidden": false,
+                "icon": "C:\\Windows\\System32\\wsl.exe",
+                "name": "WSL",
+                "source": "CanonicalGroupLimited.Ubuntu_79rhkp1fndgsc",
+                "startingDirectory": null,
+                "tabTitle": "WSL"
+            },
+            {
                 "commandline": "cmd.exe /K \"%CLINK_DIR%\\clink\" inject",
                 "elevate": true,
                 "guid": "{f4f9b655-ffec-485b-b72c-2014f45fa6c5}",
@@ -199,12 +209,6 @@
                 "source": "Windows.Terminal.VisualStudio"
             },
             {
-                "guid": "{51855cb2-8cce-5362-8f54-464b92b32386}",
-                "hidden": false,
-                "name": "Ubuntu",
-                "source": "CanonicalGroupLimited.Ubuntu_79rhkp1fndgsc"
-            },
-            {
                 "guid": "{2c4de342-38b7-51cf-b940-2309a097f518}",
                 "hidden": true,
                 "name": "Ubuntu",
@@ -221,18 +225,6 @@
                 "hidden": true,
                 "name": "Developer PowerShell for VS 2019",
                 "source": "Windows.Terminal.VisualStudio"
-            },
-            {
-                "guid": "{24a0533e-913b-5f8c-a5cb-6be85a4c9e70}",
-                "hidden": false,
-                "name": "Ubuntu 18.04.6 LTS",
-                "source": "CanonicalGroupLimited.Ubuntu18.04LTS_79rhkp1fndgsc"
-            },
-            {
-                "guid": "{c6eaf9f4-32a7-5fdc-b5cf-066e8a4b1e40}",
-                "hidden": true,
-                "name": "Ubuntu-18.04",
-                "source": "Windows.Terminal.Wsl"
             },
             {
                 "guid": "{15e6b930-121f-5d96-8446-1d2001ed10a8}",
@@ -258,20 +250,6 @@
                 "hidden": false,
                 "name": "QMK MSYS",
                 "source": "QMK"
-            },
-            {
-                "commandline": "%WINDIR%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -ExecutionPolicy ByPass -NoExit -Command \"& 'D:\\ProgramFiles\\Miniconda3\\shell\\condabin\\conda-hook.ps1' ; conda activate 'D:\\ProgramFiles\\Miniconda3' \"",
-                "guid": "{ab3796fe-e21d-534b-b8ef-ab2c0099b3ac}",
-                "icon": "D:\\ProgramFiles\\Miniconda3\\Menu\\anaconda_powershell_prompt.ico",
-                "name": "Anaconda PowerShell Prompt (Miniconda3)",
-                "startingDirectory": "C:\\Users\\Ku0143"
-            },
-            {
-                "commandline": "%WINDIR%\\System32\\cmd.exe \"/K\" D:\\ProgramFiles\\Miniconda3\\Scripts\\activate.bat D:\\ProgramFiles\\Miniconda3",
-                "guid": "{2d5db640-34cc-5407-95fe-ef50e15b2c16}",
-                "icon": "D:\\ProgramFiles\\Miniconda3\\Menu\\anaconda_prompt.ico",
-                "name": "Anaconda Prompt (Miniconda3)",
-                "startingDirectory": "C:\\Users\\Ku0143"
             }
         ]
     },
