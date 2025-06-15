@@ -1,0 +1,46 @@
+# General
+README.md
+
+# Window
+{{- if ne .chezmoi.os "windows" }}
+AppData/**
+AppData/Roaming/Code/User/settings.json
+AppData/Roaming/Cursor/User/settings.json
+
+# Powershell
+Documents/**
+Documents/PowerShell/**
+Documents/PowerShell/Microsoft.PowerShell_profile.ps1
+Documents/WindowsPowerShell/**
+Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1
+
+AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json
+{{- end }}
+
+# macOS
+{{- if ne .chezmoi.os "darwin" }}
+Library/**
+Library/Application Support/Cursor/User/settings.json
+Library/Application Support/Code/User/settings.json
+.config/iterm2
+.config/iterm2/com.googlecode.iterm2.plist
+{{- end }}
+
+# Linux
+{{- if ne .chezmoi.os "linux" }}
+setup_linux.sh
+.config/Code/User/settings.json
+.config/Cursor/User/settings.json
+{{- end }}
+
+# Linux and macOS
+{{- if and (ne .chezmoi.os "linux") (ne .chezmoi.os "darwin") }}
+.bashrc
+.bash_profile
+.zshrc
+.zprofile
+.zshenv
+.zsh/**
+.config/sheldon
+.config/sheldon/plugins.toml
+{{- end}}
