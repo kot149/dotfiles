@@ -149,24 +149,39 @@ alias git-reset-all="git reset --hard && git clean -fd"
 
 ABBR_SET_EXPANSION_CURSOR=1
 
-abbr -S  g=git >> /dev/null
 abbr -S ls='ls -F --color=auto' >> /dev/null
 abbr -S ll='ls -l' >> /dev/null
 abbr -S la='ls -a' >> /dev/null
-abbr -S lla='ls -la' >> /dev/null
-abbr -S gst='git status' >> /dev/null
-abbr -S gsw='git switch' >> /dev/null
-abbr -S gco='git checkout' >> /dev/null
-abbr -S gch='git checkout' >> /dev/null
-abbr -S gm='git checkout main' >> /dev/null
-abbr -S gbr='git branch' >> /dev/null
-abbr -S gfe='git fetch' >> /dev/null
-abbr -S gpl='git pull' >> /dev/null
-abbr -S gad='git add' >> /dev/null
-abbr -S gcm='git commit -m "%"' >> /dev/null
-abbr -S gmg='git merge' >> /dev/null
-abbr -S gps='git push' >> /dev/null
-abbr -S gph='git push' >> /dev/null
+abbr -S lla='ls -la' >> /dev/nul
+
+abbr -S g=git >> /dev/null
+abbr -S gi=git >> /dev/null
+abbr -S gti=git >> /dev/null
+abbr -S 'git st'='git status' >> /dev/null
+abbr -S 'git sw'='git switch' >> /dev/null
+abbr -S 'git co'='git checkout' >> /dev/null
+abbr -S 'git ch'='git checkout' >> /dev/null
+abbr -S 'git m'='git checkout main' >> /dev/null
+abbr -S 'git br'='git branch' >> /dev/null
+abbr -S 'git fe'='git fetch' >> /dev/null
+abbr -S 'git pl'='git pull' >> /dev/null
+abbr -S 'git pul'='git pull' >> /dev/null
+abbr -S 'git ad'='git add' >> /dev/null
+abbr -S 'git cm'='git commit -m "%"' >> /dev/null
+abbr -S 'git cmm'='git commit -m "%"' >> /dev/null
+abbr -S 'git cmt'='git commit -m "%"' >> /dev/null
+abbr -S 'git mg'='git merge' >> /dev/null
+abbr -S 'git mr'='git merge' >> /dev/null
+abbr -S 'git ps'='git push' >> /dev/null
+abbr -S 'git ph'='git push' >> /dev/null
+abbr -S 'git psh'='git push' >> /dev/null
+
+abbr -S zrc='. ~/.zshrc' >> /dev/null
+abbr -S cz='chezmoi' >> /dev/null
+abbr -S sld='sheldon' >> /dev/null
+
+abbr -S cpp='copypath' >> /dev/null
+abbr -S cpf='copyfile' >> /dev/null
 
 # nix
 if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
