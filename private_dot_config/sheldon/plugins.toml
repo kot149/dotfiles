@@ -52,3 +52,6 @@ git = "https://github.com/rupa/z"
 
 [plugins.abbr]
 github = "olets/zsh-abbr"
+
+[plugins.zsh-bat]
+github = "fdellwing/zsh-bat"

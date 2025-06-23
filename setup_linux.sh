@@ -28,5 +28,8 @@ curl -s https://ohmyposh.dev/install.sh | bash -s
 sh -c "$(curl -fsLS get.chezmoi.io)" -- -b $HOME/.local/bin
 ./.local/bin/chezmoi init --apply kot149
 
+# Install bat
+sudo apt install bat -y
+
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
