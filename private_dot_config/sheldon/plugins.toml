@@ -49,3 +49,6 @@ apply = ['defer', "fpath"]
 
 [plugins.rupaz]
 git = "https://github.com/rupa/z"
+
+[plugins.abbr]
+github = "olets/zsh-abbr"

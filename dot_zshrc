@@ -17,7 +17,6 @@ setopt hist_save_no_dups        # 重複するコマンドが保存されると�
 setopt extended_history         # コマンドのタイムスタンプをHISTFILEに記録する
 setopt hist_expire_dups_first   # HISTFILEのサイズがHISTSIZEを超える場合は、最初に重複を削除します
 
-
 # コマンドラインでも # 以降をコメントと見なす
 setopt interactive_comments
 
@@ -97,9 +96,10 @@ HYPHEN_INSENSITIVE="true"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(git aws aliases colorize copyfile copypath docker docker-compose python pip virtualenv node)
-eval "$(sheldon source)"
 
 source $ZSH/oh-my-zsh.sh
+
+eval "$(sheldon source)"
 
 # User configuration
 
@@ -145,24 +145,28 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 eval "$(oh-my-posh init zsh --config '~/.oh-my-posh/themes/mytheme2.omp.json')"
 
 # Aliases
-alias ls='ls -F --color=auto'
-alias ll='ls -l'
-alias la='ls -a'
-alias lla='ls -la'
-
-alias gst='git status'
-alias gsw='git switch'
-alias gco='git checkout'
-alias gbr='git branch'
-alias gfe='git fetch'
-alias gpl='git pull'
-alias gad='git add'
-alias gcm='git commit -m'
-alias gmg='git merge'
-alias gps='git push'
-alias gph='git push'
-
 alias git-reset-all="git reset --hard && git clean -fd"
+
+ABBR_SET_EXPANSION_CURSOR=1
+
+abbr -S  g=git >> /dev/null
+abbr -S ls='ls -F --color=auto' >> /dev/null
+abbr -S ll='ls -l' >> /dev/null
+abbr -S la='ls -a' >> /dev/null
+abbr -S lla='ls -la' >> /dev/null
+abbr -S gst='git status' >> /dev/null
+abbr -S gsw='git switch' >> /dev/null
+abbr -S gco='git checkout' >> /dev/null
+abbr -S gch='git checkout' >> /dev/null
+abbr -S gm='git checkout main' >> /dev/null
+abbr -S gbr='git branch' >> /dev/null
+abbr -S gfe='git fetch' >> /dev/null
+abbr -S gpl='git pull' >> /dev/null
+abbr -S gad='git add' >> /dev/null
+abbr -S gcm='git commit -m "%"' >> /dev/null
+abbr -S gmg='git merge' >> /dev/null
+abbr -S gps='git push' >> /dev/null
+abbr -S gph='git push' >> /dev/null
 
 # nix
 if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
