@@ -184,6 +184,8 @@ abbr -S sld='sheldon' >> /dev/null
 abbr -S cpp='copypath' >> /dev/null
 abbr -S cpf='copyfile' >> /dev/null
 
+abbr -S vba='. .venv/bin/activate' >> /dev/null
+
 # nix
 if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
