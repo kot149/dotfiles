@@ -144,9 +144,28 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # oh-my-posh
 eval "$(oh-my-posh init zsh --config '~/.oh-my-posh/themes/mytheme2.omp.json')"
 
-# コマンド定義
+# Aliases
+alias ls='ls -F --color=auto'
+alias ll='ls -l'
+alias la='ls -a'
+alias lla='ls -la'
+
+alias gst='git status'
+alias gsw='git switch'
+alias gco='git checkout'
+alias gbr='git branch'
+alias gfe='git fetch'
+alias gpl='git pull'
+alias gad='git add'
+alias gcm='git commit -m'
+alias gmg='git merge'
+alias gps='git push'
+alias gph='git push'
+
 alias git-reset-all="git reset --hard && git clean -fd"
 
+# nix
 if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
+# direnv
 eval "$(direnv hook zsh)"
