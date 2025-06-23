@@ -152,7 +152,7 @@ ABBR_SET_EXPANSION_CURSOR=1
 abbr -S ls='ls -F --color=auto' >> /dev/null
 abbr -S ll='ls -l' >> /dev/null
 abbr -S la='ls -a' >> /dev/null
-abbr -S lla='ls -la' >> /dev/nul
+abbr -S lla='ls -la' >> /dev/null
 
 abbr -S g=git >> /dev/null
 abbr -S gi=git >> /dev/null
@@ -178,6 +178,7 @@ abbr -S 'git psh'='git push' >> /dev/null
 
 abbr -S zrc='. ~/.zshrc' >> /dev/null
 abbr -S cz='chezmoi' >> /dev/null
+abbr -S cza='chezmoi add' >> /dev/null
 abbr -S sld='sheldon' >> /dev/null
 
 abbr -S cpp='copypath' >> /dev/null
