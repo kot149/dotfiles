@@ -46,3 +46,6 @@ apply = ['defer']
 [plugins.completions]
 local = '~/.zsh/completion'
 apply = ['defer', "fpath"]
+
+[plugins.rupaz]
+git = "https://github.com/rupa/z"
