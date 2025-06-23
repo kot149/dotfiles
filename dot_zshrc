@@ -189,3 +189,5 @@ if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile
 
 # direnv
 eval "$(direnv hook zsh)"
+
+alias claude="~/.claude/local/claude"
