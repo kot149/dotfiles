@@ -1,6 +1,4 @@
-# If you come from bash you might have to change your $PATH.
 export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
-
 
 #################################  HISTORY  #################################
 # history
@@ -142,14 +140,16 @@ export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
 # oh-my-posh
-eval "$(oh-my-posh init zsh --config '~/.oh-my-posh/themes/mytheme2.omp.json')"
+if command -v oh-my-posh &> /dev/null; then
+  eval "$(oh-my-posh init zsh --config '~/.oh-my-posh/themes/mytheme2.omp.json')"
+fi
 
 # Aliases
 alias git-reset-all="git reset --hard && git clean -fd"
 
 ABBR_SET_EXPANSION_CURSOR=1
 
-abbr -S ls='ls -F --color=auto' >> /dev/null
+alias ls='ls -F --color=auto'
 abbr -S ll='ls -l' >> /dev/null
 abbr -S la='ls -a' >> /dev/null
 abbr -S lla='ls -la' >> /dev/null
@@ -181,7 +181,7 @@ abbr -S cz='chezmoi' >> /dev/null
 abbr -S cza='chezmoi add' >> /dev/null
 abbr -S sld='sheldon' >> /dev/null
 
-abbr -S cpp='copypath' >> /dev/null
+abbr -S cpa='copypath' >> /dev/null
 abbr -S cpf='copyfile' >> /dev/null
 
 abbr -S vba='. .venv/bin/activate' >> /dev/null
@@ -190,6 +190,11 @@ abbr -S vba='. .venv/bin/activate' >> /dev/null
 if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
 # direnv
-eval "$(direnv hook zsh)"
+if command -v direnv &> /dev/null; then
+  eval "$(direnv hook zsh)"
+fi
 
-alias claude="~/.claude/local/claude"
+# Rust
+if [ -e "$HOME/.cargo/env" ]; then
+  . "$HOME/.cargo/env"
+fi
