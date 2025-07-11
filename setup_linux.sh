@@ -4,6 +4,8 @@ sudo apt update
 sudo apt upgrade -y
 sudo apt autoremove -y
 
+# sudo apt install build-essential -y
+
 # Install zsh
 sudo apt install zsh -y
 chsh -s $(which zsh)
@@ -30,6 +32,9 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- -b $HOME/.local/bin
 
 # Install bat
 sudo apt install bat -y
+
+# Install fzf
+# nix profile install nixpkgs#fzf
 
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
