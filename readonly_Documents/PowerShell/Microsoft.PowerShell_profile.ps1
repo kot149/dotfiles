@@ -64,3 +64,111 @@ function unset() {
     $key = $args[0];
     remove-item "env:${key}";
 }
+
+Invoke-Expression (& {
+    $hook = if ($PSVersionTable.PSVersion.Major -lt 6) { 'prompt' } else { 'pwd' }
+    (zoxide init --hook $hook powershell | Out-String)
+})
+
+###################################
+# FZF Functions
+###################################
+
+# fzf enhanced cd function
+function fcd() {
+    param([string]$Path = ".")
+
+    $dir = Get-ChildItem -Path $Path -Directory -Recurse -ErrorAction SilentlyContinue |
+           ForEach-Object { $_.FullName } |
+           fzf --height=40% --reverse --border
+
+    if ($dir) {
+        Set-Location $dir
+    }
+}
+Set-Alias fd fcd
+
+# Git branch checkout with fzf
+function fbr() {
+    $branches = git branch -vv
+    if ($branches) {
+        $branch = $branches | fzf --height=40% --reverse --border
+        if ($branch) {
+            $branchName = ($branch -split '\s+')[0] -replace '^\*?\s*', ''
+            git checkout $branchName
+        }
+    }
+}
+Set-Alias fch fbr
+
+# Git branch checkout (including remote branches)
+function fbrm() {
+    $branches = git branch --all | Where-Object { $_ -notmatch "HEAD" }
+    if ($branches) {
+        $branch = $branches | fzf --height=40% --reverse --border
+        if ($branch) {
+            $branchName = ($branch -replace '.*/([^/]+)$', '$1') -replace '^\*?\s*', ''
+            git checkout $branchName
+        }
+    }
+}
+
+# Git add with fzf
+function fadd() {
+    do {
+        $files = git status --short |
+                 Where-Object { $_.Substring(1,1) -ne ' ' } |
+                 ForEach-Object { $_.Substring(3) } |
+                 fzf --multi --height=40% --reverse --border --expect=ctrl-d
+
+        if ($files) {
+            $lines = $files -split "`n"
+            $key = $lines[0]
+            $selectedFiles = $lines[1..($lines.Length-1)] | Where-Object { $_ }
+
+            if ($selectedFiles) {
+                if ($key -eq "ctrl-d") {
+                    git diff --color=always $selectedFiles | less
+                } else {
+                    git add $selectedFiles
+                    Write-Host "Added: $($selectedFiles -join ', ')" -ForegroundColor Green
+                }
+            }
+        }
+    } while ($files -and ($key -eq "ctrl-d"))
+}
+Set-Alias fad fadd
+
+# Git log browser with fzf
+function fshow() {
+    $commits = git log --graph --color=always --format="%C(auto)%h%d %s %C(black)%C(bold)%cr"
+    if ($commits) {
+        $commit = $commits | fzf --ansi --no-sort --reverse --height=40% --border
+        if ($commit) {
+            $hash = ($commit | Select-String -Pattern '[a-f0-9]{7}').Matches[0].Value
+            if ($hash) {
+                git show --color=always $hash | less
+            }
+        }
+    }
+}
+
+# Git worktree navigation with fzf
+function cdworktree() {
+    try {
+        git rev-parse --git-dir 2>&1 | Out-Null
+        $worktrees = git worktree list
+        if ($worktrees) {
+            $selected = $worktrees | fzf --height=40% --reverse --border
+            if ($selected) {
+                $path = ($selected -split '\s+')[0]
+                Set-Location $path
+            }
+        }
+    } catch {
+        Write-Host "fatal: Not a git repository." -ForegroundColor Red
+    }
+}
+
+Set-Alias fz zi
+Set-Alias fzz fz
