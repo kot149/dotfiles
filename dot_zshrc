@@ -206,27 +206,21 @@ if command -v fzf &> /dev/null; then
   alias fzf='fzf --style full --bind 'focus:transform-header:file --brief {}''
 
   # cd
-  fcd() {
+  fd() {
     local dir
     dir=$(find ${1:-.} -path '*/\.*' -prune \
                     -o -type d -print 2> /dev/null | fzf +m) &&
     cd "$dir"
   }
-  alias fd='fcd'
 
-  fzz() {
+  fz() {
     local res=$(z | sort -rn | cut -c 12- | fzf)
     if [ -n "$res" ]; then
-        BUFFER+="cd $res"
-        zle accept-line
+        cd "$res"
     else
         return 1
     fi
   }
-  alias fz='fzz'
-
-  zle -N fzz
-  bindkey '^f' fzz
 
   # git checkout
   fbr() {
