@@ -196,6 +196,11 @@ abbr -S mb='mise build' >> /dev/null
 
 abbr -S cm='cargo make' >> /dev/null
 
+# bat
+if command -v batcat &> /dev/null; then
+  alias bat='batcat';
+fi
+
 # nix
 if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
