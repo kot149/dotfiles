@@ -69,7 +69,7 @@ Ubuntu = "[](fg:ubuntu_bg)[] (bg:ubuntu_bg)"
 [shell]
 disabled = false
 format = "$indicator"
-powershell_indicator = "[](fg:prev_bg bg:powershell_bg)[ pwsh ](bg:powershell_bg text_fg)"
+powershell_indicator = "[](fg:prev_bg bg:powershell_bg)[pwsh](bg:powershell_bg text_fg)"
 zsh_indicator = "[](fg:prev_bg bg:zsh_bg)[ zsh ](bg:zsh_bg text_fg)"
 bash_indicator = "[](fg:prev_bg bg:bash_bg)[ bash ](bg:bash_bg text_fg)"
 
