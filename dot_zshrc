@@ -190,6 +190,7 @@ abbr -S vba='. .venv/bin/activate' >> /dev/null
 
 abbr -S ji='just init' >> /dev/null
 abbr -S jb='just build' >> /dev/null
+abbr -S jf='just flash' >> /dev/null
 
 abbr -S mb='mise build' >> /dev/null
 
