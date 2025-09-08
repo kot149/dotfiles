@@ -6,8 +6,6 @@ oh-my-posh init pwsh --config "~\.oh-my-posh\themes\mytheme2.omp.json" | Invoke-
 # oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\hunk.omp.json" | Invoke-Expression
 # oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\montys.omp.json" | Invoke-Expression
 
-Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
-
 # Add cwd to PATH
 if(-not $env:path.Split(';').Contains('.')){
     $env:path += ";."
@@ -18,29 +16,42 @@ if(-not $env:path.Split(';').Contains('.')){
 ###################################
 Import-Module syntax-highlighting
 #f45873b3-b655-43a6-b217-97c00aa0db58 PowerToys CommandNotFound module
-Import-Module -Name Microsoft.WinGet.CommandNotFound
+# Import-Module -Name Microsoft.WinGet.CommandNotFound
 #f45873b3-b655-43a6-b217-97c00aa0db58
 
 # Import-Module -Name Terminal-Icons
 
 # Completions
-Import-Module git-completion
-Import-Module DockerCompletion
-# WinGet
-Register-ArgumentCompleter -Native -CommandName winget -ScriptBlock {
-    param($wordToComplete, $commandAst, $cursorPosition)
-    [Console]::InputEncoding = [Console]::OutputEncoding = $OutputEncoding = [System.Text.Utf8Encoding]::new()
-    $Local:word = $wordToComplete.Replace('"', '""')
-    $Local:ast = $commandAst.ToString().Replace('"', '""')
-    winget complete --word="$Local:word" --commandline "$Local:ast" --position $cursorPosition | ForEach-Object {
-        [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
-    }
-}
-Invoke-Expression -Command $(gh completion -s powershell | Out-String)
-Invoke-Expression -Command $(uv generate-shell-completion powershell | Out-String)
-Invoke-Expression -Command $(chezmoi completion powershell | Out-String)
+function Enable-Completion-Lazy {
+    # Write-Host "Completions are being initialized..." -ForegroundColor Yellow
 
-Set-PSReadLineKeyHandler -Chord Tab -Function MenuComplete
+    # ---
+    Import-Module posh-git
+    # Import-Module git-completion
+    Import-Module DockerCompletion
+    Invoke-Expression -Command $(gh completion -s powershell | Out-String)
+    Invoke-Expression -Command $(uv generate-shell-completion powershell | Out-String)
+    Invoke-Expression -Command $(chezmoi completion powershell | Out-String)
+
+    # WinGet
+    Register-ArgumentCompleter -Native -CommandName winget -ScriptBlock {
+        param($wordToComplete, $commandAst, $cursorPosition)
+        [Console]::InputEncoding = [Console]::OutputEncoding = $OutputEncoding = [System.Text.Utf8Encoding]::new()
+        $Local:word = $wordToComplete.Replace('"', '""')
+        $Local:ast = $commandAst.ToString().Replace('"', '""')
+        winget complete --word="$Local:word" --commandline "$Local:ast" --position $cursorPosition | ForEach-Object {
+            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+        }
+    }
+    # ---
+
+    Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
+    [Microsoft.PowerShell.PSConsoleReadLine]::MenuComplete()
+}
+
+Set-PSReadLineKeyHandler -Key Tab -ScriptBlock {
+    Enable-Completion-Lazy
+}
 
 ###################################
 # Aleases
