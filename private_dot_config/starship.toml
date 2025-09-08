@@ -6,7 +6,7 @@ add_newline = true
 palette = 'my_colors'
 
 format = """
-[](fg:dir_bg)\
+$os$shell\
 $directory\
 $git_branch\
 $git_status\
@@ -14,34 +14,69 @@ $rust\
 $nodejs\
 $python\
 $bun\
-$status\
-[](fg:prev_bg)
-$line_break\
+[](fg:prev_bg)\
+$fill\
+$time$cmd_duration$status[](fg:prev_bg)
 $character\
-"""
-
-right_format = """
 """
 
 [ palettes . my_colors ]
 text_fg = 'white'
+
+os_bg = '#86bbd8'
+windows_bg = '#0000ff'
+macos_bg = '#00ff00'
+ubuntu_bg = '#ff0000'
+
+shell_bg = '#86bbd8'
+powershell_bg = '#2a415f'
+zsh_bg = '#33658a'
+bash_bg = '#FFE4A4'
+
 dir_bg = '#ffa857'
+
 git_bg = '#6e5494'
+
 python_bg = '#2dba2d'
 rust_bg = '#FCA17D'
 node_bg = '#3C873A'
 bun_bg = '#474A4F'
+
 status_bg = '#FF8080'
 status_fg = '#ff0000'
-time_bg = '#474A4F'
+time_bg = '#83769c'
+cmd_duration_bg = '#86bbd8'
+
+[fill]
+symbol = " "
+style = "bg:transparent fg:transparent"
 
 [line_break]
 disabled = true
 
+[character]
+success_symbol = "[ >>](bold white)"
+error_symbol = "[ >>](bold white)"
+
+[os]
+disabled = false
+
+[os.symbols]
+Windows = "[](fg:windows_bg)[ ](bg:windows_bg)"
+Macos = "[](fg:macos_bg)[ ](bg:macos_bg)"
+Ubuntu = "[](fg:ubuntu_bg)[] (bg:ubuntu_bg)"
+
+[shell]
+disabled = false
+format = "$indicator"
+powershell_indicator = "[](fg:prev_bg bg:powershell_bg)[ pwsh ](bg:powershell_bg text_fg)"
+zsh_indicator = "[](fg:prev_bg bg:zsh_bg)[ zsh ](bg:zsh_bg text_fg)"
+bash_indicator = "[](fg:prev_bg bg:bash_bg)[ bash ](bg:bash_bg text_fg)"
+
 [directory]
 style = "bg:dir_bg fg:text_fg"
 read_only_style = "bg:dir_bg fg:text_fg"
-format = "[ \uf07c ( )($read_only) $path ]($style)"
+format = "[](fg:prev_bg bg:dir_bg)[ \uf07c ( )($read_only) $path ]($style)"
 read_only = " \uf023"
 truncation_length = 99
 truncate_to_repo = false
@@ -82,16 +117,19 @@ symbol = "🥟"
 style = "bg:bun_bg fg:text_fg"
 format = "[](fg:prev_bg bg:bun_bg)[ $symbol ($version) ]($style)"
 
+[time]
+disabled = false
+style = "bg:time_bg fg:text_fg"
+format = "[](fg:time_bg)[ 󰥔 $time ]($style)"
+
+[cmd_duration]
+disabled = false
+style = "bg:cmd_duration_bg fg:text_fg"
+format = "[](fg:cmd_duration_bg bg:prev_bg)[ $duration ]($style)"
+min_time = 0
+
 [status]
 symbol = "Error"
 style = "bg:status_bg fg:status_fg"
-format = "[](fg:prev_bg bg:status_bg)[ $symbol ]($style)"
+format = "[](bg:prev_bg fg:status_bg)[ $symbol ]($style)"
 disabled = false
-
-[character]
-success_symbol = "[ >>](bold white)"
-error_symbol = "[ >>](bold white)"
-
-[time]
-disabled = false
-format = "[ 󰥔 $time]($style)"
