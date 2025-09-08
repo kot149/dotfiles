@@ -1,0 +1,97 @@
+"$schema" = "https://starship.rs/config-schema.json"
+
+# プロンプトの前に改行を追加
+add_newline = true
+
+palette = 'my_colors'
+
+format = """
+[](fg:dir_bg)\
+$directory\
+$git_branch\
+$git_status\
+$rust\
+$nodejs\
+$python\
+$bun\
+$status\
+[](fg:prev_bg)
+$line_break\
+$character\
+"""
+
+right_format = """
+"""
+
+[ palettes . my_colors ]
+text_fg = 'white'
+dir_bg = '#ffa857'
+git_bg = '#6e5494'
+python_bg = '#2dba2d'
+rust_bg = '#FCA17D'
+node_bg = '#3C873A'
+bun_bg = '#474A4F'
+status_bg = '#FF8080'
+status_fg = '#ff0000'
+time_bg = '#474A4F'
+
+[line_break]
+disabled = true
+
+[directory]
+style = "bg:dir_bg fg:text_fg"
+read_only_style = "bg:dir_bg fg:text_fg"
+format = "[ \uf07c ( )($read_only) $path ]($style)"
+read_only = " \uf023"
+truncation_length = 99
+truncate_to_repo = false
+
+[git_branch]
+symbol = ""
+style = "bg:git_bg fg:text_fg"
+format = "[](fg:prev_bg bg:git_bg)[ $symbol $branch ]($style)"
+
+[git_status]
+style = "bg:git_bg fg:text_fg"
+format = '[($ahead_behind )(($staged)$modified )($untracked $deleted )]($style)'
+up_to_date = "✔"
+modified = ""
+untracked = ""
+deleted = "󰗨"
+renamed = "󰑓"
+stashed = ""
+
+[rust]
+symbol = "🦀"
+style = "bg:rust_bg fg:text_fg"
+format = "[](fg:prev_bg bg:rust_bg)[ $symbol ($version) ]($style)"
+
+[nodejs]
+symbol = "󰎙"
+style = "bg:node_bg fg:text_fg"
+format = "[](fg:prev_bg bg:node_bg)[ $symbol ($version) ]($style)"
+
+[python]
+symbol = ""
+style = "bg:python_bg fg:text_fg"
+format = "[](fg:prev_bg bg:python_bg)[ $symbol ($version) ]($style)"
+version_format = "Python ${raw}"
+
+[bun]
+symbol = "🥟"
+style = "bg:bun_bg fg:text_fg"
+format = "[](fg:prev_bg bg:bun_bg)[ $symbol ($version) ]($style)"
+
+[status]
+symbol = "Error"
+style = "bg:status_bg fg:status_fg"
+format = "[](fg:prev_bg bg:status_bg)[ $symbol ]($style)"
+disabled = false
+
+[character]
+success_symbol = "[ >>](bold white)"
+error_symbol = "[ >>](bold white)"
+
+[time]
+disabled = false
+format = "[ 󰥔 $time]($style)"
