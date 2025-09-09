@@ -31,7 +31,7 @@ ubuntu_bg = '#C14362'
 
 shell_bg = '#9dabd1'
 powershell_bg = '#2a415f'
-zsh_bg = '#9dabd1'
+zsh_bg = '#4c6fcf'
 bash_bg = '#ffcf84'
 
 dir_bg = '#ffa857'
@@ -39,8 +39,8 @@ dir_bg = '#ffa857'
 git_bg = '#6e5494'
 
 python_bg = '#2dba2d'
-rust_bg = '#FCA17D'
-node_bg = '#3C873A'
+rust_bg = '#a2300c'
+node_bg = '#2257e6'
 bun_bg = '#474A4F'
 
 status_bg = '#FF4362'
@@ -103,15 +103,11 @@ deleted = "󰗨"
 renamed = "󰑓"
 stashed = ""
 
-[rust]
-symbol = "🦀"
-style = "bg:rust_bg fg:text_fg"
-format = "[](fg:prev_bg bg:rust_bg)[ $symbol ($version) ]($style)"
-
 [nodejs]
 symbol = "󰎙"
 style = "bg:node_bg fg:text_fg"
 format = "[](fg:prev_bg bg:node_bg)[ $symbol ($version) ]($style)"
+version_format = "Node.js ${raw}"
 
 [python]
 symbol = ""
@@ -123,6 +119,12 @@ version_format = "Python ${raw}"
 symbol = "🥟"
 style = "bg:bun_bg fg:text_fg"
 format = "[](fg:prev_bg bg:bun_bg)[ $symbol ($version) ]($style)"
+
+[rust]
+symbol = ""
+style = "bg:rust_bg fg:text_fg"
+format = "[](fg:prev_bg bg:rust_bg)[ $symbol ($version) ]($style)"
+version_format = "Cargo ${raw}"
 
 [time]
 disabled = false
