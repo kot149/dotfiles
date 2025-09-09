@@ -6,7 +6,7 @@ add_newline = true
 palette = 'my_colors'
 
 format = """
-$os$shell\
+$os$custom$shell\
 $directory\
 $git_branch\
 $git_status\
@@ -14,7 +14,7 @@ $rust\
 $nodejs\
 $python\
 $bun\
-[](fg:prev_bg)\
+[](fg:prev_bg)\
 $fill\
 $time$cmd_duration$status[](fg:prev_bg)
 $character\
@@ -23,15 +23,16 @@ $character\
 [ palettes . my_colors ]
 text_fg = '#ffffff'
 
-os_bg = '#86bbd8'
+os_bg = '#374362'
 windows_bg = '#3a6cff'
-macos_bg = '#00ff00'
-ubuntu_bg = '#ff0000'
+macos_bg = '#9dabd1'
+macos_fg = '#0b1010'
+ubuntu_bg = '#C14362'
 
-shell_bg = '#86bbd8'
+shell_bg = '#9dabd1'
 powershell_bg = '#2a415f'
-zsh_bg = '#33658a'
-bash_bg = '#FFE4A4'
+zsh_bg = '#9dabd1'
+bash_bg = '#ffcf84'
 
 dir_bg = '#ffa857'
 
@@ -42,10 +43,10 @@ rust_bg = '#FCA17D'
 node_bg = '#3C873A'
 bun_bg = '#474A4F'
 
-status_bg = '#FF8080'
-status_fg = '#ff0000'
-time_bg = '#83769c'
-cmd_duration_bg = '#86bbd8'
+status_bg = '#FF4362'
+status_fg = '#ffffff'
+time_bg = '#5e6c87'
+cmd_duration_bg = '#9cabd0'
 
 [fill]
 symbol = " "
@@ -60,23 +61,29 @@ error_symbol = "[ >>](bold white)"
 
 [os]
 disabled = false
+format = '[$custom$symbol]($style)'
 
 [os.symbols]
-Windows = "[](fg:windows_bg)[ ](bg:windows_bg)"
-Macos = "[](fg:macos_bg)[ ](bg:macos_bg)"
-Ubuntu = "[](fg:ubuntu_bg)[] (bg:ubuntu_bg)"
+Windows = "[](fg:windows_bg)[ ](bold bg:windows_bg)"
+Macos = "[](fg:macos_bg)[ ](bold bg:macos_bg fg:macos_fg)"
+Ubuntu = "[](fg:ubuntu_bg)[ ](bold bg:ubuntu_bg)"
+
+[custom.wsl]
+os = "linux"
+when = "uname -r | grep WSL"
+format = "[WSL](bold bg:prev_bg fg:prev_fg)"
 
 [shell]
 disabled = false
 format = "$indicator"
-powershell_indicator = "[](fg:prev_bg bg:powershell_bg)[ pwsh ](bg:powershell_bg text_fg)"
-zsh_indicator = "[](fg:prev_bg bg:zsh_bg)[ zsh ](bg:zsh_bg text_fg)"
-bash_indicator = "[](fg:prev_bg bg:bash_bg)[ bash ](bg:bash_bg text_fg)"
+powershell_indicator = "[](fg:prev_bg bg:powershell_bg)[ pwsh ](bg:powershell_bg fg:text_fg)"
+zsh_indicator = "[](fg:prev_bg bg:zsh_bg)[ zsh ](bg:zsh_bg fg:text_fg)"
+bash_indicator = "[](fg:prev_bg bg:bash_bg)[ bash ](bg:bash_bg fg:text_fg)"
 
 [directory]
 style = "bg:dir_bg fg:text_fg"
 read_only_style = "bg:dir_bg fg:text_fg"
-format = "[](fg:prev_bg bg:dir_bg)[ \uf07c ( )($read_only) $path ]($style)"
+format = "[](fg:prev_bg bg:dir_bg)[ \uf07c ( )($read_only) $path ]($style)"
 read_only = " \uf023"
 truncation_length = 99
 truncate_to_repo = false
@@ -84,11 +91,11 @@ truncate_to_repo = false
 [git_branch]
 symbol = ""
 style = "bg:git_bg fg:text_fg"
-format = "[](fg:prev_bg bg:git_bg)[ $symbol $branch ]($style)"
+format = "[](fg:prev_bg bg:git_bg)[ $symbol $branch ]($style)"
 
 [git_status]
 style = "bg:git_bg fg:text_fg"
-format = '[($ahead_behind )(($staged)$modified )($untracked $deleted )]($style)'
+format = '[($ahead_behind)( ($staged)$modified )( $untracked $deleted)]($style)'
 up_to_date = "✔"
 modified = ""
 untracked = ""
@@ -99,28 +106,29 @@ stashed = ""
 [rust]
 symbol = "🦀"
 style = "bg:rust_bg fg:text_fg"
-format = "[](fg:prev_bg bg:rust_bg)[ $symbol ($version) ]($style)"
+format = "[](fg:prev_bg bg:rust_bg)[ $symbol ($version) ]($style)"
 
 [nodejs]
 symbol = "󰎙"
 style = "bg:node_bg fg:text_fg"
-format = "[](fg:prev_bg bg:node_bg)[ $symbol ($version) ]($style)"
+format = "[](fg:prev_bg bg:node_bg)[ $symbol ($version) ]($style)"
 
 [python]
 symbol = ""
 style = "bg:python_bg fg:text_fg"
-format = "[](fg:prev_bg bg:python_bg)[ $symbol ($version) ]($style)"
+format = "[](fg:prev_bg bg:python_bg)[ $symbol ($version) ]($style)"
 version_format = "Python ${raw}"
 
 [bun]
 symbol = "🥟"
 style = "bg:bun_bg fg:text_fg"
-format = "[](fg:prev_bg bg:bun_bg)[ $symbol ($version) ]($style)"
+format = "[](fg:prev_bg bg:bun_bg)[ $symbol ($version) ]($style)"
 
 [time]
 disabled = false
 style = "bg:time_bg fg:text_fg"
-format = "[](fg:time_bg)[ 󰥔 $time ]($style)"
+time_format = "%Y/%m/%d %H:%M"
+format = "[](fg:time_bg)[ 󰃰 $time]($style)"
 
 [cmd_duration]
 disabled = false
@@ -129,7 +137,7 @@ format = "[](fg:cmd_duration_bg bg:prev_bg)[ $duration ]($style)"
 min_time = 0
 
 [status]
-symbol = "Error"
+symbol = "Err"
 style = "bg:status_bg fg:status_fg"
-format = "[](bg:prev_bg fg:status_bg)[ $symbol ]($style)"
+format = "[](bg:prev_bg fg:status_bg)[ $symbol]($style)"
 disabled = false
