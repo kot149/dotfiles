@@ -103,15 +103,19 @@ format = "[](fg:prev_bg bg:git_bg)[   $hash$tag]($style)"
 
 [git_status]
 style = "bg:git_bg fg:text_fg"
-format = '[($ahead_behind)( ($staged)$modified )( $untracked $deleted)]($style)'
+format = '[($ahead_behind)( $staged)( $untracked)( $modified)( $deleted)]($style)'
 up_to_date = "✔"
-ahead = '⇡$count'
-behind = '⇣$count'
-diverged = '⇣$behind_count⇡$ahead_count'
-modified = ""
-untracked = ""
-deleted = "󰗨"
-renamed = "󰑓"
+ahead = ' $count'
+behind = ' $count'
+diverged = ' $behind_count $ahead_count'
+
+staged = "+$count"
+
+modified = " $count"
+untracked = " $count"
+deleted = "󰗨 $count"
+renamed = "󰑓 $count"
+
 stashed = ""
 
 [nodejs]
