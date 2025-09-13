@@ -9,6 +9,7 @@ format = """
 $os$custom$shell\
 $directory\
 $git_branch\
+$git_commit\
 $git_status\
 $rust\
 $nodejs\
@@ -92,11 +93,18 @@ truncate_to_repo = false
 symbol = ""
 style = "bg:git_bg fg:text_fg"
 format = "[](fg:prev_bg bg:git_bg)[ $symbol $branch ]($style)"
+only_attached = true
+
+[git_commit]
+style = "bg:git_bg fg:text_fg"
+format = "[](fg:prev_bg bg:git_bg)[   $hash$tag]($style)"
 
 [git_status]
 style = "bg:git_bg fg:text_fg"
 format = '[($ahead_behind)( ($staged)$modified )( $untracked $deleted)]($style)'
 up_to_date = "✔"
+ahead = '⇡$count'
+behind = '⇣$count'
 modified = ""
 untracked = ""
 deleted = "󰗨"
