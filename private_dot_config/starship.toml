@@ -105,6 +105,7 @@ format = '[($ahead_behind)( ($staged)$modified )( $untracked $deleted)]($style)'
 up_to_date = "✔"
 ahead = '⇡$count'
 behind = '⇣$count'
+diverged = '⇣$behind_count⇡$ahead_count'
 modified = ""
 untracked = ""
 deleted = "󰗨"
