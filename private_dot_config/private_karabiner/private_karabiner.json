@@ -1,0 +1,675 @@
+{
+    "profiles": [
+        {
+            "complex_modifications": {
+                "parameters": { "basic.to_delayed_action_delay_milliseconds": 300 },
+                "rules": [
+                    {
+                        "description": "Remap hotkeys",
+                        "maintainers": ["Me"],
+                        "manipulators": [
+                            {
+                                "description": "Ctrl+Y",
+                                "from": {
+                                    "key_code": "y",
+                                    "modifiers": { "mandatory": ["control"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "z",
+                                        "modifiers": ["control", "shift"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.microsoft.edgemac",
+                                            "^com.google.Chrome"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Chrome] Ctrl+Tab",
+                                "from": {
+                                    "key_code": "tab",
+                                    "modifiers": {
+                                        "mandatory": ["control"],
+                                        "optional": ["shift"]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "a",
+                                        "modifiers": ["control", "shift"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.microsoft.edgemac",
+                                            "^com.google.Chrome"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Chrome] Ctrl+PageDown",
+                                "from": {
+                                    "key_code": "page_down",
+                                    "modifiers": {
+                                        "mandatory": ["control"],
+                                        "optional": ["shift"]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "tab",
+                                        "modifiers": ["command"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.microsoft.edgemac",
+                                            "^com.google.Chrome"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Chrome] Ctrl+PageUp",
+                                "from": {
+                                    "key_code": "page_up",
+                                    "modifiers": {
+                                        "mandatory": ["control"],
+                                        "optional": ["shift"]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "tab",
+                                        "modifiers": ["command", "shift"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Ctrl+Tab",
+                                "from": {
+                                    "key_code": "tab",
+                                    "modifiers": {
+                                        "mandatory": ["control"],
+                                        "optional": ["shift"]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "tab",
+                                        "modifiers": ["command"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Win+Tab -> Mission Control",
+                                "from": {
+                                    "key_code": "tab",
+                                    "modifiers": {
+                                        "mandatory": ["command"],
+                                        "optional": ["shift"]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "up_arrow",
+                                        "modifiers": ["control", "command"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.vivaldi.Vivaldi",
+                                            "^com.microsoft.edgemac",
+                                            "^com.google.Chrome",
+                                            "^com.microsoft.VSCode",
+                                            "^com.todesktop.230313mzl4w4u92",
+                                            "^com.apple.finder",
+                                            "^com.googlecode.iterm2"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "Alt+F4　for apps with tabs",
+                                "from": {
+                                    "key_code": "f4",
+                                    "modifiers": { "mandatory": ["option"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "w",
+                                        "modifiers": ["control", "shift"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Alt+F4",
+                                "from": {
+                                    "key_code": "f4",
+                                    "modifiers": { "mandatory": ["option"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "q",
+                                        "modifiers": ["control"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Ctrl+Left",
+                                "from": {
+                                    "key_code": "left_arrow",
+                                    "modifiers": {
+                                        "mandatory": ["control"],
+                                        "optional": ["shift"]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "left_arrow",
+                                        "modifiers": ["option"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Ctrl+Right",
+                                "from": {
+                                    "key_code": "right_arrow",
+                                    "modifiers": {
+                                        "mandatory": ["control"],
+                                        "optional": ["shift"]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "right_arrow",
+                                        "modifiers": ["option"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.apple.finder",
+                                            "^com.apple.systempreferences",
+                                            "^com.hnc.Discord",
+                                            "^com.google.Chrome",
+                                            "^com.microsoft.edgemac"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "Alt+Left -> Ctrl+[",
+                                "from": {
+                                    "key_code": "left_arrow",
+                                    "modifiers": { "mandatory": ["option"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "open_bracket",
+                                        "modifiers": ["control"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.apple.finder",
+                                            "^com.apple.systempreferences",
+                                            "^com.hnc.Discord",
+                                            "^com.google.Chrome",
+                                            "^com.microsoft.edgemac"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "Alt+Right -> Ctrl+]",
+                                "from": {
+                                    "key_code": "right_arrow",
+                                    "modifiers": { "mandatory": ["option"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "close_bracket",
+                                        "modifiers": ["control"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.vivaldi.Vivaldi",
+                                            "com.microsoft.VSCode",
+                                            "^com.todesktop.230313mzl4w4u92"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "Alt+Left -> Cmd+-",
+                                "from": {
+                                    "key_code": "left_arrow",
+                                    "modifiers": { "mandatory": ["option"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "hyphen",
+                                        "modifiers": ["command"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.vivaldi.Vivaldi",
+                                            "com.microsoft.VSCode",
+                                            "^com.todesktop.230313mzl4w4u92"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "Alt+Right -> Cmd+Shift+-",
+                                "from": {
+                                    "key_code": "right_arrow",
+                                    "modifiers": { "mandatory": ["option"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "hyphen",
+                                        "modifiers": ["command", "shift"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "com.microsoft.VSCode",
+                                            "^com.todesktop.230313mzl4w4u92"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[VSCode] Ctrl+PageDown",
+                                "from": {
+                                    "key_code": "page_down",
+                                    "modifiers": { "mandatory": ["control"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "right_arrow",
+                                        "modifiers": ["control", "option"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "com.microsoft.VSCode",
+                                            "^com.todesktop.230313mzl4w4u92"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[VSCode] Ctrl+PageUp",
+                                "from": {
+                                    "key_code": "page_up",
+                                    "modifiers": { "mandatory": ["control"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "left_arrow",
+                                        "modifiers": ["control", "option"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.apple.Terminal"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Terminal] Home",
+                                "from": {
+                                    "key_code": "home",
+                                    "modifiers": { "optional": "any" }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "a",
+                                        "modifiers": ["control"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.apple.Terminal"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Terminal] End",
+                                "from": {
+                                    "key_code": "end",
+                                    "modifiers": { "optional": "any" }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "e",
+                                        "modifiers": ["control"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.googlecode.iterm2"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ],
+                                "description": "Home",
+                                "from": {
+                                    "key_code": "home",
+                                    "modifiers": { "optional": "any" }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "left_arrow",
+                                        "modifiers": ["control"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.googlecode.iterm2"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ],
+                                "description": "End",
+                                "from": {
+                                    "key_code": "end",
+                                    "modifiers": { "optional": "any" }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "right_arrow",
+                                        "modifiers": ["control"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.apple.finder"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Finder] F2",
+                                "from": { "key_code": "f2" },
+                                "to": [{ "key_code": "return_or_enter" }],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.apple.finder"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Finder] Ctrl+Enter",
+                                "from": {
+                                    "key_code": "return_or_enter",
+                                    "modifiers": { "mandatory": ["control"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "o",
+                                        "modifiers": ["command"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.apple.finder"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Finder] Delete",
+                                "from": { "key_code": "delete_forward" },
+                                "to": [
+                                    {
+                                        "key_code": "delete_or_backspace",
+                                        "modifiers": ["control"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.hnc.Discord"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Discord] New message down",
+                                "from": { "key_code": "f20" },
+                                "to": [
+                                    {
+                                        "key_code": "down_arrow",
+                                        "modifiers": ["option", "shift"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.hnc.Discord"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Discord] New message up",
+                                "from": { "key_code": "f16" },
+                                "to": [
+                                    {
+                                        "key_code": "up_arrow",
+                                        "modifiers": ["option", "shift"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.hnc.Discord"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Discord] Channel up",
+                                "from": { "key_code": "f15" },
+                                "to": [
+                                    {
+                                        "key_code": "up_arrow",
+                                        "modifiers": ["option"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.hnc.Discord"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Discord] Channel down",
+                                "from": { "key_code": "f19" },
+                                "to": [
+                                    {
+                                        "key_code": "down_arrow",
+                                        "modifiers": ["option"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.microsoft.edgemac",
+                                            "^com.google.Chrome"
+                                        ],
+                                        "type": "frontmost_application_if"
+                                    }
+                                ],
+                                "description": "[Chrome/Edge] F5",
+                                "from": { "key_code": "f5" },
+                                "to": [
+                                    {
+                                        "key_code": "r",
+                                        "modifiers": ["control"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Spotlight with single Win tap",
+                                "from": { "key_code": "left_command" },
+                                "to": [{ "key_code": "left_command" }],
+                                "to_if_alone": [
+                                    {
+                                        "key_code": "spacebar",
+                                        "modifiers": ["control"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Win+E",
+                                "from": {
+                                    "key_code": "e",
+                                    "modifiers": { "mandatory": ["command"] }
+                                },
+                                "to": [{ "shell_command": "open -a 'Finder.app'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Win+I",
+                                "from": {
+                                    "key_code": "i",
+                                    "modifiers": { "mandatory": ["command"] }
+                                },
+                                "to": [{ "shell_command": "open -a 'System Settings.app'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Option+/ to Backslash",
+                                "from": {
+                                    "key_code": "slash",
+                                    "modifiers": { "mandatory": ["option"] }
+                                },
+                                "to": [{ "key_code": "backslash" }],
+                                "type": "basic"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "devices": [
+                {
+                    "identifiers": {
+                        "is_pointing_device": true,
+                        "product_id": 317,
+                        "vendor_id": 1390
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "is_keyboard": true,
+                        "is_pointing_device": true,
+                        "product_id": 1760,
+                        "vendor_id": 13364
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "is_keyboard": true,
+                        "is_pointing_device": true,
+                        "product_id": 24926,
+                        "vendor_id": 7504
+                    },
+                    "ignore": false,
+                    "manipulate_caps_lock_led": false
+                }
+            ],
+            "name": "Default profile",
+            "selected": true,
+            "virtual_hid_keyboard": { "keyboard_type_v2": "ansi" }
+        }
+    ]
+}
