@@ -29,6 +29,7 @@ windows_bg = '#3a6cff'
 macos_bg = '#9dabd1'
 macos_fg = '#0b1010'
 ubuntu_bg = '#C14362'
+debian_bg = '#d0074f'
 
 shell_bg = '#9dabd1'
 powershell_bg = '#2a415f'
@@ -68,6 +69,7 @@ format = '[$custom$symbol]($style)'
 Windows = "[](fg:windows_bg)[ ](bold bg:windows_bg)"
 Macos = "[](fg:macos_bg)[ ](bold bg:macos_bg fg:macos_fg)"
 Ubuntu = "[](fg:ubuntu_bg)[ ](bold bg:ubuntu_bg)"
+Debian = "[](fg:debian_bg)[ ](bold bg:debian_bg)"
 
 [custom.wsl]
 os = "linux"
