@@ -1,7 +1,8 @@
 These dotfiles are maneged by [chezmoi](https://www.chezmoi.io).
 
-## Applying dotfiles
-1. [Install chezmoi](https://www.chezmoi.io/install/)
+## Prerequisites
+- Git installed
+- [chezmoi](https://www.chezmoi.io/install/) installed
    - Linux:
      ```sh
      sh -c "$(curl -fsLS get.chezmoi.io)" -- -b $HOME/.local/bin
@@ -14,10 +15,13 @@ These dotfiles are maneged by [chezmoi](https://www.chezmoi.io).
      ```sh
      brew install chezmoi
      ```
-2. then run
-    ```sh
-    chezmoi init --apply kot149
-    ```
+     
+## Applying dotfiles
+
+Run
+```sh
+chezmoi init --apply kot149
+```
 
 ## (Re-)Addding dotfiles
 
