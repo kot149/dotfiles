@@ -1,0 +1,23 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/sh
+set -euo pipefail
+
+# checksum: {{ include ".chezmoitemplates/rectangle.plist.tmpl" | sha256sum }}
+
+tmpfile=$(mktemp -t rectangle.plist.XXXXXX)
+cleanup() { rm -f "$tmpfile"; }
+trap cleanup EXIT INT HUP TERM
+
+# Render template to a temporary file
+cat >"$tmpfile" <<'PLIST'
+{{ include ".chezmoitemplates/rectangle.plist.tmpl" }}
+PLIST
+
+# Validate the generated plist (must be XML1 or binary)
+/usr/bin/plutil -lint "$tmpfile" 1>/dev/null
+
+# Import into the Rectangle domain (writes to ~/Library/Preferences)
+/usr/bin/defaults import com.knollsoft.Rectangle "$tmpfile"
+
+echo "Imported com.knollsoft.Rectangle settings via defaults import."
+{{- end -}}
