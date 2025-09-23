@@ -160,6 +160,8 @@ abbr -S la='ls -a' >> /dev/null
 abbr -S lla='ls -la' >> /dev/null
 abbr -S l1='ls -1' >> /dev/null
 
+abbr -S -g GE='| grep -E "%"' >> /dev/null
+
 abbr -S g=git >> /dev/null
 abbr -S gi=git >> /dev/null
 abbr -S gti=git >> /dev/null
