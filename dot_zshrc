@@ -201,6 +201,12 @@ abbr -S mb='mise build' >> /dev/null
 
 abbr -S cm='cargo make' >> /dev/null
 
+function mtouch {
+    mkdir -p "$(dirname "$1")" && touch "$1"
+}
+
+alias touch='mtouch';
+
 # bat
 if command -v batcat &> /dev/null; then
   alias bat='batcat';
