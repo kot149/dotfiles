@@ -37,6 +37,10 @@ if [ -z "$script" ]; then
 		"$HOME/.local/share/bash-completion/completions/git"
 		"$bash_completion/git"
 		'/etc/bash_completion.d/git' # old debian
+		'/opt/homebrew/etc/bash_completion.d/git-completion.bash' # Homebrew (Apple Silicon)
+		'/opt/homebrew/share/git/completion/git-completion.bash'  # Homebrew alt
+		'/usr/local/etc/bash_completion.d/git-completion.bash'    # Homebrew (Intel)
+		'/usr/local/share/git/completion/git-completion.bash'     # Homebrew alt
 		)
 	for e in $locations; do
 		test -f $e && script="$e" && break
