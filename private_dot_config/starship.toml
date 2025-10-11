@@ -11,10 +11,10 @@ $directory\
 $git_branch\
 $git_commit\
 $git_status\
-$rust\
-$nodejs\
 $python\
+$nodejs\
 $bun\
+$rust\
 [](fg:prev_bg)\
 $fill\
 $time$cmd_duration$status[](fg:prev_bg)
@@ -124,24 +124,27 @@ stashed = ""
 symbol = "󰎙"
 style = "bg:node_bg fg:text_fg"
 format = "[](fg:prev_bg bg:node_bg)[ $symbol ($version) ]($style)"
-version_format = "Node.js ${raw}"
+version_format = " v${raw}"
 
 [python]
 symbol = ""
 style = "bg:python_bg fg:text_fg"
 format = "[](fg:prev_bg bg:python_bg)[ $symbol ($version) ]($style)"
-version_format = "Python ${raw}"
+version_format = " v${raw}"
+detect_folders = [".venv", "venv"]
 
 [bun]
-symbol = "🥟"
+symbol = ""
 style = "bg:bun_bg fg:text_fg"
-format = "[](fg:prev_bg bg:bun_bg)[ $symbol ($version) ]($style)"
+format = "[](fg:prev_bg bg:bun_bg)[ $symbol ( $version) ]($style)"
 
 [rust]
 symbol = ""
 style = "bg:rust_bg fg:text_fg"
 format = "[](fg:prev_bg bg:rust_bg)[ $symbol ($version) ]($style)"
-version_format = "Cargo ${raw}"
+version_format = " v${raw}"
+detect_files = ['Cargo.toml']
+detect_folders = ['src-tauri']
 
 [time]
 disabled = false
