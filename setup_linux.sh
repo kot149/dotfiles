@@ -35,6 +35,7 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 
 # Install Starship
 curl -sS https://starship.rs/install.sh | sh
+# curl -sS https://starship.rs/install.sh | sh -s -- -b ~/.local/bin
 
 # Install chezmoi
 sh -c "$(curl -fsLS get.chezmoi.io)" -- -b $HOME/.local/bin
