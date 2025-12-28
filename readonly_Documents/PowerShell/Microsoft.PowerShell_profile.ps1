@@ -78,14 +78,55 @@ function unset() {
     remove-item "env:${key}";
 }
 
+# posh-abbr
+$profile_dir = Split-Path -Parent $PROFILE
+Import-Module "$profile_dir\posh-abbr\posh-abbr.psd1" -Force
+
+abbr g git
+# abbr gi git # reserved by powershell Get-Item
+abbr gti git
+abbr 'git cl' 'git clone'
+abbr 'git st' 'git status'
+abbr 'git sw' 'git switch'
+abbr 'git co' 'git checkout'
+abbr 'git ch' 'git checkout'
+abbr 'git m' 'git checkout main'
+abbr 'git br' 'git branch'
+abbr 'git fe' 'git fetch'
+abbr 'git pl' 'git pull'
+abbr 'git pul' 'git pull'
+abbr 'git ad' 'git add'
+abbr 'git cm' 'git commit -m "%"'
+abbr 'git cmm' 'git commit -m "%"'
+abbr 'git cmt' 'git commit -m "%"'
+abbr 'git mg' 'git merge'
+abbr 'git mr' 'git merge'
+abbr 'git ps' 'git push'
+abbr 'git ph' 'git push'
+abbr 'git psh' 'git push'
+
+abbr cz 'chezmoi'
+abbr cza 'chezmoi add'
+abbr 'chezmoi a' 'chezmoi add'
+abbr 'chezmoi ad' 'chezmoi add'
+
+abbr va '.venv\Scripts\activate'
+
+abbr mb 'mise build'
+abbr ur 'uv run'
+abbr cm 'cargo make'
+
+# Remove conflicting aliases
+Remove-Item Alias:ni -Force -ErrorAction Ignore
+
+###################################
+# FZF
+###################################
+
 Invoke-Expression (& {
     $hook = if ($PSVersionTable.PSVersion.Major -lt 6) { 'prompt' } else { 'pwd' }
     (zoxide init --hook $hook powershell | Out-String)
 })
-
-###################################
-# FZF Functions
-###################################
 
 # fzf enhanced cd function
 function fcd() {
@@ -185,42 +226,3 @@ function cdworktree() {
 
 Set-Alias fz zi
 Set-Alias fzz fz
-
-# posh-abbr
-$profile_dir = Split-Path -Parent $PROFILE
-Import-Module "$profile_dir\posh-abbr\posh-abbr.psd1" -Force
-
-abbr g git
-# abbr gi git # reserved by powershell Get-Item
-abbr gti git
-abbr 'git cl' 'git clone'
-abbr 'git st' 'git status'
-abbr 'git sw' 'git switch'
-abbr 'git co' 'git checkout'
-abbr 'git ch' 'git checkout'
-abbr 'git m' 'git checkout main'
-abbr 'git br' 'git branch'
-abbr 'git fe' 'git fetch'
-abbr 'git pl' 'git pull'
-abbr 'git pul' 'git pull'
-abbr 'git ad' 'git add'
-abbr 'git cm' 'git commit -m "%"'
-abbr 'git cmm' 'git commit -m "%"'
-abbr 'git cmt' 'git commit -m "%"'
-abbr 'git mg' 'git merge'
-abbr 'git mr' 'git merge'
-abbr 'git ps' 'git push'
-abbr 'git ph' 'git push'
-abbr 'git psh' 'git push'
-
-abbr cz 'chezmoi'
-abbr cza 'chezmoi add'
-abbr 'chezmoi a' 'chezmoi add'
-abbr 'chezmoi ad' 'chezmoi add'
-abbr sld 'sheldon'
-
-abbr va '.venv\Scripts\activate'
-
-abbr mb 'mise build'
-
-abbr cm 'cargo make'
