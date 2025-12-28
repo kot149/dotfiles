@@ -24,35 +24,129 @@ Import-Module syntax-highlighting
 # Import-Module -Name Terminal-Icons
 
 # Completions
-function Enable-Completion-Lazy {
-    # Write-Host "Completions are being initialized..." -ForegroundColor Yellow
+$script:__completionInitialized = @{
+    git     = $false
+    docker  = $false
+    gh      = $false
+    uv      = $false
+    chezmoi = $false
+    winget  = $false
+}
 
-    # ---
-    Import-Module posh-git
-    # Import-Module git-completion
-    Import-Module DockerCompletion
-    Invoke-Expression -Command $(gh completion -s powershell | Out-String)
-    Invoke-Expression -Command $(uv generate-shell-completion powershell | Out-String)
-    Invoke-Expression -Command $(chezmoi completion powershell | Out-String)
+function Initialize-CompletionForCommand {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('git', 'docker', 'gh', 'uv', 'chezmoi', 'winget')]
+        [string]$Command
+    )
 
-    # WinGet
-    Register-ArgumentCompleter -Native -CommandName winget -ScriptBlock {
-        param($wordToComplete, $commandAst, $cursorPosition)
-        [Console]::InputEncoding = [Console]::OutputEncoding = $OutputEncoding = [System.Text.Utf8Encoding]::new()
-        $Local:word = $wordToComplete.Replace('"', '""')
-        $Local:ast = $commandAst.ToString().Replace('"', '""')
-        winget complete --word="$Local:word" --commandline "$Local:ast" --position $cursorPosition | ForEach-Object {
-            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+    if ($script:__completionInitialized[$Command]) {
+        return
+    }
+
+    function Invoke-CompletionScriptAsGlobal {
+        param(
+            [Parameter(Mandatory)]
+            [string]$ScriptText
+        )
+
+        $rewritten = $ScriptText -replace '(?m)^\s*(function|filter)\s+(?!global:)([\w:-]+)\s*\{', '$1 global:$2 {'
+        Invoke-Expression -Command $rewritten
+    }
+
+    switch ($Command) {
+        'git' {
+            Import-Module posh-git -ErrorAction SilentlyContinue
+        }
+        'docker' {
+            Import-Module DockerCompletion -ErrorAction SilentlyContinue
+        }
+        'gh' {
+            try {
+                $scriptText = gh completion -s powershell | Out-String
+                Invoke-CompletionScriptAsGlobal -ScriptText $scriptText
+            } catch {
+            }
+        }
+        'uv' {
+            try {
+                Invoke-Expression -Command $(uv generate-shell-completion powershell | Out-String)
+            } catch {
+            }
+        }
+        'chezmoi' {
+            try {
+                $scriptText = chezmoi completion powershell | Out-String
+                Invoke-CompletionScriptAsGlobal -ScriptText $scriptText
+            } catch {
+            }
+        }
+        'winget' {
+            try {
+                Register-ArgumentCompleter -Native -CommandName winget -ScriptBlock {
+                    param($wordToComplete, $commandAst, $cursorPosition)
+                    [Console]::InputEncoding = [Console]::OutputEncoding = $OutputEncoding = [System.Text.Utf8Encoding]::new()
+                    $Local:word = $wordToComplete.Replace('"', '""')
+                    $Local:ast = $commandAst.ToString().Replace('"', '""')
+                    winget complete --word="$Local:word" --commandline "$Local:ast" --position $cursorPosition | ForEach-Object {
+                        [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+                    }
+                }
+            } catch {
+            }
         }
     }
-    # ---
 
-    Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
-    [Microsoft.PowerShell.PSConsoleReadLine]::MenuComplete()
+    $script:__completionInitialized[$Command] = $true
+}
+
+function Get-CurrentCommandNameForCompletion {
+    $line = $null
+    $cursor = $null
+    [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
+
+    if ([string]::IsNullOrEmpty($line)) {
+        return $null
+    }
+
+    if ($cursor -lt 0) {
+        $cursor = 0
+    }
+    if ($cursor -gt $line.Length) {
+        $cursor = $line.Length
+    }
+
+    $prefix = $line.Substring(0, $cursor)
+
+    $lastSep = [Math]::Max($prefix.LastIndexOf(';'), $prefix.LastIndexOf('|'))
+    if ($lastSep -ge 0) {
+        $prefix = $prefix.Substring($lastSep + 1)
+    }
+
+    $prefix = $prefix.TrimStart()
+    if ($prefix.StartsWith('&')) {
+        $prefix = $prefix.Substring(1).TrimStart()
+    }
+
+    $m = [regex]::Match($prefix, '^(\S+)')
+    if (-not $m.Success) {
+        return $null
+    }
+
+    return $m.Groups[1].Value
 }
 
 Set-PSReadLineKeyHandler -Key Tab -ScriptBlock {
-    Enable-Completion-Lazy
+    $cmd = Get-CurrentCommandNameForCompletion
+    switch ($cmd) {
+        'git'     { Initialize-CompletionForCommand -Command 'git' }
+        'docker'  { Initialize-CompletionForCommand -Command 'docker' }
+        'gh'      { Initialize-CompletionForCommand -Command 'gh' }
+        'uv'      { Initialize-CompletionForCommand -Command 'uv' }
+        'chezmoi' { Initialize-CompletionForCommand -Command 'chezmoi' }
+        'winget'  { Initialize-CompletionForCommand -Command 'winget' }
+    }
+    [Microsoft.PowerShell.PSConsoleReadLine]::MenuComplete()
 }
 
 ###################################
