@@ -177,7 +177,7 @@ $profile_dir = Split-Path -Parent $PROFILE
 Import-Module "$profile_dir\posh-abbr\posh-abbr.psd1" -Force
 
 abbr g git
-# abbr gi git # reserved by powershell Get-Item
+abbr gi git
 abbr gti git
 abbr 'git cl' 'git clone'
 abbr 'git st' 'git status'
@@ -209,6 +209,8 @@ abbr va '.venv\Scripts\activate'
 abbr mb 'mise build'
 abbr ur 'uv run'
 abbr cm 'cargo make'
+
+abbr ag Antigravity
 
 # Remove conflicting aliases
 Remove-Item Alias:ni -Force -ErrorAction Ignore
