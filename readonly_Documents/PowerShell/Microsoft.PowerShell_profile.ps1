@@ -209,6 +209,9 @@ abbr va '.venv\Scripts\activate'
 abbr mb 'mise build'
 abbr ur 'uv run'
 abbr cm 'cargo make'
+abbr pnpn pnpm
+abbr pmpn pnpm
+abbr pmpm pnpm
 
 abbr ag Antigravity
 
