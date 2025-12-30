@@ -193,15 +193,18 @@ abbr -S sld='sheldon' >> /dev/null
 abbr -S cpa='copypath' >> /dev/null
 abbr -S cpf='copyfile' >> /dev/null
 
-abbr -S vba='. .venv/bin/activate' >> /dev/null
+abbr -S va='. .venv/bin/activate' >> /dev/null
 
 abbr -S ji='just init' >> /dev/null
 abbr -S jb='just build' >> /dev/null
 abbr -S jf='just flash' >> /dev/null
 
 abbr -S mb='mise build' >> /dev/null
-
 abbr -S cm='cargo make' >> /dev/null
+abbr -S ur='uv run' >> /dev/null
+abbr -S pmpn='pnpm' >> /dev/null
+abbr -S pnpn='pnpm' >> /dev/null
+abbr -S pmpm='pnpm' >> /dev/null
 
 function mtouch {
     mkdir -p "$(dirname "$1")" && touch "$1"
