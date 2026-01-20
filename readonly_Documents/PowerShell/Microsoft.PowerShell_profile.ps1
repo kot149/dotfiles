@@ -199,6 +199,8 @@ abbr 'git ps' 'git push'
 abbr 'git ph' 'git push'
 abbr 'git psh' 'git push'
 
+abbr lg lazygit
+
 abbr cz 'chezmoi'
 abbr cza 'chezmoi add'
 abbr 'chezmoi a' 'chezmoi add'
