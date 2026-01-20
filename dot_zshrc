@@ -208,6 +208,8 @@ abbr -S pmpn='pnpm' >> /dev/null
 abbr -S pnpn='pnpm' >> /dev/null
 abbr -S pmpm='pnpm' >> /dev/null
 
+abbr -S ag='antigravity' >> /dev/null
+
 function mtouch {
     mkdir -p "$(dirname "$1")" && touch "$1"
 }
