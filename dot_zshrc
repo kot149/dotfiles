@@ -185,6 +185,8 @@ abbr -S 'git ps'='git push' >> /dev/null
 abbr -S 'git ph'='git push' >> /dev/null
 abbr -S 'git psh'='git push' >> /dev/null
 
+abbr -S 'lg'='lazygit' >> /dev/null
+
 abbr -S zrc='. ~/.zshrc' >> /dev/null
 abbr -S cz='chezmoi' >> /dev/null
 abbr -S cza='chezmoi add' >> /dev/null
