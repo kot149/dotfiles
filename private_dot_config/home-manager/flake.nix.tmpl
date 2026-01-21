@@ -1,0 +1,34 @@
+{
+  description = "Home Manager configuration";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = { nixpkgs, home-manager, ... }:
+    let
+      {{ $nixArch := .chezmoi.arch -}}
+      {{- if eq .chezmoi.arch "amd64" }}{{ $nixArch = "x86_64" }}{{ end -}}
+      {{- if eq .chezmoi.arch "arm64" }}{{ $nixArch = "aarch64" }}{{ end -}}
+      {{- $system := printf "%s-%s" $nixArch .chezmoi.os -}}
+      system = "{{ $system }}";
+      username = "{{ .chezmoi.username }}";
+    in {
+      homeConfigurations.default = home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs.legacyPackages.${system};
+        modules = [
+          ./common.nix
+          {{ if eq .chezmoi.os "linux" -}}
+          ./linux.nix
+          {{ else if eq .chezmoi.os "darwin" -}}
+          ./darwin.nix
+          {{ end -}}
+        ];
+        extraSpecialArgs = { inherit username; };
+      };
+    };
+}
