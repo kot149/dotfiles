@@ -22,10 +22,10 @@ These dotfiles are maneged by [chezmoi](https://www.chezmoi.io).
 chezmoi init --apply kot149
 ```
 
-## (Re-)Addding dotfiles
+or with nix:
 
 ```sh
-chezmoi add <path_to_file_to_add>
+nix run nixpkgs#chezmoi -- init --apply kot149
 ```
 
 ## Managing OS-specific files
