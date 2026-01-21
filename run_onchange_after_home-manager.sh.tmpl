@@ -5,4 +5,4 @@
 
 echo "Applying Home Manager configuration..."
 # Use the generic 'default' configuration
-nix run home-manager/master -- switch --flake "$HOME/.config/home-manager#default"
+nix --extra-experimental-features "flakes nix-command" run home-manager/master -- switch --flake "$HOME/.config/home-manager#default"
