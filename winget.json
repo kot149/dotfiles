@@ -1,6 +1,6 @@
 {
 	"$schema" : "https://aka.ms/winget-packages.schema.2.0.json",
-	"CreationDate" : "2025-07-11T11:14:45.599-00:00",
+	"CreationDate" : "2026-01-21T16:26:29.709-00:00",
 	"Sources" : 
 	[
 		{
@@ -19,6 +19,9 @@
 					"PackageIdentifier" : "AutoHotkey.AutoHotkey"
 				},
 				{
+					"PackageIdentifier" : "Bambulab.Bambustudio"
+				},
+				{
 					"PackageIdentifier" : "BlueStack.BlueStacks"
 				},
 				{
@@ -28,16 +31,13 @@
 					"PackageIdentifier" : "Git.Git"
 				},
 				{
-					"PackageIdentifier" : "Google.PlayGames.Beta"
+					"PackageIdentifier" : "Google.PlayGames"
 				},
 				{
 					"PackageIdentifier" : "ImageMagick.ImageMagick"
 				},
 				{
 					"PackageIdentifier" : "Bopsoft.Listary"
-				},
-				{
-					"PackageIdentifier" : "MediaArea.MediaInfo.GUI"
 				},
 				{
 					"PackageIdentifier" : "Mozilla.Firefox.ja"
@@ -49,13 +49,13 @@
 					"PackageIdentifier" : "Microsoft.Office"
 				},
 				{
+					"PackageIdentifier" : "OpenSCAD.OpenSCAD.Nightly"
+				},
+				{
 					"PackageIdentifier" : "RProject.R"
 				},
 				{
-					"PackageIdentifier" : "Streamlink.Streamlink"
-				},
-				{
-					"PackageIdentifier" : "Unity.UnityHub"
+					"PackageIdentifier" : "VideoLAN.VLC"
 				},
 				{
 					"PackageIdentifier" : "marha.VcXsrv"
@@ -70,82 +70,16 @@
 					"PackageIdentifier" : "e2eSoft.iVCam"
 				},
 				{
+					"PackageIdentifier" : "GoLang.Go"
+				},
+				{
 					"PackageIdentifier" : "Microsoft.msodbcsql.17"
-				},
-				{
-					"PackageIdentifier" : "GitHub.cli"
-				},
-				{
-					"PackageIdentifier" : "Microsoft.VCRedist.2010.x64"
-				},
-				{
-					"PackageIdentifier" : "GitHub.GitLFS"
-				},
-				{
-					"PackageIdentifier" : "Microsoft.OpenJDK.11"
-				},
-				{
-					"PackageIdentifier" : "JanDeDobbeleer.OhMyPosh"
-				},
-				{
-					"PackageIdentifier" : "Kitware.CMake"
-				},
-				{
-					"PackageIdentifier" : "Apple.Bonjour"
-				},
-				{
-					"PackageIdentifier" : "Microsoft.VCRedist.2008.x64"
-				},
-				{
-					"PackageIdentifier" : "OpenJS.NodeJS.LTS"
-				},
-				{
-					"PackageIdentifier" : "Google.GoogleDrive"
-				},
-				{
-					"PackageIdentifier" : "CubeSoft.CubePDF"
-				},
-				{
-					"PackageIdentifier" : "JohnMacFarlane.Pandoc"
-				},
-				{
-					"PackageIdentifier" : "Volta.Volta"
-				},
-				{
-					"PackageIdentifier" : "QMK.QMKToolbox"
-				},
-				{
-					"PackageIdentifier" : "Apple.iTunes"
-				},
-				{
-					"PackageIdentifier" : "StrawberryPerl.StrawberryPerl"
-				},
-				{
-					"PackageIdentifier" : "Logitech.LogiTune"
 				},
 				{
 					"PackageIdentifier" : "Tailscale.Tailscale"
 				},
 				{
-					"PackageIdentifier" : "Microsoft.WebDeploy"
-				},
-				{
-					"PackageIdentifier" : "Microsoft.msmpi"
-				},
-				{
-					"PackageIdentifier" : "Google.JapaneseIME"
-				},
-				{
-					"PackageIdentifier" : "Corsair.iCUE.5"
-				},
-				{
-					"PackageIdentifier" : "TrackerSoftware.PDF-XChangeEditor"
-				},
-				{
-					"PackageIdentifier" : "Elgato.StreamDeck"
-				},
-				{
-					"PackageIdentifier" : "Neovim.Neovim"
+					"PackageIdentifier" : "Microsoft.VCRedist.2010.x64"
 				},
 				{
 					"PackageIdentifier" : "TheDocumentFoundation.LibreOffice"
@@ -154,19 +88,97 @@
 					"PackageIdentifier" : "dotPDN.PaintDotNet"
 				},
 				{
-					"PackageIdentifier" : "Microsoft.PowerShell"
+					"PackageIdentifier" : "GitHub.GitLFS"
+				},
+				{
+					"PackageIdentifier" : "BlenderFoundation.Blender"
+				},
+				{
+					"PackageIdentifier" : "Logitech.LogiTune"
+				},
+				{
+					"PackageIdentifier" : "Starship.Starship"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.OpenJDK.11"
+				},
+				{
+					"PackageIdentifier" : "RaspberryPiFoundation.RaspberryPiImager"
 				},
 				{
 					"PackageIdentifier" : "Datronicsoft.SpacedeskDriver.Server"
 				},
 				{
-					"PackageIdentifier" : "dorssel.usbipd-win"
+					"PackageIdentifier" : "EpicGames.EpicGamesLauncher"
+				},
+				{
+					"PackageIdentifier" : "Apple.Bonjour"
+				},
+				{
+					"PackageIdentifier" : "JohnMacFarlane.Pandoc"
+				},
+				{
+					"PackageIdentifier" : "ArduinoSA.IDE.stable"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.VCRedist.2008.x64"
+				},
+				{
+					"PackageIdentifier" : "Google.JapaneseIME"
+				},
+				{
+					"PackageIdentifier" : "GitHub.cli"
+				},
+				{
+					"PackageIdentifier" : "Google.GoogleDrive"
+				},
+				{
+					"PackageIdentifier" : "CubeSoft.CubePDF"
+				},
+				{
+					"PackageIdentifier" : "Volta.Volta"
+				},
+				{
+					"PackageIdentifier" : "QMK.QMKToolbox"
+				},
+				{
+					"PackageIdentifier" : "voidtools.Everything"
+				},
+				{
+					"PackageIdentifier" : "Elgato.StreamDeck"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.msmpi"
+				},
+				{
+					"PackageIdentifier" : "TrackerSoftware.PDF-XChangeEditor"
+				},
+				{
+					"PackageIdentifier" : "Nvidia.PhysX"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.WebDeploy"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.PowerShell"
+				},
+				{
+					"PackageIdentifier" : "StephanDilly.gitui"
 				},
 				{
 					"PackageIdentifier" : "Olivia.VIA"
 				},
 				{
 					"PackageIdentifier" : "PuTTY.PuTTY"
+				},
+				{
+					"PackageIdentifier" : "OpenJS.NodeJS.LTS"
+				},
+				{
+					"PackageIdentifier" : "Apple.iTunes"
+				},
+				{
+					"PackageIdentifier" : "stnkl.EverythingToolbar"
 				},
 				{
 					"PackageIdentifier" : "Microsoft.VisualStudio.2022.Community"
@@ -184,16 +196,25 @@
 					"PackageIdentifier" : "Google.Chrome.EXE"
 				},
 				{
+					"PackageIdentifier" : "LLVM.LLVM"
+				},
+				{
 					"PackageIdentifier" : "GnuWin32.Make"
 				},
 				{
 					"PackageIdentifier" : "Microsoft.Edge"
 				},
 				{
+					"PackageIdentifier" : "SoftFever.OrcaSlicer"
+				},
+				{
 					"PackageIdentifier" : "Guru3D.RTSS"
 				},
 				{
 					"PackageIdentifier" : "Valve.Steam"
+				},
+				{
+					"PackageIdentifier" : "Vial.Vial"
 				},
 				{
 					"PackageIdentifier" : "RamenSoftware.Windhawk"
@@ -205,10 +226,19 @@
 					"PackageIdentifier" : "Microsoft.VCRedist.2013.x64"
 				},
 				{
+					"PackageIdentifier" : "Microsoft.VCRedist.2015+.x86"
+				},
+				{
+					"PackageIdentifier" : "RoyShilkrot.obs-backgroundremoval"
+				},
+				{
 					"PackageIdentifier" : "Microsoft.VCRedist.2012.x86"
 				},
 				{
-					"PackageIdentifier" : "Microsoft.VCRedist.2015+.x86"
+					"PackageIdentifier" : "Microsoft.DotNet.AspNetCore.8"
+				},
+				{
+					"PackageIdentifier" : "Intel.IntelDriverAndSupportAssistant"
 				},
 				{
 					"PackageIdentifier" : "Microsoft.WindowsSDK.10.0.19041"
@@ -217,7 +247,7 @@
 					"PackageIdentifier" : "Famatech.AdvancedIPScanner"
 				},
 				{
-					"PackageIdentifier" : "Microsoft.Teams.Classic"
+					"PackageIdentifier" : "Cisco.CiscoWebexMeetings"
 				},
 				{
 					"PackageIdentifier" : "TechPowerUp.GPU-Z"
@@ -235,22 +265,22 @@
 					"PackageIdentifier" : "LesFerch.WinSetView"
 				},
 				{
-					"PackageIdentifier" : "Intel.IntelDriverAndSupportAssistant"
-				},
-				{
-					"PackageIdentifier" : "Cisco.CiscoWebexMeetings"
-				},
-				{
 					"PackageIdentifier" : "Microsoft.VCRedist.2010.x86"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.DotNet.DesktopRuntime.8"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.DotNet.Runtime.8"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.VCRedist.2012.x64"
 				},
 				{
 					"PackageIdentifier" : "Microsoft.VCRedist.2015+.x64"
 				},
 				{
-					"PackageIdentifier" : "Microsoft.WindowsAppRuntime.1.5"
-				},
-				{
-					"PackageIdentifier" : "Microsoft.VCRedist.2012.x64"
+					"PackageIdentifier" : "Termius.Termius"
 				},
 				{
 					"PackageIdentifier" : "Anysphere.Cursor"
@@ -265,7 +295,13 @@
 					"PackageIdentifier" : "Casey.Just"
 				},
 				{
+					"PackageIdentifier" : "DevToys-app.DevToys"
+				},
+				{
 					"PackageIdentifier" : "Discord.Discord"
+				},
+				{
+					"PackageIdentifier" : "Discord.Discord.PTB"
 				},
 				{
 					"PackageIdentifier" : "Telerik.Fiddler.Classic"
@@ -277,22 +313,31 @@
 					"PackageIdentifier" : "GNU.Wget2"
 				},
 				{
-					"PackageIdentifier" : "JRSoftware.InnoSetup"
+					"PackageIdentifier" : "GnuWin32.Which"
+				},
+				{
+					"PackageIdentifier" : "KiCad.KiCad"
 				},
 				{
 					"PackageIdentifier" : "ElementLabs.LMStudio"
 				},
 				{
+					"PackageIdentifier" : "Microsoft.Edit"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.Sysinternals.ProcessExplorer"
+				},
+				{
 					"PackageIdentifier" : "Ninja-build.Ninja"
+				},
+				{
+					"PackageIdentifier" : "NordicSemiconductor.nrfutil"
 				},
 				{
 					"PackageIdentifier" : "Oven-sh.Bun.Profile"
 				},
 				{
 					"PackageIdentifier" : "Oven-sh.Bun"
-				},
-				{
-					"PackageIdentifier" : "RaspberryPiFoundation.RaspberryPiImager"
 				},
 				{
 					"PackageIdentifier" : "Rustlang.Rustup"
@@ -305,6 +350,9 @@
 				},
 				{
 					"PackageIdentifier" : "ajeetdsouza.zoxide"
+				},
+				{
+					"PackageIdentifier" : "gmsh.gmsh"
 				},
 				{
 					"PackageIdentifier" : "jqlang.jq"
@@ -331,13 +379,13 @@
 					"PackageIdentifier" : "LocalSend.LocalSend"
 				},
 				{
-					"PackageIdentifier" : "Microsoft.PowerToys"
-				},
-				{
 					"PackageIdentifier" : "Microsoft.VisualStudioCode.Insiders"
 				},
 				{
 					"PackageIdentifier" : "Ollama.Ollama"
+				},
+				{
+					"PackageIdentifier" : "mulaRahul.Keyviz"
 				},
 				{
 					"PackageIdentifier" : "Codeium.Windsurf"
@@ -346,7 +394,22 @@
 					"PackageIdentifier" : "Microsoft.VisualStudioCode"
 				},
 				{
+					"PackageIdentifier" : "Microsoft.PowerToys"
+				},
+				{
+					"PackageIdentifier" : "Google.Antigravity"
+				},
+				{
+					"PackageIdentifier" : "ZedIndustries.Zed.Preview"
+				},
+				{
+					"PackageIdentifier" : "File-New-Project.EarTrumpet"
+				},
+				{
 					"PackageIdentifier" : "Canonical.Ubuntu.1804"
+				},
+				{
+					"PackageIdentifier" : "Canonical.Ubuntu.2204"
 				},
 				{
 					"PackageIdentifier" : "Canonical.Ubuntu"
@@ -355,7 +418,7 @@
 					"PackageIdentifier" : "FilesCommunity.Files"
 				},
 				{
-					"PackageIdentifier" : "Microsoft.Teams"
+					"PackageIdentifier" : "Microsoft.OpenCLGLVulkanCompatibilityPack"
 				},
 				{
 					"PackageIdentifier" : "Microsoft.AppInstaller"
@@ -370,13 +433,7 @@
 					"PackageIdentifier" : "Microsoft.VCLibs.Desktop.14"
 				},
 				{
-					"PackageIdentifier" : "Microsoft.WindowsTerminal.Preview"
-				},
-				{
 					"PackageIdentifier" : "Microsoft.WindowsTerminal"
-				},
-				{
-					"PackageIdentifier" : "Microsoft.WindowsApp"
 				}
 			],
 			"SourceDetails" : 
@@ -400,7 +457,16 @@
 					"PackageIdentifier" : "9P8LTPGCBZXD"
 				},
 				{
+					"PackageIdentifier" : "9NTRHF51WGGB"
+				},
+				{
 					"PackageIdentifier" : "9N0ZTKF1QD98"
+				},
+				{
+					"PackageIdentifier" : "9NT1R1C2HH7J"
+				},
+				{
+					"PackageIdentifier" : "9NW5LPNVWFWJ"
 				}
 			],
 			"SourceDetails" : 
@@ -412,5 +478,5 @@
 			}
 		}
 	],
-	"WinGetVersion" : "1.11.400"
+	"WinGetVersion" : "1.12.440"
 }

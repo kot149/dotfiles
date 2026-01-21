@@ -40,6 +40,22 @@ nix --extra-experimental-features "flakes nix-command" run nixpkgs#chezmoi -- in
 
 Edit [`.chezmoiignore.tmpl`](.chezmoiignore.tmpl).
 
+
+## Managing Winget packages
+
+Export:
+```sh
+chezmoi cd
+```
+```sh
+winget export -o winget.json
+```
+
+Import:
+```sh
+winget import winget.json
+```
+
 ## Managing Homebrew packages
 
 Export:
@@ -57,7 +73,6 @@ chezmoi apply
 ```sh
 brew bundle --global
 ```
-
 
 ## Managing `.plist` files
 - To re-add Rectangle.plist, use the following command:
