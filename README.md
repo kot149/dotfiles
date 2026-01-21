@@ -11,9 +11,9 @@ These dotfiles are maneged by [chezmoi](https://www.chezmoi.io) and [Nix Home Ma
   ```
 
   
-### Linux
+### Linux / Mac
 
-- curl, xz-utils
+- Linux: curl, xz-utils
   ```sh
   apt update && apt install curl xz-utils -y
   ```
