@@ -1,20 +1,29 @@
-These dotfiles are maneged by [chezmoi](https://www.chezmoi.io).
+These dotfiles are maneged by [chezmoi](https://www.chezmoi.io) and [Nix Home Manager](https://github.com/nix-community/home-manager).
 
 ## Prerequisites
-- Install Git
-- Install [chezmoi](https://www.chezmoi.io/install/)
-   - Linux:
-     ```sh
-     sh -c "$(curl -fsLS get.chezmoi.io)" -- -b $HOME/.local/bin
-     ```
-   - Window:
-     ```pwsh
-     winget install twpayne.chezmoi
-     ```
-   - macOS:
-     ```sh
-     brew install chezmoi
-     ```
+
+### Windows
+
+- git
+- chezmoi
+  ```pwsh
+  winget install twpayne.chezmoi
+  ```
+
+  
+### Linux
+
+- curl, xz-utils
+  ```sh
+  apt update && apt install curl xz-utils -y
+  ```
+- Nix
+  ```sh
+  sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon --yes
+  ```
+  ```sh
+  . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+  ```
      
 ## Applying dotfiles
 
@@ -25,7 +34,7 @@ chezmoi init --apply kot149
 or with nix:
 
 ```sh
-nix run nixpkgs#chezmoi -- init --apply kot149
+nix --extra-experimental-features "flakes nix-command" run nixpkgs#chezmoi -- init --apply kot149 --branch feat/nix
 ```
 
 ## Managing OS-specific files
