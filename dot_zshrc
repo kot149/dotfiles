@@ -1,5 +1,8 @@
 export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
+# nix
+if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
+
 #################################  HISTORY  #################################
 # history
 HISTFILE=$HOME/.zsh_history     # 履歴を保存するファイル
@@ -151,64 +154,68 @@ fi
 
 # Aliases
 alias git-reset-all="git reset --hard && git clean -fd"
-
-ABBR_SET_EXPANSION_CURSOR=1
-
 alias ls='ls -F --color=auto -1'
-abbr -S ll='ls -l' >> /dev/null
-abbr -S la='ls -a' >> /dev/null
-abbr -S lla='ls -la' >> /dev/null
-abbr -S l1='ls -1' >> /dev/null
 
-abbr -S -g GE='| grep -E "%"' >> /dev/null
+if command -v abbr &> /dev/null; then
+  ABBR_SET_EXPANSION_CURSOR=1
 
-abbr -S g=git >> /dev/null
-abbr -S gi=git >> /dev/null
-abbr -S gti=git >> /dev/null
-abbr -S 'git cl'='git clone' >> /dev/null
-abbr -S 'git st'='git status' >> /dev/null
-abbr -S 'git sw'='git switch' >> /dev/null
-abbr -S 'git co'='git checkout' >> /dev/null
-abbr -S 'git ch'='git checkout' >> /dev/null
-abbr -S 'git m'='git checkout main' >> /dev/null
-abbr -S 'git br'='git branch' >> /dev/null
-abbr -S 'git fe'='git fetch' >> /dev/null
-abbr -S 'git pl'='git pull' >> /dev/null
-abbr -S 'git pul'='git pull' >> /dev/null
-abbr -S 'git ad'='git add' >> /dev/null
-abbr -S 'git cm'='git commit -m "%"' >> /dev/null
-abbr -S 'git cmm'='git commit -m "%"' >> /dev/null
-abbr -S 'git cmt'='git commit -m "%"' >> /dev/null
-abbr -S 'git mg'='git merge' >> /dev/null
-abbr -S 'git mr'='git merge' >> /dev/null
-abbr -S 'git ps'='git push' >> /dev/null
-abbr -S 'git ph'='git push' >> /dev/null
-abbr -S 'git psh'='git push' >> /dev/null
+  abbr -S ll='ls -l' >> /dev/null
+  abbr -S la='ls -a' >> /dev/null
+  abbr -S lla='ls -la' >> /dev/null
+  abbr -S l1='ls -1' >> /dev/null
 
-abbr -S 'lg'='lazygit' >> /dev/null
+  abbr -S -g GE='| grep -E "%"' >> /dev/null
 
-abbr -S zrc='. ~/.zshrc' >> /dev/null
-abbr -S cz='chezmoi' >> /dev/null
-abbr -S cza='chezmoi add' >> /dev/null
-abbr -S sld='sheldon' >> /dev/null
+  abbr -S g=git >> /dev/null
+  abbr -S gi=git >> /dev/null
+  abbr -S gti=git >> /dev/null
+  abbr -S 'git cl'='git clone' >> /dev/null
+  abbr -S 'git st'='git status' >> /dev/null
+  abbr -S 'git sw'='git switch' >> /dev/null
+  abbr -S 'git co'='git checkout' >> /dev/null
+  abbr -S 'git ch'='git checkout' >> /dev/null
+  abbr -S 'git m'='git checkout main' >> /dev/null
+  abbr -S 'git br'='git branch' >> /dev/null
+  abbr -S 'git fe'='git fetch' >> /dev/null
+  abbr -S 'git pl'='git pull' >> /dev/null
+  abbr -S 'git pul'='git pull' >> /dev/null
+  abbr -S 'git ad'='git add' >> /dev/null
+  abbr -S 'git cm'='git commit -m "%"' >> /dev/null
+  abbr -S 'git cmm'='git commit -m "%"' >> /dev/null
+  abbr -S 'git cmt'='git commit -m "%"' >> /dev/null
+  abbr -S 'git mg'='git merge' >> /dev/null
+  abbr -S 'git mr'='git merge' >> /dev/null
+  abbr -S 'git ps'='git push' >> /dev/null
+  abbr -S 'git ph'='git push' >> /dev/null
+  abbr -S 'git psh'='git push' >> /dev/null
 
-abbr -S cpa='copypath' >> /dev/null
-abbr -S cpf='copyfile' >> /dev/null
+  abbr -S 'lg'='lazygit' >> /dev/null
 
-abbr -S va='. .venv/bin/activate' >> /dev/null
+  abbr -S zrc='. ~/.zshrc' >> /dev/null
+  abbr -S cz='chezmoi' >> /dev/null
+  abbr -S cza='chezmoi add' >> /dev/null
+  abbr -S sld='sheldon' >> /dev/null
 
-abbr -S ji='just init' >> /dev/null
-abbr -S jb='just build' >> /dev/null
-abbr -S jf='just flash' >> /dev/null
+  abbr -S cpa='copypath' >> /dev/null
+  abbr -S cpf='copyfile' >> /dev/null
 
-abbr -S mb='mise build' >> /dev/null
-abbr -S cm='cargo make' >> /dev/null
-abbr -S ur='uv run' >> /dev/null
-abbr -S pmpn='pnpm' >> /dev/null
-abbr -S pnpn='pnpm' >> /dev/null
-abbr -S pmpm='pnpm' >> /dev/null
+  abbr -S va='. .venv/bin/activate' >> /dev/null
 
-abbr -S ag='antigravity' >> /dev/null
+  abbr -S ji='just init' >> /dev/null
+  abbr -S jb='just build' >> /dev/null
+  abbr -S jf='just flash' >> /dev/null
+
+  abbr -S mb='mise build' >> /dev/null
+  abbr -S cm='cargo make' >> /dev/null
+  abbr -S ur='uv run' >> /dev/null
+  abbr -S pmpn='pnpm' >> /dev/null
+  abbr -S pnpn='pnpm' >> /dev/null
+  abbr -S pmpm='pnpm' >> /dev/null
+
+  abbr -S ag='antigravity' >> /dev/null
+else
+  echo "Warning: zsh-abbr not found"
+fi
 
 function mtouch {
     mkdir -p "$(dirname "$1")" && touch "$1"
@@ -220,9 +227,6 @@ alias touch='mtouch';
 if command -v batcat &> /dev/null; then
   alias bat='batcat';
 fi
-
-# nix
-if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
 # direnv
 if command -v direnv &> /dev/null; then
