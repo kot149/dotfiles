@@ -10,7 +10,6 @@ These dotfiles are maneged by [chezmoi](https://www.chezmoi.io) and [Nix Home Ma
   winget install twpayne.chezmoi
   ```
 
-  
 ### Linux / Mac
 
 - Linux: curl, xz-utils
@@ -24,7 +23,7 @@ These dotfiles are maneged by [chezmoi](https://www.chezmoi.io) and [Nix Home Ma
   ```sh
   . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
   ```
-     
+
 ## Applying dotfiles
 
 ```sh
@@ -40,6 +39,25 @@ nix --extra-experimental-features "flakes nix-command" run nixpkgs#chezmoi -- in
 ## Managing OS-specific files
 
 Edit [`.chezmoiignore.tmpl`](.chezmoiignore.tmpl).
+
+## Managing Homebrew packages
+
+Export:
+```sh
+brew bundle dump --global --force
+```
+```sh
+chezmoi add ~/.Brewfile
+```
+
+Import:
+```sh
+chezmoi apply
+```
+```sh
+brew bundle --global
+```
+
 
 ## Managing `.plist` files
 - To re-add Rectangle.plist, use the following command:
