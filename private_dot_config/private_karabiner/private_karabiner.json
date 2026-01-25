@@ -23,98 +23,55 @@
                                 "type": "basic"
                             },
                             {
+                                "description": "[Chrome] Ctrl+Tab Start",
                                 "conditions": [
-                                    {
-                                        "bundle_identifiers": [
-                                            "^com.microsoft.edgemac",
-                                            "^com.google.Chrome"
-                                        ],
-                                        "type": "frontmost_application_if"
-                                    }
+                                    { "type": "variable_if", "name": "ctrl_tab_active", "value": false },
+                                    { "type": "frontmost_application_if", "bundle_identifiers": [ "^com.google.Chrome", "^com.microsoft.edgemac" ] }
                                 ],
-                                "description": "[Chrome] Ctrl+Tab",
-                                "from": {
-                                    "key_code": "tab",
-                                    "modifiers": {
-                                        "mandatory": ["control"],
-                                        "optional": ["shift"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "a",
-                                        "modifiers": ["control", "shift"]
-                                    }
-                                ],
+                                "from": { "key_code": "tab", "modifiers": { "mandatory": ["control"], "optional": ["shift"] } },
+                                "to": [{ "key_code": "a", "modifiers": ["control", "shift"] }, { "set_variable": { "name": "ctrl_tab_active", "value": true }}, { "key_code": "left_control" } ],
                                 "type": "basic"
                             },
                             {
+                                "description": "[Chrome] Ctrl+Tab Continue",
                                 "conditions": [
-                                    {
-                                        "bundle_identifiers": [
-                                            "^com.microsoft.edgemac",
-                                            "^com.google.Chrome"
-                                        ],
-                                        "type": "frontmost_application_if"
-                                    }
+                                    { "type": "variable_if", "name": "ctrl_tab_active", "value": true },
+                                    { "type": "frontmost_application_if", "bundle_identifiers": [ "^com.google.Chrome", "^com.microsoft.edgemac" ] }
                                 ],
-                                "description": "[Chrome] Ctrl+PageDown",
-                                "from": {
-                                    "key_code": "page_down",
-                                    "modifiers": {
-                                        "mandatory": ["control"],
-                                        "optional": ["shift"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "tab",
-                                        "modifiers": ["command"]
-                                    }
-                                ],
+                                "from": { "key_code": "tab", "modifiers": { "mandatory": ["control"] } },
+                                "to": [{ "key_code": "down_arrow" }],
                                 "type": "basic"
                             },
                             {
-                                "conditions": [
-                                    {
-                                        "bundle_identifiers": [
-                                            "^com.microsoft.edgemac",
-                                            "^com.google.Chrome"
-                                        ],
-                                        "type": "frontmost_application_if"
-                                    }
-                                ],
-                                "description": "[Chrome] Ctrl+PageUp",
-                                "from": {
-                                    "key_code": "page_up",
-                                    "modifiers": {
-                                        "mandatory": ["control"],
-                                        "optional": ["shift"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "tab",
-                                        "modifiers": ["command", "shift"]
-                                    }
+                                "description": "[Chrome] Ctrl+Tab End",
+                                "conditions": [ { "type": "frontmost_application_if", "bundle_identifiers": [ "^com.google.Chrome", "^com.microsoft.edgemac" ] } ],
+                                "from": { "key_code": "left_control", "modifiers": { "optional": ["any"] } },
+                                "to": [{ "key_code": "left_control" } ],
+                                "to_after_key_up": [
+                                    { "key_code": "return_or_enter", "conditions": [ { "type": "variable_if", "name": "ctrl_tab_active", "value": true } ] },
+                                    { "set_variable": { "name": "ctrl_tab_active", "value": false }}
                                 ],
                                 "type": "basic"
                             },
                             {
                                 "description": "Ctrl+Tab",
-                                "from": {
-                                    "key_code": "tab",
-                                    "modifiers": {
-                                        "mandatory": ["control"],
-                                        "optional": ["shift"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "tab",
-                                        "modifiers": ["command"]
-                                    }
-                                ],
+                                "conditions": [ { "type": "frontmost_application_unless", "bundle_identifiers": [ "^com.google.Chrome", "^com.microsoft.edgemac" ] } ],
+                                "from": { "key_code": "tab", "modifiers": { "mandatory": ["control"], "optional": ["shift"] }},
+                                "to": { "key_code": "tab", "modifiers": ["command"] },
+                                "type": "basic"
+                            },
+                            {
+                                "description": "[Chrome] Ctrl+PageDown",
+                                "conditions": [ { "type": "frontmost_application_if", "bundle_identifiers": [ "^com.google.Chrome", "^com.microsoft.edgemac" ] } ],
+                                "from": { "key_code": "page_down", "modifiers": { "mandatory": ["control"], "optional": ["shift"] } },
+                                "to": [{ "key_code": "tab", "modifiers": ["command"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "[Chrome] Ctrl+PageUp",
+                                "conditions": [ { "type": "frontmost_application_if", "bundle_identifiers": [ "^com.google.Chrome", "^com.microsoft.edgemac" ] } ],
+                                "from": { "key_code": "page_up", "modifiers": { "mandatory": ["control"], "optional": ["shift"] }},
+                                "to": { "key_code": "tab", "modifiers": ["command", "shift"] },
                                 "type": "basic"
                             },
                             {
