@@ -596,17 +596,50 @@
                                 "type": "basic"
                             },
                             {
-                                "description": "Spotlight with single Win tap",
+                                "description": "Single Win tap",
                                 "from": { "key_code": "left_command" },
                                 "to": [{ "key_code": "left_command" }],
                                 "to_if_alone": [
                                     {
                                         "key_code": "spacebar",
-                                        "modifiers": ["control", "command"]
+                                        "modifiers": ["command", "shift"]
                                     }
                                 ],
                                 "type": "basic"
                             },
+                            {
+                                "description": "Single Control tap",
+                                "from": { "key_code": "left_control" },
+                                "to": [{ "key_code": "left_control" }],
+                                "to_if_alone": [
+                                    {
+                                        "key_code": "spacebar",
+                                        "modifiers": ["control", "shift"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            // {
+                            //     "description": "Double Control tap",
+                            //     "from": { "key_code": "left_control", "modifiers": { "optional": ["any"] } },
+                            //     "to_if_alone": [{ "key_code": "spacebar", "modifiers": ["control", "shift"] }, { "set_variable": { "name": "control_pressed", "value": false } } ],
+                            //     "conditions": [ { "type": "variable_if", "name": "control_pressed", "value": true } ],
+                            //     "type": "basic"
+                            // },
+                            // {
+                            //     "description": "Set variable for control_pressed",
+                            //     "from": {
+                            //         "key_code": "left_control",
+                            //         "modifiers": { "optional": ["any"] }
+                            //     },
+                            //     "to": [{ "key_code": "left_control" } ],
+                            //     "to_if_alone": [{ "set_variable": { "name": "control_pressed", "value": true } }],
+                            //     "to_delayed_action": {
+                            //         "to_if_invoked": [ { "set_variable": { "name": "control_pressed", "value": false } } ],
+                            //         "to_if_canceled": [ { "set_variable": { "name": "control_pressed", "value": false } } ]
+                            //     },
+                            //     "type": "basic"
+                            // },
                             {
                                 "description": "Win+E",
                                 "from": {
