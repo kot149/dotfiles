@@ -60,10 +60,7 @@ winget import winget.json
 
 Export:
 ```sh
-brew bundle dump --global --force
-```
-```sh
-chezmoi add ~/.Brewfile
+brew bundle dump --global --force && chezmoi add ~/.Brewfile
 ```
 
 Import:
