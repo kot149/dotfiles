@@ -33,7 +33,7 @@ chezmoi init --apply kot149
 or with nix:
 
 ```sh
-nix --extra-experimental-features "flakes nix-command" run nixpkgs#chezmoi -- init --apply kot149 --branch feat/nix
+nix --extra-experimental-features "flakes nix-command" run nixpkgs#chezmoi -- init --apply kot149
 ```
 
 ## Managing OS-specific files
