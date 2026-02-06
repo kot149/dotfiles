@@ -24,6 +24,37 @@ These dotfiles are maneged by [chezmoi](https://www.chezmoi.io) and [Nix Home Ma
   . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
   ```
 
+#### Linux with no root
+
+Use nix-portable
+
+```sh
+cd ~/.local/bin
+curl -L https://github.com/DavHau/nix-portable/releases/latest/download/nix-portable-$(uname -m) > ./nix-portable
+chmod +x ./nix-portable
+ln -s nix-portable nix
+ln -s nix-portable nix-build
+ln -s nix-portable nix-channel
+ln -s nix-portable nix-collect-garbage
+ln -s nix-portable nix-copy-closure
+ln -s nix-portable nix-daemon
+ln -s nix-portable nix-env
+ln -s nix-portable nix-hash
+ln -s nix-portable nix-instantiate
+ln -s nix-portable nix-prefetch-url
+ln -s nix-portable nix-shell
+ln -s nix-portable nix-store
+```
+
+and add this to the `~/.bashrc`
+```sh
+if [ -z "$NP_RUNTIME" ] && [ -t 0 ]; then
+    export NP_RUNTIME=bwrap
+    export PATH="$HOME/.nix-profile/bin:$PATH"
+    exec nix-portable nix shell nixpkgs#zsh nixpkgs#bashInteractive -c zsh
+fi
+```
+
 ## Applying dotfiles
 
 ```sh
