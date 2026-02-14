@@ -1,0 +1,17 @@
+#!/bin/bash
+# Apply nix-darwin configuration
+
+set -e
+
+# flake.nix hash: {{ include "private_dot_config/nix-darwin/flake.nix.tmpl" | sha256sum }}
+# darwin-configuration.nix hash: {{ include "private_dot_config/nix-darwin/darwin-configuration.nix.tmpl" | sha256sum }}
+
+NIX_DARWIN_DIR="$HOME/.config/nix-darwin"
+
+cd "$NIX_DARWIN_DIR"
+
+echo "Applying nix-darwin configuration..."
+nix flake update
+sudo nix --extra-experimental-features 'nix-command flakes' run github:LnL7/nix-darwin#darwin-rebuild -- switch --flake .#"{{ .chezmoi.hostname }}"
+
+echo "nix-darwin configuration applied successfully"
