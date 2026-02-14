@@ -1,0 +1,50 @@
+{pkgs, ...}: {
+  # https://nix-darwin.github.io/nix-darwin/manual/index.html
+
+  nix = {
+    optimise.automatic = true;
+    settings = {
+      experimental-features = "nix-command flakes";
+    };
+  };
+
+  system.stateVersion = 6;
+
+  system.primaryUser = "{{ .chezmoi.username }}";
+
+  system = {
+    defaults = {
+      NSGlobalDomain.AppleShowAllExtensions = true;
+      finder = {
+        AppleShowAllFiles = true;
+        AppleShowAllExtensions = true;
+        FXPreferredViewStyle = "clmv"; # prefer column view
+        QuitMenuItem = true; # allow quitting Finder
+        ShowPathbar = true;
+        ShowStatusBar = false;
+      };
+      dock = {
+        autohide = false;
+        show-recents = true;
+        orientation = "bottom";
+      };
+    };
+  };
+
+  homebrew = {
+    enable = true;
+    onActivation = {
+      autoUpdate = true;
+      # cleanup = "uninstall";
+    };
+    brews = [
+    ];
+    casks = [
+    ];
+  };
+
+  # Automatically apply nix-darwin config changes
+  system.activationScripts.activateSettings.text = ''
+    sudo -u {{ .chezmoi.username }} /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+  '';
+}
