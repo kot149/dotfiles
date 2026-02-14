@@ -1,0 +1,25 @@
+{
+  description = "Nix Darwin configuration";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    nix-darwin = {
+      url = "github:LnL7/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = {
+    self,
+    nixpkgs,
+    nix-darwin,
+  }: {
+    darwinConfigurations.{{ .chezmoi.hostname }} = nix-darwin.lib.darwinSystem {
+      {{- $nixArch := .chezmoi.arch }}
+      {{- if eq .chezmoi.arch "amd64" }}{{ $nixArch = "x86_64" }}{{ end -}}
+      {{- if eq .chezmoi.arch "arm64" }}{{ $nixArch = "aarch64" }}{{ end -}}
+      system = "{{ printf "%s-%s" $nixArch .chezmoi.os }}";
+      modules = [ ./darwin-configuration.nix ];
+    };
+  };
+}
