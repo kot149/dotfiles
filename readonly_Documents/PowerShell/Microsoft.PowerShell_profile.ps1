@@ -327,3 +327,17 @@ function cdworktree() {
 
 Set-Alias fz zi
 Set-Alias fzz fz
+
+function Remove-Nul {
+    $targetPath = "."
+    $files = Get-ChildItem $targetPath -Force
+    $nulFile = $files | Where-Object { $_.Name -eq 'nul' }
+
+    if ($nulFile) {
+        $extendedPath = "\\?\$($nulFile.FullName)"
+        [System.IO.File]::Delete($extendedPath)
+        Write-Host "Removed: $($nulFile.FullName)"
+    } else {
+        Write-Host "Nul file not found"
+    }
+}
