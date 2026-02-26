@@ -43,6 +43,16 @@
                                 "type": "basic"
                             },
                             {
+                                "description": "[Chrome] Ctrl+Tab Continue (Reverse)",
+                                "conditions": [
+                                    { "type": "variable_if", "name": "ctrl_tab_active", "value": true },
+                                    { "type": "frontmost_application_if", "bundle_identifiers": [ "^com.google.Chrome", "^com.microsoft.edgemac" ] }
+                                ],
+                                "from": { "key_code": "tab", "modifiers": { "mandatory": ["control", "shift"] } },
+                                "to": [{ "key_code": "up_arrow" }],
+                                "type": "basic"
+                            },
+                            {
                                 "description": "[Chrome] Ctrl+Tab End",
                                 "conditions": [ { "type": "frontmost_application_if", "bundle_identifiers": [ "^com.google.Chrome", "^com.microsoft.edgemac" ] } ],
                                 "from": { "key_code": "left_control", "modifiers": { "optional": ["any"] } },
