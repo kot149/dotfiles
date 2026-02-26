@@ -12,6 +12,6 @@ cd "$NIX_DARWIN_DIR"
 
 echo "Applying nix-darwin configuration..."
 nix flake update
-sudo nix --extra-experimental-features 'nix-command flakes' run github:LnL7/nix-darwin#darwin-rebuild -- switch --flake .#"{{ .chezmoi.hostname }}"
+sudo -H nix --extra-experimental-features 'nix-command flakes' run github:LnL7/nix-darwin#darwin-rebuild -- switch --flake .#"{{ .chezmoi.hostname }}"
 
 echo "nix-darwin configuration applied successfully"
