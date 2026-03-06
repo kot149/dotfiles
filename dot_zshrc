@@ -338,3 +338,9 @@ if command -v fzf &> /dev/null; then
     cd ${selectedWorkTreeDir}
   }
 fi
+
+# WSL
+if grep -q -i "Microsoft" /proc/version; then
+  export BROWSER='/mnt/c/Windows/System32/rundll32.exe url.dll,FileProtocolHandler'
+  alias open=$BROWSER
+fi
