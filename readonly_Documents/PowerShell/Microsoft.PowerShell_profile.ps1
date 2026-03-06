@@ -198,6 +198,10 @@ abbr 'git mr' 'git merge'
 abbr 'git ps' 'git push'
 abbr 'git ph' 'git push'
 abbr 'git psh' 'git push'
+abbr 'git publish' 'git push --set-upstream origin "$(git rev-parse --abbrev-ref HEAD)"'
+abbr 'git publish ' 'git push --set-upstream origin "$(git rev-parse --abbrev-ref HEAD)"'
+abbr 'git pb' 'git publish'
+abbr 'git pub' 'git publish'
 
 abbr lg lazygit
 
