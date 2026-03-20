@@ -1,7 +1,10 @@
 { pkgs, ... }:
 
 {
+  fonts.fontconfig.enable = true;
+
   home.packages = with pkgs; [
+    nerd-fonts.inconsolata
   ];
 
   programs.gnome-terminal.enable = true;
@@ -11,6 +14,7 @@
     visibleName = "default";
     customCommand = "${pkgs.zsh}/bin/zsh";
     loginShell = true;
+    font = "Inconsolata Nerd Font Mono 13";
   };
 
   dconf.settings = {
