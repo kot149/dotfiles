@@ -1,8 +1,6 @@
 { pkgs, ... }:
 
 {
-  fonts.fontconfig.enable = true;
-
   i18n.inputMethod = {
     enable = true;
     type = "fcitx5";
@@ -28,10 +26,6 @@
   };
 
   gtk.enable = true;
-
-  home.packages = with pkgs; [
-    nerd-fonts.inconsolata
-  ];
 
   programs.gnome-terminal.enable = true;
 

@@ -23,7 +23,12 @@
         modules = [
           ./common.nix
           {{ if eq .chezmoi.os "linux" -}}
-          ./linux.nix
+          ./linux-common.nix
+          {{- if and (hasKey . "linuxGui") (not .linuxGui) }}
+          ./linux-headless.nix
+          {{- else }}
+          ./linux-desktop.nix
+          {{- end }}
           {{ else if eq .chezmoi.os "darwin" -}}
           ./darwin.nix
           {{ end -}}
