@@ -12,4 +12,11 @@
     customCommand = "${pkgs.zsh}/bin/zsh";
     loginShell = true;
   };
+
+  dconf.settings = {
+    "org/gnome/terminal/legacy/profiles:/:b19a5eec-d2dc-43d7-b4e5-c4f8c183fd34" = {
+      default-size-columns = 120;
+      default-size-rows = 30;
+    };
+  };
 }
