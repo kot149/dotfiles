@@ -1,3 +1,4 @@
+{{- if ne .chezmoi.os "windows" -}}
 #!/bin/bash
 
 # flake.nix hash: {{ include "private_dot_config/home-manager/flake.nix.tmpl" | sha256sum }}
@@ -10,3 +11,4 @@
 echo "Applying Home Manager configuration..."
 # Use the generic 'default' configuration
 nix --extra-experimental-features "flakes nix-command" run home-manager/master -- switch --flake "$HOME/.config/home-manager#default"
+{{- end -}}
