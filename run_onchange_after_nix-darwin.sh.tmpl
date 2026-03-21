@@ -1,8 +1,7 @@
+{{ if eq .chezmoi.os "darwin" -}}
 #!/bin/bash
 # Apply nix-darwin configuration
 
-
-{{ if eq .chezmoi.os "darwin" -}}
 set -e
 
 # flake.nix hash: {{ include "private_dot_config/nix-darwin/flake.nix.tmpl" | sha256sum }}
