@@ -1,6 +1,28 @@
-{ pkgs, ... }:
+{ pkgs, config, nixglPackages, ... }:
 
 {
+  nixpkgs.config.allowUnfree = true;
+  xdg.enable = true;
+  xdg.mime.enable = true;
+
+  # Non-NixOS: Nix-built Ghostty needs nixGL to use the host GPU drivers.
+  # On NixOS, disable targets.genericLinux or omit nixglPackages / nixGL.packages.
+  targets.genericLinux = {
+    enable = true;
+    nixGL.packages = nixglPackages;
+    # Proprietary NVIDIA: set defaultWrapper = "nvidia"; and build with --impure.
+  };
+
+  programs.ghostty = {
+    enable = true;
+    package = config.lib.nixGL.wrap pkgs.ghostty;
+  };
+
+  home.packages = with pkgs; [
+    discord
+    remmina
+  ];
+
   i18n.inputMethod = {
     enable = true;
     type = "fcitx5";
