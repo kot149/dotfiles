@@ -30,7 +30,12 @@
           ./common.nix
           {{ if eq .chezmoi.os "linux" -}}
           ./linux-common.nix
-          {{- if and (hasKey . "linuxGui") (not .linuxGui) }}
+          {{- $wsl := and (eq .chezmoi.os "linux") (contains "microsoft" (lower .chezmoi.kernel.osrelease)) }}
+          {{- if and (hasKey . "linuxGui") .linuxGui }}
+          ./linux-desktop.nix
+          {{- else if and (hasKey . "linuxGui") (not .linuxGui) }}
+          ./linux-headless.nix
+          {{- else if $wsl }}
           ./linux-headless.nix
           {{- else }}
           ./linux-desktop.nix
