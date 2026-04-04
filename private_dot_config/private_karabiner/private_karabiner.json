@@ -276,6 +276,32 @@
                                 "type": "basic"
                             },
                             {
+                                "description": "Ctrl+Shift+Q -> Quit (Ctrl+Q)",
+                                "from": {
+                                    "key_code": "q",
+                                    "modifiers": { "mandatory": ["control", "shift"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "q",
+                                        "modifiers": ["control"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Block Ctrl+Q (use Ctrl+Shift+Q to quit)",
+                                "from": {
+                                    "key_code": "q",
+                                    "modifiers": {
+                                        "mandatory": ["control"],
+                                        "optional": ["caps_lock"]
+                                    }
+                                },
+                                "to": [{ "key_code": "vk_none" }],
+                                "type": "basic"
+                            },
+                            {
                                 "description": "Ctrl+Left",
                                 "from": {
                                     "key_code": "left_arrow",
