@@ -23,6 +23,10 @@ These dotfiles are maneged by [chezmoi](https://www.chezmoi.io) and [Nix Home Ma
   ```sh
   . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
   ```
+- Or, Nix via Determinate Nix installer:
+  ```sh
+  curl -fsSL https://install.determinate.systems/nix | sh -s -- install
+  ```
 
 #### Linux with no root
 
@@ -107,4 +111,7 @@ brew bundle --global
   ```sh
   defaults export com.knollsoft.Rectangle - > ~/.local/share/chezmoi/.chezmoitemplates/rectangle.plist.tmpl
   ```
-- `chezmoi apply` uses [`run_onchange_import_rectangle.sh.tmpl`](run_onchange_import_rectangle.sh.tmpl) to automatically apply Rectangle's plist.
+- `chezmoi apply` uses [`run_onchange_import_rectangle.sh.tmpl`](run_onchange_import_rectangle.sh.tmpl) to automatically apply Rectangle's plist. To manually apply the plist, use the following command:
+  ```sh
+  chezmoi execute-template -f run_onchange_import_rectangle.sh.tmpl | sh
+  ```
