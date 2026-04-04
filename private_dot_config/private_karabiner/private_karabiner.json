@@ -324,6 +324,19 @@
                                 "type": "basic"
                             },
                             {
+                                "description": "[VSCode/Cursor] Ctrl+H -> Option+Ctrl+F",
+                                "type": "basic",
+                                "from": { "key_code": "h", "modifiers": { "mandatory": ["control"] }},
+                                "to": [{ "key_code": "f", "modifiers": ["option", "control"]}],
+                                "conditions": [{
+                                    "bundle_identifiers": [
+                                        "com.microsoft.VSCode",
+                                        "^com.todesktop.230313mzl4w4u92"
+                                    ],
+                                    "type": "frontmost_application_if"
+                                }]
+                            },
+                            {
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
