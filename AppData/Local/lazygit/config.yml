@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/jesseduffield/lazygit/master/schema/config.json
+
+gui:
+  language: "en"
+os:
+  edit: "cursor {{filename}}"
+  openDirInEditor: "cursor {{dirname}}"
+
+git:
+  pagers:
+    - externalDiffCommand: "~/lazygit-diff.ps1"
