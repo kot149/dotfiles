@@ -3,6 +3,9 @@ README.md
 Library/Preferences/com.knollsoft.Rectangle.plist
 
 # Windows
+{{- if eq .chezmoi.os "windows" }}
+private_dot_config/lazygit/**
+{{- end }}
 {{- if ne .chezmoi.os "windows" }}
 winget.json
 
