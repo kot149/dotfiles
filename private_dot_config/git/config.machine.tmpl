@@ -1,0 +1,16 @@
+[user]
+	name = {{ .git_user_name | quote }}
+	email = {{ .git_user_email | quote }}
+	signingkey = {{ or .git_signing_key (joinPath .chezmoi.homeDir ".ssh/id_ed25519_github_kot149.pub") | quote }}
+
+[commit]
+	gpgsign = {{ .git_commit_gpgsign }}
+
+[gpg]
+	format = ssh
+
+[gpg "ssh"]
+	allowedSignersFile = {{ or .git_allowed_signers (joinPath .chezmoi.homeDir ".ssh/allowed_signers") | quote }}
+
+[core]
+	editor = {{ .git_editor | quote }}
