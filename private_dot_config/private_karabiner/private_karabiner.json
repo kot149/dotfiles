@@ -816,6 +816,51 @@
                                 },
                                 "to": [{ "key_code": "backslash" }],
                                 "type": "basic"
+                            },
+                            {
+                                "description": "Virtual Desktop Next",
+                                "from": {
+                                    "key_code": "right_arrow",
+                                    "modifiers": { "mandatory": ["command", "control"] }
+                                },
+                                "to": [{ "key_code": "right_arrow", "modifiers": ["command"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Virtual Desktop Prev",
+                                "from": {
+                                    "key_code": "left_arrow",
+                                    "modifiers": { "mandatory": ["command", "control"] }
+                                },
+                                "to": [{ "key_code": "left_arrow", "modifiers": ["command"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Win+Up",
+                                "from": {
+                                    "key_code": "up_arrow",
+                                    "modifiers": { "mandatory": ["command"] }
+                                },
+                                "to": [{ "key_code": "up_arrow", "modifiers": ["command", "control"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Win+Right",
+                                "from": {
+                                    "key_code": "right_arrow",
+                                    "modifiers": { "mandatory": ["command"] }
+                                },
+                                "to": [{ "key_code": "right_arrow", "modifiers": ["command", "control"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Win+Left",
+                                "from": {
+                                    "key_code": "left_arrow",
+                                    "modifiers": { "mandatory": ["command"] }
+                                },
+                                "to": [{ "key_code": "left_arrow", "modifiers": ["command", "control"] }],
+                                "type": "basic"
                             }
                         ]
                     }
