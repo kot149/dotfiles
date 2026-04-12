@@ -75,6 +75,31 @@ nix --extra-experimental-features "flakes nix-command" run nixpkgs#chezmoi -- in
 
 Edit [`.chezmoiignore.tmpl`](.chezmoiignore.tmpl).
 
+## Git (shared + per-machine)
+
+Global Git is split so portable settings live in the repo and machine-specific values (account, signing paths, `core.editor`, extra sections you add to the template) stay overridable per host:
+
+- Shared: [`dot_gitconfig.tmpl`](dot_gitconfig.tmpl) (includes `~/.config/git/config.machine`, delta, LFS, optional `safe.directory` from `git_safe_directories` in data).
+- Per machine: [`private_dot_config/git/config.machine.tmpl`](private_dot_config/git/config.machine.tmpl) → `~/.config/git/config.machine` (defaults target the **kot149** GitHub profile; override in `~/.config/chezmoi/chezmoi.toml` on work PCs, etc.).
+
+Defaults live in [`.chezmoidata.toml`](.chezmoidata.toml) (**kot149** + GitHub noreply email). If `git_signing_key` / `git_allowed_signers` are left empty, [`config.machine.tmpl`](private_dot_config/git/config.machine.tmpl) falls back to `$HOME/.ssh/id_ed25519_github_kot149.pub` and `$HOME/.ssh/allowed_signers`. **`~/.config/chezmoi/chezmoi.toml`** `[data]` overrides `.chezmoidata.toml`, so a work machine can point at different keys without editing the repo.
+
+Example override for a work machine:
+
+```toml
+[data]
+git_user_name = "Your Work Name"
+git_user_email = "you@company.example"
+git_signing_key = "C:/Users/you/.ssh/id_ed25519_work.pub"
+git_allowed_signers = "C:/Users/you/.ssh/allowed_signers_work"
+git_editor = "code --wait"
+git_commit_gpgsign = true
+git_safe_directories = [
+  '%(prefix)///wsl.localhost/Ubuntu-24.04/home/you/.local/share/chezmoi',
+]
+```
+
+On a new machine, `chezmoi init` runs [`.chezmoi.toml.tmpl`](.chezmoi.toml.tmpl) and prompts with **kot149-oriented defaults**; answers are written to `~/.config/chezmoi/chezmoi.toml`. To add more machine-only Git snippets, edit `config.machine.tmpl` in this repo (structure only) or override keys via `[data]` as above.
 
 ## Managing Winget packages
 
