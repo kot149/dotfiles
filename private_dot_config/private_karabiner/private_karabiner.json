@@ -748,30 +748,6 @@
                                 "type": "basic"
                             },
                             {
-                                "description": "Single Win tap",
-                                "from": { "key_code": "left_command" },
-                                "to": [{ "key_code": "left_command" }],
-                                "to_if_alone": [
-                                    {
-                                        "key_code": "spacebar",
-                                        "modifiers": ["command", "shift"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "description": "Single Control tap",
-                                "from": { "key_code": "left_control" },
-                                "to": [{ "key_code": "left_control" }],
-                                "to_if_alone": [
-                                    {
-                                        "key_code": "spacebar",
-                                        "modifiers": ["control", "shift"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
                                 "description": "Win+E",
                                 "from": {
                                     "key_code": "e",
@@ -1660,30 +1636,6 @@
                                 "type": "basic"
                             },
                             {
-                                "description": "Single Win tap",
-                                "from": { "key_code": "left_command" },
-                                "to": [{ "key_code": "left_command" }],
-                                "to_if_alone": [
-                                    {
-                                        "key_code": "spacebar",
-                                        "modifiers": ["command", "shift"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "description": "Single Control tap",
-                                "from": { "key_code": "left_control" },
-                                "to": [{ "key_code": "left_control" }],
-                                "to_if_alone": [
-                                    {
-                                        "key_code": "spacebar",
-                                        "modifiers": ["control", "shift"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
                                 "description": "Win+E",
                                 "from": {
                                     "key_code": "e",
@@ -1802,6 +1754,46 @@
                                     }
                                 ],
                                 "type": "basic"
+                            },
+                            {
+                                "description": "Double Control tap (2)",
+                                "type": "basic",
+                                "from": { "key_code": "left_control" },
+                                "to": [{"key_code": "spacebar", "modifiers": ["option"]}],
+                                "conditions": [{ "type": "variable_if", "name": "left_control_pressed", "value": true }]
+                            },
+                            {
+                                "description": "Double Control tap (1)",
+                                "type": "basic",
+                                "from": {"key_code": "left_control", "modifiers": { "optional": [ "any" ] }},
+                                "to": [
+                                    { "set_variable": { "name": "left_control_pressed", "value": true } },
+                                    { "key_code": "left_control" }
+                                ],
+                                "to_delayed_action": {
+                                    "to_if_invoked": [{ "set_variable": { "name": "left_control_pressed", "value": false } }],
+                                    "to_if_canceled": [{ "set_variable": { "name": "left_control_pressed", "value": false } }]
+                                }
+                            },
+                            {
+                                "description": "Double Win tap (2)",
+                                "type": "basic",
+                                "from": { "key_code": "left_command" },
+                                "to": [{"key_code": "spacebar", "modifiers": ["control", "shift"]}],
+                                "conditions": [{ "type": "variable_if", "name": "left_command_pressed", "value": true }]
+                            },
+                            {
+                                "description": "Double Win tap (1)",
+                                "type": "basic",
+                                "from": {"key_code": "left_command", "modifiers": { "optional": [ "any" ] }},
+                                "to": [
+                                    { "set_variable": { "name": "left_command_pressed", "value": true } },
+                                    { "key_code": "left_command" }
+                                ],
+                                "to_delayed_action": {
+                                    "to_if_invoked": [{ "set_variable": { "name": "left_command_pressed", "value": false } }],
+                                    "to_if_canceled": [{ "set_variable": { "name": "left_command_pressed", "value": false } }]
+                                }
                             }
                         ]
                     }
