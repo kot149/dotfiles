@@ -3,11 +3,9 @@ README.md
 Library/Preferences/com.knollsoft.Rectangle.plist
 
 # Windows
-{{- if eq .chezmoi.os "windows" }}
-private_dot_config/lazygit/**
-{{- end }}
 {{- if ne .chezmoi.os "windows" }}
 winget.json
+lazygit-diff.ps1
 
 AppData/**
 AppData/Roaming/Code/User/settings.json
@@ -27,6 +25,7 @@ AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settin
 # macOS
 {{- if ne .chezmoi.os "darwin" }}
 Library/**
+Library/Application Support/**
 Library/Application Support/Cursor/User/settings.json
 Library/Application Support/Code/User/settings.json
 .config/karabiner
@@ -40,6 +39,7 @@ Library/Application Support/Code/User/settings.json
 # Linux
 {{- if ne .chezmoi.os "linux" }}
 setup_linux.sh
+.config/lazygit/**
 .config/Code/User/settings.json
 .config/Cursor/User/settings.json
 {{- end }}
