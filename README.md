@@ -136,17 +136,17 @@ brew bundle --global
   ```sh
   defaults export com.knollsoft.Rectangle - > ~/.local/share/chezmoi/.chezmoitemplates/rectangle.plist.tmpl
   ```
-- `chezmoi apply` uses [`run_onchange_import_rectangle.sh.tmpl`](run_onchange_import_rectangle.sh.tmpl) to automatically apply Rectangle's plist. To manually apply the plist, use the following command:
+- `chezmoi apply` uses [`run_onchange_import_rectangle.sh.tmpl`](.chezmoiscripts/run_onchange_import_rectangle.sh.tmpl) to automatically apply Rectangle's plist. To manually apply the plist, use the following command:
   ```sh
-  chezmoi execute-template -f run_onchange_import_rectangle.sh.tmpl | sh
+  chezmoi execute-template -f .chezmoiscripts/run_onchange_import_rectangle.sh.tmpl | sh
   ```
 
 ## AltTab (macOS)
 
-[`run_onchange_configure_alttab_previous_window_shortcut.sh.tmpl`](run_onchange_configure_alttab_previous_window_shortcut.sh.tmpl) sets **Select previous window** to **Shift+Tab** (`previousWindowShortcut` in `com.lwouis.alt-tab-macos`). It runs on `chezmoi apply` when that script changes. To apply once by hand:
+[`run_onchange_configure_alttab.sh.tmpl`](.chezmoiscripts/run_onchange_configure_alttab.sh.tmpl) sets **Select previous window** to **Shift+Tab** (`previousWindowShortcut` in `com.lwouis.alt-tab-macos`). It runs on `chezmoi apply` when that script changes. To apply once by hand:
 
 ```sh
-chezmoi execute-template -f run_onchange_configure_alttab_previous_window_shortcut.sh.tmpl | sh
+chezmoi execute-template -f .chezmoiscripts/run_onchange_configure_alttab.sh.tmpl | sh
 ```
 
 Restart AltTab (or log out and back in) if the shortcut does not pick up immediately.
