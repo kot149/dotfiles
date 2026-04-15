@@ -350,3 +350,8 @@ if [[ -r /proc/version ]] && grep -q -i "Microsoft" /proc/version; then
   export BROWSER='/mnt/c/Windows/System32/rundll32.exe url.dll,FileProtocolHandler'
   alias open=$BROWSER
 fi
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:~/.lmstudio/bin"
+# End of LM Studio CLI section
+
