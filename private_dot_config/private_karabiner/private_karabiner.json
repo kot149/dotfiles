@@ -228,7 +228,7 @@
                                 "to": [
                                     {
                                         "key_code": "up_arrow",
-                                        "modifiers": ["control", "command"]
+                                        "modifiers": ["command"]
                                     }
                                 ],
                                 "type": "basic"
@@ -1114,7 +1114,7 @@
                                 "to": [
                                     {
                                         "key_code": "up_arrow",
-                                        "modifiers": ["control", "command"]
+                                        "modifiers": ["command"]
                                     }
                                 ],
                                 "type": "basic"
