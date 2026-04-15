@@ -1,0 +1,12 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/sh
+set -euo pipefail
+
+# checksum: {{ "alttab_previousWindowShortcut_shift_tab_v1" | sha256sum }}
+
+# https://github.com/lwouis/alt-tab-macos/blob/master/src/logic/Preferences.swift
+
+previous_window_shortcut="$(printf '%b' '\342\207\247\342\207\245')"
+/usr/bin/defaults write com.lwouis.alt-tab-macos previousWindowShortcut "$previous_window_shortcut"
+echo "Set com.lwouis.alt-tab-macos previousWindowShortcut to Shift+Tab (⇧⇥)."
+{{- end -}}
