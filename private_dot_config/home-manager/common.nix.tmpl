@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, nixClaudeCode, ... }:
 
 {
   home.username = "{{ .chezmoi.username }}";
@@ -50,6 +50,7 @@
     # others
     curl
     wget
+    nixClaudeCode
 
     # fonts
     inconsolata
