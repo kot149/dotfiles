@@ -1891,7 +1891,7 @@
                                 "description": "Double Control tap (2)",
                                 "type": "basic",
                                 "from": { "key_code": "left_control" },
-                                "to": [{"key_code": "left_control", "modifiers": []}],
+                                "to": [{"key_code": "spacebar", "modifiers": ["control", "command", "option"]}],
                                 "conditions": [{ "type": "variable_if", "name": "left_control_pressed", "value": true }]
                             },
                             {
