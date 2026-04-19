@@ -245,7 +245,6 @@ function fcd() {
         Set-Location $dir
     }
 }
-Set-Alias fd fcd
 
 # Git branch checkout with fzf
 function fbr() {
