@@ -1,11 +1,14 @@
 { pkgs, nixClaudeCode, ... }:
 
+let
+  rtk = pkgs.callPackage ./rtk.nix { };
+in
 {
   home.username = "{{ .chezmoi.username }}";
   home.homeDirectory = "{{ .chezmoi.homeDir }}";
 
   # See https://search.nixos.org/packages
-  home.packages = with pkgs; [
+  home.packages = (with pkgs; [
     # dotfiles
     chezmoi
 
@@ -58,7 +61,7 @@
     nerd-fonts.symbols-only
 
     wakeonlan
-  ];
+  ]) ++ [ rtk ];
 
   programs.home-manager.enable = true;
   home.stateVersion = "25.11";
