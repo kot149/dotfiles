@@ -166,15 +166,15 @@ fi
 
 # Aliases
 alias git-reset-all="git reset --hard && git clean -fd"
-alias ls='ls -F --color=auto -1'
+alias ls='eza -1 -F=auto --group-directories-first'
+alias tree='eza --tree -F=auto'
 
 if command -v abbr &> /dev/null; then
   ABBR_SET_EXPANSION_CURSOR=1
 
-  abbr -S ll='ls -l' >> /dev/null
-  abbr -S la='ls -a' >> /dev/null
-  abbr -S lla='ls -la' >> /dev/null
-  abbr -S l1='ls -1' >> /dev/null
+  abbr -S la='eza -a -1 -F=auto --group-directories-first' >> /dev/null
+  abbr -S ll='eza -1 -l -F=auto --group-directories-first --header --time-style=long-iso' >> /dev/null
+  abbr -S lla='eza -1 -la -F=auto --group-directories-first --header --time-style=long-iso' >> /dev/null
 
   abbr -S -g GE='| grep -E "%"' >> /dev/null
 
@@ -354,4 +354,3 @@ fi
 # Added by LM Studio CLI (lms)
 export PATH="$PATH:~/.lmstudio/bin"
 # End of LM Studio CLI section
-
