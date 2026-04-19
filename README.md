@@ -116,21 +116,6 @@ Import:
 winget import winget.json
 ```
 
-## Managing Homebrew packages
-
-Export:
-```sh
-brew bundle dump --global --force && chezmoi add ~/.Brewfile
-```
-
-Import:
-```sh
-chezmoi apply
-```
-```sh
-brew bundle --global
-```
-
 ## Managing `.plist` files
 - To re-add Rectangle.plist, use the following command:
   ```sh
