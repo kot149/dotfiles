@@ -303,6 +303,20 @@
                             },
                             {
                                 "description": "Ctrl+Left",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.google.Chrome",
+                                            "^com.microsoft.edgemac",
+                                            "^org.mozilla.firefox",
+                                            "^com.apple.Safari",
+                                            "^com.brave.Browser",
+                                            "^company.thebrowser.Browser",
+                                            "^com.vivaldi.Vivaldi"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ],
                                 "from": {
                                     "key_code": "left_arrow",
                                     "modifiers": {
@@ -320,6 +334,20 @@
                             },
                             {
                                 "description": "Ctrl+Right",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.google.Chrome",
+                                            "^com.microsoft.edgemac",
+                                            "^org.mozilla.firefox",
+                                            "^com.apple.Safari",
+                                            "^com.brave.Browser",
+                                            "^company.thebrowser.Browser",
+                                            "^com.vivaldi.Vivaldi"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ],
                                 "from": {
                                     "key_code": "right_arrow",
                                     "modifiers": {
@@ -555,6 +583,18 @@
                                             "^com.googlecode.iterm2"
                                         ],
                                         "type": "frontmost_application_unless"
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.google.Chrome",
+                                            "^com.microsoft.edgemac",
+                                            "^org.mozilla.firefox",
+                                            "^com.apple.Safari",
+                                            "^com.brave.Browser",
+                                            "^company.thebrowser.Browser",
+                                            "^com.vivaldi.Vivaldi"
+                                        ],
+                                        "type": "frontmost_application_unless"
                                     }
                                 ],
                                 "description": "Home",
@@ -575,6 +615,18 @@
                                     {
                                         "bundle_identifiers": [
                                             "^com.googlecode.iterm2"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.google.Chrome",
+                                            "^com.microsoft.edgemac",
+                                            "^org.mozilla.firefox",
+                                            "^com.apple.Safari",
+                                            "^com.brave.Browser",
+                                            "^company.thebrowser.Browser",
+                                            "^com.vivaldi.Vivaldi"
                                         ],
                                         "type": "frontmost_application_unless"
                                     }
@@ -1203,6 +1255,20 @@
                             },
                             {
                                 "description": "Ctrl+Left",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.google.Chrome",
+                                            "^com.microsoft.edgemac",
+                                            "^org.mozilla.firefox",
+                                            "^com.apple.Safari",
+                                            "^com.brave.Browser",
+                                            "^company.thebrowser.Browser",
+                                            "^com.vivaldi.Vivaldi"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ],
                                 "from": {
                                     "key_code": "left_arrow",
                                     "modifiers": {
@@ -1220,6 +1286,20 @@
                             },
                             {
                                 "description": "Ctrl+Right",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.google.Chrome",
+                                            "^com.microsoft.edgemac",
+                                            "^org.mozilla.firefox",
+                                            "^com.apple.Safari",
+                                            "^com.brave.Browser",
+                                            "^company.thebrowser.Browser",
+                                            "^com.vivaldi.Vivaldi"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ],
                                 "from": {
                                     "key_code": "right_arrow",
                                     "modifiers": {
@@ -1457,6 +1537,18 @@
                                             "^com.googlecode.iterm2"
                                         ],
                                         "type": "frontmost_application_unless"
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.google.Chrome",
+                                            "^com.microsoft.edgemac",
+                                            "^org.mozilla.firefox",
+                                            "^com.apple.Safari",
+                                            "^com.brave.Browser",
+                                            "^company.thebrowser.Browser",
+                                            "^com.vivaldi.Vivaldi"
+                                        ],
+                                        "type": "frontmost_application_unless"
                                     }
                                 ],
                                 "description": "Home",
@@ -1477,6 +1569,18 @@
                                     {
                                         "bundle_identifiers": [
                                             "^com.googlecode.iterm2"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com.google.Chrome",
+                                            "^com.microsoft.edgemac",
+                                            "^org.mozilla.firefox",
+                                            "^com.apple.Safari",
+                                            "^com.brave.Browser",
+                                            "^company.thebrowser.Browser",
+                                            "^com.vivaldi.Vivaldi"
                                         ],
                                         "type": "frontmost_application_unless"
                                     }
