@@ -302,7 +302,6 @@
                                 "type": "basic"
                             },
                             {
-                                "description": "Ctrl+Left",
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
@@ -317,6 +316,7 @@
                                         "type": "frontmost_application_unless"
                                     }
                                 ],
+                                "description": "Ctrl+Left",
                                 "from": {
                                     "key_code": "left_arrow",
                                     "modifiers": {
@@ -333,7 +333,6 @@
                                 "type": "basic"
                             },
                             {
-                                "description": "Ctrl+Right",
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
@@ -348,6 +347,7 @@
                                         "type": "frontmost_application_unless"
                                     }
                                 ],
+                                "description": "Ctrl+Right",
                                 "from": {
                                     "key_code": "right_arrow",
                                     "modifiers": {
@@ -1061,6 +1061,11 @@
                             {
                                 "conditions": [
                                     {
+                                        "name": "ctrl_tab_active",
+                                        "type": "variable_if",
+                                        "value": true
+                                    },
+                                    {
                                         "bundle_identifiers": [
                                             "^com.google.Chrome",
                                             "^com.microsoft.edgemac"
@@ -1254,7 +1259,6 @@
                                 "type": "basic"
                             },
                             {
-                                "description": "Ctrl+Left",
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
@@ -1269,6 +1273,7 @@
                                         "type": "frontmost_application_unless"
                                     }
                                 ],
+                                "description": "Ctrl+Left",
                                 "from": {
                                     "key_code": "left_arrow",
                                     "modifiers": {
@@ -1285,7 +1290,6 @@
                                 "type": "basic"
                             },
                             {
-                                "description": "Ctrl+Right",
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
@@ -1300,6 +1304,7 @@
                                         "type": "frontmost_application_unless"
                                     }
                                 ],
+                                "description": "Ctrl+Right",
                                 "from": {
                                     "key_code": "right_arrow",
                                     "modifiers": {
@@ -1888,44 +1893,128 @@
                                 "type": "basic"
                             },
                             {
+                                "conditions": [
+                                    {
+                                        "name": "left_control_pressed",
+                                        "type": "variable_if",
+                                        "value": true
+                                    }
+                                ],
                                 "description": "Double Control tap (2)",
-                                "type": "basic",
                                 "from": { "key_code": "left_control" },
-                                "to": [{"key_code": "spacebar", "modifiers": ["control", "command", "option"]}],
-                                "conditions": [{ "type": "variable_if", "name": "left_control_pressed", "value": true }]
+                                "to": [
+                                    {
+                                        "key_code": "spacebar",
+                                        "modifiers": ["control", "command", "option"]
+                                    }
+                                ],
+                                "type": "basic"
                             },
                             {
                                 "description": "Double Control tap (1)",
-                                "type": "basic",
-                                "from": {"key_code": "left_control", "modifiers": { "optional": [ "any" ] }},
+                                "from": {
+                                    "key_code": "left_control",
+                                    "modifiers": { "optional": ["any"] }
+                                },
                                 "to": [
-                                    { "set_variable": { "name": "left_control_pressed", "value": true } },
+                                    {
+                                        "set_variable": {
+                                            "name": "left_control_pressed",
+                                            "value": true
+                                        }
+                                    },
                                     { "key_code": "left_control" }
                                 ],
                                 "to_delayed_action": {
-                                    "to_if_invoked": [{ "set_variable": { "name": "left_control_pressed", "value": false } }],
-                                    "to_if_canceled": [{ "set_variable": { "name": "left_control_pressed", "value": false } }]
-                                }
+                                    "to_if_canceled": [
+                                        {
+                                            "set_variable": {
+                                                "name": "left_control_pressed",
+                                                "value": false
+                                            }
+                                        }
+                                    ],
+                                    "to_if_invoked": [
+                                        {
+                                            "set_variable": {
+                                                "name": "left_control_pressed",
+                                                "value": false
+                                            }
+                                        }
+                                    ]
+                                },
+                                "to_after_key_up": [
+                                    {
+                                        "conditions": [
+                                            {
+                                                "name": "ctrl_tab_active",
+                                                "type": "variable_if",
+                                                "value": true
+                                            }
+                                        ],
+                                        "key_code": "return_or_enter"
+                                    },
+                                    {
+                                        "set_variable": {
+                                            "name": "ctrl_tab_active",
+                                            "value": false
+                                        }
+                                    }
+                                ],
+                                "type": "basic"
                             },
                             {
+                                "conditions": [
+                                    {
+                                        "name": "left_command_pressed",
+                                        "type": "variable_if",
+                                        "value": true
+                                    }
+                                ],
                                 "description": "Double Win tap (2)",
-                                "type": "basic",
                                 "from": { "key_code": "left_command" },
-                                "to": [{"key_code": "spacebar", "modifiers": ["control", "shift"]}],
-                                "conditions": [{ "type": "variable_if", "name": "left_command_pressed", "value": true }]
+                                "to": [
+                                    {
+                                        "key_code": "spacebar",
+                                        "modifiers": ["control", "shift"]
+                                    }
+                                ],
+                                "type": "basic"
                             },
                             {
                                 "description": "Double Win tap (1)",
-                                "type": "basic",
-                                "from": {"key_code": "left_command", "modifiers": { "optional": [ "any" ] }},
+                                "from": {
+                                    "key_code": "left_command",
+                                    "modifiers": { "optional": ["any"] }
+                                },
                                 "to": [
-                                    { "set_variable": { "name": "left_command_pressed", "value": true } },
+                                    {
+                                        "set_variable": {
+                                            "name": "left_command_pressed",
+                                            "value": true
+                                        }
+                                    },
                                     { "key_code": "left_command" }
                                 ],
                                 "to_delayed_action": {
-                                    "to_if_invoked": [{ "set_variable": { "name": "left_command_pressed", "value": false } }],
-                                    "to_if_canceled": [{ "set_variable": { "name": "left_command_pressed", "value": false } }]
-                                }
+                                    "to_if_canceled": [
+                                        {
+                                            "set_variable": {
+                                                "name": "left_command_pressed",
+                                                "value": false
+                                            }
+                                        }
+                                    ],
+                                    "to_if_invoked": [
+                                        {
+                                            "set_variable": {
+                                                "name": "left_command_pressed",
+                                                "value": false
+                                            }
+                                        }
+                                    ]
+                                },
+                                "type": "basic"
                             }
                         ]
                     }
