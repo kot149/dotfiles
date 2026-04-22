@@ -16,6 +16,7 @@ in
     git
     gh
     lazygit
+    pre-commit
     act
     pinact
     actionlint
@@ -50,17 +51,22 @@ in
     cargo-binstall
     cargo-make
 
-    # others
+    # db
+    mysql84
+    sqlfluff
+
+    # ai
+    nixClaudeCode
+
+    # misc
     curl
     wget
-    nixClaudeCode
+    wakeonlan
 
     # fonts
     inconsolata
     nerd-fonts.inconsolata
     nerd-fonts.symbols-only
-
-    wakeonlan
   ]) ++ [ rtk ];
 
   programs.home-manager.enable = true;
