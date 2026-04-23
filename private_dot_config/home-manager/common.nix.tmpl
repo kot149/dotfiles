@@ -1,4 +1,4 @@
-{ pkgs, nixClaudeCode, ... }:
+{ pkgs, nixClaudeCode, nixCodexCli, ... }:
 
 let
   rtk = pkgs.callPackage ./rtk.nix { };
@@ -57,6 +57,7 @@ in
 
     # ai
     nixClaudeCode
+    nixCodexCli
 
     # misc
     curl
