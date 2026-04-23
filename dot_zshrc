@@ -110,6 +110,8 @@ HYPHEN_INSENSITIVE="true"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(git aws aliases colorize copyfile copypath docker docker-compose python pip virtualenv node)
 
+fpath=(~/.zsh/completion $fpath)
+
 source $ZSH/oh-my-zsh.sh
 
 eval "$(sheldon source)"
