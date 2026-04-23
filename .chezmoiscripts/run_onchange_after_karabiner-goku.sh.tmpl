@@ -9,6 +9,7 @@ echo Updating Karabiner confing...
 edn_file="$HOME/.config/karabiner.edn"
 karabiner_dir="$HOME/.config/karabiner"
 karabiner_json="$karabiner_dir/karabiner.json"
+karabiner_cli="/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli"
 
 if [ ! -f "$edn_file" ]; then
   echo "$edn_file does not exist; skipping Karabiner JSON generation."
@@ -40,30 +41,6 @@ if [ ! -f "$karabiner_json" ]; then
           "manipulate_caps_lock_led": false
         }
       ],
-      "name": "JIS",
-      "virtual_hid_keyboard": {
-        "keyboard_type_v2": "jis"
-      }
-    },
-    {
-      "complex_modifications": {
-        "parameters": {
-          "basic.to_delayed_action_delay_milliseconds": 300
-        },
-        "rules": []
-      },
-      "devices": [
-        {
-          "identifiers": {
-            "is_keyboard": true,
-            "is_pointing_device": true,
-            "product_id": 24926,
-            "vendor_id": 7504
-          },
-          "ignore": false,
-          "manipulate_caps_lock_led": false
-        }
-      ],
       "name": "US",
       "selected": true,
       "virtual_hid_keyboard": {
@@ -76,4 +53,8 @@ JSON
 fi
 
 GOKU_EDN_CONFIG_FILE="$edn_file" nix run nixpkgs#goku --
+
+if [ -x "$karabiner_cli" ]; then
+  "$karabiner_cli" --select-profile US
+fi
 {{- end -}}

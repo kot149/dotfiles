@@ -1,8 +1,190 @@
-{:profiles {:JIS {:delay 300}
-            :US {:default true
+{:profiles {:US {:default true
                  :delay 300}}
  :main [{:des "Remap hotkeys"
-         :rules [[:profiles :JIS :US]
+         :rules [[:profiles :US]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+2 -> \""
+                   :from {:key_code "2"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "quote"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+6 -> &"
+                   :from {:key_code "6"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "7"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+7 -> '"
+                   :from {:key_code "7"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "quote"}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+8 -> ("
+                   :from {:key_code "8"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "9"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+9 -> )"
+                   :from {:key_code "9"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "0"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+0 -> none"
+                   :from {:key_code "0"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "vk_none"}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+- -> ="
+                   :from {:key_code "hyphen"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "equal_sign"}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] ^ key -> ^"
+                   :from {:key_code "equal_sign"
+                          :modifiers {:optional ["caps_lock"]}}
+                   :to [{:key_code "6"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+^ -> ~"
+                   :from {:key_code "equal_sign"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "grave_accent_and_tilde"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Yen key -> \\"
+                   :from {:key_code "international3"
+                          :modifiers {:optional ["caps_lock"]}}
+                   :to [{:key_code "backslash"}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+Yen -> |"
+                   :from {:key_code "international3"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "backslash"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] @ key -> @"
+                   :from {:key_code "open_bracket"
+                          :modifiers {:optional ["caps_lock"]}}
+                   :to [{:key_code "2"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+@ -> `"
+                   :from {:key_code "open_bracket"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "grave_accent_and_tilde"}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] [ key -> ["
+                   :from {:key_code "close_bracket"
+                          :modifiers {:optional ["caps_lock"]}}
+                   :to [{:key_code "open_bracket"}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+[ -> {"
+                   :from {:key_code "close_bracket"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "open_bracket"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+; -> +"
+                   :from {:key_code "semicolon"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "equal_sign"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] : key -> :"
+                   :from {:key_code "quote"
+                          :modifiers {:optional ["caps_lock"]}}
+                   :to [{:key_code "semicolon"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+: -> *"
+                   :from {:key_code "quote"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "8"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] ] key -> ]"
+                   :from {:key_code "backslash"
+                          :modifiers {:optional ["caps_lock"]}}
+                   :to [{:key_code "close_bracket"}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+] -> }"
+                   :from {:key_code "backslash"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "close_bracket"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Ro key -> \\"
+                   :from {:key_code "international1"
+                          :modifiers {:optional ["caps_lock"]}}
+                   :to [{:key_code "backslash"}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in JIS Keyboard] Shift+Ro -> _"
+                   :from {:key_code "international1"
+                          :modifiers {:mandatory ["shift"]
+                                      :optional ["caps_lock"]}}
+                   :to [{:key_code "hyphen"
+                         :modifiers ["shift"]}]
+                   :type "basic"}]
                  [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
                                  :type "device_if"}
                                 {:name "built_in_eisuu_pressed"
