@@ -1,0 +1,79 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/sh
+set -euo pipefail
+
+# karabiner.edn hash: {{ include "private_dot_config/karabiner.edn" | sha256sum }}
+
+echo Updating Karabiner confing...
+
+edn_file="$HOME/.config/karabiner.edn"
+karabiner_dir="$HOME/.config/karabiner"
+karabiner_json="$karabiner_dir/karabiner.json"
+
+if [ ! -f "$edn_file" ]; then
+  echo "$edn_file does not exist; skipping Karabiner JSON generation."
+  exit 0
+fi
+
+mkdir -p "$karabiner_dir"
+
+if [ ! -f "$karabiner_json" ]; then
+  cat >"$karabiner_json" <<'JSON'
+{
+  "profiles": [
+    {
+      "complex_modifications": {
+        "parameters": {
+          "basic.to_delayed_action_delay_milliseconds": 300
+        },
+        "rules": []
+      },
+      "devices": [
+        {
+          "identifiers": {
+            "is_keyboard": true,
+            "is_pointing_device": true,
+            "product_id": 24926,
+            "vendor_id": 7504
+          },
+          "ignore": false,
+          "manipulate_caps_lock_led": false
+        }
+      ],
+      "name": "JIS",
+      "virtual_hid_keyboard": {
+        "keyboard_type_v2": "jis"
+      }
+    },
+    {
+      "complex_modifications": {
+        "parameters": {
+          "basic.to_delayed_action_delay_milliseconds": 300
+        },
+        "rules": []
+      },
+      "devices": [
+        {
+          "identifiers": {
+            "is_keyboard": true,
+            "is_pointing_device": true,
+            "product_id": 24926,
+            "vendor_id": 7504
+          },
+          "ignore": false,
+          "manipulate_caps_lock_led": false
+        }
+      ],
+      "name": "US",
+      "selected": true,
+      "virtual_hid_keyboard": {
+        "keyboard_type_v2": "ansi"
+      }
+    }
+  ]
+}
+JSON
+fi
+
+GOKU_EDN_CONFIG_FILE="$edn_file" nix run nixpkgs#goku --
+{{- end -}}
