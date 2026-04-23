@@ -11,6 +11,10 @@
       url = "github:ryoppippi/nix-claude-code";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    codex-cli-nix = {
+      url = "github:sadjow/codex-cli-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     {{- if eq .chezmoi.os "linux" }}
     nixgl = {
       url = "github:guibou/nixGL";
@@ -19,7 +23,7 @@
     {{- end }}
   };
 
-  outputs = { nixpkgs, home-manager, nix-claude-code{{ if eq .chezmoi.os "linux" }}, nixgl{{ end }}, ... }:
+  outputs = { nixpkgs, home-manager, nix-claude-code, codex-cli-nix{{ if eq .chezmoi.os "linux" }}, nixgl{{ end }}, ... }:
     let
       {{ $nixArch := .chezmoi.arch -}}
       {{- if eq .chezmoi.arch "amd64" }}{{ $nixArch = "x86_64" }}{{ end -}}
@@ -51,6 +55,7 @@
         extraSpecialArgs = {
           inherit username;
           nixClaudeCode = nix-claude-code.packages.${system}.default;
+          nixCodexCli = codex-cli-nix.packages.${system}.default;
           {{- if eq .chezmoi.os "linux" }}
           nixglPackages = nixgl.packages.${system};
           {{- end }}
