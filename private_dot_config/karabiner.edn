@@ -3,6 +3,59 @@
                  :delay 300}}
  :main [{:des "Remap hotkeys"
          :rules [[:profiles :JIS :US]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}
+                                {:name "built_in_eisuu_pressed"
+                                 :type "variable_if"
+                                 :value true}]
+                   :description "[Built-in Keyboard] Double 英数 -> 変換"
+                   :from {:key_code "japanese_eisuu"
+                          :modifiers {:optional ["any"]}}
+                   :to [{:key_code "japanese_kana"}
+                        {:set_variable {:name "built_in_eisuu_pressed"
+                                        :value false}}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in Keyboard] 英数 -> 無変換"
+                   :from {:key_code "japanese_eisuu"
+                          :modifiers {:optional ["any"]}}
+                   :to [{:set_variable {:name "built_in_eisuu_pressed"
+                                        :value true}}
+                        {:key_code "japanese_eisuu"}]
+                   :to_delayed_action {:to_if_canceled [{:set_variable {:name "built_in_eisuu_pressed"
+                                                                        :value false}}]
+                                       :to_if_invoked [{:set_variable {:name "built_in_eisuu_pressed"
+                                                                       :value false}}]}
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in Keyboard] かな -> Backspace"
+                   :from {:key_code "japanese_kana"
+                          :modifiers {:optional ["any"]}}
+                   :to [{:key_code "delete_or_backspace"}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in Keyboard] Right Command -> Enter"
+                   :from {:key_code "right_command"
+                          :modifiers {:optional ["any"]}}
+                   :to [{:key_code "return_or_enter"}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in Keyboard] Left Option -> Left Command"
+                   :from {:key_code "left_option"
+                          :modifiers {:optional ["any"]}}
+                   :to [{:key_code "left_command"}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in Keyboard] Left Command -> Left Option"
+                   :from {:key_code "left_command"
+                          :modifiers {:optional ["any"]}}
+                   :to [{:key_code "left_option"}]
+                   :type "basic"}]
                  [{:description "Ctrl+Y"
                    :from {:key_code "y"
                           :modifiers {:mandatory ["control"]}}
