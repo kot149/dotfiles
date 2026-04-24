@@ -202,8 +202,6 @@ if command -v abbr &> /dev/null; then
   abbr -S 'git ps'='git push' >> /dev/null
   abbr -S 'git ph'='git push' >> /dev/null
   abbr -S 'git psh'='git push' >> /dev/null
-  abbr -S 'git publish'='git push --set-upstream origin "$(git rev-parse --abbrev-ref HEAD)"' >> /dev/null
-  abbr -S 'git publish '='git push --set-upstream origin "$(git rev-parse --abbrev-ref HEAD)"' >> /dev/null
   abbr -S 'git pb'='git publish' >> /dev/null
   abbr -S 'git pub'='git publish' >> /dev/null
 
