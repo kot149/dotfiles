@@ -277,6 +277,9 @@ if command -v fzf &> /dev/null; then
     fi
   }
 
+  bindkey -s '^F' 'fcd\n'
+  bindkey -s '^G' 'fz\n'
+
   # git checkout
   fbr() {
     local branches branch
