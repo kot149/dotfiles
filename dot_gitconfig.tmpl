@@ -28,6 +28,9 @@
 [interactive]
 	diffFilter = delta --color-only
 
+[alias]
+	tree = log --graph --pretty=format:'%x09%C(auto)%h %Cgreen%<(15)%ar%Creset by %C(cyan ul)@%an%Creset %C(auto)%s%d'
+
 [delta]
 	navigate = true
 	light = false
