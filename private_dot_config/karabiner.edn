@@ -212,17 +212,17 @@
                    :type "basic"}]
                  [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
                                  :type "device_if"}]
-                   :description "[Built-in Keyboard] かな -> Backspace"
+                   :description "[Built-in Keyboard] かな -> Enter"
                    :from {:key_code "japanese_kana"
                           :modifiers {:optional ["any"]}}
-                   :to [{:key_code "delete_or_backspace"}]
+                   :to [{:key_code "return_or_enter"}]
                    :type "basic"}]
                  [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
                                  :type "device_if"}]
-                   :description "[Built-in Keyboard] Right Command -> Enter"
+                   :description "[Built-in Keyboard] Right Command -> Backspace"
                    :from {:key_code "right_command"
                           :modifiers {:optional ["any"]}}
-                   :to [{:key_code "return_or_enter"}]
+                   :to [{:key_code "delete_or_backspace"}]
                    :type "basic"}]
                  [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
                                  :type "device_if"}]
