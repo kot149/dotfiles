@@ -16,9 +16,9 @@ These dotfiles are maneged by [chezmoi](https://www.chezmoi.io) and [Nix Home Ma
   ```sh
   apt update && apt install curl xz-utils -y
   ```
-- Nix
+- Nix via [nix-installer](https://github.com/NixOS/nix-installer):
   ```sh
-  sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon --yes
+  curl -sSfL https://artifacts.nixos.org/nix-installer | sh -s -- install --enable-flakes
   ```
   ```sh
   . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
