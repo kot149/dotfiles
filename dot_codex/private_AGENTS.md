@@ -2,3 +2,5 @@
 - Use GitHub CLI (`gh` command) to interact with GitHub.
 - Prioritize readability and maintainability in your code suggestions.
 - Finalize process: Remove ALL meta-comments about your changes, such as "// Added..." or "// Removed...", "// XXX has been moved to..." from the generated code before applying the changes
+
+@/Users/kota-takeuchi/.codex/RTK.md
