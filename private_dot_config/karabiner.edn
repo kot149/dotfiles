@@ -448,26 +448,20 @@
                    :to [{:key_code "e"
                          :modifiers ["control"]}]
                    :type "basic"}]
-                  [{:conditions [{:bundle_identifiers [
-                     "^com.googlecode.iterm2"
-                     "^com.google.Chrome" "^com.microsoft.edgemac"
-                     "^com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
-                                  :type "frontmost_application_unless"}]
-                    :description "Home"
-                    :from {:key_code "home"
-                           :modifiers {:optional "any"}}
-                    :to [{:key_code "left_arrow"
-                          :modifiers ["control"]}]
-                    :type "basic"}]
-                  [{:conditions [{:bundle_identifiers [
-                     "^com.googlecode.iterm2"
-                     "^com.google.Chrome" "^com.microsoft.edgemac"
-                     "^com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
-                                  :type "frontmost_application_unless"}]
-                    :description "End"
-                    :from {:key_code "end"
-                           :modifiers {:optional "any"}}
-                    :to [{:key_code "right_arrow"
+                 [{:conditions [{:bundle_identifiers ["^com.googlecode.iterm2"]
+                                 :type "frontmost_application_unless"}]
+                   :description "Home"
+                   :from {:key_code "home"
+                          :modifiers {:optional "any"}}
+                   :to [{:key_code "left_arrow"
+                         :modifiers ["control"]}]
+                   :type "basic"}]
+                 [{:conditions [{:bundle_identifiers ["^com.googlecode.iterm2"]
+                                 :type "frontmost_application_unless"}]
+                   :description "End"
+                   :from {:key_code "end"
+                          :modifiers {:optional "any"}}
+                   :to [{:key_code "right_arrow"
                          :modifiers ["control"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.apple.finder"]
