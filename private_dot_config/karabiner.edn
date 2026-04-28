@@ -424,6 +424,20 @@
                    :to [{:key_code "left_arrow"
                          :modifiers ["control" "option"]}]
                    :type "basic"}]
+                 [{:conditions [{:bundle_identifiers ["^com.google.Chrome"]
+                                 :type "frontmost_application_if"}]
+                   :description "[Chrome] Ctrl+H -> History"
+                   :from {:key_code "h"
+                          :modifiers {:mandatory ["control"]}}
+                   :to [{:shell_command "open -a 'Google Chrome' 'chrome://history'"}]
+                   :type "basic"}]
+                 [{:conditions [{:bundle_identifiers ["^com.microsoft.edgemac"]
+                                 :type "frontmost_application_if"}]
+                   :description "[Edge] Ctrl+H -> History"
+                   :from {:key_code "h"
+                          :modifiers {:mandatory ["control"]}}
+                   :to [{:shell_command "open -a 'Microsoft Edge' 'edge://history'"}]
+                   :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
                                  :type "frontmost_application_if"}]
                    :description "[VSCode/Cursor] Ctrl+H -> Option+Ctrl+F"
