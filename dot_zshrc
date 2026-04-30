@@ -229,6 +229,8 @@ if command -v abbr &> /dev/null; then
   abbr -S pmpm='pnpm' >> /dev/null
 
   abbr -S ag='antigravity' >> /dev/null
+
+  abbr -S spf='superfile' >> /dev/null
 else
   echo "Warning: zsh-abbr not found"
 fi
