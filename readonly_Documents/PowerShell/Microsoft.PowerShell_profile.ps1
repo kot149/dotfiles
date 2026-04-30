@@ -175,8 +175,28 @@ function mtouch {
 }
 
 Set-Alias touch mtouch
-Set-Alias ls Get-ChildItem
-Set-Alias ll Get-ChildItem -Force
+Remove-Item Alias:ls -Force -ErrorAction Ignore
+Remove-Item Alias:ll -Force -ErrorAction Ignore
+
+function ls {
+    param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Args)
+    eza -1 -F=auto --group-directories-first @Args
+}
+
+function ll {
+    param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Args)
+    eza -1 -l -F=auto --group-directories-first --header --time-style=long-iso @Args
+}
+
+function la {
+    param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Args)
+    eza -a -1 -F=auto --group-directories-first @Args
+}
+
+function lla {
+    param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Args)
+    eza -1 -la -F=auto --group-directories-first --header --time-style=long-iso @Args
+}
 Set-Alias cat Get-Content
 # New-Alias -Name grep -Value Select-String
 
