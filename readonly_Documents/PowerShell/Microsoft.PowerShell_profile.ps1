@@ -231,6 +231,72 @@ Invoke-Expression (& {
     (zoxide init --hook $hook powershell | Out-String)
 })
 
+function Invoke-FzfHistory {
+    $historyPath = (Get-PSReadLineOption).HistorySavePath
+    if (-not (Test-Path $historyPath)) {
+        return
+    }
+
+    $lines = [System.IO.File]::ReadAllLines($historyPath)
+    if (-not $lines -or $lines.Count -eq 0) {
+        return
+    }
+
+    [array]::Reverse($lines)
+    $selected = $lines | fzf --no-sort --expect=tab
+    if (-not $selected) {
+        return
+    }
+
+    $parts = $selected -split "`n", 2
+    $key = $parts[0]
+    $cmd = $null
+    if ($parts.Length -gt 1) {
+        $cmd = $parts[1]
+    }
+
+    if ([string]::IsNullOrWhiteSpace($cmd)) {
+        return
+    }
+
+    if ($key -eq 'tab') {
+        if (Get-Command Set-Clipboard -ErrorAction SilentlyContinue) {
+            Set-Clipboard -Value $cmd
+        }
+        return
+    }
+
+    [Microsoft.PowerShell.PSConsoleReadLine]::Insert($cmd)
+}
+
+Set-PSReadLineKeyHandler -Chord Alt+h -ScriptBlock {
+    Invoke-FzfHistory
+}
+
+Set-PSReadLineKeyHandler -Chord Alt+d -ScriptBlock {
+    if (Get-Command fcd -ErrorAction SilentlyContinue) {
+        fcd
+    }
+}
+
+Set-PSReadLineKeyHandler -Chord Alt+e -ScriptBlock {
+    if (Get-Command superfile -ErrorAction SilentlyContinue) {
+        & superfile
+    }
+}
+
+Set-PSReadLineKeyHandler -Chord Alt+f -ScriptBlock {
+    if (Get-Command fz -ErrorAction SilentlyContinue) {
+        fz
+    }
+}
+
+Set-PSReadLineKeyHandler -Chord Alt+g -ScriptBlock {
+    if (Get-Command lazygit -ErrorAction SilentlyContinue) {
+        & lazygit
+    }
+}
+
 # fzf enhanced cd function
 function fcd() {
     param([string]$Path = ".")
