@@ -269,7 +269,7 @@ fi
 if command -v fzf &> /dev/null; then
   source <(fzf --zsh)
 
-  export FZF_DEFAULT_OPTS='--style full'
+  export FZF_DEFAULT_OPTS='--style full --cycle'
 
   # cd
   fcd() {
