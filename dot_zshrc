@@ -269,7 +269,7 @@ fi
 if command -v fzf &> /dev/null; then
   source <(fzf --zsh)
 
-  alias fzf='fzf --style full --bind 'focus:transform-header:file --brief {}''
+  alias fzf='fzf --style full'
 
   # cd
   fcd() {
