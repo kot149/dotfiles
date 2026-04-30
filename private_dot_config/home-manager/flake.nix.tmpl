@@ -29,6 +29,7 @@
       {{- if eq .chezmoi.arch "amd64" }}{{ $nixArch = "x86_64" }}{{ end -}}
       {{- if eq .chezmoi.arch "arm64" }}{{ $nixArch = "aarch64" }}{{ end -}}
       {{- $system := printf "%s-%s" $nixArch .chezmoi.os -}}
+      {{- $wsl := and (eq .chezmoi.os "linux") (contains "microsoft" (lower .chezmoi.kernel.osrelease)) }}
       system = "{{ $system }}";
       username = "{{ .chezmoi.username }}";
     in {
@@ -39,6 +40,9 @@
           {{ if eq .chezmoi.os "linux" -}}
           ./linux-common.nix
           {{- $wsl := and (eq .chezmoi.os "linux") (contains "microsoft" (lower .chezmoi.kernel.osrelease)) }}
+          {{- if $wsl }}
+          ./wsl.nix
+          {{- end }}
           {{- if and (hasKey . "linuxGui") .linuxGui }}
           ./linux-desktop.nix
           {{- else if and (hasKey . "linuxGui") (not .linuxGui) }}
@@ -59,7 +63,11 @@
           {{- if eq .chezmoi.os "linux" }}
           nixglPackages = nixgl.packages.${system};
           {{- end }}
+          {{- if $wsl }}
+          isWsl = true;
+          {{- end }}
         };
+
       };
     };
 }
