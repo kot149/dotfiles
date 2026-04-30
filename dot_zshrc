@@ -9,6 +9,7 @@ fi
 # nix
 if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 alias home-manager-update='nix flake update --flake "$HOME/.config/home-manager" && home-manager switch --flake "$HOME/.config/home-manager#default"'
+alias nix-cleanup='nix-store --optimize && home-manager expire-generations "-30 days"'
 
 #################################  HISTORY  #################################
 # history
