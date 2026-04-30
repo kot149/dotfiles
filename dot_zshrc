@@ -353,6 +353,26 @@ if command -v fzf &> /dev/null; then
 
     cd ${selectedWorkTreeDir}
   }
+
+  fzf_history_widget() {
+    local selected key cmd
+    selected=$(fc -rl 1 | sed 's/^[[:space:]]*[0-9]*[[:space:]]*//' | fzf --no-sort --expect=tab)
+    key=${selected%%$'\n'*}
+    cmd=${selected#*$'\n'}
+    if [ -z "$cmd" ]; then
+      return 1
+    fi
+    if [ "$key" = "tab" ]; then
+      if command -v pbcopy &> /dev/null; then
+        print -n -- "$cmd" | pbcopy
+      fi
+      return 0
+    fi
+    LBUFFER+="$cmd"
+    zle redisplay
+  }
+  zle -N fzf_history_widget
+  bindkey '^[h' fzf_history_widget
 fi
 
 # WSL
