@@ -152,7 +152,29 @@ Set-PSReadLineKeyHandler -Key Tab -ScriptBlock {
 ###################################
 # Aleases
 ###################################
-Set-Alias touch New-Item
+function mkcd {
+    param([Parameter(Mandatory)][string]$Path)
+
+    New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    Set-Location $Path
+}
+
+function mtouch {
+    param([Parameter(Mandatory)][string]$Path)
+
+    $dir = Split-Path -Parent $Path
+    if ($dir -and -not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+
+    if (-not (Test-Path $Path)) {
+        New-Item -ItemType File -Path $Path -Force | Out-Null
+    } else {
+        (Get-Item $Path).LastWriteTime = Get-Date
+    }
+}
+
+Set-Alias touch mtouch
 Set-Alias ls Get-ChildItem
 Set-Alias ll Get-ChildItem -Force
 Set-Alias cat Get-Content
