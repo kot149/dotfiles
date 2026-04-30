@@ -279,8 +279,10 @@ if command -v fzf &> /dev/null; then
     fi
   }
 
-  bindkey -s '^F' 'fcd\n'
-  bindkey -s '^G' 'fz\n'
+  bindkey -s '^[d' 'fcd\n'
+  bindkey -s '^[e' 'superfile\n'
+  bindkey -s '^[f' 'fz\n'
+  bindkey -s '^[g' 'lazygit\n'
 
   # git checkout
   fbr() {
