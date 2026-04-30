@@ -78,4 +78,19 @@ in
 
   programs.home-manager.enable = true;
   home.stateVersion = "25.11";
+
+  xdg.configFile."nix/nix.conf".force = true;
+
+  nix.package = pkgs.nix;
+
+  nix.settings = {
+    auto-optimise-store = true;
+    experimental-features = [ "nix-command" "flakes" ];
+  };
+
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
+  };
 }
