@@ -1,0 +1,13 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+
+NIX_CONF="/etc/nix/nix.conf"
+
+echo "Configuring /etc/nix/nix.conf..."
+
+if grep -q "^auto-optimise-store" "$NIX_CONF" 2>/dev/null; then
+  sudo sed -i 's/^auto-optimise-store.*/auto-optimise-store = true/' "$NIX_CONF"
+else
+  echo "auto-optimise-store = true" | sudo tee -a "$NIX_CONF" > /dev/null
+fi
+{{- end -}}
