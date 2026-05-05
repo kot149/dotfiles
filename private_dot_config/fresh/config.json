@@ -1,0 +1,13 @@
+{
+  "version": 0,
+  "file_explorer": {
+    "width": 0.28,
+    "preview_tabs": true,
+    "respect_gitignore": true,
+    "show_hidden": true,
+    "show_gitignored": true
+  },
+  "terminal": {
+    "jump_to_end_on_output": true
+  }
+}

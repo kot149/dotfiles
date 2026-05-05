@@ -3,8 +3,11 @@
 gui:
   language: "en"
 os:
-  edit: "cursor {{ "{{" }}filename{{ "}}" }}"
-  openDirInEditor: "cursor {{ "{{" }}dirname{{ "}}" }}"
+  editInTerminal: true
+  edit: "fresh {{ "{{" }}filename{{ "}}" }}"
+  editAtLine: "fresh {{ "{{" }}filename{{ "}}" }}:{{ "{{" }}line{{ "}}" }}"
+  editAtLineAndWait: "fresh {{ "{{" }}filename{{ "}}" }}:{{ "{{" }}line{{ "}}" }}"
+  openDirInEditor: "fresh {{ "{{" }}dir{{ "}}" }}"
 
 git:
   pagers:
