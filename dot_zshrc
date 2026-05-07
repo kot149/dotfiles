@@ -393,6 +393,14 @@ fi
 export PATH="$PATH:$HOME/.lmstudio/bin"
 # End of LM Studio CLI section
 
+# docker
+
 ### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
 export PATH="$HOME/.rd/bin:$PATH"
 ### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
+
+alias docker-stop-all='docker stop $(docker ps -q)'
+alias docker-rm-all='docker rm $(docker ps -a -q)'
+alias docker-prune-all='docker system prune -a --volumes'
+alias docker-compose-down-all='docker-compose down --volumes --remove-orphans'
+alias docker-volume-prune-all='docker volume prune'
