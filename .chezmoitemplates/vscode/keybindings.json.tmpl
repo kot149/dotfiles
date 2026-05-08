@@ -1,129 +1,145 @@
 {
-    "managed": [
-        {
-            "key": "cmd+c",
-            "commands": [
-                "workbench.action.terminal.copySelection",
-                "workbench.action.terminal.sendSequence"
-            ],
-            "when_contains": [
-                "terminalFocus"
-            ]
-        },
-        {
-            "key": "ctrl+c",
-            "commands": [
-                "workbench.action.terminal.copySelection",
-                "workbench.action.terminal.sendSequence"
-            ],
-            "when_contains": [
-                "terminalFocus"
-            ]
-        },
-        {
-            "key": "cmd+z",
-            "commands": [
-                "workbench.action.terminal.sendSequence"
-            ],
-            "when_contains": [
-                "terminalFocus"
-            ]
-        },
-        {
-            "key": "cmd+y",
-            "commands": [
-                "workbench.action.terminal.sendSequence",
-                "redo"
-            ],
-            "when_contains": [
-                "terminalFocus"
-            ]
-        },
-        {
-            "key": "cmd+y",
-            "command": "redo",
-            "when_not_contains": [
-                "terminalFocus"
-            ]
-        },
-        {
-            "key": "ctrl+y",
-            "commands": [
-                "workbench.action.terminal.sendSequence",
-                "redo"
-            ],
-            "when_contains": [
-                "terminalFocus"
-            ]
-        },
-        {
-            "key": "ctrl+y",
-            "command": "redo",
-            "when_not_contains": [
-                "terminalFocus"
-            ]
-        }
-    ],
-    "desired": [
-        {
-            "key": "cmd+c",
-            "command": "workbench.action.terminal.copySelection",
-            "when": "terminalFocus && terminalTextSelected && !accessibilityModeEnabled"
-        },
-        {
-            "key": "cmd+c",
-            "command": "workbench.action.terminal.sendSequence",
-            "args": {
-                "text": "\u0003"
+    "managed": {
+        "common": [
+            {
+                "key": "alt+t",
+                "command": "workbench.action.terminal.toggleTerminal"
+            }
+        ],
+        "darwin": [
+            {
+                "key": "cmd+c",
+                "commands": [
+                    "workbench.action.terminal.copySelection",
+                    "workbench.action.terminal.sendSequence"
+                ],
+                "when_contains": [
+                    "terminalFocus"
+                ]
             },
-            "when": "terminalFocus && !terminalTextSelected"
-        },
-        {
-            "key": "ctrl+c",
-            "command": "workbench.action.terminal.copySelection",
-            "when": "terminalFocus && terminalTextSelected && !accessibilityModeEnabled"
-        },
-        {
-            "key": "ctrl+c",
-            "command": "workbench.action.terminal.sendSequence",
-            "args": {
-                "text": "\u0003"
+            {
+                "key": "ctrl+c",
+                "commands": [
+                    "workbench.action.terminal.copySelection",
+                    "workbench.action.terminal.sendSequence"
+                ],
+                "when_contains": [
+                    "terminalFocus"
+                ]
             },
-            "when": "terminalFocus && !terminalTextSelected"
-        },
-        {
-            "key": "cmd+z",
-            "command": "workbench.action.terminal.sendSequence",
-            "args": {
-                "text": "\u001a"
+            {
+                "key": "cmd+z",
+                "commands": [
+                    "workbench.action.terminal.sendSequence"
+                ],
+                "when_contains": [
+                    "terminalFocus"
+                ]
             },
-            "when": "terminalFocus"
-        },
-        {
-            "key": "cmd+y",
-            "command": "workbench.action.terminal.sendSequence",
-            "args": {
-                "text": "\u0019"
+            {
+                "key": "cmd+y",
+                "commands": [
+                    "workbench.action.terminal.sendSequence",
+                    "redo"
+                ],
+                "when_contains": [
+                    "terminalFocus"
+                ]
             },
-            "when": "terminalFocus"
-        },
-        {
-            "key": "cmd+y",
-            "command": "redo",
-            "when": "!terminalFocus"
-        },
-        {
-            "key": "ctrl+y",
-            "command": "workbench.action.terminal.sendSequence",
-            "args": {
-                "text": "\u0019"
+            {
+                "key": "cmd+y",
+                "command": "redo",
+                "when_not_contains": [
+                    "terminalFocus"
+                ]
             },
-            "when": "terminalFocus"
-        },
-        {
-            "key": "ctrl+y",
-            "command": "redo",
-            "when": "!terminalFocus"
-        }
-    ]
+            {
+                "key": "ctrl+y",
+                "commands": [
+                    "workbench.action.terminal.sendSequence",
+                    "redo"
+                ],
+                "when_contains": [
+                    "terminalFocus"
+                ]
+            },
+            {
+                "key": "ctrl+y",
+                "command": "redo",
+                "when_not_contains": [
+                    "terminalFocus"
+                ]
+            }
+        ]
+    },
+    "desired": {
+        "common": [
+            {
+                "key": "alt+t",
+                "command": "workbench.action.terminal.toggleTerminal"
+            }
+        ],
+        "darwin": [
+            {
+                "key": "cmd+c",
+                "command": "workbench.action.terminal.copySelection",
+                "when": "terminalFocus && terminalTextSelected && !accessibilityModeEnabled"
+            },
+            {
+                "key": "cmd+c",
+                "command": "workbench.action.terminal.sendSequence",
+                "args": {
+                    "text": "\u0003"
+                },
+                "when": "terminalFocus && !terminalTextSelected"
+            },
+            {
+                "key": "ctrl+c",
+                "command": "workbench.action.terminal.copySelection",
+                "when": "terminalFocus && terminalTextSelected && !accessibilityModeEnabled"
+            },
+            {
+                "key": "ctrl+c",
+                "command": "workbench.action.terminal.sendSequence",
+                "args": {
+                    "text": "\u0003"
+                },
+                "when": "terminalFocus && !terminalTextSelected"
+            },
+            {
+                "key": "cmd+z",
+                "command": "workbench.action.terminal.sendSequence",
+                "args": {
+                    "text": "\u001a"
+                },
+                "when": "terminalFocus"
+            },
+            {
+                "key": "cmd+y",
+                "command": "workbench.action.terminal.sendSequence",
+                "args": {
+                    "text": "\u0019"
+                },
+                "when": "terminalFocus"
+            },
+            {
+                "key": "cmd+y",
+                "command": "redo",
+                "when": "!terminalFocus"
+            },
+            {
+                "key": "ctrl+y",
+                "command": "workbench.action.terminal.sendSequence",
+                "args": {
+                    "text": "\u0019"
+                },
+                "when": "terminalFocus"
+            },
+            {
+                "key": "ctrl+y",
+                "command": "redo",
+                "when": "!terminalFocus"
+            }
+        ]
+    }
 }
