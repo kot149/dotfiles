@@ -446,6 +446,14 @@
                    :to [{:key_code "f"
                          :modifiers ["option" "control"]}]
                    :type "basic"}]
+                 [{:conditions [{:bundle_identifiers ["^com.mitchellh.ghostty"]
+                                 :type "frontmost_application_if"}]
+                   :description "[Ghostty] Ctrl+C -> Cmd+C"
+                   :from {:key_code "c"
+                          :modifiers {:mandatory ["control"]}}
+                   :to [{:key_code "c"
+                         :modifiers ["command"]}]
+                   :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.apple.Terminal"]
                                  :type "frontmost_application_if"}]
                    :description "[Terminal] Home"
