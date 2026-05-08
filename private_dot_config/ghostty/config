@@ -33,4 +33,8 @@ macos-option-as-alt = true
 keybind = f1=toggle_command_palette
 keybind = option+e=text:\x1be
 keybind = option+g=text:\x1bg
+keybind = ctrl+z=text:\x1a
+keybind = cmd+z=text:\x1a
+keybind = ctrl+y=text:\x19
+keybind = cmd+y=text:\x19
 keybind = performable:ctrl+c=copy_to_clipboard
