@@ -389,6 +389,11 @@ if [[ -r /proc/version ]] && grep -q -i "Microsoft" /proc/version; then
   alias open=$BROWSER
 fi
 
+# ZLE key bindings
+bindkey '^Z' undo
+bindkey '^Y' redo
+bindkey '^[z' suspend
+
 # Added by LM Studio CLI (lms)
 export PATH="$PATH:$HOME/.lmstudio/bin"
 # End of LM Studio CLI section
