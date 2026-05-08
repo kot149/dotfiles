@@ -1,0 +1,109 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/sh
+set -euo pipefail
+
+# checksum: {{ include ".chezmoitemplates/vscode/keybindings.json.tmpl" | sha256sum }}
+
+echo Updating VSCode keybindings...
+
+spec_file="$(mktemp)"
+code_target="{{ joinPath .chezmoi.homeDir "Library/Application Support/Code/User/keybindings.json" }}"
+cursor_target="{{ joinPath .chezmoi.homeDir "Library/Application Support/Cursor/User/keybindings.json" }}"
+
+cleanup() {
+  rm -f "$spec_file"
+}
+trap cleanup EXIT
+
+mkdir -p "$(dirname "$code_target")" "$(dirname "$cursor_target")"
+cat >"$spec_file" <<'JSON'
+{{ include ".chezmoitemplates/vscode/keybindings.json.tmpl" }}
+JSON
+
+python3 - "$spec_file" "$code_target" "$cursor_target" <<'PY'
+import json
+import pathlib
+import re
+import sys
+
+
+def load_json_with_comments(path: pathlib.Path):
+    if not path.exists():
+        return []
+
+    raw = path.read_text()
+    if not raw.strip():
+        return []
+
+    raw = re.sub(r"/\*.*?\*/", "", raw, flags=re.S)
+    raw = re.sub(r"^\s*//.*$", "", raw, flags=re.M)
+    raw = re.sub(r",(\s*[}\]])", r"\1", raw)
+    return json.loads(raw)
+
+
+def matches_rule(item, rule):
+    if not isinstance(item, dict):
+        return False
+
+    if "key" in rule and item.get("key") != rule["key"]:
+        return False
+
+    if "keys" in rule and item.get("key") not in rule["keys"]:
+        return False
+
+    if "command" in rule and item.get("command") != rule["command"]:
+        return False
+
+    if "commands" in rule and item.get("command") not in rule["commands"]:
+        return False
+
+    if "args" in rule and item.get("args") != rule["args"]:
+        return False
+
+    when = str(item.get("when", ""))
+
+    if "when_contains" in rule and not all(text in when for text in rule["when_contains"]):
+        return False
+
+    if "when_not_contains" in rule and any(text in when for text in rule["when_not_contains"]):
+        return False
+
+    return True
+
+
+spec_path = pathlib.Path(sys.argv[1])
+spec = json.loads(spec_path.read_text())
+managed_rules = spec.get("managed", [])
+desired = spec.get("desired", [])
+
+if not isinstance(managed_rules, list):
+    raise SystemExit(f"{spec_path} field 'managed' must be a JSON array")
+
+if not isinstance(desired, list):
+    raise SystemExit(f"{spec_path} field 'desired' must be a JSON array")
+
+for arg in sys.argv[2:]:
+    target = pathlib.Path(arg)
+    current = load_json_with_comments(target)
+
+    if not isinstance(current, list):
+        raise SystemExit(f"{target} must contain a JSON array")
+
+    filtered = [
+        item
+        for item in current
+        if not any(matches_rule(item, rule) for rule in managed_rules)
+    ]
+
+    merged = filtered + desired
+
+    with target.open("w") as f:
+        json.dump(merged, f, indent=2)
+        f.write("\n")
+
+    print(f"Merged managed keybindings into {target}")
+PY
+
+echo Done.
+
+{{- end -}}
