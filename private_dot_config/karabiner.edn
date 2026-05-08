@@ -245,7 +245,9 @@
                           :modifiers {:optional ["any"]}}
                    :to [{:key_code "left_option"}]
                    :type "basic"}]
-                 [{:description "Ctrl+Y"
+                 [{:conditions [{:bundle_identifiers ["^com.mitchellh.ghostty" "com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
+                                 :type "frontmost_application_unless"}]
+                   :description "Ctrl+Y"
                    :from {:key_code "y"
                           :modifiers {:mandatory ["control"]}}
                    :to [{:key_code "z"
