@@ -19,6 +19,49 @@
             "when_contains": [
                 "terminalFocus"
             ]
+        },
+        {
+            "key": "cmd+z",
+            "commands": [
+                "workbench.action.terminal.sendSequence"
+            ],
+            "when_contains": [
+                "terminalFocus"
+            ]
+        },
+        {
+            "key": "cmd+y",
+            "commands": [
+                "workbench.action.terminal.sendSequence",
+                "redo"
+            ],
+            "when_contains": [
+                "terminalFocus"
+            ]
+        },
+        {
+            "key": "cmd+y",
+            "command": "redo",
+            "when_not_contains": [
+                "terminalFocus"
+            ]
+        },
+        {
+            "key": "ctrl+y",
+            "commands": [
+                "workbench.action.terminal.sendSequence",
+                "redo"
+            ],
+            "when_contains": [
+                "terminalFocus"
+            ]
+        },
+        {
+            "key": "ctrl+y",
+            "command": "redo",
+            "when_not_contains": [
+                "terminalFocus"
+            ]
         }
     ],
     "desired": [
@@ -47,6 +90,40 @@
                 "text": "\u0003"
             },
             "when": "terminalFocus && !terminalTextSelected"
+        },
+        {
+            "key": "cmd+z",
+            "command": "workbench.action.terminal.sendSequence",
+            "args": {
+                "text": "\u001a"
+            },
+            "when": "terminalFocus"
+        },
+        {
+            "key": "cmd+y",
+            "command": "workbench.action.terminal.sendSequence",
+            "args": {
+                "text": "\u0019"
+            },
+            "when": "terminalFocus"
+        },
+        {
+            "key": "cmd+y",
+            "command": "redo",
+            "when": "!terminalFocus"
+        },
+        {
+            "key": "ctrl+y",
+            "command": "workbench.action.terminal.sendSequence",
+            "args": {
+                "text": "\u0019"
+            },
+            "when": "terminalFocus"
+        },
+        {
+            "key": "ctrl+y",
+            "command": "redo",
+            "when": "!terminalFocus"
         }
     ]
 }
