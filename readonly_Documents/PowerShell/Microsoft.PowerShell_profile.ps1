@@ -318,6 +318,7 @@ Set-PSReadLineKeyHandler -Chord Alt+h -ScriptBlock {
 Set-PSReadLineKeyHandler -Chord Alt+d -ScriptBlock {
     if (Get-Command fcd -ErrorAction SilentlyContinue) {
         fcd
+        [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
     }
 }
 
@@ -330,7 +331,7 @@ Set-PSReadLineKeyHandler -Chord Alt+e -ScriptBlock {
 Set-PSReadLineKeyHandler -Chord Alt+f -ScriptBlock {
     if (Get-Command fz -ErrorAction SilentlyContinue) {
         fz
-        [Microsoft.PowerShell.PSConsoleReadLine]::InvokePrompt()
+        [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
     }
 }
 
