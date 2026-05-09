@@ -178,6 +178,7 @@ if command -v starship &> /dev/null; then
 fi
 
 # Aliases
+alias rm='rip'
 alias git-reset-all="git reset --hard && git clean -fd"
 alias ls='eza -1 -F=auto --group-directories-first'
 alias tree='eza --tree -F=auto'
