@@ -135,7 +135,27 @@
     ],
     "deny": [
       "Bash(rm -rf /*)",
-      "Bash(rm -rf ~*)"
+      "Bash(rm -rf ~*)",
+      "Bash(rm -rf .*)",
+      "Bash(rm -rf *)",
+      "Bash(rm -f /*)",
+      "Bash(find * -delete*)",
+      "Bash(find * -exec*)",
+      "Bash(find * -ok*)",
+      "Bash(fd *--exec*)",
+      "Bash(fd *-x *)",
+      "Bash(sort *-o *)",
+      "Bash(sort *--output*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f *)",
+      "Bash(git clean -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git checkout -- *)",
+      "Bash(xargs rm*)",
+      "Bash(xargs sh*)",
+      "Bash(xargs bash*)",
+      "Bash(shred *)",
+      "Bash(truncate *)"
     ]
   },
   "hooks": {
