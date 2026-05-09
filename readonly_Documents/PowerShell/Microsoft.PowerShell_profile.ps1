@@ -197,6 +197,12 @@ function lla {
     param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Args)
     eza -1 -la -F=auto --group-directories-first --header --time-style=long-iso @Args
 }
+Remove-Item Alias:rm -Force -ErrorAction Ignore
+function rm {
+    param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Args)
+    rip @Args
+}
+
 Set-Alias cat Get-Content
 # New-Alias -Name grep -Value Select-String
 
