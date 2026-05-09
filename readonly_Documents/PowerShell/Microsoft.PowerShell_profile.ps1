@@ -275,6 +275,61 @@ $ExecutionContext.InvokeCommand.CommandNotFoundAction = {
     }
 }
 
+function global:TabExpansion2 {
+    [CmdletBinding(DefaultParameterSetName = 'ScriptInputSet')]
+    param(
+        [Parameter(ParameterSetName = 'ScriptInputSet', Mandatory, Position = 0)]
+        [AllowEmptyString()]
+        [string]$inputScript,
+
+        [Parameter(ParameterSetName = 'ScriptInputSet', Mandatory, Position = 1)]
+        [int]$cursorColumn,
+
+        [Parameter(ParameterSetName = 'AstInputSet', Mandatory, Position = 0)]
+        [System.Management.Automation.Language.Ast]$ast,
+
+        [Parameter(ParameterSetName = 'AstInputSet', Mandatory, Position = 1)]
+        [System.Management.Automation.Language.Token[]]$tokens,
+
+        [Parameter(ParameterSetName = 'AstInputSet', Mandatory, Position = 2)]
+        [System.Management.Automation.Language.IScriptPosition]$positionOfCursor,
+
+        [Parameter(ParameterSetName = 'ScriptInputSet', Position = 2)]
+        [Parameter(ParameterSetName = 'AstInputSet', Position = 3)]
+        [Hashtable]$options = $null
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq 'ScriptInputSet') {
+        $result = [System.Management.Automation.CommandCompletion]::CompleteInput(
+            $inputScript, $cursorColumn, $options
+        )
+        $textBeforeCursor = $inputScript.Substring(0, [Math]::Min($cursorColumn, $inputScript.Length))
+    } else {
+        $result = [System.Management.Automation.CommandCompletion]::CompleteInput(
+            $ast, $tokens, $positionOfCursor, $options
+        )
+        $textBeforeCursor = $positionOfCursor.Line.Substring(0, $positionOfCursor.ColumnNumber - 1)
+    }
+
+    if ($textBeforeCursor -match '^([^\s|;&`]*)$' -and $matches[1] -ne '') {
+        $partial = $matches[1]
+        $fakeScript = "Set-Location $partial"
+        $dirResult = [System.Management.Automation.CommandCompletion]::CompleteInput(
+            $fakeScript, $fakeScript.Length, $options
+        )
+        if ($dirResult.CompletionMatches.Count -gt 0) {
+            $existing = @($result.CompletionMatches | ForEach-Object { $_.CompletionText })
+            foreach ($c in $dirResult.CompletionMatches) {
+                if ($c.CompletionText -notin $existing) {
+                    $result.CompletionMatches.Add($c)
+                }
+            }
+        }
+    }
+
+    return $result
+}
+
 ###################################
 # FZF
 ###################################
