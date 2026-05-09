@@ -265,6 +265,17 @@ abbr ag Antigravity
 Remove-Item Alias:ni -Force -ErrorAction Ignore
 
 ###################################
+# Auto cd
+###################################
+$ExecutionContext.InvokeCommand.CommandNotFoundAction = {
+    param($commandName, $commandLookupEventArgs)
+    if (Test-Path -PathType Container $commandName) {
+        $commandLookupEventArgs.CommandScriptBlock = { Set-Location $commandName }.GetNewClosure()
+        $commandLookupEventArgs.StopSearch = $true
+    }
+}
+
+###################################
 # FZF
 ###################################
 
