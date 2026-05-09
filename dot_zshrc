@@ -363,6 +363,20 @@ if command -v fzf &> /dev/null; then
     cd ${selectedWorkTreeDir}
   }
 
+  _copy_to_clipboard() {
+    if command -v pbcopy &> /dev/null; then
+      pbcopy
+    elif grep -qi microsoft /proc/version 2>/dev/null; then
+      clip.exe
+    elif command -v wl-copy &> /dev/null; then
+      wl-copy
+    elif command -v xclip &> /dev/null; then
+      xclip -selection clipboard
+    elif command -v xsel &> /dev/null; then
+      xsel --clipboard --input
+    fi
+  }
+
   fzf_history_widget() {
     local selected key cmd
     selected=$(fc -rl 1 | sed 's/^[[:space:]]*[0-9]*[[:space:]]*//' | fzf --no-sort --expect=tab)
@@ -372,9 +386,7 @@ if command -v fzf &> /dev/null; then
       return 1
     fi
     if [ "$key" = "tab" ]; then
-      if command -v pbcopy &> /dev/null; then
-        print -n -- "$cmd" | pbcopy
-      fi
+      print -n -- "$cmd" | _copy_to_clipboard
       return 0
     fi
     LBUFFER+="$cmd"
