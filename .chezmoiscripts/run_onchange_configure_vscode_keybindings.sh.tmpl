@@ -1,4 +1,8 @@
+{{- if eq .chezmoi.os "windows" -}}
 #!/bin/sh
+{{- else -}}
+#!/bin/bash
+{{- end }}
 set -euo pipefail
 
 # checksum: {{ include ".chezmoitemplates/vscode/keybindings.json.tmpl" | sha256sum }}
