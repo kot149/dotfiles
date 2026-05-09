@@ -330,6 +330,7 @@ Set-PSReadLineKeyHandler -Chord Alt+e -ScriptBlock {
 Set-PSReadLineKeyHandler -Chord Alt+f -ScriptBlock {
     if (Get-Command fz -ErrorAction SilentlyContinue) {
         fz
+        [Microsoft.PowerShell.PSConsoleReadLine]::InvokePrompt()
     }
 }
 
