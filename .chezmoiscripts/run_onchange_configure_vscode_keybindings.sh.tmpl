@@ -30,7 +30,27 @@ cat >"$spec_file" <<'JSON'
 {{ include ".chezmoitemplates/vscode/keybindings.json.tmpl" }}
 JSON
 
-python3 - "$spec_file" "$code_target" "$cursor_target" <<'PY'
+{{- if eq .chezmoi.os "windows" }}
+if command -v python &>/dev/null; then
+  PYTHON=python
+elif command -v python3 &>/dev/null; then
+  PYTHON=python3
+else
+  echo "Error: Python not found in PATH"
+  exit 1
+fi
+{{- else }}
+if command -v python3 &>/dev/null; then
+  PYTHON=python3
+elif command -v python &>/dev/null; then
+  PYTHON=python
+else
+  echo "Error: Python 3 not found in PATH"
+  exit 1
+fi
+{{- end }}
+
+$PYTHON - "$spec_file" "$code_target" "$cursor_target" <<'PY'
 import json
 import pathlib
 import re
@@ -43,12 +63,12 @@ def load_json_with_comments(path: pathlib.Path):
     if not path.exists():
         return []
 
-    raw = path.read_text()
+    raw = path.read_text(encoding="utf-8")
     if not raw.strip():
         return []
 
     raw = re.sub(r"/\*.*?\*/", "", raw, flags=re.S)
-    raw = re.sub(r"^\s*//.*$", "", raw, flags=re.M)
+    raw = re.sub(r"//[^\n]*", "", raw)
     raw = re.sub(r",(\s*[}\]])", r"\1", raw)
     return json.loads(raw)
 
@@ -100,7 +120,7 @@ def select_grouped_items(spec, field_name):
 
 
 spec_path = pathlib.Path(sys.argv[1])
-spec = json.loads(spec_path.read_text())
+spec = json.loads(spec_path.read_text(encoding="utf-8"))
 managed_rules = select_grouped_items(spec, "managed")
 desired = select_grouped_items(spec, "desired")
 
@@ -119,7 +139,7 @@ for arg in sys.argv[2:]:
 
     merged = filtered + desired
 
-    with target.open("w") as f:
+    with target.open("w", encoding="utf-8") as f:
         json.dump(merged, f, indent=2)
         f.write("\n")
 
