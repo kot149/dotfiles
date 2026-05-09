@@ -2,5 +2,3 @@
 - Use GitHub CLI (`gh` command) to interact with GitHub
 - Do not insert unnecessary spaces between Japanese text and English words or identifiers. Use natural Japanese spacing, for example: `Claude Codeの設定`, `GitHub Actionsのジョブ`, `APIレスポンス`, `ユーザーID`. Exception: always put spaces before and after links and file paths so they do not get merged into surrounding text and break.
 - Finalize process: Remove ALL meta-comments about your changes, such as "// Added XXX" or "# Removed XXX", "// XXX has been moved to..." from the generated code before applying the changes
-
-@RTK.md
