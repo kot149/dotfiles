@@ -417,6 +417,11 @@ export PATH="$PATH:$HOME/.lmstudio/bin"
 export PATH="$HOME/.rd/bin:$PATH"
 ### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
 
+gh() {
+  local -x GH_REPO="${GH_REPO:-$(git remote get-url origin 2>/dev/null | sed -E 's|https?://github\.com/||; s|git@github\.com:||; s|\.git$||')}"
+  command gh "$@"
+}
+
 alias docker-stop-all='docker stop $(docker ps -q)'
 alias docker-rm-all='docker rm $(docker ps -a -q)'
 alias docker-prune-all='docker system prune -a --volumes'
