@@ -131,7 +131,9 @@
       "Bash(nix-instantiate --eval *)",
       "Bash(home-manager packages*)",
       "Bash(home-manager generations*)",
-      "Bash(nixos-rebuild dry-build*)"
+      "Bash(nixos-rebuild dry-build*)",
+      "Bash(rm -rf /tmp/*)",
+      "Bash(rm -f /tmp/*)"
     ],
     "deny": [
       "Bash(rm -rf /*)",
