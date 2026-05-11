@@ -55,14 +55,25 @@ git_info=""
 if [ -n "$cwd_raw" ]; then
   if git_branch_raw=$(git -C "$cwd_raw" -c core.fsmonitor= symbolic-ref --short HEAD 2>/dev/null); then
     staged=$(git -C "$cwd_raw" -c core.fsmonitor= diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
-    modified=$(git -C "$cwd_raw" -c core.fsmonitor= diff --name-only 2>/dev/null | wc -l | tr -d ' ')
+    modified=$(git -C "$cwd_raw" -c core.fsmonitor= diff --name-only --diff-filter=M 2>/dev/null | wc -l | tr -d ' ')
     untracked=$(git -C "$cwd_raw" -c core.fsmonitor= ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d ' ')
-    git_info="$git_branch_raw"
+    deleted=$(git -C "$cwd_raw" -c core.fsmonitor= diff --name-only --diff-filter=D 2>/dev/null | wc -l | tr -d ' ')
+    git_info=" $git_branch_raw"
     parts=""
+    upstream=$(git -C "$cwd_raw" -c core.fsmonitor= rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+    if [ -n "$upstream" ]; then
+      ahead_count=$(git -C "$cwd_raw" -c core.fsmonitor= rev-list --count "$upstream"..HEAD 2>/dev/null || echo 0)
+      behind_count=$(git -C "$cwd_raw" -c core.fsmonitor= rev-list --count "HEAD..$upstream" 2>/dev/null || echo 0)
+      [ "$ahead_count" -gt 0 ] && [ "$behind_count" -gt 0 ] && parts="$parts  $behind_count $ahead_count"
+      [ "$ahead_count" -gt 0 ] && [ "$behind_count" -eq 0 ] && parts="$parts  $ahead_count"
+      [ "$behind_count" -gt 0 ] && [ "$ahead_count" -eq 0 ] && parts="$parts  $behind_count"
+      [ "$ahead_count" -eq 0 ] && [ "$behind_count" -eq 0 ] && parts="$parts ✔"
+    fi
     [ "$staged" -gt 0 ]    && parts="$parts +$staged"
-    [ "$modified" -gt 0 ]  && parts="$parts ~$modified"
-    [ "$untracked" -gt 0 ] && parts="$parts ?$untracked"
-    [ -n "$parts" ] && git_info="$git_info [$parts ]"
+    [ "$untracked" -gt 0 ] && parts="$parts  $untracked"
+    [ "$modified" -gt 0 ]  && parts="$parts  $modified"
+    [ "$deleted" -gt 0 ]   && parts="$parts 󰗨 $deleted"
+    [ -n "$parts" ] && git_info="$git_info$parts "
   fi
 fi
 
