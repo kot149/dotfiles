@@ -14,5 +14,5 @@ git_safe_directories = []
 
 [interpreters.sh]
 command = "bash"
-args = []
+args = ["-c", 'source "$(cygpath -u "$0")"']
 {{- end }}
