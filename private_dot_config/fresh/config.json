@@ -9,5 +9,6 @@
   },
   "terminal": {
     "jump_to_end_on_output": true
-  }
+  },
+  "theme": "builtin://nord"
 }
