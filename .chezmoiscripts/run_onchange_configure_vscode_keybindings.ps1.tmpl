@@ -1,32 +1,25 @@
-{{- if ne .chezmoi.os "windows" -}}
-#!/bin/bash
-set -euo pipefail
+{{- if eq .chezmoi.os "windows" -}}
+#!/usr/bin/env pwsh
+$ErrorActionPreference = "Stop"
 
 # checksum: {{ include ".chezmoitemplates/vscode/keybindings.json.tmpl" | sha256sum }}
 
-echo Updating VSCode keybindings...
+Write-Host "Updating VSCode keybindings..."
 
-spec_file="$(mktemp)"
-merge_script="$(mktemp)"
-{{- if eq .chezmoi.os "darwin" }}
-code_target="{{ joinPath .chezmoi.homeDir "Library/Application Support/Code/User/keybindings.json" }}"
-cursor_target="{{ joinPath .chezmoi.homeDir "Library/Application Support/Cursor/User/keybindings.json" }}"
-{{- else if eq .chezmoi.os "linux" }}
-code_target="{{ joinPath .chezmoi.homeDir ".config/Code/User/keybindings.json" }}"
-cursor_target="{{ joinPath .chezmoi.homeDir ".config/Cursor/User/keybindings.json" }}"
-{{- end }}
+$specFile = [System.IO.Path]::GetTempFileName()
+$mergeScript = [System.IO.Path]::GetTempFileName()
+$codeTarget = "{{ joinPath .chezmoi.homeDir "AppData/Roaming/Code/User/keybindings.json" }}"
+$cursorTarget = "{{ joinPath .chezmoi.homeDir "AppData/Roaming/Cursor/User/keybindings.json" }}"
 
-cleanup() {
-  rm -f "$spec_file" "$merge_script"
-}
-trap cleanup EXIT
+try {
+  New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($codeTarget)) | Out-Null
+  New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($cursorTarget)) | Out-Null
 
-mkdir -p "$(dirname "$code_target")" "$(dirname "$cursor_target")"
-cat >"$spec_file" <<'JSON'
+  @'
 {{ include ".chezmoitemplates/vscode/keybindings.json.tmpl" }}
-JSON
+'@ | Set-Content -LiteralPath $specFile -Encoding utf8NoBOM
 
-cat >"$merge_script" <<'PY'
+  @'
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.9"
@@ -41,7 +34,7 @@ import sys
 
 import json5
 
-OS_NAME = "{{ .chezmoi.os }}"
+OS_NAME = "windows"
 
 
 def load_json_with_comments(path: Path):
@@ -124,10 +117,13 @@ for arg in sys.argv[2:]:
         f.write("\n")
 
     print(f"Merged managed keybindings into {target}")
-PY
+'@ | Set-Content -LiteralPath $mergeScript -Encoding utf8NoBOM
 
-chmod +x "$merge_script"
-"$merge_script" "$spec_file" "$code_target" "$cursor_target"
+  uv run --script $mergeScript $specFile $codeTarget $cursorTarget
 
-echo Done.
+  Write-Host "Done."
+}
+finally {
+  Remove-Item -LiteralPath $specFile, $mergeScript -Force -ErrorAction SilentlyContinue
+}
 {{- end -}}
