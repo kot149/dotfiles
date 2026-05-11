@@ -1,0 +1,83 @@
+#!/bin/bash
+set -euo pipefail
+
+# checksum: {{ include ".chezmoitemplates/codex/config.toml.tmpl" | sha256sum }}
+
+echo "Updating Codex config..."
+
+config_file="{{ joinPath .chezmoi.homeDir ".codex/config.toml" }}"
+spec_file="$(mktemp)"
+merge_script="$(mktemp)"
+output_file="$(mktemp)"
+
+cleanup() {
+  rm -f "$spec_file" "$merge_script" "$output_file"
+}
+trap cleanup EXIT
+
+mkdir -p "$(dirname "$config_file")"
+cat >"$spec_file" <<'TOML'
+{{ include ".chezmoitemplates/codex/config.toml.tmpl" }}
+TOML
+
+cat >"$merge_script" <<'PY'
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.9"
+# dependencies = [
+#   "tomlkit",
+# ]
+# ///
+
+from pathlib import Path
+import sys
+
+from tomlkit import dumps, parse
+from tomlkit.items import Table
+
+
+def fail(message: str) -> None:
+    print(f"Error: {message}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+spec_path = Path(sys.argv[1])
+config_path = Path(sys.argv[2])
+output_path = Path(sys.argv[3])
+
+spec_doc = parse(spec_path.read_text())
+config_doc = parse(config_path.read_text())
+
+tui_table = spec_doc.get("tui")
+if not isinstance(tui_table, Table):
+    fail("tui table not found in managed Codex config template")
+
+managed_status_line = tui_table.get("status_line")
+if managed_status_line is None:
+    fail("status_line not found in managed Codex config template")
+
+config_tui = config_doc.get("tui")
+if config_tui is None:
+    config_tui = {}
+    config_doc["tui"] = config_tui
+elif not isinstance(config_tui, Table):
+    fail("existing tui value is not a TOML table")
+
+config_tui["status_line"] = managed_status_line
+output_path.write_text(dumps(config_doc))
+PY
+
+if [ ! -f "$config_file" ]; then
+  cp "$spec_file" "$config_file"
+  echo "Created $config_file"
+  echo "Done."
+  exit 0
+fi
+
+chmod +x "$merge_script"
+"$merge_script" "$spec_file" "$config_file" "$output_file"
+
+mv "$output_file" "$config_file"
+echo "Merged managed settings into $config_file"
+
+echo "Done."
