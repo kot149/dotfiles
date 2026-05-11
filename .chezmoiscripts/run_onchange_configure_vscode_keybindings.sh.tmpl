@@ -10,6 +10,7 @@ set -euo pipefail
 echo Updating VSCode keybindings...
 
 spec_file="$(mktemp)"
+merge_script="$(mktemp)"
 {{- if eq .chezmoi.os "darwin" }}
 code_target="{{ joinPath .chezmoi.homeDir "Library/Application Support/Code/User/keybindings.json" }}"
 cursor_target="{{ joinPath .chezmoi.homeDir "Library/Application Support/Cursor/User/keybindings.json" }}"
@@ -25,7 +26,7 @@ exit 0
 {{- end }}
 
 cleanup() {
-  rm -f "$spec_file"
+  rm -f "$spec_file" "$merge_script"
 }
 trap cleanup EXIT
 
@@ -34,36 +35,25 @@ cat >"$spec_file" <<'JSON'
 {{ include ".chezmoitemplates/vscode/keybindings.json.tmpl" }}
 JSON
 
-{{- if eq .chezmoi.os "windows" }}
-if command -v python &>/dev/null; then
-  PYTHON=python
-elif command -v python3 &>/dev/null; then
-  PYTHON=python3
-else
-  echo "Error: Python not found in PATH"
-  exit 1
-fi
-{{- else }}
-if command -v python3 &>/dev/null; then
-  PYTHON=python3
-elif command -v python &>/dev/null; then
-  PYTHON=python
-else
-  echo "Error: Python 3 not found in PATH"
-  exit 1
-fi
-{{- end }}
+cat >"$merge_script" <<'PY'
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.9"
+# dependencies = [
+#   "json5",
+# ]
+# ///
 
-$PYTHON - "$spec_file" "$code_target" "$cursor_target" <<'PY'
 import json
-import pathlib
-import re
+from pathlib import Path
 import sys
+
+import json5
 
 OS_NAME = "{{ .chezmoi.os }}"
 
 
-def load_json_with_comments(path: pathlib.Path):
+def load_json_with_comments(path: Path):
     if not path.exists():
         return []
 
@@ -71,10 +61,7 @@ def load_json_with_comments(path: pathlib.Path):
     if not raw.strip():
         return []
 
-    raw = re.sub(r"/\*.*?\*/", "", raw, flags=re.S)
-    raw = re.sub(r"//[^\n]*", "", raw)
-    raw = re.sub(r",(\s*[}\]])", r"\1", raw)
-    return json.loads(raw)
+    return json5.loads(raw)
 
 
 def matches_rule(item, rule):
@@ -116,20 +103,18 @@ def select_grouped_items(spec, field_name):
     for group_name in ("common", OS_NAME):
         items = grouped_items.get(group_name, [])
         if not isinstance(items, list):
-            raise SystemExit(
-                f"{spec_path} field '{field_name}.{group_name}' must be a JSON array"
-            )
+            raise SystemExit(f"{spec_path} field '{field_name}.{group_name}' must be a JSON array")
         selected.extend(items)
     return selected
 
 
-spec_path = pathlib.Path(sys.argv[1])
+spec_path = Path(sys.argv[1])
 spec = json.loads(spec_path.read_text(encoding="utf-8"))
 managed_rules = select_grouped_items(spec, "managed")
 desired = select_grouped_items(spec, "desired")
 
 for arg in sys.argv[2:]:
-    target = pathlib.Path(arg)
+    target = Path(arg)
     current = load_json_with_comments(target)
 
     if not isinstance(current, list):
@@ -149,5 +134,8 @@ for arg in sys.argv[2:]:
 
     print(f"Merged managed keybindings into {target}")
 PY
+
+chmod +x "$merge_script"
+"$merge_script" "$spec_file" "$code_target" "$cursor_target"
 
 echo Done.
