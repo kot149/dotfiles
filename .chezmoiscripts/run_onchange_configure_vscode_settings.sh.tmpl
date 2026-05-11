@@ -1,0 +1,133 @@
+{{- if eq .chezmoi.os "windows" -}}
+#!/bin/sh
+{{- else -}}
+#!/bin/bash
+{{- end }}
+set -euo pipefail
+
+# checksum: {{ include ".chezmoitemplates/vscode/settings.json.tmpl" | sha256sum }}
+
+echo Updating VSCode settings...
+
+spec_file="$(mktemp)"
+merge_script="$(mktemp)"
+{{- if eq .chezmoi.os "darwin" }}
+code_target="{{ joinPath .chezmoi.homeDir "Library/Application Support/Code/User/settings.json" }}"
+cursor_target="{{ joinPath .chezmoi.homeDir "Library/Application Support/Cursor/User/settings.json" }}"
+{{- else if eq .chezmoi.os "linux" }}
+code_target="{{ joinPath .chezmoi.homeDir ".config/Code/User/settings.json" }}"
+cursor_target="{{ joinPath .chezmoi.homeDir ".config/Cursor/User/settings.json" }}"
+{{- else if eq .chezmoi.os "windows" }}
+code_target="{{ joinPath .chezmoi.homeDir "AppData/Roaming/Code/User/settings.json" }}"
+cursor_target="{{ joinPath .chezmoi.homeDir "AppData/Roaming/Cursor/User/settings.json" }}"
+{{- else }}
+echo "Unsupported OS: {{ .chezmoi.os }}"
+exit 0
+{{- end }}
+
+cleanup() {
+  rm -f "$spec_file" "$merge_script"
+}
+trap cleanup EXIT
+
+mkdir -p "$(dirname "$code_target")" "$(dirname "$cursor_target")"
+cat >"$spec_file" <<'JSON'
+{{ include ".chezmoitemplates/vscode/settings.json.tmpl" }}
+JSON
+
+cat >"$merge_script" <<'PY'
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.9"
+# dependencies = [
+#   "json5",
+# ]
+# ///
+
+import json
+from pathlib import Path
+import sys
+
+import json5
+
+OS_NAME = "{{ .chezmoi.os }}"
+APP_NAMES = ("code", "cursor")
+
+
+def load_json_with_comments(path: Path):
+    if not path.exists():
+        return {}
+
+    raw = path.read_text(encoding="utf-8")
+    if not raw.strip():
+        return {}
+
+    return json5.loads(raw)
+
+
+def group_names(app_name: str):
+    return ("common", OS_NAME, app_name, f"{OS_NAME}.{app_name}")
+
+
+def select_managed_keys(spec, app_name: str):
+    grouped_items = spec.get("managed", {})
+    if not isinstance(grouped_items, dict):
+        raise SystemExit(f"{spec_path} field 'managed' must be a JSON object")
+
+    keys = []
+    for name in group_names(app_name):
+        items = grouped_items.get(name, [])
+        if not isinstance(items, list):
+            raise SystemExit(f"{spec_path} field 'managed.{name}' must be a JSON array")
+        for item in items:
+            if not isinstance(item, str):
+                raise SystemExit(f"{spec_path} field 'managed.{name}' must contain strings")
+            keys.append(item)
+    return keys
+
+
+def select_desired_settings(spec, app_name: str):
+    grouped_items = spec.get("desired", {})
+    if not isinstance(grouped_items, dict):
+        raise SystemExit(f"{spec_path} field 'desired' must be a JSON object")
+
+    merged = {}
+    for name in group_names(app_name):
+        items = grouped_items.get(name, {})
+        if not isinstance(items, dict):
+            raise SystemExit(f"{spec_path} field 'desired.{name}' must be a JSON object")
+        merged.update(items)
+    return merged
+
+
+spec_path = Path(sys.argv[1])
+spec = json.loads(spec_path.read_text(encoding="utf-8"))
+
+for app_name, arg in zip(APP_NAMES, sys.argv[2:]):
+    target = Path(arg)
+    current = load_json_with_comments(target)
+
+    if not isinstance(current, dict):
+        raise SystemExit(f"{target} must contain a JSON object")
+
+    managed_keys = set(select_managed_keys(spec, app_name))
+    desired = select_desired_settings(spec, app_name)
+
+    filtered = {
+        key: value
+        for key, value in current.items()
+        if key not in managed_keys
+    }
+    filtered.update(desired)
+
+    with target.open("w", encoding="utf-8") as f:
+        json.dump(filtered, f, indent=2)
+        f.write("\n")
+
+    print(f"Merged managed settings into {target}")
+PY
+
+chmod +x "$merge_script"
+"$merge_script" "$spec_file" "$code_target" "$cursor_target"
+
+echo Done.
