@@ -1,2 +1,5 @@
 # minimum release age (minutes) - 3 days = 4320 minutes
+# https://yarnpkg.com/configuration/yarnrc#npmMinimalAgeGate
 npmMinimalAgeGate: 4320
+# https://yarnpkg.com/configuration/yarnrc#enableScripts
+enableScripts: false
