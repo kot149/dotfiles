@@ -17,7 +17,7 @@ $bun\
 $rust\
 [](fg:prev_bg)\
 $fill\
-$time$cmd_duration$status[](fg:prev_bg)
+$status$cmd_duration$time[](fg:prev_bg)
 $character\
 """
 
@@ -46,7 +46,7 @@ rust_bg = '#a2300c'
 node_bg = '#2257e6'
 bun_bg = '#474A4F'
 
-status_bg = '#FF4362'
+status_bg = '#ff4643'
 status_fg = '#ffffff'
 time_bg = '#5e6c87'
 cmd_duration_bg = '#9cabd0'
@@ -59,8 +59,8 @@ style = "bg:transparent fg:transparent"
 disabled = true
 
 [character]
-success_symbol = "[ >>](bold white)"
-error_symbol = "[ >>](bold white)"
+success_symbol = "[ ❯](bold white)"
+error_symbol = "[ ❯](bold white)"
 
 [os]
 disabled = false
@@ -150,16 +150,16 @@ detect_folders = ['src-tauri']
 disabled = false
 style = "bg:time_bg fg:text_fg"
 time_format = "%Y/%m/%d %H:%M"
-format = "[](fg:time_bg)[ 󰃰 $time]($style)"
+format = "[](fg:time_bg bg:prev_bg)[󱛣 $time]($style)"
 
 [cmd_duration]
 disabled = false
 style = "bg:cmd_duration_bg fg:text_fg"
-format = "[](fg:cmd_duration_bg bg:prev_bg)[ $duration ]($style)"
+format = "[](fg:cmd_duration_bg bg:prev_bg)[ $duration ]($style)"
 min_time = 0
 
 [status]
-symbol = "Err"
+symbol = "  Err"
 style = "bg:status_bg fg:status_fg"
-format = "[](bg:prev_bg fg:status_bg)[ $symbol]($style)"
+format = "[](fg:status_bg)[$symbol ]($style)"
 disabled = false
