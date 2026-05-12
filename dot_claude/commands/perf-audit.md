@@ -17,43 +17,15 @@ Analyze code performance and identify optimization opportunities. If `$ARGUMENTS
 - `/perf-audit bundle size` - Analyze frontend bundle performance
 
 ## Performance areas to analyze:
-### Algorithm & Data Structure
-- Time complexity (O(n), O(n²), etc.)
-- Space complexity and memory usage
-- Inefficient loops and nested operations
-- Suboptimal data structure choices
-
-### Database Performance
-- N+1 query problems
-- Missing indexes
-- Inefficient joins and subqueries
-- Excessive data fetching
-
-### Frontend Performance
-- Bundle size and code splitting
-- Unnecessary re-renders
-- Large image/asset sizes
-- Blocking JavaScript execution
-- CSS and layout thrashing
-
-### Backend Performance
-- API response times
-- Caching opportunities
-- Async/await usage
-- Resource pooling
-- Memory leaks and garbage collection
-
-### Network Performance
-- HTTP request optimization
-- Compression and minification
-- CDN usage
-- Lazy loading opportunities
+- **Algorithm & Data Structure**: Time/space complexity, inefficient loops, suboptimal data structures
+- **Database Performance**: N+1 queries, missing indexes, inefficient joins, excessive data fetching
+- **Frontend Performance**: Bundle size, unnecessary re-renders, blocking scripts, layout thrashing
+- **Backend Performance**: API response times, caching opportunities, async usage, memory leaks
+- **Network Performance**: HTTP optimization, compression, lazy loading
 
 ## Deliverables:
-1. **Performance report**: Detailed analysis of identified issues
-2. **Priority recommendations**: Ranked list of optimizations by impact
-3. **Code examples**: Before/after examples of key optimizations
-4. **Measurement suggestions**: How to measure improvement after changes
-5. **Implementation roadmap**: Step-by-step plan for applying optimizations
+1. **Priority recommendations**: Ranked list of optimizations by impact
+2. **Code examples**: Before/after examples of key optimizations
+3. **Measurement suggestions**: How to verify improvement after changes
 
 Focus on changes that provide the highest performance impact with reasonable implementation effort.

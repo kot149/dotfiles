@@ -39,7 +39,7 @@ Present the generated commit message in a code block, then ask the user:
 
 > このメッセージでコミットしますか？ [y/Edit/n]
 
-- If the user replies `y` or `yes`: run `git commit -m "..."` immediately (if unstaged changes were the target, first run `git add -A` then commit)
+- If the user replies `y` or `yes`: run `git commit -m "..."` immediately (if unstaged changes were the target, first run `git add <file1> <file2> ...` with each target file listed explicitly — never use `git add -A` or `git add .` — then commit)
 - If the user replies with an edited message or asks to change it: use the updated message and commit
 - If the user replies `n` or `cancel`: abort without committing
 
