@@ -1,0 +1,5 @@
+# npm: minimum release age (days)
+min-release-age=3
+
+# pnpm: minimum release age (minutes) - 3 days = 4320 minutes
+minimumReleaseAge=4320
