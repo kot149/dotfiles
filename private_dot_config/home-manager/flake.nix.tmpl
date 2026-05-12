@@ -55,7 +55,7 @@
           {{ else if eq .chezmoi.os "darwin" -}}
           ./darwin.nix
           {{ end -}}
-        ];
+        ] ++ (if builtins.pathExists ./local.nix then [ ./local.nix ] else []);
         extraSpecialArgs = {
           inherit username;
           nixClaudeCode = nix-claude-code.packages.${system}.default;
