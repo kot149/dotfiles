@@ -132,7 +132,8 @@
       "Bash(nix-instantiate --eval *)",
       "Bash(home-manager packages*)",
       "Bash(home-manager generations*)",
-      "Bash(nixos-rebuild dry-build*)"
+      "Bash(nixos-rebuild dry-build*)",
+      "WebSearch"
     ],
     "deny": [
       "Bash(rm -rf /*)",
