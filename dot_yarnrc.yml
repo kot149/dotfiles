@@ -1,0 +1,2 @@
+# minimum release age (minutes) - 3 days = 4320 minutes
+npmMinimalAgeGate: 4320

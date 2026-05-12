@@ -1,0 +1,3 @@
+[install]
+# minimum release age (seconds) - 3 days = 259200 seconds
+minimumReleaseAge = 259200
