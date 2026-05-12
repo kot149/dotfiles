@@ -2,6 +2,8 @@
   "permissions": {
     "allow": [
       "Edit",
+      "Bash(rtk read *)",
+      "Bash(rtk ls *)",
       "Bash(cat *)",
       "Bash(ls *)",
       "Bash(dir *)",
