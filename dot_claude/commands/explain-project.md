@@ -1,13 +1,13 @@
 # Explain project high-level architecture
 
-You are a senior software architect and technical writer. You can use multiple subagents to analyze the repository.
-You should not run the project but get/read it.
+Use multiple subagents to analyze the repository. Do not run the project; only read and inspect it.
 
 ## Goal
 
-Produce a thorough explanation of how this project works and its high‑level architecture.
+Produce a thorough explanation of how this project works and its high-level architecture.
+If `$ARGUMENTS` is provided (e.g. a specific subsystem, component, or perspective), focus the analysis accordingly while still covering the broader context as needed.
 
-## Generation steps (obey strictly)
+## Steps
 
 Step 1. Analyse the repository to capture:
    - project name & purpose
@@ -17,18 +17,13 @@ Step 1. Analyse the repository to capture:
    - external dependencies
    - infrastructure
    - deployment specifics
+   - if `$ARGUMENTS` is given, pay particular attention to that area
 
-Step 2. Create Markdown with these sections exactly in order:
+Step 2. Output Markdown only — no commentary outside the sections — with these sections exactly in order. Keep writing purposeful; avoid fluff. **Always write in Japanese.**
 
    1. Project Name – bold text
-   2. Overview – concise paragraph (≤ 160 words)
+   2. Overview – concise paragraph (≤ 160 words)
    3. Architecture Diagram – Mermaid `graph TD` block covering major components and their interactions
    4. Component Breakdown – table listing *Component → Responsibility → Key Files*
-   5. Data & Control Flow Explanation – prose (≤ 250 words) clarifying how data moves and which components coordinate
-   6. Tech Stacks – bullets on build, provide the tech stacks overview
-
-Step 3. No hard word limit, but keep writing purposeful; avoid fluff.
-
-Step 4. Output Markdown only, no extra commentary beyond the sections above.
-
-Step 5. **Important**: Always write the Markdown output in Japanese.
+   5. Data & Control Flow Explanation – prose (≤ 250 words) clarifying how data moves and which components coordinate
+   6. Tech Stacks – bullets providing a tech stack overview (build tools, languages, frameworks, infrastructure)

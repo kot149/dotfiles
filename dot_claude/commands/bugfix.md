@@ -1,14 +1,23 @@
-# Fix bug from user provided bug description: $ARGUMENTS
+# Fix Bug
 
 ## Goal
 
-Recreate the issue and fix the bug
+Reproduce the reported bug, identify the root cause, apply a fix, and verify the fix.
+
+## Bug Description
+
+$ARGUMENTS
 
 ## Steps (obey strictly)
 
-Bug description user provided: $ARGUMENTS
+Step 1: **Reproduce** — Understand the bug description. Set up conditions to reproduce the issue. Confirm the bug is reproducible before proceeding.
 
-Step 1: Understand the bug description and think the root cause. Try to recreate the issue.
-Step 2: Fix the error. Use `context7` and `Playwright` MCP tools to understand the error.
-Step 3: If there is another error, always repeat this debugging process from Step 1 and Step 2.
-Step 4: Report root cause and the solution. 
+Step 2: **Identify root cause** — Analyze the code path involved in the bug. Use the agent-browse skill or the `Playwright` MCP tool to inspect browser behavior if the bug involves UI or browser interactions. Use web search to find similar issues or relevant documentation.
+
+Step 3: **Fix** — Apply the minimal change needed to resolve the root cause. Avoid unrelated changes.
+
+Step 4: **Verify** — Run existing tests and any relevant test commands to confirm the fix works and no regressions were introduced. If no tests exist for the bug, write one.
+
+Step 5: **Repeat if needed** — If a new error surfaces after the fix, restart from Step 1 with the new error.
+
+Step 6: **Report** — Summarize the root cause and the solution applied.

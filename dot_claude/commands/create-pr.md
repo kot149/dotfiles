@@ -1,6 +1,8 @@
 # Create Pull Request
 
-You are tasked with creating a pull request for the current branch's changes on GitHub. Follow these steps in order:
+You are tasked with creating a pull request for the current branch's changes on GitHub. Follow these steps in order.
+
+Additional context provided by the user (e.g. related issue numbers, labels, or reviewers): $ARGUMENTS
 
 ## Prerequisites
 - Verify that the current directory is a Git repository
@@ -15,7 +17,7 @@ git status
 git branch --show-current
 ```
 
-If on `main` or default branch, inform the user that they should create a feature branch first.
+If on `main` or default branch, inform the user that they should create a feature branch first with `git switch -c <branch-name>`.
 
 ## Step 2: Analyze Changes
 Review all changes that will be included in the pull request:
@@ -43,15 +45,10 @@ Based on the commit history and changes:
   - Summary of changes (1-3 bullet points)
   - Test plan or verification steps
   - Any breaking changes or migration notes
-  - Related issue numbers if applicable
+  - Related issue numbers if provided in $ARGUMENTS or inferable from branch/commit context
 
 ## Step 5: Create the Pull Request
-Use the `gh` CLI to create the pull request:
-```bash
-gh pr create --title "PR Title" --body "PR Description"
-```
-
-Format the body using a HEREDOC for proper formatting:
+Use the `gh` CLI to create the pull request. Format the body using a HEREDOC for proper formatting:
 ```bash
 gh pr create --title "Title" --body "$(cat <<'EOF'
 ## Summary
@@ -61,11 +58,11 @@ gh pr create --title "Title" --body "$(cat <<'EOF'
 ## Test plan
 - [ ] Test step 1
 - [ ] Test step 2
-
-🤖 Generated with Claude Code
 EOF
 )"
 ```
+
+If reviewer or label information is provided in $ARGUMENTS, include the appropriate flags (e.g. `--reviewer <username>`, `--label <label>`).
 
 ## Step 6: Return PR URL
 After successful creation, provide the PR URL to the user so they can view and share it.
@@ -74,7 +71,6 @@ After successful creation, provide the PR URL to the user so they can view and s
 - Always analyze the full commit history from the divergence point, not just the latest commit
 - Include all relevant commits in the PR summary
 - Follow the existing PR template if one exists in the repository
-- Use the TodoWrite tool to track progress through the PR creation steps
 - Generate meaningful test plans based on the changes made
 
 ## Error Handling
@@ -82,6 +78,3 @@ After successful creation, provide the PR URL to the user so they can view and s
 - If there are no changes to create a PR for, inform the user
 - If the remote branch doesn't exist, push it first with `-u` flag
 - If `gh` is not authenticated, guide the user through authentication
-
-## Example Usage
-The command should work seamlessly when run from any feature branch with changes, automatically generating appropriate PR content and creating the pull request on GitHub.
