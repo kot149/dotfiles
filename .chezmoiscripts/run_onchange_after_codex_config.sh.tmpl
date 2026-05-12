@@ -48,6 +48,12 @@ output_path = Path(sys.argv[3])
 spec_doc = parse(spec_path.read_text())
 config_doc = parse(config_path.read_text())
 
+# Apply managed top-level scalar keys while preserving unmanaged user settings.
+for key, value in spec_doc.items():
+    if isinstance(value, Table):
+        continue
+    config_doc[key] = value
+
 tui_table = spec_doc.get("tui")
 if not isinstance(tui_table, Table):
     fail("tui table not found in managed Codex config template")
