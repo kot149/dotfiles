@@ -1,3 +1,6 @@
 [install]
 # minimum release age (seconds) - 3 days = 259200 seconds
+# https://bun.sh/docs/runtime/bunfig#install-minimumreleaseage
 minimumReleaseAge = 259200
+# https://bun.sh/docs/runtime/bunfig#install-ignorescripts
+ignoreScripts = true

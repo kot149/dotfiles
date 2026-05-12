@@ -1,5 +1,11 @@
 # npm: minimum release age (days)
+# https://docs.npmjs.com/cli/v11/using-npm/config#min-release-age
 min-release-age=3
+# https://docs.npmjs.com/cli/v11/using-npm/config#ignore-scripts
+ignore-scripts=true
 
 # pnpm: minimum release age (minutes) - 3 days = 4320 minutes
+# https://pnpm.io/npmrc#minimum-release-age
 minimumReleaseAge=4320
+# https://pnpm.io/npmrc#ignore-scripts
+ignore-scripts=true
