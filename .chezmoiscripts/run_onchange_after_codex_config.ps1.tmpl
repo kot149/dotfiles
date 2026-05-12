@@ -1,27 +1,31 @@
-{{- if ne .chezmoi.os "windows" -}}
-#!/bin/bash
-set -euo pipefail
+{{- if eq .chezmoi.os "windows" -}}
+#!/usr/bin/env pwsh
+$ErrorActionPreference = "Stop"
 
 # checksum: {{ include ".chezmoitemplates/codex/config.toml.tmpl" | sha256sum }}
 
-echo "Updating Codex config..."
+Write-Host "Updating Codex config..."
 
-config_file="{{ joinPath .chezmoi.homeDir ".codex/config.toml" }}"
-spec_file="$(mktemp)"
-merge_script="$(mktemp)"
-output_file="$(mktemp)"
+$configFile = "{{ joinPath .chezmoi.homeDir ".codex/config.toml" }}"
+$specFile = [System.IO.Path]::GetTempFileName()
+$mergeScript = [System.IO.Path]::GetTempFileName()
+$outputFile = [System.IO.Path]::GetTempFileName()
 
-cleanup() {
-  rm -f "$spec_file" "$merge_script" "$output_file"
-}
-trap cleanup EXIT
+try {
+  New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($configFile)) | Out-Null
 
-mkdir -p "$(dirname "$config_file")"
-cat >"$spec_file" <<'TOML'
+  @'
 {{ include ".chezmoitemplates/codex/config.toml.tmpl" }}
-TOML
+'@ | Set-Content -LiteralPath $specFile -Encoding utf8NoBOM
 
-cat >"$merge_script" <<'PY'
+  if (-not (Test-Path -LiteralPath $configFile)) {
+    Copy-Item -LiteralPath $specFile -Destination $configFile
+    Write-Host "Created $configFile"
+    Write-Host "Done."
+    exit 0
+  }
+
+  @'
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.9"
@@ -72,20 +76,16 @@ elif not isinstance(config_tui, Table):
 
 config_tui["status_line"] = managed_status_line
 output_path.write_text(dumps(config_doc))
-PY
+'@ | Set-Content -LiteralPath $mergeScript -Encoding utf8NoBOM
 
-if [ ! -f "$config_file" ]; then
-  cp "$spec_file" "$config_file"
-  echo "Created $config_file"
-  echo "Done."
-  exit 0
-fi
+  uv run --script $mergeScript $specFile $configFile $outputFile
 
-chmod +x "$merge_script"
-"$merge_script" "$spec_file" "$config_file" "$output_file"
+  Move-Item -LiteralPath $outputFile -Destination $configFile -Force
+  Write-Host "Merged managed settings into $configFile"
 
-mv "$output_file" "$config_file"
-echo "Merged managed settings into $config_file"
-
-echo "Done."
+  Write-Host "Done."
+}
+finally {
+  Remove-Item -LiteralPath $specFile, $mergeScript, $outputFile -Force -ErrorAction SilentlyContinue
+}
 {{- end -}}
