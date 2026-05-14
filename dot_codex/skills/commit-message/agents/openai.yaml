@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commit Message"
+  short_description: "Generate and optionally create commits from local changes."
+  default_prompt: "Generate a commit message for the current changes."

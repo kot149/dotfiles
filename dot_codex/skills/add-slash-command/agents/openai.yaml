@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add Skill Command"
+  short_description: "Create reusable Codex skills from user-described workflows."
+  default_prompt: "Create a new Codex skill for this workflow."

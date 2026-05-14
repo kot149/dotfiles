@@ -1,0 +1,4 @@
+interface:
+  display_name: "Optimize"
+  short_description: "Apply safe localized performance optimizations."
+  default_prompt: "Optimize this code for performance."
