@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fix Issue"
+  short_description: "Implement GitHub issues using gh and repository conventions."
+  default_prompt: "Fix GitHub issue #123."

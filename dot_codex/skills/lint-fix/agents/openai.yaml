@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lint Fix"
+  short_description: "Detect and fix linting and formatting issues."
+  default_prompt: "Fix lint issues in this project."

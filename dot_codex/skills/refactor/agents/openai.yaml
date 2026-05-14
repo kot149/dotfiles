@@ -1,0 +1,4 @@
+interface:
+  display_name: "Refactor"
+  short_description: "Refactor scoped code while preserving behavior."
+  default_prompt: "Refactor this code:"

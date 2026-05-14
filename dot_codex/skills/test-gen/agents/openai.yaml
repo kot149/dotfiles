@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test Generation"
+  short_description: "Generate tests for target or recently changed code."
+  default_prompt: "Generate tests for this code."

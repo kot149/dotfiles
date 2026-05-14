@@ -1,0 +1,4 @@
+interface:
+  display_name: "Explain Project"
+  short_description: "Explain repository architecture and data flow in Japanese."
+  default_prompt: "Explain this project architecture."

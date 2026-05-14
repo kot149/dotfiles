@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Review"
+  short_description: "Review code for security vulnerabilities and risk."
+  default_prompt: "Perform a security review of this codebase."

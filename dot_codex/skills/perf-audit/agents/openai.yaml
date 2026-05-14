@@ -1,0 +1,4 @@
+interface:
+  display_name: "Performance Audit"
+  short_description: "Audit code performance and recommend optimizations."
+  default_prompt: "Audit this project for performance issues."
