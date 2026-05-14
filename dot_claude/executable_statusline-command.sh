@@ -5,6 +5,10 @@ input=$(cat)
 # From CC hook data
 cwd_raw=$(echo "$input" | jq -r '.cwd // .workspace.current_dir // ""')
 cwd=$(echo "$cwd_raw" | sed "s|^$HOME|~|")
+max_cwd=50
+if [ "${#cwd}" -gt "$max_cwd" ]; then
+  cwd="...${cwd: -$(( max_cwd - 3 ))}"
+fi
 model=$(echo "$input" | jq -r '.model.display_name // .model.id // ""')
 ctx_pct=$(echo "$input" | jq -r '(.context_window.used_percentage // 0) + 0.5 | floor')
 
@@ -79,7 +83,7 @@ if [ -n "$cwd_raw" ]; then
     modified=$(git -C "$cwd_raw" -c core.fsmonitor= diff --name-only --diff-filter=M 2>/dev/null | wc -l | tr -d ' ')
     untracked=$(git -C "$cwd_raw" -c core.fsmonitor= ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d ' ')
     deleted=$(git -C "$cwd_raw" -c core.fsmonitor= diff --name-only --diff-filter=D 2>/dev/null | wc -l | tr -d ' ')
-    git_info=" $git_branch_raw"
+    git_info="$git_branch_raw"
     parts=""
     upstream=$(git -C "$cwd_raw" -c core.fsmonitor= rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
     if [ -n "$upstream" ]; then
@@ -94,7 +98,7 @@ if [ -n "$cwd_raw" ]; then
     [ "$untracked" -gt 0 ] && parts="$parts  $untracked"
     [ "$modified" -gt 0 ]  && parts="$parts  $modified"
     [ "$deleted" -gt 0 ]   && parts="$parts 󰗨 $deleted"
-    [ -n "$parts" ] && git_info="$git_info$parts "
+    [ -n "$parts" ] && git_info="$git_info$parts"
   fi
 fi
 
@@ -116,7 +120,7 @@ fi
 cost_str=""
 if [ "$is_api_mode" = true ]; then
   if [ -n "$total_cost" ]; then
-    cost_str=$(printf "total: \$%.4f" "$total_cost")
+    cost_str=$(printf "💰\$%.2f" "$total_cost")
   fi
 fi
 
@@ -133,7 +137,7 @@ if [ -n "$model" ]; then
   printf "\033[38;5;67m%s\033[0m" "$model"
 fi
 printf "$SEP"
-printf "\033[38;5;109mctx: %s%%\033[0m" "$ctx_pct"
+printf "\033[38;5;109mctx %s%%\033[0m" "$ctx_pct"
 if [ -n "$five_str" ]; then
   printf "$SEP"
   printf "\033[38;5;208m%s\033[0m" "$five_str"
