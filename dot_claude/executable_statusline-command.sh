@@ -9,20 +9,41 @@ model=$(echo "$input" | jq -r '.model.display_name // .model.id // ""')
 ctx_pct=$(echo "$input" | jq -r '(.context_window.used_percentage // 0) + 0.5 | floor')
 
 RATE_CACHE="$HOME/.claude/statusline-rate-cache.json"
+MODE_CACHE="$HOME/.claude/statusline-mode-cache"
 
 five_pct=$(echo "$input"  | jq -r '.rate_limits.five_hour.used_percentage // "" | if . == "" then "" else (. + 0.5 | floor | tostring) end')
 five_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // ""')
 seven_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // "" | if . == "" then "" else (. + 0.5 | floor | tostring) end')
 seven_reset=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // ""')
 
-# キャッシュ更新（データがある場合）
-if [ -n "$five_pct" ] || [ -n "$seven_pct" ]; then
+# API billing cost (field path: .cost.total_cost_usd)
+total_cost=$(echo "$input" | jq -r '.cost.total_cost_usd // ""')
+
+# Detect API billing mode
+# Priority: 1) ANTHROPIC_API_KEY env var, 2) .cost.total_cost_usd is a number, 3) rate_limits presence, 4) mode cache
+_cost_is_num=$(echo "$input" | jq -r '(.cost.total_cost_usd | type) == "number"')
+_has_sub_limits=$(echo "$input" | jq -r '(.rate_limits != null) and ((.rate_limits.five_hour.used_percentage | type) == "number")')
+
+if [ -n "${ANTHROPIC_API_KEY:-}" ] || [ "$_cost_is_num" = "true" ]; then
+  is_api_mode="true"
+  echo "api" > "$MODE_CACHE"
+elif [ "$_has_sub_limits" = "true" ]; then
+  is_api_mode="false"
+  echo "subscription" > "$MODE_CACHE"
+elif [ -f "$MODE_CACHE" ]; then
+  _cached_mode=$(cat "$MODE_CACHE")
+  [ "$_cached_mode" = "api" ] && is_api_mode="true" || is_api_mode="false"
+else
+  is_api_mode="false"
+fi
+
+# Update rate limit cache (subscription mode only)
+if [ "$is_api_mode" = false ] && { [ -n "$five_pct" ] || [ -n "$seven_pct" ]; }; then
   jq -n \
     --arg fp "$five_pct" --arg fr "$five_reset" \
     --arg sp "$seven_pct" --arg sr "$seven_reset" \
     '{five_pct:$fp,five_reset:$fr,seven_pct:$sp,seven_reset:$sr}' > "$RATE_CACHE"
-elif [ -f "$RATE_CACHE" ]; then
-  # キャッシュから読み込み
+elif [ "$is_api_mode" = false ] && [ -f "$RATE_CACHE" ]; then
   five_pct=$(jq -r '.five_pct // ""' "$RATE_CACHE")
   five_reset=$(jq -r '.five_reset // ""' "$RATE_CACHE")
   seven_pct=$(jq -r '.seven_pct // ""' "$RATE_CACHE")
@@ -77,18 +98,26 @@ if [ -n "$cwd_raw" ]; then
   fi
 fi
 
-# 5h block remaining
+# 5h rate limit block remaining
 five_str=""
-if [ -n "$five_pct" ] && [ -n "$five_reset" ] && [ "$five_reset" != "null" ]; then
+if [ "$is_api_mode" = false ] && [ -n "$five_pct" ] && [ -n "$five_reset" ] && [ "$five_reset" != "null" ]; then
   remaining=$(( five_reset - now_epoch ))
   five_str="5h: ${five_pct}% (⏱ $(fmt_hm $remaining))"
 fi
 
-# 7d remaining
+# 7d rate limit remaining
 seven_str=""
-if [ -n "$seven_pct" ] && [ -n "$seven_reset" ] && [ "$seven_reset" != "null" ]; then
+if [ "$is_api_mode" = false ] && [ -n "$seven_pct" ] && [ -n "$seven_reset" ] && [ "$seven_reset" != "null" ]; then
   remaining=$(( seven_reset - now_epoch ))
   seven_str="7d: ${seven_pct}% (⏱ $(fmt_dhm $remaining))"
+fi
+
+# API billing cost display
+cost_str=""
+if [ "$is_api_mode" = true ]; then
+  if [ -n "$total_cost" ]; then
+    cost_str=$(printf "total: \$%.4f" "$total_cost")
+  fi
 fi
 
 # Output: items separated by " | "
@@ -112,5 +141,9 @@ fi
 if [ -n "$seven_str" ]; then
   printf "$SEP"
   printf "\033[38;5;208m%s\033[0m" "$seven_str"
+fi
+if [ -n "$cost_str" ]; then
+  printf "$SEP"
+  printf "\033[38;5;208m%s\033[0m" "$cost_str"
 fi
 printf "\n"
