@@ -1,0 +1,3 @@
+# minimum release age - 3 days
+# https://docs.astral.sh/uv/reference/settings/#exclude-newer
+exclude-newer = "3 days"
