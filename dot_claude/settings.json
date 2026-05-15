@@ -161,6 +161,7 @@
     ],
     "defaultMode": "acceptEdits"
   },
+  "model": "claude-sonnet-4-6",
   "hooks": {
     "PreToolUse": [
       {
@@ -179,8 +180,9 @@
     "command": "bash ~/.claude/statusline-command.sh",
     "refreshInterval": 30
   },
-  "effortLevel": "medium",
   "enabledPlugins": {
     "rust-analyzer-lsp@claude-plugins-official": true
-  }
+  },
+  "effortLevel": "medium",
+  "awaySummaryEnabled": false
 }
