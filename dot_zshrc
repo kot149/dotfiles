@@ -178,7 +178,33 @@ if command -v starship &> /dev/null; then
 fi
 
 # Aliases
-alias rm='rip'
+rm() {
+  local -a args
+  local arg filtered
+
+  for arg in "$@"; do
+    case "$arg" in
+      --recursive)
+        continue
+        ;;
+      -[!-]*)
+        filtered="-${arg[2,-1]//[rR]/}"
+        if [[ "$filtered" != "-" ]]; then
+          args+=("$filtered")
+        fi
+        ;;
+      -r|-R)
+        continue
+        ;;
+      *)
+        args+=("$arg")
+        ;;
+    esac
+  done
+
+  command rip "${args[@]}"
+}
+
 alias git-reset-all="git reset --hard && git clean -fd"
 alias ls='eza -1 -F=auto --group-directories-first'
 alias tree='eza --tree -F=auto'
