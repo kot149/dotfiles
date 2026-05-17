@@ -248,7 +248,8 @@ if command -v abbr &> /dev/null; then
 
   abbr -S zrc='. ~/.zshrc' >> /dev/null
   abbr -S cz='chezmoi' >> /dev/null
-  abbr -S cza='chezmoi add' >> /dev/null
+  abbr -S 'chezmoi ad'='chezmoi add' >> /dev/null
+  abbr -S 'chezmoi ap'='chezmoi apply' >> /dev/null
   abbr -S sld='sheldon' >> /dev/null
 
   abbr -S cpa='copypath' >> /dev/null
