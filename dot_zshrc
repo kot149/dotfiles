@@ -178,6 +178,7 @@ if command -v starship &> /dev/null; then
 fi
 
 # Aliases
+unalias rm 2>/dev/null
 rm() {
   local -a args
   local arg filtered
