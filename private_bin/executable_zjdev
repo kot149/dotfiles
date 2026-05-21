@@ -61,11 +61,11 @@ else
 fi
 
 if [[ -n "$session_line" ]]; then
-  if [[ "$session_line" == *"(EXITED"* ]]; then
-    zellij delete-session "$session_name" >/dev/null 2>&1 || true
-  else
-    exec zellij attach "$session_name"
+  if zellij attach --forget "$session_name"; then
+    exit 0
   fi
+
+  zellij delete-session --force "$session_name" >/dev/null 2>&1 || true
 fi
 
 exec zellij -n terminal-workbench -s "$session_name"
