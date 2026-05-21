@@ -1,0 +1,71 @@
+#!/usr/bin/env zsh
+
+emulate -L zsh
+setopt pipefail
+
+session_name=""
+force_new="false"
+
+while (( $# > 0 )); do
+  case "$1" in
+    --new)
+      force_new="true"
+      ;;
+    *)
+      session_name="$1"
+      ;;
+  esac
+  shift
+done
+
+if [[ -z "$session_name" ]]; then
+  workspace_path="${PWD:A}"
+  workspace_name="${workspace_path:t}"
+  workspace_name="${workspace_name//[^[:alnum:]]/-}"
+  workspace_name="${workspace_name#-}"
+  workspace_name="${workspace_name%-}"
+
+  if [[ -z "$workspace_name" ]]; then
+    workspace_name="workspace"
+  fi
+
+  workspace_hash="$(
+    print -r -- "$workspace_path" | cksum | awk '{ print $1 }'
+  )"
+  session_name="dev-${workspace_name}-${workspace_hash}"
+fi
+
+sessions="$(zellij list-sessions 2>/dev/null | sed -E 's/\x1b\[[0-9;]*[[:alpha:]]//g')"
+base_session_name="$session_name"
+
+if [[ "$force_new" == "true" ]]; then
+  suffix=1
+
+  while true; do
+    if (( suffix == 1 )); then
+      candidate_session_name="$base_session_name"
+    else
+      candidate_session_name="${base_session_name}-${suffix}"
+    fi
+
+    session_line="$(print -r -- "$sessions" | grep -F "${candidate_session_name} [" | head -n 1)"
+    if [[ -z "$session_line" ]]; then
+      session_name="$candidate_session_name"
+      break
+    fi
+
+    (( suffix++ ))
+  done
+else
+  session_line="$(print -r -- "$sessions" | grep -F "${session_name} [" | head -n 1)"
+fi
+
+if [[ -n "$session_line" ]]; then
+  if [[ "$session_line" == *"(EXITED"* ]]; then
+    zellij delete-session "$session_name" >/dev/null 2>&1 || true
+  else
+    exec zellij attach "$session_name"
+  fi
+fi
+
+exec zellij -n terminal-workbench -s "$session_name"

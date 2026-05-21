@@ -1,0 +1,14 @@
+keybinds {
+    shared_except "locked" {
+        bind "Alt g" {
+            Run "zellij-dev-toggle-lazygit" {
+                close_on_exit true
+            }
+        }
+        bind "Alt t" {
+            Run "zellij-dev-new-workspace-tab" {
+                close_on_exit true
+            }
+        }
+    }
+}
