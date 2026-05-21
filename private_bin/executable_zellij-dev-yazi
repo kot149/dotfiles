@@ -1,0 +1,12 @@
+#!/usr/bin/env zsh
+
+emulate -L zsh
+setopt pipefail
+
+if command -v yazi >/dev/null 2>&1; then
+  yazi
+else
+  print -u2 "yaziが見つかりません。"
+fi
+
+exec "${SHELL:-/bin/zsh}" -l

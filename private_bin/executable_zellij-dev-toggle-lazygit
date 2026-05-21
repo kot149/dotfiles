@@ -1,0 +1,38 @@
+#!/usr/bin/env zsh
+
+emulate -L zsh
+setopt pipefail
+
+session_name="${ZELLIJ_SESSION_NAME:-}"
+
+if [[ -z "$session_name" ]]; then
+  print -u2 "ZELLIJ_SESSION_NAMEを取得できませんでした。"
+  exit 1
+fi
+
+lazygit_pane_id="$(
+  zellij -s "$session_name" action list-panes --json 2>/dev/null \
+    | jq -r '
+        map(select(
+          .is_plugin == false and
+          .is_floating == true and
+          .exited == false and
+          (.terminal_command == "zellij-dev-lazygit" or .title == "lazygit" or .pane_command == "lazygit")
+        ))
+        | first
+        | .id // empty
+      '
+)"
+
+if [[ -n "$lazygit_pane_id" ]]; then
+  exec zellij -s "$session_name" action close-pane --pane-id "$lazygit_pane_id"
+fi
+
+exec zellij -s "$session_name" action new-pane \
+  --floating \
+  --name "lazygit" \
+  --x "10%" \
+  --y "8%" \
+  --width "80%" \
+  --height "84%" \
+  -- zellij-dev-lazygit
