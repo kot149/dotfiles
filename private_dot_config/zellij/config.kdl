@@ -12,3 +12,5 @@ keybinds {
         }
     }
 }
+
+session_serialization false
