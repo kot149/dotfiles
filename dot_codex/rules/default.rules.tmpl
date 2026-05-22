@@ -1,0 +1,70 @@
+{{- define "codexPattern" -}}
+{{- $tokens := list -}}
+{{- range (splitList " " .) -}}
+  {{- $token := trimAll "*" . -}}
+  {{- if ne $token "" -}}
+    {{- $tokens = append $tokens $token -}}
+  {{- end -}}
+{{- end -}}
+{{- $tokens | toJson -}}
+{{- end -}}
+{{- range .agent_shell_deny }}
+prefix_rule(pattern={{ template "codexPattern" . }}, decision="forbidden", justification="Blocked by shared agent deny list")
+prefix_rule(pattern={{ template "codexPattern" (printf "rtk %s" .) }}, decision="forbidden", justification="Blocked by shared agent deny list")
+{{- end }}
+{{- range .agent_shell_allow }}
+prefix_rule(pattern={{ template "codexPattern" . }}, decision="allow")
+prefix_rule(pattern={{ template "codexPattern" (printf "rtk %s" .) }}, decision="allow")
+{{- end }}
+prefix_rule(pattern=["rtk", "curl", "-s"], decision="allow")
+prefix_rule(pattern=["rtk", "proxy", "curl", "-s", "https://bundlephobia.com/api/size?package=dayjs"], decision="allow")
+prefix_rule(pattern=["rtk", "proxy", "curl", "-s", "https://registry.npmjs.org/dayjs/latest"], decision="allow")
+prefix_rule(pattern=["rtk", "proxy", "curl", "-s", "https://registry.npmjs.org/moment/latest"], decision="allow")
+prefix_rule(pattern=["rtk", "proxy", "curl", "-s", "https://bundlephobia.com/api/size?package=luxon"], decision="allow")
+prefix_rule(pattern=["rtk", "proxy", "curl", "-s", "https://registry.npmjs.org/luxon/latest"], decision="allow")
+prefix_rule(pattern=["rtk", "proxy", "curl", "-s", "https://bundlephobia.com/api/size?package=moment"], decision="allow")
+prefix_rule(pattern=["rtk", "proxy", "curl", "-s", "https://bundlephobia.com/api/size?package=date-fns"], decision="allow")
+prefix_rule(pattern=["rtk", "npm", "view"], decision="allow")
+prefix_rule(pattern=["rtk", "npm", "install"], decision="allow")
+prefix_rule(pattern=["go", "build"], decision="allow")
+prefix_rule(pattern=["go", "run"], decision="allow")
+prefix_rule(pattern=["rtk", "go", "test", "./..."], decision="allow")
+prefix_rule(pattern=["rtk", "go", "mod", "tidy"], decision="allow")
+prefix_rule(pattern=["env", "GOCACHE=/tmp/go-build-cache", "GOMODCACHE=/tmp/go-mod-cache", "go", "mod", "tidy"], decision="allow")
+prefix_rule(pattern=["gh", "discussion", "view"], decision="allow")
+prefix_rule(pattern=["gh", "api", "graphql"], decision="allow")
+prefix_rule(pattern=["gh", "search", "issues"], decision="allow")
+prefix_rule(pattern=["bash", "0508_web_api/tests/check_pagination.sh"], decision="allow")
+prefix_rule(pattern=["bash", "0508_web_api/tests/check_health.sh"], decision="allow")
+prefix_rule(pattern=["bash", "0508_web_api/tests/check_routing.sh"], decision="allow")
+prefix_rule(pattern=["bash", "0508_web_api/tests/check_validation.sh"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose ps"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose logs --tail=100 api"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose ps -a api"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose exec -T api sed -n \"1,220p\" /app/main.py"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose exec -T api sed -n \"1,120p\" /app/response.py"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose restart api"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose logs --tail=120 api"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api/kota-takeuchi/basic && bash ../../tests/check_validation.sh"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose exec -T api sed -n \"160,180p\" /app/main.py"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose logs --tail=80 api"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose up -d api"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose ps api"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api/kota-takeuchi/basic && bash ../../tests/check_logging.sh"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose exec -T api sed -n \\\"170,210p\\\" /app/main.py"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose exec -T api python -c \\\"import main; print([getattr(r, 'path', None) for r in main.app.routes])\\\""], decision="allow")
+prefix_rule(pattern=["rtk", "bash", "-lc", "cd 0508_web_api && docker compose exec -T api /app/.venv/bin/python -c \\\"import main; print([getattr(r, 'path', None) for r in main.app.routes])\\\""], decision="allow")
+prefix_rule(pattern=["docker", "compose", "up", "-d"], decision="allow")
+prefix_rule(pattern=["docker", "compose", "run", "--rm", "k6"], decision="allow")
+prefix_rule(pattern=["docker", "compose", "logs", "--tail=120"], decision="allow")
+prefix_rule(pattern=["docker", "compose", "exec", "-T", "advanced-api", "sed", "-n"], decision="allow")
+prefix_rule(pattern=["docker", "compose", "exec", "-T", "advanced-api", "python", "-c"], decision="allow")
+prefix_rule(pattern=["docker", "compose", "exec", "-T", "advanced-api", "/app/.venv/bin/python", "-c"], decision="allow")
+prefix_rule(pattern=["rtk", "bash", ".chezmoiscripts/run_onchange_configure_vscode_keybindings.sh.tmpl"], decision="allow")
+prefix_rule(pattern=["rtk", "proxy", "sh", "-c", "chezmoi execute-template < .chezmoiscripts/run_onchange_configure_vscode_keybindings.sh.tmpl | sh"], decision="allow")
+prefix_rule(pattern=["ps", "aux"], decision="allow")
+prefix_rule(pattern=["/usr/bin/log", "show"], decision="allow")
+prefix_rule(pattern=["rtk", "docker", "compose", "up", "-d"], decision="allow")
+prefix_rule(pattern=["rtk", "docker", "compose", "ps"], decision="allow")
+prefix_rule(pattern=["rtk", "bun", "test"], decision="allow")
+prefix_rule(pattern=["rtk", "env", "BASE_URL=http://localhost:3001", "uv", "run"], decision="allow")
