@@ -10,34 +10,22 @@ if [[ -z "$session_name" ]]; then
   exit 1
 fi
 
-lazygit_pane_filter='
-  map(select(
-    .is_plugin == false and
-    .is_floating == true and
-    .exited == false and
-    (.terminal_command == "zellij-dev-lazygit" or .title == "lazygit" or .pane_command == "lazygit")
-  ))
-  | first
-  | .id // empty
-'
-
-visible_lazygit_pane_id="$(
+lazygit_pane_id="$(
   zellij -s "$session_name" action list-panes --json 2>/dev/null \
-    | jq -r "$lazygit_pane_filter"
+    | jq -r '
+        map(select(
+          .is_plugin == false and
+          .is_floating == true and
+          .exited == false and
+          (.terminal_command == "zellij-dev-lazygit" or .title == "lazygit" or .pane_command == "lazygit")
+        ))
+        | first
+        | .id // empty
+      '
 )"
 
-if [[ -n "$visible_lazygit_pane_id" ]]; then
-  exec zellij -s "$session_name" action close-pane --pane-id "$visible_lazygit_pane_id"
-fi
-
-hidden_lazygit_pane_id="$(
-  zellij -s "$session_name" action list-panes --all --json 2>/dev/null \
-    | jq -r "$lazygit_pane_filter"
-)"
-
-if [[ -n "$hidden_lazygit_pane_id" ]]; then
-  zellij -s "$session_name" action show-floating-panes >/dev/null
-  exec zellij -s "$session_name" action focus-pane-id "$hidden_lazygit_pane_id"
+if [[ -n "$lazygit_pane_id" ]]; then
+  exec zellij -s "$session_name" action close-pane --pane-id "$lazygit_pane_id"
 fi
 
 exec zellij -s "$session_name" action new-pane \

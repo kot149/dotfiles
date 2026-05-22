@@ -1,8 +1,4 @@
 keybinds {
-    normal {
-        bind "Esc" { HideFloatingPanes; }
-    }
-
     shared_except "locked" {
         bind "Alt g" {
             Run "zellij-dev-toggle-lazygit" {
