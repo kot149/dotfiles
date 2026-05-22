@@ -1,6 +1,7 @@
 # Font
 font-family = Inconsolata
 font-family = Symbols Nerd Font Mono
+font-codepoint-map = U+3000-U+30FF,U+4E00-U+9FFF,U+FF00-U+FFEF=Hiragino Sans
 adjust-icon-height = 10%
 
 # font-feature = -dlig
