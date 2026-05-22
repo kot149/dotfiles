@@ -1,0 +1,18 @@
+{{- define "codexPattern" -}}
+{{- $tokens := list -}}
+{{- range (splitList " " .) -}}
+  {{- $token := trimAll "*" . -}}
+  {{- if ne $token "" -}}
+    {{- $tokens = append $tokens $token -}}
+  {{- end -}}
+{{- end -}}
+{{- $tokens | toJson -}}
+{{- end -}}
+{{- range .agent_shell_deny }}
+prefix_rule(pattern={{ template "codexPattern" . }}, decision="forbidden", justification="Blocked by shared agent deny list")
+prefix_rule(pattern={{ template "codexPattern" (printf "rtk %s" .) }}, decision="forbidden", justification="Blocked by shared agent deny list")
+{{- end }}
+{{- range .agent_shell_allow }}
+prefix_rule(pattern={{ template "codexPattern" . }}, decision="allow")
+prefix_rule(pattern={{ template "codexPattern" (printf "rtk %s" .) }}, decision="allow")
+{{- end }}
