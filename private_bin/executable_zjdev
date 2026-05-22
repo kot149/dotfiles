@@ -5,6 +5,7 @@ setopt pipefail
 
 session_name=""
 force_new="false"
+max_session_name_length=17
 
 while (( $# > 0 )); do
   case "$1" in
@@ -29,10 +30,18 @@ if [[ -z "$session_name" ]]; then
     workspace_name="workspace"
   fi
 
-  workspace_hash="$(
+  workspace_checksum="$(
     print -r -- "$workspace_path" | cksum | awk '{ print $1 }'
   )"
-  session_name="dev-${workspace_name}-${workspace_hash}"
+  workspace_hash="$(printf "%08x" "$workspace_checksum")"
+  session_workspace="${workspace_name:0:8}"
+  session_workspace="${session_workspace%-}"
+
+  if [[ -z "$session_workspace" ]]; then
+    session_workspace="work"
+  fi
+
+  session_name="d-${session_workspace}-${workspace_hash:0:6}"
 fi
 
 sessions="$(zellij list-sessions 2>/dev/null | sed -E 's/\x1b\[[0-9;]*[[:alpha:]]//g')"
@@ -45,7 +54,10 @@ if [[ "$force_new" == "true" ]]; then
     if (( suffix == 1 )); then
       candidate_session_name="$base_session_name"
     else
-      candidate_session_name="${base_session_name}-${suffix}"
+      suffix_text="-${suffix}"
+      candidate_prefix="${base_session_name:0:$(( max_session_name_length - ${#suffix_text} ))}"
+      candidate_prefix="${candidate_prefix%-}"
+      candidate_session_name="${candidate_prefix}${suffix_text}"
     fi
 
     session_line="$(print -r -- "$sessions" | grep -F "${candidate_session_name} [" | head -n 1)"
