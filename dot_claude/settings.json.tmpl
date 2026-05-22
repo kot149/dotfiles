@@ -1,0 +1,206 @@
+{{- $plainAllow := list
+  "Edit"
+  "WebSearch"
+-}}
+{{- $bashAllow := list
+  "read *"
+  "ls *"
+  "cat *"
+  "dir *"
+  "find *"
+  "fd *"
+  "rg *"
+  "grep *"
+  "bat *"
+  "head *"
+  "tail *"
+  "wc *"
+  "file *"
+  "git status *"
+  "git log *"
+  "git show *"
+  "git diff *"
+  "git branch"
+  "git branch -a*"
+  "git branch -v*"
+  "git branch -r*"
+  "git remote -v"
+  "git remote show *"
+  "git stash list*"
+  "git tag"
+  "git tag -l*"
+  "git blame *"
+  "git describe *"
+  "git config --get *"
+  "git config --list*"
+  "git config *"
+  "git ls-files *"
+  "git rev-parse *"
+  "git reflog"
+  "git reflog show *"
+  "git worktree list*"
+  "git submodule status*"
+  "git shortlog *"
+  "gh pr list*"
+  "gh pr view *"
+  "gh issue list*"
+  "gh issue view *"
+  "gh repo view *"
+  "gh run list*"
+  "gh run view *"
+  "gh workflow list*"
+  "gh workflow view *"
+  "gh release list*"
+  "gh release view *"
+  "gh auth status*"
+  "gh api *"
+  "jq *"
+  "sort *"
+  "uniq *"
+  "diff *"
+  "which *"
+  "where *"
+  "env"
+  "printenv *"
+  "type *"
+  "docker ps *"
+  "docker images *"
+  "docker logs *"
+  "docker inspect *"
+  "docker network ls*"
+  "docker volume ls*"
+  "docker compose ps *"
+  "docker compose logs *"
+  "docker version*"
+  "docker info*"
+  "uv pip list*"
+  "uv pip show *"
+  "uv tree *"
+  "uv python list*"
+  "cargo tree *"
+  "cargo metadata *"
+  "cargo --version*"
+  "rustc --version*"
+  "rustup show*"
+  "rustup toolchain list*"
+  "pip list*"
+  "pip show *"
+  "pip freeze*"
+  "poetry show*"
+  "go list *"
+  "go env *"
+  "go doc *"
+  "go mod graph*"
+  "go version*"
+  "npm list*"
+  "npm outdated*"
+  "npm info *"
+  "node --version*"
+  "pnpm list*"
+  "pnpm outdated*"
+  "pnpm info *"
+  "yarn list*"
+  "yarn info *"
+  "bun pm ls*"
+  "bun outdated*"
+  "deno info *"
+  "deno --version*"
+  "chezmoi diff *"
+  "chezmoi status *"
+  "chezmoi managed *"
+  "chezmoi source-path *"
+  "chezmoi cat *"
+  "chezmoi data*"
+  "chezmoi execute-template *"
+  "nix --version*"
+  "nix show-config*"
+  "nix flake show*"
+  "nix flake metadata*"
+  "nix registry list*"
+  "nix search *"
+  "nix eval *"
+  "nix path-info *"
+  "nix store ls *"
+  "nix store cat *"
+  "nix store query *"
+  "nix doctor*"
+  "nix profile list*"
+  "nix profile diff-closures*"
+  "nix-env -q*"
+  "nix-env --query*"
+  "nix-env --list-generations*"
+  "nix-channel --list*"
+  "nix-store --query *"
+  "nix-instantiate --eval *"
+  "home-manager packages*"
+  "home-manager generations*"
+  "nixos-rebuild dry-build*"
+-}}
+{{- $bashDeny := list
+  "rm -rf /*"
+  "rm -rf ~*"
+  "rm -rf .*"
+  "rm -rf *"
+  "rm -f /*"
+  "find * -delete*"
+  "find * -exec*"
+  "find * -ok*"
+  "fd *--exec*"
+  "fd *-x *"
+  "sort *-o *"
+  "sort *--output*"
+  "git push --force*"
+  "git push -f *"
+  "git clean -f*"
+  "git reset --hard*"
+  "git checkout -- *"
+  "xargs rm*"
+  "xargs sh*"
+  "xargs bash*"
+  "shred *"
+  "truncate *"
+-}}
+{{- $allow := list -}}
+{{- range $plainAllow -}}
+  {{- $allow = append $allow . -}}
+{{- end -}}
+{{- range $bashAllow -}}
+  {{- $allow = append $allow (printf "Bash(%s)" .) -}}
+  {{- $allow = append $allow (printf "Bash(rtk %s)" .) -}}
+{{- end -}}
+{{- $deny := list -}}
+{{- range $bashDeny -}}
+  {{- $deny = append $deny (printf "Bash(%s)" .) -}}
+  {{- $deny = append $deny (printf "Bash(rtk %s)" .) -}}
+{{- end -}}
+{
+  "permissions": {
+    "allow": {{ $allow | toPrettyJson | indent 4 | trim }},
+    "deny": {{ $deny | toPrettyJson | indent 4 | trim }},
+    "defaultMode": "acceptEdits"
+  },
+  "model": "claude-sonnet-4-6",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rtk hook claude"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh",
+    "refreshInterval": 30
+  },
+  "enabledPlugins": {
+    "rust-analyzer-lsp@claude-plugins-official": true
+  },
+  "effortLevel": "medium",
+  "awaySummaryEnabled": false
+}
