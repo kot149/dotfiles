@@ -4,28 +4,48 @@ emulate -L zsh
 setopt pipefail
 
 session_name="${ZELLIJ_SESSION_NAME:-}"
+current_pane_id="${ZELLIJ_PANE_ID:-}"
 
 if [[ -z "$session_name" ]]; then
   print -u2 "ZELLIJ_SESSION_NAMEを取得できませんでした。"
   exit 1
 fi
 
+pane_json="$(zellij -s "$session_name" action list-panes --json 2>/dev/null)"
+
 lazygit_pane_id="$(
-  zellij -s "$session_name" action list-panes --json 2>/dev/null \
+  print -r -- "$pane_json" \
     | jq -r '
+        def current_pane:
+          $current_pane_id != "" and (.id | tostring) == $current_pane_id;
+
         map(select(
           .is_plugin == false and
           .is_floating == true and
           .exited == false and
+          (current_pane | not) and
           (.terminal_command == "zellij-dev-lazygit" or .title == "lazygit" or .pane_command == "lazygit")
         ))
         | first
         | .id // empty
-      '
+      ' --arg current_pane_id "$current_pane_id"
 )"
 
 if [[ -n "$lazygit_pane_id" ]]; then
   exec zellij -s "$session_name" action close-pane --pane-id "$lazygit_pane_id"
+fi
+
+current_pane_is_floating="$(
+  print -r -- "$pane_json" \
+    | jq -r '
+        map(select((.id | tostring) == $current_pane_id))
+        | first
+        | .is_floating // false
+      ' --arg current_pane_id "$current_pane_id"
+)"
+
+if [[ "$current_pane_is_floating" == "true" ]]; then
+  exec zellij-dev-lazygit
 fi
 
 exec zellij -s "$session_name" action new-pane \
