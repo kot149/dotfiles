@@ -3,6 +3,12 @@ keybinds {
         bind "Alt g" {
             Run "zellij-dev-toggle-lazygit" {
                 close_on_exit true
+                floating true
+                name "lazygit"
+                x "10%"
+                y "8%"
+                width "80%"
+                height "84%"
             }
         }
         bind "Alt t" {
