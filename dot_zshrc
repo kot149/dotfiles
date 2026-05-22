@@ -12,6 +12,7 @@ alias home-manager-update='nix flake update --flake "$HOME/.config/home-manager"
 alias nix-cleanup='nix-store --optimize && home-manager expire-generations "-30 days"'
 # Use zsh for nix shell
 export NIX_BUILD_SHELL=zsh
+export PAGER=moor
 
 #################################  HISTORY  #################################
 # history
