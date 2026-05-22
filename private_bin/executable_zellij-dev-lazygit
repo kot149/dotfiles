@@ -4,9 +4,8 @@ emulate -L zsh
 setopt pipefail
 
 if command -v lazygit >/dev/null 2>&1; then
-  lazygit
-else
-  print -u2 "lazygitが見つかりません。"
+  exec lazygit
 fi
 
-exec "${SHELL:-/bin/zsh}" -l
+print -u2 "lazygitが見つかりません。"
+exit 1
