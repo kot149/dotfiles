@@ -1,0 +1,44 @@
+{{- $allow := list -}}
+{{- range .agent_plain_allow -}}
+  {{- $allow = append $allow . -}}
+{{- end -}}
+{{- range .agent_shell_allow -}}
+  {{- $allow = append $allow (printf "Bash(%s)" .) -}}
+  {{- $allow = append $allow (printf "Bash(rtk %s)" .) -}}
+{{- end -}}
+{{- $deny := list -}}
+{{- range .agent_shell_deny -}}
+  {{- $deny = append $deny (printf "Bash(%s)" .) -}}
+  {{- $deny = append $deny (printf "Bash(rtk %s)" .) -}}
+{{- end -}}
+{
+  "permissions": {
+    "allow": {{ $allow | toPrettyJson | indent 4 | trim }},
+    "deny": {{ $deny | toPrettyJson | indent 4 | trim }},
+    "defaultMode": "acceptEdits"
+  },
+  "model": "claude-sonnet-4-6",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rtk hook claude"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh",
+    "refreshInterval": 30
+  },
+  "enabledPlugins": {
+    "rust-analyzer-lsp@claude-plugins-official": true
+  },
+  "effortLevel": "medium",
+  "awaySummaryEnabled": false
+}
