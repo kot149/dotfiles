@@ -1,0 +1,11 @@
+{ pkgs, ... }:
+
+{
+  home.packages = with pkgs; [
+    # list extra packages here
+  ];
+
+  localDeny.packages = with pkgs; [
+    # list unwanted packages here
+  ];
+}
