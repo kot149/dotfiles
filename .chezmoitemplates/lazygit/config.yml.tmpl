@@ -12,7 +12,7 @@ os:
 git:
   pagers:
 {{- if eq .chezmoi.os "windows" }}
-    - externalDiffCommand: '~/lazygit-diff.ps1'
+    - externalDiffCommand: '~/AppData/Local/lazygit/lazygit-diff.ps1'
 {{- else }}
     - pager: delta --paging=never --width={{ "{{" }}columnWidth{{ "}}" }}
 {{- end }}
