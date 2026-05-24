@@ -1,0 +1,33 @@
+#!/usr/bin/env zsh
+
+emulate -L zsh
+setopt pipefail
+
+session_name="${ZELLIJ_SESSION_NAME:-}"
+layout_path="$HOME/.config/zellij/layouts/terminal-workbench-tab.kdl"
+
+if [[ -z "$session_name" ]]; then
+  print -u2 "ZELLIJ_SESSION_NAMEを取得できませんでした。"
+  exit 1
+fi
+
+if [[ ! -f "$layout_path" ]]; then
+  print -u2 "レイアウトファイルが見つかりません: $layout_path"
+  exit 1
+fi
+
+tab_count="$(
+  zellij -s "$session_name" action list-tabs --json 2>/dev/null \
+    | jq 'length'
+)"
+
+if [[ -z "$tab_count" || "$tab_count" == "0" ]]; then
+  tab_name="workspace"
+else
+  tab_name="workspace-$(( tab_count + 1 ))"
+fi
+
+exec zellij -s "$session_name" action new-tab \
+  --layout "$layout_path" \
+  --name "$tab_name" \
+  --cwd "$PWD"

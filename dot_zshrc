@@ -12,6 +12,7 @@ alias home-manager-update='nix flake update --flake "$HOME/.config/home-manager"
 alias nix-cleanup='nix-store --optimize && home-manager expire-generations "-30 days"'
 # Use zsh for nix shell
 export NIX_BUILD_SHELL=zsh
+export PAGER=moor
 
 #################################  HISTORY  #################################
 # history
@@ -301,6 +302,10 @@ if command -v fzf &> /dev/null; then
   source <(fzf --zsh)
 
   export FZF_DEFAULT_OPTS='--style full --cycle'
+
+  # 上矢印でfzf履歴検索
+  bindkey '^[[A' fzf-history-widget
+  bindkey '^[OA' fzf-history-widget
 
   # cd
   fcd() {
