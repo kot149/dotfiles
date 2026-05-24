@@ -1,14 +1,8 @@
-{ pkgs, nixClaudeCode, nixCodexCli, ... }:
+{ config, lib, pkgs, nixClaudeCode, nixCodexCli, ... }:
 
 let
   rtk = pkgs.callPackage ./rtk.nix { };
-in
-{
-  home.username = "{{ .chezmoi.username }}";
-  home.homeDirectory = "{{ .chezmoi.homeDir }}";
-
-  # See https://search.nixos.org/packages
-  home.packages = (with pkgs; [
+  basePackages = (with pkgs; [
     # dotfiles
     chezmoi
 
@@ -88,21 +82,37 @@ in
     nerd-fonts.inconsolata
     nerd-fonts.symbols-only
   ]) ++ [ rtk ];
-
-  programs.home-manager.enable = true;
-  home.stateVersion = "25.11";
-
-  xdg.configFile."nix/nix.conf".force = true;
-
-  nix.package = pkgs.nix;
-
-  nix.settings = {
-    experimental-features = [ "nix-command" "flakes" ];
+  denyPackages = config.localDeny.packages;
+in
+{
+  options.localDeny.packages = lib.mkOption {
+    type = lib.types.listOf lib.types.package;
+    default = [ ];
+    description = "Packages to remove from common home.packages";
   };
 
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 30d";
+  config = {
+    home.username = "{{ .chezmoi.username }}";
+    home.homeDirectory = "{{ .chezmoi.homeDir }}";
+
+    # See https://search.nixos.org/packages
+    home.packages = lib.lists.subtractLists denyPackages basePackages;
+
+    programs.home-manager.enable = true;
+    home.stateVersion = "25.11";
+
+    xdg.configFile."nix/nix.conf".force = true;
+
+    nix.package = pkgs.nix;
+
+    nix.settings = {
+      experimental-features = [ "nix-command" "flakes" ];
+    };
+
+    nix.gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 30d";
+    };
   };
 }
