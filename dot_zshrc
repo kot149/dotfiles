@@ -303,10 +303,6 @@ if command -v fzf &> /dev/null; then
 
   export FZF_DEFAULT_OPTS='--style full --cycle'
 
-  # 上矢印でfzf履歴検索
-  bindkey '^[[A' fzf-history-widget
-  bindkey '^[OA' fzf-history-widget
-
   # cd
   fcd() {
     local dir
