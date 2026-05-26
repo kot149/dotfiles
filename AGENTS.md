@@ -16,9 +16,29 @@ chezmoi rewrites filenames on apply. Key prefixes used in this repo:
 
 Per-OS file selection is controlled by `.chezmoiignore.tmpl` (gates `Library/**`, `AppData/**`, `winget.json`, etc. on `.chezmoi.os`).
 
-## Applying changes after editing files
+Files **not** managed by chezmoi (no `dot_`/`private_`/etc. prefix, listed in `.chezmoiignore.tmpl`, or sitting at the repo root as plain docs) live only inside this repository and are never copied to `$HOME`. Notable examples:
 
-After editing any file in this repository, run `chezmoi apply` to sync the change to `$HOME`. Always run `chezmoi apply` **on a per-file basis** (e.g. `chezmoi apply ~/.zshrc`) to avoid unintentionally overwriting other files. Do not run `chezmoi apply` without a target path.
+- `./AGENTS.md` and `./CLAUDE.md` (this file and its stub) — repo-level agent guidance, read directly from the repo by tools like Codex CLI / Claude Code. Edits take effect immediately; **do not** run `chezmoi apply` for them (it will say "not managed").
+- `./README.md`, `./LICENSE`, `.chezmoiignore.tmpl`, `.chezmoidata.toml`, `.chezmoiscripts/`, `.chezmoitemplates/` — chezmoi metadata / repo docs, not targets.
+
+To check whether a given file is a chezmoi target, run `chezmoi target-path <source>` (prints the destination) or `chezmoi managed | grep <name>`.
+
+## Applying changes after editing files (MANDATORY for agents)
+
+Editing a managed file in this repo does **not** change anything in `$HOME` — chezmoi only syncs on `apply`. If you (the agent) edit a managed file here, you **must run `chezmoi apply -v <target>` yourself in the same turn**. Do not tell the user to run it; do not end the turn with "now run apply". The edit-then-apply pair is one atomic action. (Unmanaged files like `./AGENTS.md` / `./CLAUDE.md` skip this step — they are read straight from the repo.)
+
+Rules:
+
+- Always pass a target path. **Never** run a bare `chezmoi apply` — it may overwrite unrelated files.
+- The target is the **destination path in `$HOME`**, not the source path in the repo. Translate the chezmoi filename prefixes to get it:
+  - `dot_zshrc` → `chezmoi apply -v ~/.zshrc`
+  - `dot_claude/settings.json` → `chezmoi apply -v ~/.claude/settings.json`
+  - `private_dot_config/zellij/config.kdl` → `chezmoi apply -v ~/.config/zellij/config.kdl`
+  - `private_bin/executable_zjdev` → `chezmoi apply -v ~/bin/zjdev`
+  - `foo.tmpl` → target is `foo` (drop the `.tmpl` suffix)
+- If unsure of the target path, run `chezmoi target-path <source-path>` to resolve it before applying.
+- If multiple files were edited, run `chezmoi apply -v` once per target path (not a single bare apply).
+- After applying, mention any runtime step the user still needs (e.g. restart zellij, reload shell) — but only the parts that genuinely require the user, not the apply itself.
 
 ## Common commands
 
