@@ -435,6 +435,10 @@ fi
 bindkey '^Z' undo
 bindkey '^Y' redo
 bindkey '^[z' suspend
+bindkey '^[[1;5C' forward-word
+bindkey '^[[1;5D' backward-word
+bindkey '^[[1;3C' forward-word
+bindkey '^[[1;3D' backward-word
 
 # Added by LM Studio CLI (lms)
 export PATH="$PATH:$HOME/.lmstudio/bin"

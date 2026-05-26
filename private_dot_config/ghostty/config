@@ -34,6 +34,10 @@ macos-option-as-alt = true
 keybind = f1=toggle_command_palette
 keybind = option+e=text:\x1be
 keybind = option+g=text:\x1bg
+keybind = ctrl+right=text:\x1b[1;5C
+keybind = ctrl+left=text:\x1b[1;5D
+keybind = alt+right=text:\x1b[1;3C
+keybind = alt+left=text:\x1b[1;3D
 keybind = ctrl+z=text:\x1a
 keybind = cmd+z=text:\x1a
 keybind = ctrl+y=text:\x19
