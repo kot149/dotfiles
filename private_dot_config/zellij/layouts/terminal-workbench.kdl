@@ -10,13 +10,12 @@ layout {
     }
     tab name="workspace" split_direction="horizontal" hide_floating_panes=true {
         pane split_direction="vertical" size="78%" {
-            pane size="20%" command="zellij-dev-yazi" name="Files"
-            pane size="55%" stacked=true {
+            pane size="65%" stacked=true {
                 pane name="Main" {
                     focus true
                 }
             }
-            pane size="25%" stacked=true {
+            pane size="35%" stacked=true {
                 pane name="Sub"
             }
         }

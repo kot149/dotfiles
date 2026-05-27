@@ -366,14 +366,18 @@
                                       :optional ["caps_lock"]}}
                    :to [{:key_code "vk_none"}]
                    :type "basic"}]
-                 [{:description "Ctrl+Left"
+                 [{:conditions [{:bundle_identifiers ["^com.googlecode.iterm2" "^com.mitchellh.ghostty"]
+                                 :type "frontmost_application_unless"}]
+                   :description "Ctrl+Left"
                    :from {:key_code "left_arrow"
                           :modifiers {:mandatory ["control"]
                                       :optional ["shift"]}}
                    :to [{:key_code "left_arrow"
                          :modifiers ["option"]}]
                    :type "basic"}]
-                 [{:description "Ctrl+Right"
+                 [{:conditions [{:bundle_identifiers ["^com.googlecode.iterm2" "^com.mitchellh.ghostty"]
+                                 :type "frontmost_application_unless"}]
+                   :description "Ctrl+Right"
                    :from {:key_code "right_arrow"
                           :modifiers {:mandatory ["control"]
                                       :optional ["shift"]}}
@@ -474,7 +478,7 @@
                    :to [{:key_code "e"
                          :modifiers ["control"]}]
                    :type "basic"}]
-                 [{:conditions [{:bundle_identifiers ["^com.googlecode.iterm2"]
+                 [{:conditions [{:bundle_identifiers ["^com.googlecode.iterm2" "^com.mitchellh.ghostty"]
                                  :type "frontmost_application_unless"}]
                    :description "Home"
                    :from {:key_code "home"
@@ -482,7 +486,7 @@
                    :to [{:key_code "left_arrow"
                          :modifiers ["control"]}]
                    :type "basic"}]
-                 [{:conditions [{:bundle_identifiers ["^com.googlecode.iterm2"]
+                 [{:conditions [{:bundle_identifiers ["^com.googlecode.iterm2" "^com.mitchellh.ghostty"]
                                  :type "frontmost_application_unless"}]
                    :description "End"
                    :from {:key_code "end"
