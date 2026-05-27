@@ -21,8 +21,16 @@ map("i", "<C-y>", "<C-o><C-r>", { noremap = true, silent = true, desc = "Redo" }
 -- Ctrl+C: ビジュアル選択をコピー
 map("v", "<C-c>", "y", { noremap = true, silent = true, desc = "Copy" })
 
--- Backspace: 選択範囲を削除 (Delete と同じ挙動)
-map("v", "<BS>", "d", { noremap = true, silent = true, desc = "Delete Selection" })
+-- Backspace: 選択範囲を削除してインサートモードへ (クリップボードを汚さない)
+-- Visual モード: "_c でブラックホールレジスタに変更
+-- Select モード: 一旦 <C-g> で Visual に切り替えてから同じ操作
+map('x', '<BS>', '"_c', { noremap = true, silent = true, desc = 'Delete Selection' })
+map('s', '<BS>', '<C-g>"_c', { noremap = true, silent = true, desc = 'Delete Selection' })
+map('x', '<Del>', '"_c', { noremap = true, silent = true, desc = 'Delete Selection' })
+map('s', '<Del>', '<C-g>"_c', { noremap = true, silent = true, desc = 'Delete Selection' })
+
+-- 大量行削除時の "N fewer lines" 通知を抑制
+vim.opt.report = 9999
 
 -- ============================================================
 -- ファイル操作
@@ -259,8 +267,7 @@ map("n", "<S-Home>", "v^", { noremap = true, silent = true, desc = "Select to Li
 map("n", "<S-End>",  "v$", { noremap = true, silent = true, desc = "Select to Line End" })
 map("v", "<S-Home>", "^",  { noremap = true, silent = true, desc = "Extend Selection to Line Start" })
 map("v", "<S-End>",  "$h", { noremap = true, silent = true, desc = "Extend Selection to Line End" })
-map("i", "<S-Home>", "<Esc>v^", { noremap = true, silent = true, desc = "Select to Line Start" })
-map("i", "<S-End>",  "<Esc>v$", { noremap = true, silent = true, desc = "Select to Line End" })
+-- i-mode の <S-Home>/<S-End> は keymodel=startsel + selectmode=key に任せる
 
 -- ============================================================
 -- Ctrl+矢印: 単語単位の移動
@@ -285,8 +292,7 @@ map("n", "<C-S-Right>", "vw", { noremap = true, silent = true, desc = "Select Wo
 map("n", "<C-S-Left>",  "vb", { noremap = true, silent = true, desc = "Select Word Backward" })
 map("v", "<C-S-Right>", "w",  { noremap = true, silent = true, desc = "Extend Selection Word Forward" })
 map("v", "<C-S-Left>",  "b",  { noremap = true, silent = true, desc = "Extend Selection Word Backward" })
-map("i", "<C-S-Right>", "<Esc>vw", { noremap = true, silent = true, desc = "Select Word Forward" })
-map("i", "<C-S-Left>",  "<Esc>vb", { noremap = true, silent = true, desc = "Select Word Backward" })
+-- i-mode の <C-S-Right>/<C-S-Left> は keymodel=startsel + selectmode=key に任せる
 
 -- ============================================================
 -- 上下矢印キーの端折り返し
@@ -357,19 +363,8 @@ map("x", "<S-Down>", function()
   return 'j'
 end, { noremap = true, silent = true, expr = true, desc = "Extend Selection Down / to File End" })
 
-map("i", "<S-Up>", function()
-  if vim.fn.line('.') == 1 then
-    return '<Esc>vgg0'
-  end
-  return '<Esc>vk'
-end, { noremap = true, silent = true, expr = true, desc = "Select Up / to File Start" })
-
-map("i", "<S-Down>", function()
-  if vim.fn.line('.') == vim.fn.line('$') then
-    return '<Esc>vG$'
-  end
-  return '<Esc>vj'
-end, { noremap = true, silent = true, expr = true, desc = "Select Down / to File End" })
+-- i-mode の <S-Up>/<S-Down> は keymodel=startsel + selectmode=key に任せる
+-- (ファイル端での折り返し選択は犠牲になるが、Insertモードを抜けない動作を優先)
 
 -- ============================================================
 -- 検索ハイライトのクリア
