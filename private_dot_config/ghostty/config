@@ -38,6 +38,9 @@ keybind = ctrl+right=text:\x1b[1;5C
 keybind = ctrl+left=text:\x1b[1;5D
 keybind = alt+right=text:\x1b[1;3C
 keybind = alt+left=text:\x1b[1;3D
+# Ghostty デフォルトの super+arrow=Ctrl+A/E 文字送信を Ctrl+矢印 CSI で上書き
+keybind = super+right=text:\x1b[1;5C
+keybind = super+left=text:\x1b[1;5D
 keybind = ctrl+z=text:\x1a
 keybind = cmd+z=text:\x1a
 keybind = ctrl+y=text:\x19
