@@ -1,3 +1,8 @@
+---
+name: commit-message
+description: Generate a concise, meaningful commit message from staged or unstaged Git changes and optionally create the commit after user confirmation. Use when the user asks for a commit message, asks to commit current changes, or wants a message that follows the repository's existing history style. Never add co-authored-by lines unless the user explicitly requests them.
+---
+
 # Commit Message Generator
 
 Generate a concise, meaningful commit message based on the current staged changes.
@@ -39,7 +44,7 @@ Present the generated commit message in a code block, then ask the user:
 
 > このメッセージでコミットしますか？ [y/Edit/n]
 
-- If the user replies `y` or `yes`: run `git commit -m "..."` immediately (if unstaged changes were the target, first run `git add <file1> <file2> ...` with each target file listed explicitly — never use `git add -A` or `git add .` — then commit)
+- If the user replies `y` or `yes`: run `git commit -m "..."` immediately (if unstaged changes were the target, first run `git add <file1> <file2> ...` with each target file listed explicitly — never use `git add -A` or `git add .`— then commit)
 - If the user replies with an edited message or asks to change it: use the updated message and commit
 - If the user replies `n` or `cancel`: abort without committing
 
