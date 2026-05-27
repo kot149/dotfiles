@@ -41,8 +41,31 @@ map({ "n", "i", "v" }, "<C-s>", "<Cmd>w<CR>", { noremap = true, silent = true, d
 
 -- Ctrl+W: タブ/バッファを閉じる (ウィンドウ操作は C-hjkl で代替)
 -- 他のバッファに切り替えてから削除することで、ウィンドウごと閉じてnvimが終了するのを防ぐ
-map("n", "<C-w>", function()
+-- 未保存時は Save / Discard / Cancel を確認 (VSCode 風)
+local function close_buffer()
   local cur = vim.api.nvim_get_current_buf()
+  if vim.bo[cur].modified then
+    local name = vim.api.nvim_buf_get_name(cur)
+    if name == "" then name = "[No Name]" else name = vim.fn.fnamemodify(name, ":t") end
+    local choice = vim.fn.confirm(
+      ("Do you want to save the changes you made to %s?"):format(name),
+      "&Save\n&Don't Save\n&Cancel",
+      3
+    )
+    if choice == 0 or choice == 3 then return end
+    if choice == 1 then
+      if vim.api.nvim_buf_get_name(cur) == "" then
+        vim.notify("Cannot save: buffer has no file name", vim.log.levels.WARN)
+        return
+      end
+      local ok, err = pcall(vim.cmd, "write")
+      if not ok then
+        vim.notify("Save failed: " .. tostring(err), vim.log.levels.ERROR)
+        return
+      end
+    end
+  end
+
   local target
   local alt = vim.fn.bufnr("#")
   if alt > 0 and alt ~= cur and vim.api.nvim_buf_is_valid(alt) and vim.bo[alt].buflisted then
@@ -60,7 +83,19 @@ map("n", "<C-w>", function()
   else
     vim.cmd("enew")
   end
-  pcall(vim.api.nvim_buf_delete, cur, {})
+  pcall(vim.api.nvim_buf_delete, cur, { force = true })
+end
+
+map("n", "<C-w>", close_buffer, { noremap = true, silent = true, desc = "Close buffer" })
+map("i", "<C-w>", function() vim.cmd("stopinsert"); close_buffer() end,
+  { noremap = true, silent = true, desc = "Close buffer" })
+map("v", "<C-w>", function()
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
+  close_buffer()
+end, { noremap = true, silent = true, desc = "Close buffer" })
+map("s", "<C-w>", function()
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
+  close_buffer()
 end, { noremap = true, silent = true, desc = "Close buffer" })
 
 -- ============================================================
