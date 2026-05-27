@@ -69,6 +69,34 @@
                 "when_not_contains": [
                     "terminalFocus"
                 ]
+            },
+            {
+                "key": "ctrl+right",
+                "command": "workbench.action.terminal.sendSequence",
+                "when_contains": [
+                    "terminalFocus"
+                ]
+            },
+            {
+                "key": "ctrl+left",
+                "command": "workbench.action.terminal.sendSequence",
+                "when_contains": [
+                    "terminalFocus"
+                ]
+            },
+            {
+                "key": "alt+right",
+                "command": "workbench.action.terminal.sendSequence",
+                "when_contains": [
+                    "terminalFocus"
+                ]
+            },
+            {
+                "key": "alt+left",
+                "command": "workbench.action.terminal.sendSequence",
+                "when_contains": [
+                    "terminalFocus"
+                ]
             }
         ]
     },
@@ -139,6 +167,38 @@
                 "key": "ctrl+y",
                 "command": "redo",
                 "when": "!terminalFocus"
+            },
+            {
+                "key": "ctrl+right",
+                "command": "workbench.action.terminal.sendSequence",
+                "args": {
+                    "text": "\u001b[1;5C"
+                },
+                "when": "terminalFocus"
+            },
+            {
+                "key": "ctrl+left",
+                "command": "workbench.action.terminal.sendSequence",
+                "args": {
+                    "text": "\u001b[1;5D"
+                },
+                "when": "terminalFocus"
+            },
+            {
+                "key": "alt+right",
+                "command": "workbench.action.terminal.sendSequence",
+                "args": {
+                    "text": "\u001b[1;3C"
+                },
+                "when": "terminalFocus"
+            },
+            {
+                "key": "alt+left",
+                "command": "workbench.action.terminal.sendSequence",
+                "args": {
+                    "text": "\u001b[1;3D"
+                },
+                "when": "terminalFocus"
             }
         ]
     }
