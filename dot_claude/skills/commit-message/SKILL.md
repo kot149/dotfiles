@@ -40,13 +40,18 @@ Generate a concise, meaningful commit message based on the current staged change
 
 ## Output
 
-Present the generated commit message in a code block, then ask the user:
+Generate **3 candidate commit messages** that vary in angle (e.g. different scope, emphasis on what vs. why, terse vs. descriptive) but all follow the repository's style. Then call the `AskUserQuestion` tool to let the user pick one:
 
-> このメッセージでコミットしますか？ [y/Edit/n]
+- `question`: `どのコミットメッセージを使いますか？`
+- `header`: `Commit msg` (short label)
+- `multiSelect`: `false`
+- `options`: one entry per candidate. Put the full commit message in `label` (keep under 72 chars so it fits) and a one-line rationale in `description` (e.g. "強調: 〜", "スコープ: 〜"). Recommend the strongest candidate by listing it first and appending ` (Recommended)` to its `label`.
 
-- If the user replies `y` or `yes`: run `git commit -m "..."` immediately (if unstaged changes were the target, first run `git add <file1> <file2> ...` with each target file listed explicitly — never use `git add -A` or `git add .`— then commit)
-- If the user replies with an edited message or asks to change it: use the updated message and commit
-- If the user replies `n` or `cancel`: abort without committing
+Handling the user's answer:
+
+- If the user picks one of the candidates: run `git commit -m "<selected label, minus the trailing ' (Recommended)' if present>"` immediately. If unstaged changes were the target, first run `git add <file1> <file2> ...` with each target file listed explicitly — never use `git add -A` or `git add .` — then commit.
+- If the user picks `Other` and supplies a custom message: use that text verbatim as the commit message and commit.
+- If the user cancels / picks nothing: abort without committing.
 
 **IMPORTANT**: Do NOT add `Co-Authored-By` or any Claude attribution to the commit message. The commit author must be the user only.
 
