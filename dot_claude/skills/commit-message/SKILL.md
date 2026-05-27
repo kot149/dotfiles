@@ -1,6 +1,6 @@
 ---
 name: commit-message
-description: Generate a concise, meaningful commit message from staged or unstaged Git changes and optionally create the commit after user confirmation. Use when the user asks for a commit message, asks to commit current changes, or wants a message that follows the repository's existing history style. Never add co-authored-by lines unless the user explicitly requests them.
+description: Generate a concise, meaningful commit message from staged or unstaged Git changes and optionally create the commit after user confirmation. MUST be invoked for ANY request to create a git commit, including short or implicit ones like "commit", "commit it", "コミット", "コミットして", "コミットお願い", "let's commit", or any similar phrasing in any language. Also use when the user asks for a commit message or wants a message that follows the repository's existing history style. Do NOT call `git commit` directly without first running this skill. Never add co-authored-by lines unless the user explicitly requests them.
 ---
 
 # Commit Message Generator
