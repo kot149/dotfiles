@@ -38,10 +38,13 @@ opt.timeoutlen = 500
 
 opt.completeopt = "menu,menuone,noselect"
 
--- Shift+矢印キーでテキスト選択 (ノーマル・挿入モード両対応)
--- startsel: Shift+矢印でビジュアル選択開始
+-- Shift+矢印キーでテキスト選択 (VSCode風)
+-- startsel: Shift+矢印で選択開始
 -- stopsel:  Shiftなし矢印で選択解除
+-- selectmode=key: Shift起動の選択は Visual ではなく Select モードに入る
+--                  (Select モードでは印字キー入力で選択が置換されInsertに戻る)
 opt.keymodel = "startsel,stopsel"
+opt.selectmode = "key"
 
 opt.foldmethod = "expr"
 opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
