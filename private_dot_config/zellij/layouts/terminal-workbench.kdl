@@ -23,4 +23,14 @@ layout {
             pane name="Terminal"
         }
     }
+    tab name="nvim" focus=true split_direction="vertical" hide_floating_panes=true {
+        pane size="78%" command="nvim" name="nvim" {
+            focus true
+        }
+        pane size="22%" stacked=true {
+            pane name="Terminal 1"
+            pane name="Terminal 2"
+            pane name="Terminal 3"
+        }
+    }
 }
