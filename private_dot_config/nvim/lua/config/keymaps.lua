@@ -44,9 +44,27 @@ vim.opt.report = 9999
 -- Cmd+N: 新規ファイル (空バッファを作成)
 map({ "n", "i", "v" }, "<D-n>", "<Cmd>enew<CR>", { noremap = true, silent = true, desc = "New file" })
 
--- Ctrl+S: 保存
-map({ "n", "i", "v" }, "<C-s>", "<Cmd>w<CR>", { noremap = true, silent = true, desc = "Save file" })
-map({ "n", "i", "v" }, "<D-s>", "<Cmd>w<CR>", { noremap = true, silent = true, desc = "Save file" })
+-- Ctrl+S / Cmd+S: 保存 (無名バッファの場合は保存先パスを入力)
+local function save_file()
+  if vim.api.nvim_buf_get_name(0) == "" then
+    local path = vim.fn.input({ prompt = "Save as: ", default = vim.fn.getcwd() .. "/", completion = "file" })
+    if path == "" then
+      vim.notify("Save cancelled", vim.log.levels.INFO)
+      return
+    end
+    local ok, err = pcall(vim.cmd, "write " .. vim.fn.fnameescape(path))
+    if not ok then
+      vim.notify("Save failed: " .. tostring(err), vim.log.levels.ERROR)
+    end
+  else
+    pcall(vim.cmd, "write")
+  end
+end
+
+map({ "n", "i", "v" }, "<C-s>", function() vim.cmd("stopinsert"); save_file() end,
+  { noremap = true, silent = true, desc = "Save file" })
+map({ "n", "i", "v" }, "<D-s>", function() vim.cmd("stopinsert"); save_file() end,
+  { noremap = true, silent = true, desc = "Save file" })
 
 -- Ctrl+W: タブ/バッファを閉じる (ウィンドウ操作は C-hjkl で代替)
 -- 他のバッファに切り替えてから削除することで、ウィンドウごと閉じてnvimが終了するのを防ぐ
