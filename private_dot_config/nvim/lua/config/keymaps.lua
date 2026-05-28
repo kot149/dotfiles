@@ -21,6 +21,12 @@ map("i", "<C-y>", "<C-o><C-r>", { noremap = true, silent = true, desc = "Redo" }
 -- Ctrl+C: ビジュアル選択をコピー
 map("v", "<C-c>", "y", { noremap = true, silent = true, desc = "Copy" })
 
+-- Ctrl+X: カット (物理 Ctrl+X は super+x 経由で <D-x> として届く)
+-- ビジュアル: 選択範囲をクリップボードへコピーして削除
+-- ノーマル: 行全体をクリップボードへコピーして削除 (VSCode 風)
+map("v", "<D-x>", '"+d', { noremap = true, silent = true, desc = "Cut" })
+map("n", "<D-x>", '"+dd', { noremap = true, silent = true, desc = "Cut Line" })
+
 -- Backspace: 選択範囲を削除してインサートモードへ (クリップボードを汚さない)
 -- Visual モード: "_c でブラックホールレジスタに変更
 -- Select モード: 一旦 <C-g> で Visual に切り替えてから同じ操作
