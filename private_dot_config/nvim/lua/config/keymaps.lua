@@ -27,13 +27,12 @@ map("v", "<C-c>", "y", { noremap = true, silent = true, desc = "Copy" })
 map("v", "<D-x>", '"+d', { noremap = true, silent = true, desc = "Cut" })
 map("n", "<D-x>", '"+dd', { noremap = true, silent = true, desc = "Cut Line" })
 
--- Backspace: 選択範囲を削除してインサートモードへ (クリップボードを汚さない)
--- Visual モード: "_c でブラックホールレジスタに変更
--- Select モード: 一旦 <C-g> で Visual に切り替えてから同じ操作
-map('x', '<BS>', '"_c', { noremap = true, silent = true, desc = 'Delete Selection' })
-map('s', '<BS>', '<C-g>"_c', { noremap = true, silent = true, desc = 'Delete Selection' })
-map('x', '<Del>', '"_c', { noremap = true, silent = true, desc = 'Delete Selection' })
-map('s', '<Del>', '<C-g>"_c', { noremap = true, silent = true, desc = 'Delete Selection' })
+-- Backspace/Delete: 選択範囲を削除 (クリップボードを汚さない、Normalモードへ)
+-- Select モード: 一旦 <C-g> で Visual に切り替えてから削除
+map('x', '<BS>', '"_d', { noremap = true, silent = true, desc = 'Delete Selection' })
+map('s', '<BS>', '<C-g>"_d', { noremap = true, silent = true, desc = 'Delete Selection' })
+map('x', '<Del>', '"_d', { noremap = true, silent = true, desc = 'Delete Selection' })
+map('s', '<Del>', '<C-g>"_d', { noremap = true, silent = true, desc = 'Delete Selection' })
 
 -- 大量行削除時の "N fewer lines" 通知を抑制
 vim.opt.report = 9999
