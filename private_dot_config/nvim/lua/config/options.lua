@@ -46,6 +46,10 @@ opt.completeopt = "menu,menuone,noselect"
 opt.keymodel = "startsel,stopsel"
 opt.selectmode = "key"
 
+-- カーソル: ブロックを避けつつ Normal モードでの縦棒の位置ズレも回避
+-- Normal/Visual/Command: 下線 (hor20)、Insert/Replace: 縦棒 (ver25)、点滅なし
+opt.guicursor = "n-v-c-sm:hor20-blinkon0,i-ci-ve:ver25-blinkon0,r-cr-o:hor20-blinkon0"
+
 opt.foldmethod = "expr"
 opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
 opt.foldlevel = 99
