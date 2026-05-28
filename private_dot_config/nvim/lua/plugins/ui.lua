@@ -31,6 +31,10 @@ return {
     opts = {
       preset = "modern",
       delay = 500,
+      -- Normal / Operator-pending のみで自動表示 (Insert/Visual/Select でマウスクリック等から誤発火するのを防ぐ)
+      triggers = {
+        { "<auto>", mode = "no" },
+      },
     },
     config = function(_, opts)
       local wk = require("which-key")
