@@ -58,6 +58,9 @@ opt.completeopt = "menu,menuone,noselect"
 --                  (Select モードでは印字キー入力で選択が置換されInsertに戻る)
 opt.keymodel = "startsel,stopsel"
 opt.selectmode = "key"
+-- selection=exclusive: 選択範囲の末尾の文字を含めない (VSCode 風)
+-- これがないと Shift+Right 1回で 2文字選択され、削除時に 1文字余分に消える
+opt.selection = "exclusive"
 
 -- カーソル: ブロックを避けつつ Normal モードでの縦棒の位置ズレも回避
 -- Normal/Visual/Command: 下線 (hor20)、Insert/Replace: 縦棒 (ver25)、点滅なし
