@@ -93,32 +93,31 @@ local function close_buffer()
   pcall(vim.api.nvim_buf_delete, cur, { force = true })
 end
 
-map("n", "<D-w>", close_buffer, { noremap = true, silent = true, desc = "Close buffer" })
-map("i", "<D-w>", function() vim.cmd("stopinsert"); close_buffer() end,
+map("n", "<C-w>", close_buffer, { noremap = true, silent = true, desc = "Close buffer" })
+map("i", "<C-w>", function() vim.cmd("stopinsert"); close_buffer() end,
   { noremap = true, silent = true, desc = "Close buffer" })
-map("v", "<D-w>", function()
+map("v", "<C-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   close_buffer()
 end, { noremap = true, silent = true, desc = "Close buffer" })
-map("s", "<D-w>", function()
+map("s", "<C-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   close_buffer()
 end, { noremap = true, silent = true, desc = "Close buffer" })
 
 -- Cmd+W: nvim 自体を終了 (未保存があれば :confirm qa の確認ダイアログ)
--- Ghostty が ctrl+w (物理 Cmd+W) を kitty super+w シーケンスに変換して送ってくる
 local function quit_all()
   vim.cmd("stopinsert")
   pcall(vim.cmd, "confirm qa")
 end
 
-map("n", "<C-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
-map("i", "<C-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
-map("v", "<C-w>", function()
+map("n", "<D-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
+map("i", "<D-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
+map("v", "<D-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   quit_all()
 end, { noremap = true, silent = true, desc = "Quit nvim" })
-map("s", "<C-w>", function()
+map("s", "<D-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   quit_all()
 end, { noremap = true, silent = true, desc = "Quit nvim" })
@@ -146,8 +145,7 @@ map("n", "<C-S-f>", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = t
 map("n", "<C-S-e>", "<Cmd>Neotree focus<CR>", { noremap = true, silent = true, desc = "Focus Explorer" })
 
 -- ============================================================
--- コメントトグル (Ctrl+/)
--- ターミナルでは Ctrl+/ が C-_ として送られることがある
+-- コメントトグル (Cmd+/)
 -- ============================================================
 
 local function toggle_comment_line()
@@ -160,13 +158,9 @@ local function toggle_comment_visual()
   require("Comment.api").toggle.linewise(vim.fn.visualmode())
 end
 
-map("n", "<C-/>", toggle_comment_line, { noremap = true, desc = "Toggle Comment" })
-map("i", "<C-/>", toggle_comment_line, { noremap = true, desc = "Toggle Comment" })
-map("v", "<C-/>", toggle_comment_visual, { noremap = true, desc = "Toggle Comment" })
--- Ctrl+/ が C-_ として届くターミナル向け
-map("n", "<C-_>", toggle_comment_line, { noremap = true, silent = true })
-map("i", "<C-_>", toggle_comment_line, { noremap = true, silent = true })
-map("v", "<C-_>", toggle_comment_visual, { noremap = true, silent = true })
+map("n", "<D-/>", toggle_comment_line, { noremap = true, desc = "Toggle Comment" })
+map("i", "<D-/>", toggle_comment_line, { noremap = true, desc = "Toggle Comment" })
+map("v", "<D-/>", toggle_comment_visual, { noremap = true, desc = "Toggle Comment" })
 
 -- ============================================================
 -- 行の移動 (Alt+↑/↓)
