@@ -98,6 +98,23 @@ map("s", "<C-w>", function()
   close_buffer()
 end, { noremap = true, silent = true, desc = "Close buffer" })
 
+-- Ctrl+Shift+W: nvim 自体を終了 (未保存があれば :confirm qa の確認ダイアログ)
+local function quit_all()
+  vim.cmd("stopinsert")
+  pcall(vim.cmd, "confirm qa")
+end
+
+map("n", "<C-S-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
+map("i", "<C-S-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
+map("v", "<C-S-w>", function()
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
+  quit_all()
+end, { noremap = true, silent = true, desc = "Quit nvim" })
+map("s", "<C-S-w>", function()
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
+  quit_all()
+end, { noremap = true, silent = true, desc = "Quit nvim" })
+
 -- ============================================================
 -- 検索・Quick Open
 -- ============================================================
