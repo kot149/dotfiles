@@ -92,31 +92,32 @@ local function close_buffer()
   pcall(vim.api.nvim_buf_delete, cur, { force = true })
 end
 
-map("n", "<C-w>", close_buffer, { noremap = true, silent = true, desc = "Close buffer" })
-map("i", "<C-w>", function() vim.cmd("stopinsert"); close_buffer() end,
+-- Cmd+W: バッファを閉じる
+map("n", "<D-w>", close_buffer, { noremap = true, silent = true, desc = "Close buffer" })
+map("i", "<D-w>", function() vim.cmd("stopinsert"); close_buffer() end,
   { noremap = true, silent = true, desc = "Close buffer" })
-map("v", "<C-w>", function()
+map("v", "<D-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   close_buffer()
 end, { noremap = true, silent = true, desc = "Close buffer" })
-map("s", "<C-w>", function()
+map("s", "<D-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   close_buffer()
 end, { noremap = true, silent = true, desc = "Close buffer" })
 
--- Cmd+W: nvim 自体を終了 (未保存があれば :confirm qa の確認ダイアログ)
+-- Ctrl+W: nvim 自体を終了 (未保存があれば :confirm qa の確認ダイアログ)
 local function quit_all()
   vim.cmd("stopinsert")
   pcall(vim.cmd, "confirm qa")
 end
 
-map("n", "<D-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
-map("i", "<D-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
-map("v", "<D-w>", function()
+map("n", "<C-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
+map("i", "<C-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
+map("v", "<C-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   quit_all()
 end, { noremap = true, silent = true, desc = "Quit nvim" })
-map("s", "<D-w>", function()
+map("s", "<C-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   quit_all()
 end, { noremap = true, silent = true, desc = "Quit nvim" })
