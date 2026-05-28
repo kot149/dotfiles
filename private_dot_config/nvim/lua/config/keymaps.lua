@@ -41,6 +41,9 @@ vim.opt.report = 9999
 -- ファイル操作
 -- ============================================================
 
+-- Cmd+N: 新規ファイル (空バッファを作成)
+map({ "n", "i", "v" }, "<D-n>", "<Cmd>enew<CR>", { noremap = true, silent = true, desc = "New file" })
+
 -- Ctrl+S: 保存
 map({ "n", "i", "v" }, "<C-s>", "<Cmd>w<CR>", { noremap = true, silent = true, desc = "Save file" })
 map({ "n", "i", "v" }, "<D-s>", "<Cmd>w<CR>", { noremap = true, silent = true, desc = "Save file" })
