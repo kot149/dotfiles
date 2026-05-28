@@ -33,6 +33,19 @@ opt.undofile = true
 opt.swapfile = false
 opt.backup = false
 
+-- nvim外でのファイル変更・git操作を自動検出
+opt.autoread = true
+local auto_reload = vim.api.nvim_create_augroup("AutoReload", { clear = true })
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
+  group = auto_reload,
+  pattern = "*",
+  callback = function()
+    if vim.fn.mode() ~= "c" then
+      vim.cmd("checktime")
+    end
+  end,
+})
+
 -- C-x<C-s> などのシーケンスが快適に入力できるタイムアウト
 opt.timeoutlen = 500
 
