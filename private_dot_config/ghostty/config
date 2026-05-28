@@ -86,8 +86,7 @@ keybind = super+page_up=unbind
 keybind = super+page_down=unbind
 keybind = super+j=unbind
 keybind = super+n=unbind
-keybind = super+w=text:\x17
-keybind = ctrl+w=text:\x1b[119;9u
+keybind = super+w=unbind
 keybind = super+t=unbind
 keybind = super+d=unbind
 keybind = super+[=unbind

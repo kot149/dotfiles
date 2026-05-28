@@ -38,6 +38,7 @@ vim.opt.report = 9999
 
 -- Ctrl+S: 保存
 map({ "n", "i", "v" }, "<C-s>", "<Cmd>w<CR>", { noremap = true, silent = true, desc = "Save file" })
+map({ "n", "i", "v" }, "<D-s>", "<Cmd>w<CR>", { noremap = true, silent = true, desc = "Save file" })
 
 -- Ctrl+W: タブ/バッファを閉じる (ウィンドウ操作は C-hjkl で代替)
 -- 他のバッファに切り替えてから削除することで、ウィンドウごと閉じてnvimが終了するのを防ぐ
@@ -86,14 +87,14 @@ local function close_buffer()
   pcall(vim.api.nvim_buf_delete, cur, { force = true })
 end
 
-map("n", "<C-w>", close_buffer, { noremap = true, silent = true, desc = "Close buffer" })
-map("i", "<C-w>", function() vim.cmd("stopinsert"); close_buffer() end,
+map("n", "<D-w>", close_buffer, { noremap = true, silent = true, desc = "Close buffer" })
+map("i", "<D-w>", function() vim.cmd("stopinsert"); close_buffer() end,
   { noremap = true, silent = true, desc = "Close buffer" })
-map("v", "<C-w>", function()
+map("v", "<D-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   close_buffer()
 end, { noremap = true, silent = true, desc = "Close buffer" })
-map("s", "<C-w>", function()
+map("s", "<D-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   close_buffer()
 end, { noremap = true, silent = true, desc = "Close buffer" })
@@ -105,13 +106,13 @@ local function quit_all()
   pcall(vim.cmd, "confirm qa")
 end
 
-map("n", "<D-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
-map("i", "<D-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
-map("v", "<D-w>", function()
+map("n", "<C-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
+map("i", "<C-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
+map("v", "<C-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   quit_all()
 end, { noremap = true, silent = true, desc = "Quit nvim" })
-map("s", "<D-w>", function()
+map("s", "<C-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   quit_all()
 end, { noremap = true, silent = true, desc = "Quit nvim" })
