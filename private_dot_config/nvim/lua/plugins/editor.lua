@@ -24,7 +24,13 @@ return {
     end,
     opts = {
       close_if_last_window = true,
-      window = { width = 30 },
+      window = {
+        width = 30,
+        mappings = {
+          -- ダブルクリックでファイルを開く / ディレクトリをトグル
+          ["<2-LeftMouse>"] = "open",
+        },
+      },
       filesystem = {
         filtered_items = {
           hide_dotfiles = false,

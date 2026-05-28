@@ -406,3 +406,21 @@ end, { noremap = true, silent = true, expr = true, desc = "Extend Selection Down
 -- ============================================================
 
 map("n", "<Esc>", "<Cmd>nohlsearch<CR>", o)
+
+-- ============================================================
+-- マウスドラッグ / 多重クリックでのテキスト選択を無効化 (Shift+矢印で選択する設計)
+-- Neovim デフォルト: insert中の <2-LeftMouse> は単語を Visual 選択し、neo-tree
+-- でファイルを開こうとダブルクリックしてもファイル名が選択されてしまうのを防ぐ
+-- ============================================================
+for _, mode in ipairs({ "n", "i", "v", "s" }) do
+  vim.keymap.set(mode, "<LeftDrag>",   "<LeftMouse>", { noremap = true, silent = true })
+  vim.keymap.set(mode, "<2-LeftDrag>", "<LeftMouse>", { noremap = true, silent = true })
+end
+-- Insert/Visual/Select 中の多重クリックは一旦 Normal モードに抜けてから処理させる
+-- これで neo-tree の <2-LeftMouse> = open バッファマッピングが効き、
+-- 通常ファイル内では Normal モードの単語選択動作 (VSCode 風) になる
+for _, mode in ipairs({ "i", "v", "s" }) do
+  vim.keymap.set(mode, "<2-LeftMouse>", "<C-\\><C-n><2-LeftMouse>", { silent = true, remap = true })
+  vim.keymap.set(mode, "<3-LeftMouse>", "<C-\\><C-n><3-LeftMouse>", { silent = true, remap = true })
+  vim.keymap.set(mode, "<4-LeftMouse>", "<C-\\><C-n><4-LeftMouse>", { silent = true, remap = true })
+end
