@@ -24,19 +24,41 @@ seven_reset=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // ""')
 total_cost=$(echo "$input" | jq -r '.cost.total_cost_usd // ""')
 
 # Detect API billing mode
-# Priority: 1) ANTHROPIC_API_KEY env var, 2) .cost.total_cost_usd is a number, 3) rate_limits presence, 4) mode cache
+# Cloud providers (Vertex AI / Bedrock) and direct API key are usage-billed → API mode.
+# Subscription (Team/Pro/Max) exposes rate_limits with numeric usage → subscription mode.
+# Note: subscription sessions also expose .cost.total_cost_usd as a number, so rate_limits
+# must take precedence to avoid falsely showing 💰$x.xx for subscription users.
+# Priority:
+#   1) CLAUDE_CODE_USE_VERTEX / CLAUDE_CODE_USE_BEDROCK env (cloud usage-billed) → api
+#   2) subscription rate_limits present → subscription
+#   3) ANTHROPIC_API_KEY env var → api
+#   4) mode cache
+#   5) .cost.total_cost_usd is a number → api (last-resort heuristic)
 _cost_is_num=$(echo "$input" | jq -r '(.cost.total_cost_usd | type) == "number"')
 _has_sub_limits=$(echo "$input" | jq -r '(.rate_limits != null) and ((.rate_limits.five_hour.used_percentage | type) == "number")')
+_use_vertex="${CLAUDE_CODE_USE_VERTEX:-${ANTHROPIC_VERTEX_PROJECT_ID:-}}"
+_use_bedrock="${CLAUDE_CODE_USE_BEDROCK:-}"
 
-if [ -n "${ANTHROPIC_API_KEY:-}" ] || [ "$_cost_is_num" = "true" ]; then
+if [ -n "$_use_vertex" ] && [ "$_use_vertex" != "0" ] && [ "$_use_vertex" != "false" ]; then
   is_api_mode="true"
+  cloud_provider="vertex"
+  echo "api" > "$MODE_CACHE"
+elif [ -n "$_use_bedrock" ] && [ "$_use_bedrock" != "0" ] && [ "$_use_bedrock" != "false" ]; then
+  is_api_mode="true"
+  cloud_provider="bedrock"
   echo "api" > "$MODE_CACHE"
 elif [ "$_has_sub_limits" = "true" ]; then
   is_api_mode="false"
   echo "subscription" > "$MODE_CACHE"
+elif [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+  is_api_mode="true"
+  echo "api" > "$MODE_CACHE"
 elif [ -f "$MODE_CACHE" ]; then
   _cached_mode=$(cat "$MODE_CACHE")
   [ "$_cached_mode" = "api" ] && is_api_mode="true" || is_api_mode="false"
+elif [ "$_cost_is_num" = "true" ]; then
+  is_api_mode="true"
+  echo "api" > "$MODE_CACHE"
 else
   is_api_mode="false"
 fi
@@ -116,11 +138,22 @@ if [ "$is_api_mode" = false ] && [ -n "$seven_pct" ] && [ -n "$seven_reset" ] &&
   seven_str="7d: ${seven_pct}% (⏱ $(fmt_dhm $remaining))"
 fi
 
-# API billing cost display
+# API billing cost display (direct API / Vertex AI / Bedrock)
 cost_str=""
 if [ "$is_api_mode" = true ]; then
+  case "${cloud_provider:-}" in
+    vertex)  provider_label="☁ Vertex" ;;
+    bedrock) provider_label="☁ Bedrock" ;;
+    *)       provider_label="" ;;
+  esac
   if [ -n "$total_cost" ]; then
-    cost_str=$(printf "💰\$%.2f" "$total_cost")
+    if [ -n "$provider_label" ]; then
+      cost_str=$(printf "%s 💰\$%.2f" "$provider_label" "$total_cost")
+    else
+      cost_str=$(printf "💰\$%.2f" "$total_cost")
+    fi
+  elif [ -n "$provider_label" ]; then
+    cost_str="$provider_label"
   fi
 fi
 
