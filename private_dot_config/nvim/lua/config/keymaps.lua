@@ -126,8 +126,9 @@ end, { noremap = true, silent = true, desc = "Quit nvim" })
 -- 検索・Quick Open
 -- ============================================================
 
--- Ctrl+P: Quick Open (ファイル検索)
-map("n", "<C-p>", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true, desc = "Quick Open" })
+-- Cmd+P: Quick Open (ファイル検索)
+map("n", "<D-p>", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true, desc = "Quick Open" })
+map("i", "<D-p>", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true, desc = "Quick Open" })
 
 -- Ctrl+Shift+P: コマンドパレット
 map("n", "<C-S-p>", "<Cmd>Telescope commands<CR>", { noremap = true, silent = true, desc = "Command Palette" })
