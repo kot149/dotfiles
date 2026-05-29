@@ -166,6 +166,35 @@ map("n", "<C-S-f>", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = t
 -- Ctrl+Shift+E: エクスプローラにフォーカス
 map("n", "<C-S-e>", "<Cmd>Neotree focus<CR>", { noremap = true, silent = true, desc = "Focus Explorer" })
 
+-- Cmd+E: neo-tree とエディタのフォーカストグル
+local function toggle_neotree_focus()
+  if vim.bo.filetype == "neo-tree" then
+    vim.cmd("wincmd p")
+    if vim.bo.filetype == "neo-tree" then
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        if vim.bo[buf].filetype ~= "neo-tree" then
+          vim.api.nvim_set_current_win(win)
+          return
+        end
+      end
+    end
+  else
+    vim.cmd("Neotree focus")
+  end
+end
+
+map("n", "<D-e>", toggle_neotree_focus, { noremap = true, silent = true, desc = "Toggle Neo-tree focus" })
+map("i", "<D-e>", function() vim.cmd("stopinsert"); toggle_neotree_focus() end,
+  { noremap = true, silent = true, desc = "Toggle Neo-tree focus" })
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "neo-tree",
+  callback = function(args)
+    vim.keymap.set("n", "<D-e>", toggle_neotree_focus,
+      { buffer = args.buf, noremap = true, silent = true, desc = "Toggle Neo-tree focus" })
+  end,
+})
+
 -- ============================================================
 -- コメントトグル (Cmd+/)
 -- ============================================================
