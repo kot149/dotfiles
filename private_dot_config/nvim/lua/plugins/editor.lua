@@ -29,6 +29,12 @@ return {
         mappings = {
           -- ダブルクリックでファイルを開く / ディレクトリをトグル
           ["<2-LeftMouse>"] = "open",
+          -- リネーム / 作成 / 削除 / 更新 (デフォルトが効かない環境でも動くよう明示)
+          ["r"] = "rename",
+          ["a"] = "add",
+          ["A"] = "add_directory",
+          ["d"] = "delete",
+          ["R"] = "refresh",
         },
       },
       filesystem = {
