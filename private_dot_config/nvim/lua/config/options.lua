@@ -98,3 +98,16 @@ vim.api.nvim_create_autocmd("BufWinEnter", {
     vim.cmd("startinsert")
   end,
 })
+
+-- neo-tree などの特殊バッファに入ったら強制的に Normal モードへ戻す
+-- (別経路で Insert のままウィンドウ移動した場合でも E21 を防ぐ)
+vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
+  group = insert_on_enter,
+  callback = function(args)
+    if skip_filetypes[vim.bo[args.buf].filetype] then
+      if vim.api.nvim_get_mode().mode:sub(1, 1) == "i" then
+        vim.cmd("stopinsert")
+      end
+    end
+  end,
+})
