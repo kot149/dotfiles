@@ -32,10 +32,24 @@ return {
             vim.schedule(function()
               local ok_mgr, manager = pcall(require, "neo-tree.sources.manager")
               local ok_cmd, cmds = pcall(require, "neo-tree.sources.filesystem.commands")
-              if ok_mgr and ok_cmd then
-                local state = manager.get_state("filesystem")
-                if state then cmds.paste_from_clipboard(state) end
+              if not (ok_mgr and ok_cmd) then return end
+              local state = manager.get_state("filesystem")
+              if not state then return end
+              -- カーソル位置がクリップボード内のノードと同一だと
+              -- neo-tree が "Cannot copy X to itself" を出すため、親へ移動
+              local node = state.tree and state.tree:get_node()
+              if node and state.clipboard then
+                for _, item in pairs(state.clipboard) do
+                  if item.node and item.node.path == node.path then
+                    local parent_id = node:get_parent_id()
+                    if parent_id then
+                      require("neo-tree.ui.renderer").focus_node(state, parent_id)
+                    end
+                    break
+                  end
+                end
               end
+              cmds.paste_from_clipboard(state)
             end)
           end
           return true
