@@ -22,6 +22,28 @@ return {
         end,
       })
     end,
+    config = function(_, opts)
+      -- Ghostty が物理 Ctrl+V をブラケットペーストに変換するため、
+      -- neo-tree バッファ上ではブラケットペーストを paste_from_clipboard に転送
+      local orig_paste = vim.paste
+      vim.paste = function(lines, phase)
+        if vim.bo.filetype == "neo-tree" then
+          if phase >= 2 then
+            vim.schedule(function()
+              local ok_mgr, manager = pcall(require, "neo-tree.sources.manager")
+              local ok_cmd, cmds = pcall(require, "neo-tree.sources.filesystem.commands")
+              if ok_mgr and ok_cmd then
+                local state = manager.get_state("filesystem")
+                if state then cmds.paste_from_clipboard(state) end
+              end
+            end)
+          end
+          return true
+        end
+        return orig_paste(lines, phase)
+      end
+      require("neo-tree").setup(opts)
+    end,
     opts = {
       close_if_last_window = true,
       window = {
@@ -35,6 +57,10 @@ return {
           ["A"] = "add_directory",
           ["d"] = "delete",
           ["R"] = "refresh",
+          -- Ctrl+C / Ctrl+X / Ctrl+V でファイル・フォルダのコピペ
+          ["<C-c>"] = "copy_to_clipboard",
+          ["<C-x>"] = "cut_to_clipboard",
+          ["<C-v>"] = "paste_from_clipboard",
         },
       },
       filesystem = {
