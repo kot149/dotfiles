@@ -1,0 +1,16 @@
+{{- if eq .chezmoi.os "windows" }}
+["Documents/AutoHotkey/lib/ImagePut"]
+type = "git-repo"
+url = "https://github.com/iseahound/ImagePut.git"
+refreshPeriod = "168h"
+
+["Documents/AutoHotkey/lib/IMEv2"]
+type = "git-repo"
+url = "https://github.com/k-ayaki/IMEv2.ahk.git"
+refreshPeriod = "168h"
+
+["Documents/AutoHotkey/lib/AHK-v2-libraries"]
+type = "git-repo"
+url = "https://github.com/Descolada/AHK-v2-libraries.git"
+refreshPeriod = "168h"
+{{- end }}
