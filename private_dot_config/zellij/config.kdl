@@ -20,3 +20,5 @@ keybinds {
 }
 
 session_serialization false
+
+theme "blue"
