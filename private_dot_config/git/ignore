@@ -8,9 +8,13 @@ Desktop.ini
 
 # Claude
 **/.claude/settings.local.json
+CLAUDE.local.md
+CLAUDE.personal.md
 
 # Codex
 **/.codex
+AGENTS.local.md
+AGENTS.personal.md
 
 .memsearch/
 
