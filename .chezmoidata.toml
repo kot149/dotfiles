@@ -44,6 +44,7 @@ agent_shell_allow = [
   "git config --list*",
   "git config *",
   "git ls-files *",
+  "git check-ignore *",
   "git rev-parse *",
   "git reflog",
   "git reflog show *",
