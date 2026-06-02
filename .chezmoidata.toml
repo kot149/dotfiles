@@ -53,6 +53,7 @@ agent_shell_allow = [
   "git shortlog *",
   "gh pr list*",
   "gh pr view *",
+  "gh pr diff *",
   "gh issue list*",
   "gh issue view *",
   "gh repo view *",
