@@ -9,6 +9,9 @@ git_safe_directories = []
 agent_plain_allow = [
   "Edit",
   "WebSearch",
+  "WebFetch(domain:zenn.dev)",
+  "WebFetch(domain:github.com)",
+  "WebFetch(domain:www.itmedia.co.jp)",
 ]
 
 agent_shell_allow = [
@@ -74,6 +77,7 @@ agent_shell_allow = [
   "env",
   "printenv *",
   "type *",
+  "ps *",
   "docker ps *",
   "docker images *",
   "docker logs *",
@@ -104,8 +108,20 @@ agent_shell_allow = [
   "go mod graph*",
   "go version*",
   "npm list*",
+  "npm ls*",
   "npm outdated*",
   "npm info *",
+  "npm view *",
+  "npm search *",
+  "npm docs *",
+  "npm repo *",
+  "npm explain *",
+  "npm why *",
+  "npm fund*",
+  "npm ping*",
+  "npm config get *",
+  "npm config list*",
+  "npm doctor*",
   "node --version*",
   "pnpm list*",
   "pnpm outdated*",
