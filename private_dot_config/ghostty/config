@@ -82,8 +82,6 @@ keybind = super+k=unbind
 keybind = super+a=unbind
 keybind = super+home=unbind
 keybind = super+end=unbind
-keybind = super+page_up=unbind
-keybind = super+page_down=unbind
 keybind = super+j=unbind
 keybind = super+n=unbind
 keybind = super+w=unbind
@@ -97,6 +95,10 @@ keybind = super+f=unbind
 keybind = super+e=unbind
 keybind = super+g=unbind
 keybind = super+backspace=unbind
+
+# タブ移動: 物理 Ctrl+PageUp/Down (Ghostty 上は super) で左右のタブへ
+keybind = super+page_up=previous_tab
+keybind = super+page_down=next_tab
 
 # Ghostty 操作は super+shift 系へ集約
 keybind = super+shift+,=open_config
