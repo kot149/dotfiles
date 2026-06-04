@@ -16,3 +16,6 @@ prefix_rule(pattern={{ template "codexPattern" (printf "rtk %s" .) }}, decision=
 prefix_rule(pattern={{ template "codexPattern" . }}, decision="allow")
 prefix_rule(pattern={{ template "codexPattern" (printf "rtk %s" .) }}, decision="allow")
 {{- end }}
+{{- range .agent_shell_allow_no_rtk }}
+prefix_rule(pattern={{ template "codexPattern" . }}, decision="allow")
+{{- end }}

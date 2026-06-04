@@ -132,6 +132,7 @@ agent_shell_allow = [
   "bun outdated*",
   "deno info *",
   "deno --version*",
+  "vitest",
   "chezmoi diff *",
   "chezmoi status *",
   "chezmoi managed *",
@@ -162,6 +163,16 @@ agent_shell_allow = [
   "home-manager packages*",
   "home-manager generations*",
   "nixos-rebuild dry-build*",
+]
+
+# Allowed commands that should NOT get an auto-generated `rtk <cmd>` variant
+# (e.g. rtk itself — wrapping rtk in rtk is meaningless).
+agent_shell_allow_no_rtk = [
+  "command -v rtk",
+  "rtk --help",
+  "rtk hook *",
+  "rtk read",
+  "rtk lint",
 ]
 
 agent_shell_deny = [

@@ -79,7 +79,7 @@ When adding new tunable values, prefer threading them through `.chezmoidata.toml
 
 ## Agent permission lists
 
-`.chezmoidata.toml` defines `agent_plain_allow`, `agent_shell_allow`, and `agent_shell_deny` arrays consumed by AI-agent settings templates (e.g. `dot_claude/settings.json.tmpl`, `dot_codex/...`). Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`.
+`.chezmoidata.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_no_rtk`, and `agent_shell_deny` arrays consumed by AI-agent settings templates (e.g. `dot_claude/settings.json.tmpl`, `dot_codex/...`). Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Entries in `agent_shell_allow` are emitted both bare and with an auto-generated `rtk <cmd>` variant — put commands that should be allowed **without** the `rtk` wrapper (e.g. `rtk` itself) in `agent_shell_allow_no_rtk`, which emits only the bare form.
 
 ## User-level agent instructions
 

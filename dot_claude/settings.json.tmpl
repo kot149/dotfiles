@@ -9,6 +9,9 @@
     {{- $allow = append $allow (printf "Bash(corepack %s)" .) -}}
   {{- end -}}
 {{- end -}}
+{{- range .agent_shell_allow_no_rtk -}}
+  {{- $allow = append $allow (printf "Bash(%s)" .) -}}
+{{- end -}}
 {{- $deny := list -}}
 {{- range .agent_shell_deny -}}
   {{- $deny = append $deny (printf "Bash(%s)" .) -}}
