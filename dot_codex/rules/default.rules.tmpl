@@ -16,6 +16,9 @@ prefix_rule(pattern={{ template "codexPattern" (printf "rtk %s" .) }}, decision=
 prefix_rule(pattern={{ template "codexPattern" . }}, decision="allow")
 prefix_rule(pattern={{ template "codexPattern" (printf "rtk %s" .) }}, decision="allow")
 {{- end }}
+{{- range .agent_shell_allow_no_rtk }}
+prefix_rule(pattern={{ template "codexPattern" . }}, decision="allow")
+{{- end }}
 prefix_rule(pattern=["rtk", "curl", "-s"], decision="allow")
 prefix_rule(pattern=["rtk", "proxy", "curl", "-s", "https://bundlephobia.com/api/size?package=dayjs"], decision="allow")
 prefix_rule(pattern=["rtk", "proxy", "curl", "-s", "https://registry.npmjs.org/dayjs/latest"], decision="allow")
