@@ -208,6 +208,33 @@ rm() {
 }
 
 alias git-reset-all="git reset --hard && git clean -fd"
+
+# .git/info/exclude にローカル限定の無視パターンを追加する
+local-ignore() {
+  if [ $# -eq 0 ]; then
+    echo "Usage: local-ignore <pattern>..." >&2
+    return 1
+  fi
+
+  local git_dir
+  git_dir=$(git rev-parse --git-dir 2>/dev/null) || {
+    echo "fatal: Not a git repository." >&2
+    return 1
+  }
+
+  local exclude_file="$git_dir/info/exclude"
+  mkdir -p "$git_dir/info"
+
+  local pattern
+  for pattern in "$@"; do
+    if grep -qxF -- "$pattern" "$exclude_file" 2>/dev/null; then
+      echo "Already ignored: $pattern"
+    else
+      echo "$pattern" >> "$exclude_file"
+      echo "Added to local ignore: $pattern"
+    fi
+  done
+}
 alias ls='eza -1 -F=auto --group-directories-first'
 alias tree='eza --tree -F=auto'
 
