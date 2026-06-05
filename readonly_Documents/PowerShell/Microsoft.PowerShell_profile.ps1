@@ -210,6 +210,42 @@ function git-logout {
 	cmdkey /delete:git:https://github.com
 }
 
+# .git/info/exclude にローカル限定の無視パターンを追加する
+function local-ignore {
+    param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Patterns)
+
+    if (-not $Patterns -or $Patterns.Count -eq 0) {
+        Write-Host "Usage: local-ignore <pattern>..." -ForegroundColor Yellow
+        return
+    }
+
+    $gitDir = git rev-parse --git-dir 2>$null
+    if (-not $gitDir) {
+        Write-Host "fatal: Not a git repository." -ForegroundColor Red
+        return
+    }
+
+    $infoDir = Join-Path $gitDir "info"
+    $excludeFile = Join-Path $infoDir "exclude"
+    if (-not (Test-Path $infoDir)) {
+        New-Item -ItemType Directory -Path $infoDir -Force | Out-Null
+    }
+
+    $existing = @()
+    if (Test-Path $excludeFile) {
+        $existing = @(Get-Content $excludeFile)
+    }
+
+    foreach ($pattern in $Patterns) {
+        if ($existing -contains $pattern) {
+            Write-Host "Already ignored: $pattern"
+        } else {
+            Add-Content -Path $excludeFile -Value $pattern
+            Write-Host "Added to local ignore: $pattern"
+        }
+    }
+}
+
 function export() {
     ($key, $value) = $args[0] -split "=";
     set-item "env:${key}" $value;
