@@ -34,7 +34,7 @@ Rules:
   - `dot_zshrc` → `chezmoi apply -v ~/.zshrc`
   - `dot_claude/settings.json` → `chezmoi apply -v ~/.claude/settings.json`
   - `private_dot_config/zellij/config.kdl` → `chezmoi apply -v ~/.config/zellij/config.kdl`
-  - `private_bin/executable_zjdev` → `chezmoi apply -v ~/bin/zjdev`
+  - `dot_local/bin/executable_zjdev` → `chezmoi apply -v ~/.local/bin/zjdev`
   - `foo.tmpl` → target is `foo` (drop the `.tmpl` suffix)
 - If unsure of the target path, run `chezmoi target-path <source-path>` to resolve it before applying.
 - If multiple files were edited, run `chezmoi apply -v` once per target path (not a single bare apply).
