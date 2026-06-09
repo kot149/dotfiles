@@ -160,14 +160,17 @@ fi
 # Output: items separated by " | "
 SEP="\033[0m\033[38;5;240m | \033[0m"
 
-printf "\033[38;5;214m%s\033[0m" "$cwd"
+# Line 1: cwd [| git_info]
+printf "\033[38;5;214m  %s\033[0m" "$cwd"
 if [ -n "$git_info" ]; then
   printf "$SEP"
-  printf "\033[38;5;141m%s\033[0m" "$git_info"
+  printf "\033[38;5;141m  %s\033[0m" "$git_info"
 fi
+printf "\n"
+
+# Line 2: model | ctx [| rate limits | cost]
 if [ -n "$model" ]; then
-  printf "$SEP"
-  printf "\033[38;5;67m%s\033[0m" "$model"
+  printf "\033[38;5;67m󰚩  %s\033[0m" "$model"
 fi
 printf "$SEP"
 printf "\033[38;5;109mctx %s%%\033[0m" "$ctx_pct"
