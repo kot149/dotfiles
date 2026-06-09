@@ -94,14 +94,14 @@ truncation_length = 99
 truncate_to_repo = false
 
 [git_branch]
-symbol = " "
+symbol = " "
 style = "bg:git_bg fg:text_fg"
-format = "[](fg:prev_bg bg:git_bg)[ $symbol $branch ]($style)"
+format = "[](fg:prev_bg bg:git_bg)[ $symbol$branch ]($style)"
 only_attached = true
 
 [git_commit]
 style = "bg:git_bg fg:text_fg"
-format = "[](fg:prev_bg bg:git_bg)[   $hash$tag]($style)"
+format = "[](fg:prev_bg bg:git_bg)[   $hash$tag]($style)"
 
 [git_status]
 style = "bg:git_bg fg:text_fg"
