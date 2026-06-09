@@ -208,6 +208,7 @@ rm() {
 }
 
 alias git-reset-all="git reset --hard && git clean -fd"
+alias force-push='git push --force-with-lease'
 
 # .git/info/exclude にローカル限定の無視パターンを追加する
 local-ignore() {
