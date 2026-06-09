@@ -164,7 +164,7 @@ SEP="\033[0m\033[38;5;240m | \033[0m"
 printf "\033[38;5;214m  %s\033[0m" "$cwd"
 if [ -n "$git_info" ]; then
   printf "$SEP"
-  printf "\033[38;5;141m  %s\033[0m" "$git_info"
+  printf "\033[38;5;141m %s\033[0m" "$git_info"
 fi
 printf "\n"
 
