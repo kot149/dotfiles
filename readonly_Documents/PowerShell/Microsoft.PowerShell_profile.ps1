@@ -200,7 +200,20 @@ function lla {
 Remove-Item Alias:rm -Force -ErrorAction Ignore
 function rm {
     param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Args)
-    rip @Args
+    $filtered = [System.Collections.Generic.List[string]]::new()
+    foreach ($arg in $Args) {
+        if ($arg -eq '-r' -or $arg -eq '-R' -or $arg -eq '--recursive') {
+            continue
+        } elseif ($arg -match '^-[^-]') {
+            $newArg = '-' + ($arg.Substring(1) -replace '[rR]', '')
+            if ($newArg -ne '-') {
+                $filtered.Add($newArg)
+            }
+        } else {
+            $filtered.Add($arg)
+        }
+    }
+    rip @filtered
 }
 
 Set-Alias cat Get-Content
