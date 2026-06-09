@@ -206,6 +206,8 @@ function rm {
 Set-Alias cat Get-Content
 # New-Alias -Name grep -Value Select-String
 
+function force-push { git push --force-with-lease @args }
+
 function git-logout {
 	cmdkey /delete:git:https://github.com
 }
