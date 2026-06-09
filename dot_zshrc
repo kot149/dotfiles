@@ -334,7 +334,7 @@ if command -v fzf &> /dev/null; then
   # cd
   fcd() {
     local dir
-    dir=$(find ${1:-.} -path '*/\.*' -prune \
+    dir=$(find ${1:-.} -type d \( -name .git -o -name node_modules \) -prune \
                     -o -type d -print 2> /dev/null | fzf +m) &&
     cd "$dir"
   }
