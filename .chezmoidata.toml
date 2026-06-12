@@ -11,7 +11,10 @@ agent_plain_allow = [
   "WebSearch",
   "WebFetch(domain:zenn.dev)",
   "WebFetch(domain:github.com)",
+  "WebFetch(domain:gist.github.com)",
   "WebFetch(domain:www.itmedia.co.jp)",
+  "mcp__chrome-devtools__new_page",
+  "mcp__chrome-devtools__take_screenshot",
 ]
 
 agent_shell_allow = [
@@ -38,6 +41,8 @@ agent_shell_allow = [
   "git branch -r*",
   "git remote -v",
   "git remote show *",
+  "git fetch *",
+  "git show-ref *",
   "git stash list*",
   "git tag",
   "git tag -l*",
@@ -47,8 +52,10 @@ agent_shell_allow = [
   "git config --list*",
   "git config *",
   "git ls-files *",
+  "git ls-remote *",
   "git check-ignore *",
   "git rev-parse *",
+  "git rev-list *",
   "git reflog",
   "git reflog show *",
   "git worktree list*",
@@ -133,6 +140,9 @@ agent_shell_allow = [
   "deno info *",
   "deno --version*",
   "vitest",
+  "direnv version*",
+  "direnv allow *",
+  "direnv exec *",
   "chezmoi diff *",
   "chezmoi status *",
   "chezmoi managed *",
@@ -173,6 +183,12 @@ agent_shell_allow_no_rtk = [
   "rtk hook *",
   "rtk read",
   "rtk lint",
+  "rtk vitest *",
+  "rtk tsc *",
+  "rtk pnpm *",
+  "rtk docker *",
+  "rtk prisma *",
+  "rtk git *",
 ]
 
 agent_shell_deny = [
