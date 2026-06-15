@@ -60,40 +60,44 @@ L_NEUT = 0.52   # neutral gray utilities
 
 # (slot, L, C, hue, note)
 PALETTE = [
-    # System anchor (cool slate, h=250) — neutral utility band
-    ("os_bg",           L_TEXT, 0.04,   250,  "neutral slate anchor"),
-    ("time_bg",         L_TEXT, 0.03,   250,  "neutral slate anchor"),
-    ("cmd_duration_bg", 0.60,   0.03,   250,  "neutral slate, slightly lighter"),
+    # Monochromatic blue palette — all hues confined to h ∈ [225, 280].
+    # Differentiation comes from L (lightness hierarchy) and small hue
+    # shifts within the blue family (cyan-blue 225 ↔ slate 250 ↔
+    # violet-blue 280).
 
-    # OS row — brand-locked hues, normalized L/C
-    ("windows_bg",      L_TEXT, C_TEXT, 250,  "Microsoft brand blue, normalized"),
-    ("macos_bg",        L_DARK, 0.02,   250,  "Apple silver, dark text"),
-    ("ubuntu_bg",       L_TEXT, C_TEXT,  40,  "Ubuntu orange, normalized"),
-    ("debian_bg",       L_TEXT, C_TEXT,  20,  "Debian red, normalized"),
+    # System anchor — near-neutral cool gray-blue
+    ("os_bg",           L_TEXT, 0.03,   245,  "neutral cool gray-blue"),
+    ("time_bg",         L_TEXT, 0.02,   245,  "neutral cool gray-blue"),
+    ("cmd_duration_bg", 0.60,   0.02,   245,  "neutral cool, slightly lighter"),
+
+    # OS row — small hue shifts within blue family
+    ("windows_bg",      L_TEXT, C_TEXT, 250,  "Microsoft blue (anchor)"),
+    ("macos_bg",        L_DARK, 0.02,   245,  "Apple silver-blue, dark text"),
+    ("ubuntu_bg",       L_TEXT, C_TEXT, 275,  "shifted to violet-blue"),
+    ("debian_bg",       L_TEXT, C_TEXT, 280,  "shifted to deep violet-blue"),
 
     # Shell row
-    ("shell_bg",        L_NEUT, 0.00,   250,  "neutral fallback"),
-    ("powershell_bg",   L_DEEP, 0.07,   250,  "powershell deep navy"),
-    ("cmd_bg",          L_NEUT, 0.00,   250,  "pure neutral gray"),
-    ("zsh_bg",          L_TEXT, C_TEXT, 250,  "zsh slate-blue"),
-    ("bash_bg",         L_DEEP, 0.055,   70,  "bash dark amber"),
+    ("shell_bg",        L_NEUT, 0.00,   245,  "neutral fallback"),
+    ("powershell_bg",   L_DEEP, 0.08,   250,  "deep navy"),
+    ("cmd_bg",          L_NEUT, 0.00,   245,  "pure neutral gray"),
+    ("zsh_bg",          L_TEXT, C_TEXT, 255,  "indigo-blue"),
+    ("bash_bg",         L_DEEP, 0.07,   235,  "deep cerulean"),
 
-    # Directory — warm complement (h=60) to slate (h=250); high L+C for
-    # vivid orange (paired with dark text dir_fg)
-    ("dir_bg",          L_DARK, 0.13,    60,  "warm orange, dark text"),
-    ("dir_fg",          0.18,   0.02,    60,  "dark warm text for dir"),
+    # Directory — light powder blue (paired with dark dir_fg)
+    ("dir_bg",          L_DARK, 0.09,   235,  "light powder blue, dark text"),
+    ("dir_fg",          0.18,   0.03,   245,  "dark blue text for dir"),
 
-    # Git — bridge purple between blue (250) and red (20)
-    ("git_bg",          L_TEXT, C_TEXT, 300,  "purple bridge"),
+    # Git — violet-blue (still inside blue family)
+    ("git_bg",          L_TEXT, C_TEXT, 275,  "violet-blue"),
 
-    # Language row — brand hues normalized to same L/C
-    ("python_bg",       L_TEXT, C_TEXT, 250,  "Python brand blue"),
-    ("node_bg",         L_TEXT, C_TEXT, 145,  "Node green (triadic vs blue/orange)"),
-    ("bun_bg",          0.35,   0.01,    70,  "bun warm near-neutral"),
-    ("rust_bg",         L_TEXT, C_TEXT,  35,  "Rust orange-red"),
+    # Language row — varied within blue family
+    ("python_bg",       L_TEXT, C_TEXT, 250,  "Python blue (anchor)"),
+    ("node_bg",         L_TEXT, C_TEXT, 225,  "cyan-blue"),
+    ("bun_bg",          0.35,   0.02,   245,  "near-neutral dark blue"),
+    ("rust_bg",         L_TEXT, C_TEXT, 270,  "blue-purple"),
 
-    # Status — alert red, higher chroma than rest for semantic pop
-    ("status_bg",       L_TEXT, 0.15,    25,  "alert red, elevated chroma"),
+    # Status — high chroma blue; pops via saturation rather than hue
+    ("status_bg",       L_TEXT, 0.20,   250,  "vivid blue, alert via saturation"),
 ]
 
 
