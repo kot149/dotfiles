@@ -24,32 +24,33 @@ $character\
 [ palettes . my_colors ]
 text_fg = '#ffffff'
 
-os_bg = '#374362'
-windows_bg = '#3a6cff'
-macos_bg = '#9dabd1'
-macos_fg = '#0b1010'
-ubuntu_bg = '#C14362'
-debian_bg = '#d0074f'
+os_bg = '#667785'
+windows_bg = '#4378ad'
+macos_bg = '#adb9c4'
+macos_fg = '#06131e'
+ubuntu_bg = '#646faf'
+debian_bg = '#696dae'
 
-shell_bg = '#9dabd1'
-powershell_bg = '#2a415f'
-cmd_bg = '#808080'
-zsh_bg = '#4c6fcf'
-bash_bg = '#ffcf84'
+shell_bg = '#696969'
+powershell_bg = '#113a5f'
+cmd_bg = '#696969'
+zsh_bg = '#4a76ae'
+bash_bg = '#033d57'
 
-dir_bg = '#ffa857'
+dir_bg = '#7cc1e9'
+dir_fg = '#06131e'
 
-git_bg = '#6e5494'
+git_bg = '#646faf'
 
-python_bg = '#2dba2d'
-rust_bg = '#a2300c'
-node_bg = '#2257e6'
-bun_bg = '#474A4F'
+python_bg = '#4378ad'
+rust_bg = '#5e71af'
+node_bg = '#1880a0'
+bun_bg = '#323c44'
 
-status_bg = '#ff4643'
+status_bg = '#0074e3'
 status_fg = '#ffffff'
-time_bg = '#5e6c87'
-cmd_duration_bg = '#9cabd0'
+time_bg = '#6b7680'
+cmd_duration_bg = '#77828c'
 
 [fill]
 symbol = " "
@@ -86,8 +87,8 @@ bash_indicator = "[](fg:prev_bg bg:bash_bg)[ bash ](bg:bash_bg fg:text_fg)"
 cmd_indicator = "[](fg:prev_bg bg:cmd_bg)[ cmd ](bg:cmd_bg fg:text_fg)"
 
 [directory]
-style = "bg:dir_bg fg:text_fg"
-read_only_style = "bg:dir_bg fg:text_fg"
+style = "bg:dir_bg fg:dir_fg"
+read_only_style = "bg:dir_bg fg:dir_fg"
 format = "[](fg:prev_bg bg:dir_bg)[ \uf07c ( )($read_only) $path ]($style)"
 read_only = " \uf023"
 truncation_length = 99
