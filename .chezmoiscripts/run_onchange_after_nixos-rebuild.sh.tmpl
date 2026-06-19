@@ -1,0 +1,11 @@
+{{- if and (eq .chezmoi.os "linux") (lookPath "nixos-rebuild") -}}
+#!/bin/bash
+
+# configuration.nix hash: {{ include "private_dot_config/nixos/configuration.nix" | sha256sum }}
+
+echo "Deploying NixOS configuration..."
+sudo cp "$HOME/.config/nixos/configuration.nix" /etc/nixos/configuration.nix
+
+echo "Running nixos-rebuild switch..."
+sudo nixos-rebuild switch
+{{- end -}}
