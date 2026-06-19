@@ -2,9 +2,12 @@
 #!/bin/bash
 
 # configuration.nix hash: {{ include "private_dot_config/nixos/configuration.nix" | sha256sum }}
+# wsl.nix hash: {{ include "private_dot_config/nixos/wsl.nix" | sha256sum }}
 
 echo "Deploying NixOS configuration..."
+sudo mkdir -p /etc/nixos
 sudo cp "$HOME/.config/nixos/configuration.nix" /etc/nixos/configuration.nix
+sudo cp "$HOME/.config/nixos/wsl.nix" /etc/nixos/wsl.nix
 
 echo "Running nixos-rebuild switch..."
 sudo nixos-rebuild switch

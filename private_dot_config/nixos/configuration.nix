@@ -1,19 +1,13 @@
 { config, lib, pkgs, ... }:
 
+let
+  isWsl = builtins.pathExists <nixos-wsl/modules>;
+in
 {
-  imports = [
+  imports = lib.optionals isWsl [
     <nixos-wsl/modules>
+    ./wsl.nix
   ];
-
-  wsl.enable = true;
-  wsl.defaultUser = "nixos";
-  wsl.wslConf.network.generateResolvConf = false;
-  wsl.wslConf.network.generateHosts = false;
-
-  networking.nameservers = [ "8.8.8.8" "8.8.4.4" ];
-  networking.extraHosts = ''
-    140.82.121.4 github.com-kot149
-  '';
 
   services.avahi = {
     enable = true;
