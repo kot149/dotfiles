@@ -14,6 +14,11 @@ SetCapsLockState "AlwaysOff"
 ; Volume_Down::SoundSetVolume(-5)
 
 ; -------------------------------------------------
+; ** Mute/unmute active window's audio session
+; -------------------------------------------------
+^!+m::Run('nircmdc muteappvolume focused 2', , 'Hide')
+
+; -------------------------------------------------
 ; ** Maximize/minimize Window
 ; -------------------------------------------------
 #Up::WinMaximize("A")
