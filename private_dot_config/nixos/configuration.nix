@@ -15,6 +15,17 @@
     140.82.121.4 github.com-kot149
   '';
 
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    publish = {
+      enable = true;
+      addresses = true;
+    };
+  };
+
+  networking.firewall.allowedUDPPorts = [ 5353 ];
+
   programs.zsh.enable = true;
   users.users.nixos.shell = pkgs.zsh;
 
