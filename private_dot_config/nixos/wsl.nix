@@ -10,4 +10,9 @@
   networking.extraHosts = ''
     140.82.121.4 github.com-kot149
   '';
+
+  environment.etc."resolv.conf".text = ''
+    nameserver 8.8.8.8
+    nameserver 8.8.4.4
+  '';
 }

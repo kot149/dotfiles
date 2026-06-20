@@ -9,6 +9,11 @@ sudo mkdir -p /etc/nixos
 sudo cp "$HOME/.config/nixos/configuration.nix" /etc/nixos/configuration.nix
 sudo cp "$HOME/.config/nixos/wsl.nix" /etc/nixos/wsl.nix
 
+if [ -L /etc/resolv.conf ]; then
+  echo "Removing WSL-managed resolv.conf symlink..."
+  sudo rm /etc/resolv.conf
+fi
+
 echo "Running nixos-rebuild switch..."
 sudo nixos-rebuild switch
 {{- end -}}
