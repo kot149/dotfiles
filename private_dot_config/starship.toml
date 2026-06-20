@@ -30,6 +30,7 @@ macos_bg = '#adb9c4'
 macos_fg = '#06131e'
 ubuntu_bg = '#646faf'
 debian_bg = '#696dae'
+nixos_bg = '#5277c3'
 
 shell_bg = '#696969'
 powershell_bg = '#113a5f'
@@ -72,6 +73,7 @@ Windows = "[](fg:windows_bg)[ ](bold bg:windows_bg)"
 Macos = "[](fg:macos_bg)[ ](bold bg:macos_bg fg:macos_fg)"
 Ubuntu = "[](fg:ubuntu_bg)[ ](bold bg:ubuntu_bg)"
 Debian = "[](fg:debian_bg)[ ](bold bg:debian_bg)"
+NixOS = "[](fg:nixos_bg)[ ](bold bg:nixos_bg)"
 
 [custom.wsl]
 os = "linux"
