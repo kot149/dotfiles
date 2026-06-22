@@ -8,7 +8,6 @@
 # linux-headless.nix hash: {{ include "private_dot_config/home-manager/linux-headless.nix" | sha256sum }}
 # darwin.nix hash: {{ include "private_dot_config/home-manager/darwin.nix" | sha256sum }}
 # wsl.nix hash: {{ include "private_dot_config/home-manager/wsl.nix" | sha256sum }}
-# rtk.nix hash: {{ include "private_dot_config/home-manager/rtk.nix" | sha256sum }}
 {{- $localPath := printf "%s/.config/home-manager/local.nix" .chezmoi.homeDir -}}
 {{- $localStat := stat $localPath -}}
 {{- if $localStat }}

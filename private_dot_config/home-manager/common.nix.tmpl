@@ -1,7 +1,6 @@
 { config, lib, pkgs, nixClaudeCode, nixCodexCli, ... }:
 
 let
-  rtk = pkgs.callPackage ./rtk.nix { };
   basePackages = (with pkgs; [
     # dotfiles
     chezmoi
@@ -71,6 +70,7 @@ let
     nixClaudeCode
     nixCodexCli
     opencode
+    rtk
 
     # misc
     curl
@@ -89,7 +89,7 @@ let
     inconsolata
     nerd-fonts.inconsolata
     nerd-fonts.symbols-only
-  ]) ++ [ rtk ];
+  ]);
   denyPackages = config.localDeny.packages;
 in
 {
