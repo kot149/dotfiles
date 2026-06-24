@@ -270,4 +270,6 @@ agent_shell_deny = [
   "xargs bash*",
   "shred *",
   "truncate *",
+  "chezmoi apply *--force*",
+  "chezmoi apply *-f *",
 ]
