@@ -52,6 +52,7 @@ agent_shell_allow = [
   "git config --list*",
   "git config *",
   "git ls-files *",
+  "git ls-tree *",
   "git ls-remote *",
   "git check-ignore *",
   "git rev-parse *",
