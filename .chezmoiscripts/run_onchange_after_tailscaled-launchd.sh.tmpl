@@ -1,0 +1,24 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/sh
+set -eu
+
+# Trigger when the resolved tailscaled binary path changes, so this re-runs
+# on any actual tailscale install/remove/version-bump (regardless of which
+# file in home-manager declared it), and not on unrelated common.nix edits.
+# tailscaled.sh hash: {{ include "scripts/macos-launchd/tailscaled.sh" | sha256sum }}
+# tailscaled binary: {{ output "sh" "-c" "if command -v tailscaled >/dev/null 2>&1; then readlink -f \"$(command -v tailscaled)\"; fi" | trim }}
+
+PLIST=/Library/LaunchDaemons/com.tailscale.tailscaled.plist
+LABEL=com.tailscale.tailscaled
+
+if ! command -v tailscaled >/dev/null 2>&1; then
+    if [ -e "$PLIST" ]; then
+        echo "tailscale not installed; tearing down launchd configuration"
+        sudo launchctl bootout system/"$LABEL" 2>/dev/null || true
+        sudo rm -f "$PLIST"
+    fi
+    exit 0
+fi
+
+sh "{{ .chezmoi.sourceDir }}/scripts/macos-launchd/tailscaled.sh"
+{{- end -}}
