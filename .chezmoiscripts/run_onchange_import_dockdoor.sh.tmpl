@@ -1,0 +1,23 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/sh
+set -euo pipefail
+
+# checksum: {{ include ".chezmoitemplates/dockdoor.plist.tmpl" | sha256sum }}
+
+tmpfile=$(mktemp -t dockdoor.plist.XXXXXX)
+cleanup() { rm -f "$tmpfile"; }
+trap cleanup EXIT INT HUP TERM
+
+# Render template to a temporary file
+cat >"$tmpfile" <<'PLIST'
+{{ include ".chezmoitemplates/dockdoor.plist.tmpl" }}
+PLIST
+
+# Validate the generated plist (must be XML1 or binary)
+/usr/bin/plutil -lint "$tmpfile" 1>/dev/null
+
+# Import into the DockDoor domain (writes to ~/Library/Preferences)
+/usr/bin/defaults import com.ethanbills.DockDoor "$tmpfile"
+
+echo "Imported com.ethanbills.DockDoor settings via defaults import."
+{{- end -}}

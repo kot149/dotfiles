@@ -125,6 +125,15 @@ winget import winget.json
   ```sh
   chezmoi execute-template -f .chezmoiscripts/run_onchange_import_rectangle.sh.tmpl | sh
   ```
+- To re-add DockDoor.plist, use the following command:
+  ```sh
+  defaults export com.ethanbills.DockDoor - > ~/.local/share/chezmoi/.chezmoitemplates/dockdoor.plist.tmpl
+  ```
+  Then strip transient keys (`SUHasLaunchedBefore`, `SULastCheckTime`, `launched`, `lastKnownScreenRecordingPermission`, `persistedWindowOrder`) before committing.
+- `chezmoi apply` uses [`run_onchange_import_dockdoor.sh.tmpl`](.chezmoiscripts/run_onchange_import_dockdoor.sh.tmpl) to automatically apply DockDoor's plist. To manually apply the plist, use the following command:
+  ```sh
+  chezmoi execute-template -f .chezmoiscripts/run_onchange_import_dockdoor.sh.tmpl | sh
+  ```
 
 ## AltTab (macOS)
 
