@@ -396,6 +396,35 @@ Invoke-Expression (& {
     (zoxide init --hook $hook powershell | Out-String)
 })
 
+# direnv hook
+if (Get-Command direnv -ErrorAction SilentlyContinue) {
+    if (-not $env:HOME) { $env:HOME = $env:USERPROFILE }
+    if (-not $env:DIRENV_BASH) {
+        $gitBash = $null
+        $candidates = @(
+            (Get-Command bash -All -ErrorAction SilentlyContinue |
+                Where-Object { $_.Source -notlike "*System32*" -and $_.Source -notlike "*WindowsApps*" } |
+                Select-Object -ExpandProperty Source)
+            (Get-Command git -ErrorAction SilentlyContinue | ForEach-Object {
+                $src = $_.Source
+                $resolved = (Get-Item -Force $src -ErrorAction SilentlyContinue).Target
+                if ($resolved) { $src = $resolved }
+                $gitDir = Split-Path -Parent $src
+                Join-Path (Split-Path -Parent $gitDir) 'usr\bin\bash.exe'
+            })
+            "$env:ProgramFiles\Git\usr\bin\bash.exe"
+            "$env:ProgramFiles\Git\bin\bash.exe"
+            "${env:ProgramFiles(x86)}\Git\usr\bin\bash.exe"
+            "$env:LOCALAPPDATA\Programs\Git\usr\bin\bash.exe"
+        )
+        foreach ($c in $candidates) {
+            if ($c -and (Test-Path $c)) { $gitBash = $c; break }
+        }
+        if ($gitBash) { $env:DIRENV_BASH = $gitBash }
+    }
+    Invoke-Expression "$(direnv hook pwsh)"
+}
+
 function Invoke-FzfHistory {
     $historyPath = (Get-PSReadLineOption).HistorySavePath
     if (-not (Test-Path $historyPath)) {
