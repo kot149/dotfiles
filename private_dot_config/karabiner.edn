@@ -226,10 +226,25 @@
                           :modifiers {:optional ["any"]}}
                    :to [{:key_code "delete_or_backspace"}]
                    :type "basic"}]
-                 [{:description "Caps Lock -> Left Control"
+                 [{:conditions [{:name "left_control_pressed"
+                                 :type "variable_if"
+                                 :value true}]
+                   :description "Caps Lock -> Left Control / Double tap (2)"
                    :from {:key_code "caps_lock"
                           :modifiers {:optional ["any"]}}
-                   :to [{:key_code "left_control"}]
+                   :to [{:key_code "spacebar"
+                         :modifiers ["control" "command" "option"]}]
+                   :type "basic"}]
+                 [{:description "Caps Lock -> Left Control / Double tap (1)"
+                   :from {:key_code "caps_lock"
+                          :modifiers {:optional ["any"]}}
+                   :to [{:set_variable {:name "left_control_pressed"
+                                        :value true}}
+                        {:key_code "left_control"}]
+                   :to_delayed_action {:to_if_canceled [{:set_variable {:name "left_control_pressed"
+                                                                        :value false}}]
+                                       :to_if_invoked [{:set_variable {:name "left_control_pressed"
+                                                                       :value false}}]}
                    :type "basic"}]
                  [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
                                  :type "device_if"}]
