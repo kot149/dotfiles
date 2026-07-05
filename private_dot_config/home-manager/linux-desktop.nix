@@ -1,7 +1,6 @@
 { pkgs, config, nixglPackages, ... }:
 
 {
-  nixpkgs.config.allowUnfree = true;
   xdg.enable = true;
   xdg.mime.enable = true;
 

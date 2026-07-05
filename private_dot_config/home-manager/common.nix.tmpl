@@ -106,6 +106,10 @@ in
     home.username = "{{ .chezmoi.username }}";
     home.homeDirectory = "{{ .chezmoi.homeDir }}";
 
+    nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+      "discord"
+    ];
+
     # See https://search.nixos.org/packages
     home.packages = lib.lists.subtractLists denyPackages basePackages;
 
