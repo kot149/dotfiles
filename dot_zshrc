@@ -67,7 +67,7 @@ ZSH_THEME="robbyrussell"
 HYPHEN_INSENSITIVE="true"
 
 # Uncomment one of the following lines to change the auto-update behavior
-# zstyle ':omz:update' mode disabled  # disable automatic updates
+zstyle ':omz:update' mode disabled
 # zstyle ':omz:update' mode auto      # update automatically without asking
 # zstyle ':omz:update' mode reminder  # just remind me to update when it's time
 
@@ -457,6 +457,27 @@ fi
 if [[ -r /proc/version ]] && grep -q -i "Microsoft" /proc/version; then
   export BROWSER='/mnt/c/Windows/System32/rundll32.exe url.dll,FileProtocolHandler'
   alias open=$BROWSER
+
+  # Podman socket from Windows host
+  if [[ -S /mnt/wsl/podman-sockets/podman-machine-default/podman-root.sock ]]; then
+    export CONTAINER_HOST="unix:///mnt/wsl/podman-sockets/podman-machine-default/podman-root.sock"
+    export DOCKER_HOST="unix:///mnt/wsl/podman-sockets/podman-machine-default/podman-root.sock"
+  elif [[ -S /mnt/wsl/podman-sockets/podman-machine-default/podman-user.sock ]]; then
+    export CONTAINER_HOST="unix:///mnt/wsl/podman-sockets/podman-machine-default/podman-user.sock"
+    export DOCKER_HOST="unix:///mnt/wsl/podman-sockets/podman-machine-default/podman-user.sock"
+  fi
+
+  # Helper to mount and cd to zmk-workspace
+  zmk-mount() {
+    local source_dir="$HOME/keyboard/zmk-workspace2"
+    local target_dir="/mnt/wsl/zmk-workspace2"
+    if [[ ! -d "$target_dir" ]]; then
+      echo "Mounting zmk-workspace2 to /mnt/wsl/..."
+      sudo mkdir -p "$target_dir"
+      sudo mount --bind "$source_dir" "$target_dir"
+    fi
+    cd "$target_dir"
+  }
 fi
 
 # ZLE key bindings
