@@ -108,6 +108,9 @@ in
 
     nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
       "discord"
+      "ngrok"
+      "terraform"
+      "mos"
     ];
 
     # See https://search.nixos.org/packages
