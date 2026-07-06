@@ -23,4 +23,8 @@ in
     enable = true;
     package = ghosttyWrapped;
   };
+
+  localAllowUnfree.packages = [
+    # list extra unfree package names here (matched via lib.getName)
+  ];
 }
