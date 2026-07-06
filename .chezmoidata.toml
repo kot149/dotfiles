@@ -56,7 +56,7 @@ agent_shell_allow = [
   "git branch -a*",
   "git branch -v*",
   "git branch -r*",
-"git branch --show-current",
+  "git branch --show-current",
   "git remote -v",
   "git remote show *",
   "git fetch *",
