@@ -102,16 +102,24 @@ in
     description = "Packages to remove from common home.packages";
   };
 
+  options.localAllowUnfree.packages = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    default = [ ];
+    description = "Package names to permit under allowUnfreePredicate (merged across modules)";
+  };
+
   config = {
     home.username = "{{ .chezmoi.username }}";
     home.homeDirectory = "{{ .chezmoi.homeDir }}";
 
-    nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+    localAllowUnfree.packages = [
       "discord"
       "ngrok"
       "terraform"
-      "mos"
     ];
+
+    nixpkgs.config.allowUnfreePredicate = pkg:
+      builtins.elem (lib.getName pkg) config.localAllowUnfree.packages;
 
     # See https://search.nixos.org/packages
     home.packages = lib.lists.subtractLists denyPackages basePackages;

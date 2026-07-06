@@ -8,4 +8,8 @@
   localDeny.packages = with pkgs; [
     # list unwanted packages here
   ];
+
+  localAllowUnfree.packages = [
+    # list extra unfree package names to allow (matched via lib.getName)
+  ];
 }
