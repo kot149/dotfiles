@@ -64,20 +64,31 @@ PYEOF
 
 find_project_pm() {
     local dir="$1"
+    local used="$2"
+
+    # Only look for lock files in the same language family as the used PM,
+    # otherwise a JS lock file in a parent dir can mask a Python project (or vice versa).
+    local family=""
+    case "$used" in
+        npm|yarn|pnpm|bun) family="js" ;;
+        pip|poetry|pipenv|pdm|uv|conda) family="py" ;;
+    esac
 
     while true; do
-        # JS/TS: check more specific lock files first
-        [[ -f "$dir/yarn.lock" ]]       && echo "yarn"   && return 0
-        [[ -f "$dir/pnpm-lock.yaml" ]]  && echo "pnpm"   && return 0
-        [[ -f "$dir/bun.lockb" ]]       && echo "bun"    && return 0
-        [[ -f "$dir/bun.lock" ]]        && echo "bun"    && return 0
-        [[ -f "$dir/package-lock.json" ]] && echo "npm"  && return 0
+        if [[ "$family" == "js" ]]; then
+            [[ -f "$dir/yarn.lock" ]]         && echo "yarn"   && return 0
+            [[ -f "$dir/pnpm-lock.yaml" ]]    && echo "pnpm"   && return 0
+            [[ -f "$dir/bun.lockb" ]]         && echo "bun"    && return 0
+            [[ -f "$dir/bun.lock" ]]          && echo "bun"    && return 0
+            [[ -f "$dir/package-lock.json" ]] && echo "npm"    && return 0
+        fi
 
-        # Python
-        [[ -f "$dir/uv.lock" ]]         && echo "uv"      && return 0
-        [[ -f "$dir/poetry.lock" ]]     && echo "poetry"  && return 0
-        [[ -f "$dir/Pipfile.lock" ]]    && echo "pipenv"  && return 0
-        [[ -f "$dir/pdm.lock" ]]        && echo "pdm"     && return 0
+        if [[ "$family" == "py" ]]; then
+            [[ -f "$dir/uv.lock" ]]      && echo "uv"      && return 0
+            [[ -f "$dir/poetry.lock" ]]  && echo "poetry"  && return 0
+            [[ -f "$dir/Pipfile.lock" ]] && echo "pipenv"  && return 0
+            [[ -f "$dir/pdm.lock" ]]     && echo "pdm"     && return 0
+        fi
 
         # Stop at git root to avoid leaking into parent repos
         [[ -d "$dir/.git" ]] && break
@@ -93,7 +104,7 @@ find_project_pm() {
 
 USED_PM=$(detect_used_pm "$COMMAND") || exit 0
 [[ -z "$USED_PM" ]] && exit 0
-PROJECT_PM=$(find_project_pm "$CWD") || exit 0
+PROJECT_PM=$(find_project_pm "$CWD" "$USED_PM") || exit 0
 [[ "$USED_PM" == "$PROJECT_PM" ]] && exit 0
 
 # Allow if FORCE_PM=1 is set in env or prepended to the command
