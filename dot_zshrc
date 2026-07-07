@@ -210,6 +210,9 @@ rm() {
 alias git-reset-all="git reset --hard && git clean -fd"
 alias force-push='git push --force-with-lease --force-if-includes'
 alias claude-commit='claude --model claude-sonnet-5 "/commit-message"'
+alias sonnet='claude --model claude-sonnet-5'
+alias opus='claude --model "claude-opus-4-7[1m]"'
+alias fable='claude --model claude-fable-5'
 
 # .git/info/exclude にローカル限定の無視パターンを追加する
 local-ignore() {
