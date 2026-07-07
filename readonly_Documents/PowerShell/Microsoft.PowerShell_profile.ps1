@@ -221,6 +221,10 @@ Set-Alias cat Get-Content
 
 function force-push { git push --force-with-lease --force-if-includes @args }
 
+function sonnet { claude --model claude-sonnet-5 @args }
+function opus { claude --model 'claude-opus-4-7[1m]' @args }
+function fable { claude --model claude-fable-5 @args }
+
 function git-logout {
 	cmdkey /delete:git:https://github.com
 }
