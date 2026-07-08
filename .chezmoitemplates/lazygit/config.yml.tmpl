@@ -15,5 +15,5 @@ git:
 {{- if eq .chezmoi.os "windows" }}
     - externalDiffCommand: '~/AppData/Local/lazygit/lazygit-diff.ps1'
 {{- else }}
-    - pager: delta --paging=never --width={{ "{{" }}columnWidth{{ "}}" }}
+    - pager: hunk pager --mode split
 {{- end }}

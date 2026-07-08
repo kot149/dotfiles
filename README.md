@@ -79,7 +79,7 @@ Edit [`.chezmoiignore.tmpl`](.chezmoiignore.tmpl).
 
 Global Git is split so portable settings live in the repo and machine-specific values (account, signing paths, `core.editor`, extra sections you add to the template) stay overridable per host:
 
-- Shared: [`dot_gitconfig.tmpl`](dot_gitconfig.tmpl) (includes `~/.config/git/config.machine`, delta, LFS, optional `safe.directory` from `git_safe_directories` in data).
+- Shared: [`dot_gitconfig.tmpl`](dot_gitconfig.tmpl) (includes `~/.config/git/config.machine`, hunk, LFS, optional `safe.directory` from `git_safe_directories` in data).
 - Per machine: [`private_dot_config/git/config.machine.tmpl`](private_dot_config/git/config.machine.tmpl) → `~/.config/git/config.machine` (defaults target the **kot149** GitHub profile; override in `~/.config/chezmoi/chezmoi.toml` on work PCs, etc.).
 
 Defaults live in [`.chezmoidata.toml`](.chezmoidata.toml) (**kot149** + GitHub noreply email). If `git_signing_key` / `git_allowed_signers` are left empty, [`config.machine.tmpl`](private_dot_config/git/config.machine.tmpl) falls back to `$HOME/.ssh/id_ed25519_github_kot149.pub` and `$HOME/.ssh/allowed_signers`. **`~/.config/chezmoi/chezmoi.toml`** `[data]` overrides `.chezmoidata.toml`, so a work machine can point at different keys without editing the repo.
