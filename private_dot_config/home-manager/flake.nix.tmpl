@@ -19,6 +19,10 @@
       url = "github:ogulcancelik/herdr";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    hunk = {
+      url = "github:modem-dev/hunk";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     {{- if eq .chezmoi.os "linux" }}
     nixgl = {
       url = "github:guibou/nixGL";
@@ -27,7 +31,7 @@
     {{- end }}
   };
 
-  outputs = { nixpkgs, home-manager, nix-claude-code, codex-cli-nix, herdr{{ if eq .chezmoi.os "linux" }}, nixgl{{ end }}, ... }:
+  outputs = { nixpkgs, home-manager, nix-claude-code, codex-cli-nix, herdr, hunk{{ if eq .chezmoi.os "linux" }}, nixgl{{ end }}, ... }:
     let
       {{ $nixArch := .chezmoi.arch -}}
       {{- if eq .chezmoi.arch "amd64" }}{{ $nixArch = "x86_64" }}{{ end -}}
@@ -65,6 +69,7 @@
           nixClaudeCode = nix-claude-code.packages.${system}.default;
           nixCodexCli = codex-cli-nix.packages.${system}.default;
           nixHerdr = herdr.packages.${system}.default;
+          nixHunk = hunk.packages.${system}.hunk;
           {{- if eq .chezmoi.os "linux" }}
           nixglPackages = nixgl.packages.${system};
           {{- end }}
