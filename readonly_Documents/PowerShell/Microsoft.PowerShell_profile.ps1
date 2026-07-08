@@ -322,6 +322,12 @@ abbr pmpm pnpm
 
 abbr ag Antigravity
 
+abbr hd herdr
+abbr herder herdr
+abbr hdr herdr
+abbr hrd herdr
+abbr hrdr herdr
+
 # Remove conflicting aliases
 Remove-Item Alias:ni -Force -ErrorAction Ignore
 
