@@ -18,6 +18,11 @@ agent_plain_allow = [
 ]
 
 agent_shell_allow = [
+  "* --help",
+  "* --help=*",
+  "* -h",
+  "* --version",
+  "* -V",
   "read *",
   "ls *",
   "cat *",
