@@ -1,8 +1,27 @@
+{{- $shellAllow := list -}}
+{{- range .agent_shell_allow -}}
+  {{- $shellAllow = append $shellAllow . -}}
+{{- end -}}
+{{- $scriptPrefixes := list "npm run" "pnpm run" "pnpm" "yarn run" "yarn" "bun run" "bun" -}}
+{{- range .agent_shell_allow_js_scripts -}}
+  {{- $script := . -}}
+  {{- range $scriptPrefixes -}}
+    {{- $shellAllow = append $shellAllow (printf "%s %s *" . $script) -}}
+  {{- end -}}
+{{- end -}}
+{{- $binPrefixes := list "npx" "pnpm exec" "pnpm dlx" "pnpm" "yarn exec" "yarn dlx" "yarn" "bunx" "bun x" "bun" -}}
+{{- range .agent_shell_allow_js_bins -}}
+  {{- $bin := . -}}
+  {{- $shellAllow = append $shellAllow (printf "%s *" $bin) -}}
+  {{- range $binPrefixes -}}
+    {{- $shellAllow = append $shellAllow (printf "%s %s *" . $bin) -}}
+  {{- end -}}
+{{- end -}}
 {{- $allow := list -}}
 {{- range .agent_plain_allow -}}
   {{- $allow = append $allow . -}}
 {{- end -}}
-{{- range .agent_shell_allow -}}
+{{- range $shellAllow -}}
   {{- $allow = append $allow (printf "Bash(%s)" .) -}}
   {{- $allow = append $allow (printf "Bash(rtk %s)" .) -}}
   {{- if hasSuffix " *" . -}}

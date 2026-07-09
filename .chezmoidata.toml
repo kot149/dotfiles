@@ -220,32 +220,8 @@ agent_shell_allow = [
   "yarn info *",
   "bun pm ls*",
   "bun outdated*",
-  "bunx oxlint*",
-  "bun test *",
-  "bun test:e2e *",
-  "bun run build *",
-  "bun run test:e2e *",
-  "bun run format *",
-  "bun run format:check *",
-  "bun run typecheck *",
-  "bunx tsc*",
-  "bunx tsgo*",
   "deno info *",
   "deno --version*",
-  "vitest",
-  "vitest *",
-  "jest",
-  "jest *",
-  "npx jest*",
-  "npx vitest*",
-  "bunx jest*",
-  "bunx vitest*",
-  "pnpm jest*",
-  "pnpm vitest*",
-  "yarn jest*",
-  "yarn vitest*",
-  "bun jest*",
-  "bun vitest*",
   "direnv version*",
   "direnv allow *",
   "direnv exec *",
@@ -296,6 +272,31 @@ agent_shell_allow = [
   "hunk difftool *",
   "hunk session *",
   "hunk skill path*",
+]
+
+# package.json script names to allow across every JS package manager.
+# The template expands each entry into variants for npm/pnpm/yarn/bun,
+# including short forms where supported (e.g. `bun test` for `bun run test`).
+agent_shell_allow_js_scripts = [
+  "build",
+  "test",
+  "test:e2e",
+  "lint",
+  "format",
+  "format:check",
+  "typecheck",
+]
+
+# node_modules `.bin` executables to allow via any JS package runner.
+# The template expands each entry into variants for
+# npx / bunx / bun x / pnpm exec / pnpm dlx / yarn exec / yarn dlx, plus PM
+# shortcuts (e.g. `pnpm vitest`, `bun jest`) and the bare command itself.
+agent_shell_allow_js_bins = [
+  "jest",
+  "vitest",
+  "tsc",
+  "tsgo",
+  "oxlint",
 ]
 
 # Allowed commands that should NOT get an auto-generated `rtk <cmd>` variant
