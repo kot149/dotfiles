@@ -297,6 +297,7 @@ agent_shell_allow_js_bins = [
   "tsc",
   "tsgo",
   "oxlint",
+  "eslint",
 ]
 
 # Allowed commands that should NOT get an auto-generated `rtk <cmd>` variant
