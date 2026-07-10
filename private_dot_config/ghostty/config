@@ -43,13 +43,20 @@ keybind = ctrl+z=text:\x1a
 keybind = ctrl+y=text:\x19
 keybind = performable:ctrl+c=copy_to_clipboard
 
-# Cmd/Ctrl はキーボード設定で入れ替えているため、Ghostty の操作はすべて super+shift に寄せる。
-# 素の super+X は unbind して下のレイヤ (Zellij / Neovim / シェル) に流す。
-# 例外: super+arrow_left/right と super+z/y は物理 Ctrl 由来の制御文字をターミナルに送るため残す。
+# macOS ではキーボード本体の設定で Ctrl/Cmd を入れ替えているため、物理 Ctrl は super として届く
+# (Linux ではスワップせず物理 Ctrl = ctrl のまま)。
+# Ghostty の操作はすべて super+shift に寄せ、物理 Ctrl 由来の super+X は Ctrl 相当の制御文字に
+# 変換して下のレイヤ (Zellij / Neovim / シェル) へ送る。nvim 等は <C-*> だけで両 OS 対応できる。
 keybind = super+right=text:\x1b[1;5C
 keybind = super+left=text:\x1b[1;5D
 keybind = super+z=text:\x1a
 keybind = super+y=text:\x19
+keybind = super+p=text:\x10
+keybind = super+n=text:\x0e
+keybind = super+s=text:\x13
+keybind = super+x=text:\x18
+keybind = super+e=text:\x05
+keybind = super+/=text:\x1f
 
 # super+X デフォルトを下のレイヤに通す
 keybind = super+,=unbind
@@ -84,7 +91,6 @@ keybind = super+a=unbind
 keybind = super+home=unbind
 keybind = super+end=unbind
 keybind = super+j=unbind
-keybind = super+n=unbind
 keybind = super+w=unbind
 keybind = super+t=unbind
 keybind = super+d=unbind
@@ -93,7 +99,6 @@ keybind = super+]=unbind
 keybind = super+arrow_up=unbind
 keybind = super+arrow_down=unbind
 keybind = super+f=unbind
-keybind = super+e=unbind
 keybind = super+g=unbind
 keybind = super+backspace=unbind
 
