@@ -144,6 +144,7 @@ agent_shell_allow = [
   "printenv *",
   "type *",
   "ps *",
+  "lsof *",
   "docker ps *",
   "docker images *",
   "docker logs *",
