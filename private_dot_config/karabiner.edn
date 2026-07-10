@@ -229,18 +229,18 @@
                  [{:conditions [{:name "left_control_pressed"
                                  :type "variable_if"
                                  :value true}]
-                   :description "Caps Lock -> Left Control / Double tap (2)"
+                   :description "Caps Lock -> Left Command / Double tap (2)"
                    :from {:key_code "caps_lock"
                           :modifiers {:optional ["any"]}}
                    :to [{:key_code "spacebar"
                          :modifiers ["control" "command" "option"]}]
                    :type "basic"}]
-                 [{:description "Caps Lock -> Left Control / Double tap (1)"
+                 [{:description "Caps Lock -> Left Command / Double tap (1)"
                    :from {:key_code "caps_lock"
                           :modifiers {:optional ["any"]}}
                    :to [{:set_variable {:name "left_control_pressed"
                                         :value true}}
-                        {:key_code "left_control"}]
+                        {:key_code "left_command"}]
                    :to_delayed_action {:to_if_canceled [{:set_variable {:name "left_control_pressed"
                                                                         :value false}}]
                                        :to_if_invoked [{:set_variable {:name "left_control_pressed"
@@ -248,10 +248,10 @@
                    :type "basic"}]
                  [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
                                  :type "device_if"}]
-                   :description "[Built-in Keyboard] Left Option -> Left Command"
+                   :description "[Built-in Keyboard] Left Option -> Left Control"
                    :from {:key_code "left_option"
                           :modifiers {:optional ["any"]}}
-                   :to [{:key_code "left_command"}]
+                   :to [{:key_code "left_control"}]
                    :type "basic"}]
                  [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
                                  :type "device_if"}]
@@ -260,13 +260,60 @@
                           :modifiers {:optional ["any"]}}
                    :to [{:key_code "left_option"}]
                    :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}
+                                {:name "ctrl_tab_active"
+                                 :type "variable_if"
+                                 :value true}
+                                {:bundle_identifiers ["^com.google.Chrome" "^com.microsoft.edgemac"]
+                                 :type "frontmost_application_if"}]
+                   :description "[Built-in Keyboard][Chrome] Ctrl+Tab End"
+                   :from {:key_code "left_control"
+                          :modifiers {:optional ["any"]}}
+                   :to [{:key_code "left_command"}]
+                   :to_after_key_up [{:conditions [{:name "ctrl_tab_active"
+                                                    :type "variable_if"
+                                                    :value true}]
+                                      :key_code "return_or_enter"}
+                                     {:set_variable {:name "ctrl_tab_active"
+                                                     :value false}}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}
+                                {:name "left_control_pressed"
+                                 :type "variable_if"
+                                 :value true}]
+                   :description "[Built-in Keyboard] Double Ctrl tap (2)"
+                   :from {:key_code "left_control"}
+                   :to [{:key_code "spacebar"
+                         :modifiers ["control" "command" "option"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in Keyboard] Left Control -> Left Command / Double tap (1)"
+                   :from {:key_code "left_control"
+                          :modifiers {:optional ["any"]}}
+                   :to [{:set_variable {:name "left_control_pressed"
+                                        :value true}}
+                        {:key_code "left_command"}]
+                   :to_delayed_action {:to_if_canceled [{:set_variable {:name "left_control_pressed"
+                                                                        :value false}}]
+                                       :to_if_invoked [{:set_variable {:name "left_control_pressed"
+                                                                       :value false}}]}
+                   :to_after_key_up [{:conditions [{:name "ctrl_tab_active"
+                                                    :type "variable_if"
+                                                    :value true}]
+                                      :key_code "return_or_enter"}
+                                     {:set_variable {:name "ctrl_tab_active"
+                                                     :value false}}]
+                   :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.mitchellh.ghostty" "com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
                                  :type "frontmost_application_unless"}]
                    :description "Ctrl+Y"
                    :from {:key_code "y"
-                          :modifiers {:mandatory ["control"]}}
+                          :modifiers {:mandatory ["command"]}}
                    :to [{:key_code "z"
-                         :modifiers ["control" "shift"]}]
+                         :modifiers ["command" "shift"]}]
                    :type "basic"}]
                  [{:conditions [{:name "ctrl_tab_active"
                                  :type "variable_if"
@@ -275,13 +322,13 @@
                                  :type "frontmost_application_if"}]
                    :description "[Chrome] Ctrl+Tab Start"
                    :from {:key_code "tab"
-                          :modifiers {:mandatory ["control"]
+                          :modifiers {:mandatory ["command"]
                                       :optional ["shift"]}}
                    :to [{:key_code "a"
-                         :modifiers ["control" "shift"]}
+                         :modifiers ["command" "shift"]}
                         {:set_variable {:name "ctrl_tab_active"
                                         :value true}}
-                        {:key_code "left_control"}]
+                        {:key_code "left_command"}]
                    :type "basic"}]
                  [{:conditions [{:name "ctrl_tab_active"
                                  :type "variable_if"
@@ -290,7 +337,7 @@
                                  :type "frontmost_application_if"}]
                    :description "[Chrome] Ctrl+Tab Continue"
                    :from {:key_code "tab"
-                          :modifiers {:mandatory ["control"]}}
+                          :modifiers {:mandatory ["command"]}}
                    :to [{:key_code "down_arrow"}]
                    :type "basic"}]
                  [{:conditions [{:name "ctrl_tab_active"
@@ -300,7 +347,7 @@
                                  :type "frontmost_application_if"}]
                    :description "[Chrome] Ctrl+Tab Continue (Reverse)"
                    :from {:key_code "tab"
-                          :modifiers {:mandatory ["control" "shift"]}}
+                          :modifiers {:mandatory ["command" "shift"]}}
                    :to [{:key_code "up_arrow"}]
                    :type "basic"}]
                  [{:conditions [{:name "ctrl_tab_active"
@@ -309,9 +356,9 @@
                                 {:bundle_identifiers ["^com.google.Chrome" "^com.microsoft.edgemac"]
                                  :type "frontmost_application_if"}]
                    :description "[Chrome] Ctrl+Tab End"
-                   :from {:key_code "left_control"
+                   :from {:key_code "left_command"
                           :modifiers {:optional ["any"]}}
-                   :to [{:key_code "left_control"}]
+                   :to [{:key_code "left_command"}]
                    :to_after_key_up [{:conditions [{:name "ctrl_tab_active"
                                                     :type "variable_if"
                                                     :value true}]
@@ -323,35 +370,35 @@
                                  :type "frontmost_application_unless"}]
                    :description "Ctrl+Tab"
                    :from {:key_code "tab"
-                          :modifiers {:mandatory ["control"]
+                          :modifiers {:mandatory ["command"]
                                       :optional ["shift"]}}
                    :to {:key_code "tab"
-                        :modifiers ["command"]}
+                        :modifiers ["control"]}
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.google.Chrome" "^com.microsoft.edgemac"]
                                  :type "frontmost_application_if"}]
                    :description "[Chrome] Ctrl+PageDown"
                    :from {:key_code "page_down"
-                          :modifiers {:mandatory ["control"]
+                          :modifiers {:mandatory ["command"]
                                       :optional ["shift"]}}
                    :to [{:key_code "tab"
-                         :modifiers ["command"]}]
+                         :modifiers ["control"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.google.Chrome" "^com.microsoft.edgemac"]
                                  :type "frontmost_application_if"}]
                    :description "[Chrome] Ctrl+PageUp"
                    :from {:key_code "page_up"
-                          :modifiers {:mandatory ["control"]
+                          :modifiers {:mandatory ["command"]
                                       :optional ["shift"]}}
                    :to {:key_code "tab"
-                        :modifiers ["command" "shift"]}
+                        :modifiers ["control" "shift"]}
                    :type "basic"}]
                  [{:description "Win+Tab -> Mission Control"
                    :from {:key_code "tab"
-                          :modifiers {:mandatory ["command"]
+                          :modifiers {:mandatory ["control"]
                                       :optional ["shift"]}}
                    :to [{:key_code "up_arrow"
-                         :modifiers ["command"]}]
+                         :modifiers ["control"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.vivaldi.Vivaldi" "^com.microsoft.edgemac" "^com.google.Chrome" "^com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92" "^com.apple.finder" "^com.googlecode.iterm2"]
                                  :type "frontmost_application_if"}]
@@ -359,23 +406,23 @@
                    :from {:key_code "f4"
                           :modifiers {:mandatory ["option"]}}
                    :to [{:key_code "w"
-                         :modifiers ["control" "shift"]}]
+                         :modifiers ["command" "shift"]}]
                    :type "basic"}]
                  [{:description "Alt+F4"
                    :from {:key_code "f4"
                           :modifiers {:mandatory ["option"]}}
                    :to [{:key_code "q"
-                         :modifiers ["control"]}]
+                         :modifiers ["command"]}]
                    :type "basic"}]
-                 [{:description "Ctrl+Shift+Q -> Quit (Ctrl+Q)"
+                 [{:description "Ctrl+Shift+Q -> Quit (Cmd+Q)"
                    :from {:key_code "q"
-                          :modifiers {:mandatory ["control" "shift"]}}
+                          :modifiers {:mandatory ["command" "shift"]}}
                    :to [{:key_code "q"
-                         :modifiers ["control"]}]
+                         :modifiers ["command"]}]
                    :type "basic"}]
                  [{:description "Block Ctrl+Q (use Ctrl+Shift+Q to quit)"
                    :from {:key_code "q"
-                          :modifiers {:mandatory ["control"]
+                          :modifiers {:mandatory ["command"]
                                       :optional ["caps_lock"]}}
                    :to [{:key_code "vk_none"}]
                    :type "basic"}]
@@ -383,7 +430,7 @@
                                  :type "frontmost_application_unless"}]
                    :description "Ctrl+Left"
                    :from {:key_code "left_arrow"
-                          :modifiers {:mandatory ["control"]
+                          :modifiers {:mandatory ["command"]
                                       :optional ["shift"]}}
                    :to [{:key_code "left_arrow"
                          :modifiers ["option"]}]
@@ -392,88 +439,88 @@
                                  :type "frontmost_application_unless"}]
                    :description "Ctrl+Right"
                    :from {:key_code "right_arrow"
-                          :modifiers {:mandatory ["control"]
+                          :modifiers {:mandatory ["command"]
                                       :optional ["shift"]}}
                    :to [{:key_code "right_arrow"
                          :modifiers ["option"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.apple.finder" "^com.apple.systempreferences" "^com.hnc.Discord" "^com.tinyspeck.slackmacgap" "^com.google.Chrome" "^com.microsoft.edgemac"]
                                  :type "frontmost_application_if"}]
-                   :description "Alt+Left -> Ctrl+["
+                   :description "Alt+Left -> Cmd+["
                    :from {:key_code "left_arrow"
                           :modifiers {:mandatory ["option"]}}
                    :to [{:key_code "open_bracket"
-                         :modifiers ["control"]}]
+                         :modifiers ["command"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.apple.finder" "^com.apple.systempreferences" "^com.hnc.Discord" "^com.tinyspeck.slackmacgap" "^com.google.Chrome" "^com.microsoft.edgemac"]
                                  :type "frontmost_application_if"}]
-                   :description "Alt+Right -> Ctrl+]"
+                   :description "Alt+Right -> Cmd+]"
                    :from {:key_code "right_arrow"
                           :modifiers {:mandatory ["option"]}}
                    :to [{:key_code "close_bracket"
-                         :modifiers ["control"]}]
-                   :type "basic"}]
-                 [{:conditions [{:bundle_identifiers ["^com.vivaldi.Vivaldi" "com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
-                                 :type "frontmost_application_if"}]
-                   :description "Alt+Left -> Cmd+-"
-                   :from {:key_code "left_arrow"
-                          :modifiers {:mandatory ["option"]}}
-                   :to [{:key_code "hyphen"
                          :modifiers ["command"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.vivaldi.Vivaldi" "com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
                                  :type "frontmost_application_if"}]
-                   :description "Alt+Right -> Cmd+Shift+-"
+                   :description "Alt+Left -> Ctrl+-"
+                   :from {:key_code "left_arrow"
+                          :modifiers {:mandatory ["option"]}}
+                   :to [{:key_code "hyphen"
+                         :modifiers ["control"]}]
+                   :type "basic"}]
+                 [{:conditions [{:bundle_identifiers ["^com.vivaldi.Vivaldi" "com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
+                                 :type "frontmost_application_if"}]
+                   :description "Alt+Right -> Ctrl+Shift+-"
                    :from {:key_code "right_arrow"
                           :modifiers {:mandatory ["option"]}}
                    :to [{:key_code "hyphen"
-                         :modifiers ["command" "shift"]}]
+                         :modifiers ["control" "shift"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
                                  :type "frontmost_application_if"}]
                    :description "[VSCode] Ctrl+PageDown"
                    :from {:key_code "page_down"
-                          :modifiers {:mandatory ["control"]}}
+                          :modifiers {:mandatory ["command"]}}
                    :to [{:key_code "right_arrow"
-                         :modifiers ["control" "option"]}]
+                         :modifiers ["command" "option"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
                                  :type "frontmost_application_if"}]
                    :description "[VSCode] Ctrl+PageUp"
                    :from {:key_code "page_up"
-                          :modifiers {:mandatory ["control"]}}
+                          :modifiers {:mandatory ["command"]}}
                    :to [{:key_code "left_arrow"
-                         :modifiers ["control" "option"]}]
+                         :modifiers ["command" "option"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.google.Chrome"]
                                  :type "frontmost_application_if"}]
                    :description "[Chrome] Ctrl+H -> History"
                    :from {:key_code "h"
-                          :modifiers {:mandatory ["control"]}}
+                          :modifiers {:mandatory ["command"]}}
                    :to [{:shell_command "open -a 'Google Chrome' 'chrome://history'"}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.microsoft.edgemac"]
                                  :type "frontmost_application_if"}]
                    :description "[Edge] Ctrl+H -> History"
                    :from {:key_code "h"
-                          :modifiers {:mandatory ["control"]}}
+                          :modifiers {:mandatory ["command"]}}
                    :to [{:shell_command "open -a 'Microsoft Edge' 'edge://history'"}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
                                  :type "frontmost_application_if"}]
-                   :description "[VSCode/Cursor] Ctrl+H -> Option+Ctrl+F"
+                   :description "[VSCode/Cursor] Ctrl+H -> Option+Cmd+F"
                    :from {:key_code "h"
-                          :modifiers {:mandatory ["control"]}}
+                          :modifiers {:mandatory ["command"]}}
                    :to [{:key_code "f"
-                         :modifiers ["option" "control"]}]
+                         :modifiers ["option" "command"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.mitchellh.ghostty"]
                                  :type "frontmost_application_if"}]
-                   :description "[Ghostty] Ctrl+C -> Cmd+C"
+                   :description "[Ghostty] Ctrl+C passthrough"
                    :from {:key_code "c"
-                          :modifiers {:mandatory ["control"]}}
+                          :modifiers {:mandatory ["command"]}}
                    :to [{:key_code "c"
-                         :modifiers ["command"]}]
+                         :modifiers ["control"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.apple.Terminal"]
                                  :type "frontmost_application_if"}]
@@ -497,7 +544,7 @@
                    :from {:key_code "home"
                           :modifiers {:optional "any"}}
                    :to [{:key_code "left_arrow"
-                         :modifiers ["control"]}]
+                         :modifiers ["command"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.googlecode.iterm2" "^com.mitchellh.ghostty"]
                                  :type "frontmost_application_unless"}]
@@ -505,7 +552,7 @@
                    :from {:key_code "end"
                           :modifiers {:optional "any"}}
                    :to [{:key_code "right_arrow"
-                         :modifiers ["control"]}]
+                         :modifiers ["command"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.apple.finder"]
                                  :type "frontmost_application_if"}]
@@ -517,7 +564,7 @@
                                  :type "frontmost_application_if"}]
                    :description "[Finder] Ctrl+Enter"
                    :from {:key_code "return_or_enter"
-                          :modifiers {:mandatory ["control"]}}
+                          :modifiers {:mandatory ["command"]}}
                    :to [{:key_code "o"
                          :modifiers ["command"]}]
                    :type "basic"}]
@@ -526,7 +573,7 @@
                    :description "[Finder] Delete"
                    :from {:key_code "delete_forward"}
                    :to [{:key_code "delete_or_backspace"
-                         :modifiers ["control"]}]
+                         :modifiers ["command"]}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.hnc.Discord" "^com.tinyspeck.slackmacgap"]
                                  :type "frontmost_application_if"}]
@@ -561,26 +608,26 @@
                    :description "[Chrome/Edge] F5"
                    :from {:key_code "f5"}
                    :to [{:key_code "r"
-                         :modifiers ["control"]}]
+                         :modifiers ["command"]}]
                    :type "basic"}]
                  [{:description "Win+E"
                    :from {:key_code "e"
-                          :modifiers {:mandatory ["command"]}}
+                          :modifiers {:mandatory ["control"]}}
                    :to [{:shell_command "open -a 'Finder.app'"}]
                    :type "basic"}]
                  [{:description "Win+I"
                    :from {:key_code "i"
-                          :modifiers {:mandatory ["command"]}}
+                          :modifiers {:mandatory ["control"]}}
                    :to [{:shell_command "open -a 'System Settings.app'"}]
                    :type "basic"}]
                  [{:description "Win+L -> Sleep"
                    :from {:key_code "l"
-                          :modifiers {:mandatory ["command"]}}
+                          :modifiers {:mandatory ["control"]}}
                    :to [{:shell_command "pmset sleepnow"}]
                    :type "basic"}]
                  [{:description "Win+Shift+S -> Screenshot selection to clipboard"
                    :from {:key_code "s"
-                          :modifiers {:mandatory ["command" "shift"]}}
+                          :modifiers {:mandatory ["control" "shift"]}}
                    :to [{:key_code "4"
                          :modifiers ["command" "shift" "control"]}]
                    :type "basic"}]
@@ -593,35 +640,35 @@
                    :from {:key_code "right_arrow"
                           :modifiers {:mandatory ["command" "control"]}}
                    :to [{:key_code "right_arrow"
-                         :modifiers ["command"]}]
+                         :modifiers ["control"]}]
                    :type "basic"}]
                  [{:description "Virtual Desktop Prev"
                    :from {:key_code "left_arrow"
                           :modifiers {:mandatory ["command" "control"]}}
                    :to [{:key_code "left_arrow"
-                         :modifiers ["command"]}]
+                         :modifiers ["control"]}]
                    :type "basic"}]
                  [{:description "Win+Up"
                    :from {:key_code "up_arrow"
-                          :modifiers {:mandatory ["command"]}}
+                          :modifiers {:mandatory ["control"]}}
                    :to [{:key_code "up_arrow"
                          :modifiers ["command" "control"]}]
                    :type "basic"}]
                  [{:description "Win+Down"
                    :from {:key_code "down_arrow"
-                          :modifiers {:mandatory ["command"]}}
+                          :modifiers {:mandatory ["control"]}}
                    :to [{:key_code "down_arrow"
                          :modifiers ["command" "control"]}]
                    :type "basic"}]
                  [{:description "Win+Right"
                    :from {:key_code "right_arrow"
-                          :modifiers {:mandatory ["command"]}}
+                          :modifiers {:mandatory ["control"]}}
                    :to [{:key_code "right_arrow"
                          :modifiers ["command" "control"]}]
                    :type "basic"}]
                  [{:description "Win+Left"
                    :from {:key_code "left_arrow"
-                          :modifiers {:mandatory ["command"]}}
+                          :modifiers {:mandatory ["control"]}}
                    :to [{:key_code "left_arrow"
                          :modifiers ["command" "control"]}]
                    :type "basic"}]
@@ -629,16 +676,16 @@
                                  :type "variable_if"
                                  :value true}]
                    :description "Double Control tap (2)"
-                   :from {:key_code "left_control"}
+                   :from {:key_code "left_command"}
                    :to [{:key_code "spacebar"
                          :modifiers ["control" "command" "option"]}]
                    :type "basic"}]
                  [{:description "Double Control tap (1)"
-                   :from {:key_code "left_control"
+                   :from {:key_code "left_command"
                           :modifiers {:optional ["any"]}}
                    :to [{:set_variable {:name "left_control_pressed"
                                         :value true}}
-                        {:key_code "left_control"}]
+                        {:key_code "left_command"}]
                    :to_delayed_action {:to_if_canceled [{:set_variable {:name "left_control_pressed"
                                                                         :value false}}]
                                        :to_if_invoked [{:set_variable {:name "left_control_pressed"
@@ -654,16 +701,16 @@
                                  :type "variable_if"
                                  :value true}]
                    :description "Double Win tap (2)"
-                   :from {:key_code "left_command"}
+                   :from {:key_code "left_control"}
                    :to [{:key_code "spacebar"
-                         :modifiers ["control" "shift"]}]
+                         :modifiers ["command" "shift"]}]
                    :type "basic"}]
                  [{:description "Double Win tap (1)"
-                   :from {:key_code "left_command"
+                   :from {:key_code "left_control"
                           :modifiers {:optional ["any"]}}
                    :to [{:set_variable {:name "left_command_pressed"
                                         :value true}}
-                        {:key_code "left_command"}]
+                        {:key_code "left_control"}]
                    :to_delayed_action {:to_if_canceled [{:set_variable {:name "left_command_pressed"
                                                                         :value false}}]
                                        :to_if_invoked [{:set_variable {:name "left_command_pressed"
