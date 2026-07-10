@@ -32,6 +32,10 @@ setopt hist_expire_dups_first   # HISTFILEのサイズがHISTSIZEを超える場
 # コマンドラインでも # 以降をコメントと見なす
 setopt interactive_comments
 
+# Ctrl+S/Ctrl+Q のフロー制御を無効化 (Ctrl+S を保存キーとして使うため)
+unsetopt flow_control
+stty -ixon 2>/dev/null
+
 # インストールしたコマンドを即座に反映
 zstyle ":completion:*:commands" rehash 1
 

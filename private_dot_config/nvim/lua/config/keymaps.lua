@@ -21,11 +21,11 @@ map("i", "<C-y>", "<C-o><C-r>", { noremap = true, silent = true, desc = "Redo" }
 -- Ctrl+C: ビジュアル選択をコピー
 map("v", "<C-c>", "y", { noremap = true, silent = true, desc = "Copy" })
 
--- Ctrl+X: カット (物理 Ctrl+X は super+x 経由で <D-x> として届く)
+-- Ctrl+X: カット (macOS では ghostty が super+x を \x18 に変換して <C-x> として届く)
 -- ビジュアル: 選択範囲をクリップボードへコピーして削除
 -- ノーマル: 行全体をクリップボードへコピーして削除 (VSCode 風)
-map("v", "<D-x>", '"+d', { noremap = true, silent = true, desc = "Cut" })
-map("n", "<D-x>", '"+dd', { noremap = true, silent = true, desc = "Cut Line" })
+map("v", "<C-x>", '"+d', { noremap = true, silent = true, desc = "Cut" })
+map("n", "<C-x>", '"+dd', { noremap = true, silent = true, desc = "Cut Line" })
 
 -- Backspace/Delete: 選択範囲を削除 (クリップボードを汚さない、Normalモードへ)
 -- Select モード: 一旦 <C-g> で Visual に切り替えてから削除
@@ -41,10 +41,10 @@ vim.opt.report = 9999
 -- ファイル操作
 -- ============================================================
 
--- Cmd+N: 新規ファイル (空バッファを作成)
-map({ "n", "i", "v" }, "<D-n>", "<Cmd>enew<CR>", { noremap = true, silent = true, desc = "New file" })
+-- Ctrl+N: 新規ファイル (空バッファを作成、補完メニュー表示中は cmp の候補移動が優先)
+map({ "n", "i", "v" }, "<C-n>", "<Cmd>enew<CR>", { noremap = true, silent = true, desc = "New file" })
 
--- Ctrl+S / Cmd+S: 保存 (無名バッファの場合は保存先パスを入力)
+-- Ctrl+S: 保存 (無名バッファの場合は保存先パスを入力)
 local function save_file()
   if vim.api.nvim_buf_get_name(0) == "" then
     local path = vim.fn.input({ prompt = "Save as: ", default = vim.fn.getcwd() .. "/", completion = "file" })
@@ -62,8 +62,6 @@ local function save_file()
 end
 
 map({ "n", "i", "v" }, "<C-s>", function() vim.cmd("stopinsert"); save_file() end,
-  { noremap = true, silent = true, desc = "Save file" })
-map({ "n", "i", "v" }, "<D-s>", function() vim.cmd("stopinsert"); save_file() end,
   { noremap = true, silent = true, desc = "Save file" })
 
 -- Ctrl+W: タブ/バッファを閉じる (ウィンドウ操作は C-hjkl で代替)
@@ -147,9 +145,9 @@ end, { noremap = true, silent = true, desc = "Quit nvim" })
 -- 検索・Quick Open
 -- ============================================================
 
--- Cmd+P: Quick Open (ファイル検索)
-map("n", "<D-p>", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true, desc = "Quick Open" })
-map("i", "<D-p>", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true, desc = "Quick Open" })
+-- Ctrl+P: Quick Open (ファイル検索、補完メニュー表示中は cmp の候補移動が優先)
+map("n", "<C-p>", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true, desc = "Quick Open" })
+map("i", "<C-p>", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true, desc = "Quick Open" })
 
 -- Ctrl+Shift+P: コマンドパレット
 map("n", "<C-S-p>", "<Cmd>Telescope commands<CR>", { noremap = true, silent = true, desc = "Command Palette" })
@@ -166,7 +164,7 @@ map("n", "<C-S-f>", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = t
 -- Ctrl+Shift+E: エクスプローラにフォーカス
 map("n", "<C-S-e>", "<Cmd>Neotree focus<CR>", { noremap = true, silent = true, desc = "Focus Explorer" })
 
--- Cmd+E: neo-tree とエディタのフォーカストグル
+-- Ctrl+E: neo-tree とエディタのフォーカストグル (補完メニュー表示中は cmp が優先)
 local function toggle_neotree_focus()
   if vim.bo.filetype == "neo-tree" then
     vim.cmd("wincmd p")
@@ -184,19 +182,19 @@ local function toggle_neotree_focus()
   end
 end
 
-map("n", "<D-e>", toggle_neotree_focus, { noremap = true, silent = true, desc = "Toggle Neo-tree focus" })
-map("i", "<D-e>", function() vim.cmd("stopinsert"); toggle_neotree_focus() end,
+map("n", "<C-e>", toggle_neotree_focus, { noremap = true, silent = true, desc = "Toggle Neo-tree focus" })
+map("i", "<C-e>", function() vim.cmd("stopinsert"); toggle_neotree_focus() end,
   { noremap = true, silent = true, desc = "Toggle Neo-tree focus" })
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "neo-tree",
   callback = function(args)
-    vim.keymap.set("n", "<D-e>", toggle_neotree_focus,
+    vim.keymap.set("n", "<C-e>", toggle_neotree_focus,
       { buffer = args.buf, noremap = true, silent = true, desc = "Toggle Neo-tree focus" })
   end,
 })
 
 -- ============================================================
--- コメントトグル (Cmd+/)
+-- コメントトグル (Ctrl+/)
 -- ============================================================
 
 local function toggle_comment_line()
@@ -209,9 +207,13 @@ local function toggle_comment_visual()
   require("Comment.api").toggle.linewise(vim.fn.visualmode())
 end
 
-map("n", "<D-/>", toggle_comment_line, { noremap = true, desc = "Toggle Comment" })
-map("i", "<D-/>", toggle_comment_line, { noremap = true, desc = "Toggle Comment" })
-map("v", "<D-/>", toggle_comment_visual, { noremap = true, desc = "Toggle Comment" })
+map("n", "<C-/>", toggle_comment_line, { noremap = true, desc = "Toggle Comment" })
+map("i", "<C-/>", toggle_comment_line, { noremap = true, desc = "Toggle Comment" })
+map("v", "<C-/>", toggle_comment_visual, { noremap = true, desc = "Toggle Comment" })
+-- 端末によって Ctrl+/ は <C-_> (0x1f) として届くため両方にマップ
+map("n", "<C-_>", toggle_comment_line, { noremap = true, desc = "Toggle Comment" })
+map("i", "<C-_>", toggle_comment_line, { noremap = true, desc = "Toggle Comment" })
+map("v", "<C-_>", toggle_comment_visual, { noremap = true, desc = "Toggle Comment" })
 
 -- ============================================================
 -- 行の移動 (Alt+↑/↓)

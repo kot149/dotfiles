@@ -1,5 +1,10 @@
 keybinds {
     shared_except "locked" {
+        // 物理 Ctrl+P/N/S を nvim (<C-p> 等) に通すため、モード切替は Alt へ移動
+        unbind "Ctrl p" "Ctrl n" "Ctrl s"
+        bind "Alt p" { SwitchToMode "Pane"; }
+        bind "Alt n" { SwitchToMode "Resize"; }
+        bind "Alt s" { SwitchToMode "Scroll"; }
         bind "Alt g" {
             Run "zellij-dev-toggle-lazygit" {
                 close_on_exit true
