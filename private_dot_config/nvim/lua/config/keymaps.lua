@@ -111,15 +111,15 @@ local function close_buffer()
   pcall(vim.api.nvim_buf_delete, cur, { force = true })
 end
 
--- Cmd+W: バッファを閉じる
-map("n", "<D-w>", close_buffer, { noremap = true, silent = true, desc = "Close buffer" })
-map("i", "<D-w>", function() vim.cmd("stopinsert"); close_buffer() end,
+-- Ctrl+W: バッファを閉じる
+map("n", "<C-w>", close_buffer, { noremap = true, silent = true, desc = "Close buffer" })
+map("i", "<C-w>", function() vim.cmd("stopinsert"); close_buffer() end,
   { noremap = true, silent = true, desc = "Close buffer" })
-map("v", "<D-w>", function()
+map("v", "<C-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   close_buffer()
 end, { noremap = true, silent = true, desc = "Close buffer" })
-map("s", "<D-w>", function()
+map("s", "<C-w>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   close_buffer()
 end, { noremap = true, silent = true, desc = "Close buffer" })
@@ -130,13 +130,14 @@ local function quit_all()
   pcall(vim.cmd, "confirm qa")
 end
 
-map("n", "<C-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
-map("i", "<C-w>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
-map("v", "<C-w>", function()
+-- Ctrl+q: nvimを閉じる
+map("n", "<C-q>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
+map("i", "<C-q>", quit_all, { noremap = true, silent = true, desc = "Quit nvim" })
+map("v", "<C-q>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   quit_all()
 end, { noremap = true, silent = true, desc = "Quit nvim" })
-map("s", "<C-w>", function()
+map("s", "<C-q>", function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
   quit_all()
 end, { noremap = true, silent = true, desc = "Quit nvim" })
