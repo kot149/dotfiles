@@ -246,6 +246,8 @@ local-ignore() {
 }
 alias ls='eza -1 -F=auto --group-directories-first'
 alias tree='eza --tree -F=auto'
+alias emacs='emacs -nw'
+alias emacs-gui='\emacs'
 
 if command -v abbr &> /dev/null; then
   ABBR_SET_EXPANSION_CURSOR=1

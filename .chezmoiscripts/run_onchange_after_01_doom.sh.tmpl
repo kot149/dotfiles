@@ -1,0 +1,29 @@
+{{- if ne .chezmoi.os "windows" -}}
+#!/bin/bash
+set -euo pipefail
+
+# doom init.el hash: {{ include "private_dot_config/doom/init.el" | sha256sum }}
+# doom config.el hash: {{ include "private_dot_config/doom/config.el" | sha256sum }}
+# doom packages.el hash: {{ include "private_dot_config/doom/packages.el" | sha256sum }}
+
+DOOM_DIR="$HOME/.config/emacs"
+DOOM_BIN="$DOOM_DIR/bin/doom"
+
+if ! command -v emacs >/dev/null 2>&1; then
+  echo "emacs not found on PATH; skipping Doom bootstrap. Run home-manager switch first."
+  exit 0
+fi
+
+if [ ! -d "$DOOM_DIR" ]; then
+  echo "Cloning Doom Emacs into $DOOM_DIR ..."
+  git clone --depth 1 https://github.com/doomemacs/doomemacs "$DOOM_DIR"
+fi
+
+if [ ! -f "$DOOM_DIR/.local/state/last-sync" ] && [ ! -d "$DOOM_DIR/.local/straight" ]; then
+  echo "Running doom install (first time, may take a few minutes) ..."
+  "$DOOM_BIN" install --no-env --force
+else
+  echo "Running doom sync ..."
+  "$DOOM_BIN" sync
+fi
+{{- end -}}
