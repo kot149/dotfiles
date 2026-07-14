@@ -4,8 +4,5 @@ min-release-age=3
 # https://docs.npmjs.com/cli/v11/using-npm/config#ignore-scripts
 ignore-scripts=true
 
-# pnpm: minimum release age (minutes) - 3 days = 4320 minutes
-# https://pnpm.io/npmrc#minimum-release-age
-minimumReleaseAge=4320
-# https://pnpm.io/npmrc#ignore-scripts
-ignore-scripts=true
+# pnpm-specific settings live in pnpm's own config.yaml (see pnpm config get globalconfig).
+# Keeping camelCase keys like `minimumReleaseAge` here would make npm error out on unknown config.

@@ -1,0 +1,9 @@
+# pnpm global config. Path resolved via `pnpm config get globalconfig`:
+#   macOS:   ~/Library/Preferences/pnpm/config.yaml
+#   Linux:   ~/.config/pnpm/config.yaml
+#   Windows: %LOCALAPPDATA%\pnpm\config.yaml
+# Docs: https://pnpm.io/npmrc
+
+# minimum release age (minutes) - 3 days = 4320 minutes
+# https://pnpm.io/npmrc#minimum-release-age
+minimumReleaseAge: 4320

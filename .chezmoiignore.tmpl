@@ -49,6 +49,11 @@ setup_linux.sh
 .config/Cursor/User/settings.json
 {{- end }}
 
+# Linux-only files that live under paths shared with other OSes
+{{- if ne .chezmoi.os "linux" }}
+.config/pnpm/config.yaml
+{{- end }}
+
 # Linux and macOS
 {{- if and (ne .chezmoi.os "linux") (ne .chezmoi.os "darwin") }}
 .zshrc
