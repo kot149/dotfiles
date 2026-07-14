@@ -255,48 +255,25 @@
                    :type "basic"}]
                  [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
                                  :type "device_if"}
-                                {:name "built_in_left_command_pressed"
+                                {:name "built_in_left_option_pressed"
                                  :type "variable_if"
                                  :value true}]
-                   :description "[Built-in Keyboard] Double Cmd tap (2)"
+                   :description "[Built-in Keyboard] Double Cmd tap (2) from Option"
                    :from {:key_code "left_option"}
                    :to [{:key_code "spacebar"
                          :modifiers ["command" "shift"]}]
                    :type "basic"}]
                  [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
                                  :type "device_if"}]
-                   :description "[Built-in Keyboard] Left Option -> Left Command / Double tap (1)"
+                   :description "[Built-in Keyboard] Left Option -> Left Control / Double Cmd tap (1)"
                    :from {:key_code "left_option"
                           :modifiers {:optional ["any"]}}
-                   :to [{:set_variable {:name "built_in_left_command_pressed"
-                                        :value true}}
-                        {:key_code "left_command"}]
-                   :to_delayed_action {:to_if_canceled [{:set_variable {:name "built_in_left_command_pressed"
-                                                                        :value false}}]
-                                       :to_if_invoked [{:set_variable {:name "built_in_left_command_pressed"
-                                                                       :value false}}]}
-                   :type "basic"}]
-                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
-                                 :type "device_if"}
-                                {:name "built_in_left_control_pressed"
-                                 :type "variable_if"
-                                 :value true}]
-                   :description "[Built-in Keyboard] Double Ctrl tap (2)"
-                   :from {:key_code "left_control"}
-                   :to [{:key_code "spacebar"
-                         :modifiers ["control" "command" "option"]}]
-                   :type "basic"}]
-                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
-                                 :type "device_if"}]
-                   :description "[Built-in Keyboard] Left Control / Double tap (1)"
-                   :from {:key_code "left_control"
-                          :modifiers {:optional ["any"]}}
-                   :to [{:set_variable {:name "built_in_left_control_pressed"
+                   :to [{:set_variable {:name "built_in_left_option_pressed"
                                         :value true}}
                         {:key_code "left_control"}]
-                   :to_delayed_action {:to_if_canceled [{:set_variable {:name "built_in_left_control_pressed"
+                   :to_delayed_action {:to_if_canceled [{:set_variable {:name "built_in_left_option_pressed"
                                                                         :value false}}]
-                                       :to_if_invoked [{:set_variable {:name "built_in_left_control_pressed"
+                                       :to_if_invoked [{:set_variable {:name "built_in_left_option_pressed"
                                                                        :value false}}]}
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.mitchellh.ghostty" "com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
@@ -667,13 +644,13 @@
                  [{:conditions [{:name "left_control_pressed"
                                  :type "variable_if"
                                  :value true}]
-                   :description "Double Control tap (2)"
-                   :from {:key_code "left_command"}
+                   :description "Double Ctrl tap (2)"
+                   :from {:key_code "left_control"}
                    :to [{:key_code "spacebar"
-                         :modifiers ["command" "shift"]}]
+                         :modifiers ["control" "command" "option"]}]
                    :type "basic"}]
-                 [{:description "Double Control tap (1)"
-                   :from {:key_code "left_command"
+                 [{:description "Left Control -> Left Command / Double Ctrl tap (1)"
+                   :from {:key_code "left_control"
                           :modifiers {:optional ["any"]}}
                    :to [{:set_variable {:name "left_control_pressed"
                                         :value true}}
@@ -692,13 +669,13 @@
                  [{:conditions [{:name "left_command_pressed"
                                  :type "variable_if"
                                  :value true}]
-                   :description "Double Win tap (2)"
-                   :from {:key_code "left_control"}
+                   :description "Double Cmd tap (2)"
+                   :from {:key_code "left_command"}
                    :to [{:key_code "spacebar"
-                         :modifiers ["control" "command" "option"]}]
+                         :modifiers ["command" "shift"]}]
                    :type "basic"}]
-                 [{:description "Double Win tap (1)"
-                   :from {:key_code "left_control"
+                 [{:description "Left Command -> Left Control / Double Cmd tap (1)"
+                   :from {:key_code "left_command"
                           :modifiers {:optional ["any"]}}
                    :to [{:set_variable {:name "left_command_pressed"
                                         :value true}}
