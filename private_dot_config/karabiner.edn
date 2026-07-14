@@ -246,71 +246,58 @@
                                        :to_if_invoked [{:set_variable {:name "left_control_pressed"
                                                                        :value false}}]}
                    :type "basic"}]
-                 [{:conditions [{:identifiers [{:vendor_id 13364 :product_id 1088}
-                                                {:vendor_id 7504}]
-                                 :type "device_unless"}]
-                   :description "[No hardware swap] Left Option -> Left Control"
-                   :from {:key_code "left_option"
-                          :modifiers {:optional ["any"]}}
-                   :to [{:key_code "left_control"}]
-                   :type "basic"}]
-                 [{:conditions [{:identifiers [{:vendor_id 13364 :product_id 1088}
-                                                {:vendor_id 7504}]
-                                 :type "device_unless"}]
-                   :description "[No hardware swap] Left Command -> Left Option"
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in Keyboard] Left Command -> Left Option"
                    :from {:key_code "left_command"
                           :modifiers {:optional ["any"]}}
                    :to [{:key_code "left_option"}]
                    :type "basic"}]
-                 [{:conditions [{:identifiers [{:vendor_id 13364 :product_id 1088}
-                                                {:vendor_id 7504}]
-                                 :type "device_unless"}
-                                {:name "ctrl_tab_active"
-                                 :type "variable_if"
-                                 :value true}
-                                {:bundle_identifiers ["^com.google.Chrome" "^com.microsoft.edgemac"]
-                                 :type "frontmost_application_if"}]
-                   :description "[No hardware swap][Chrome] Ctrl+Tab End"
-                   :from {:key_code "left_control"
-                          :modifiers {:optional ["any"]}}
-                   :to [{:key_code "left_command"}]
-                   :to_after_key_up [{:conditions [{:name "ctrl_tab_active"
-                                                    :type "variable_if"
-                                                    :value true}]
-                                      :key_code "return_or_enter"}
-                                     {:set_variable {:name "ctrl_tab_active"
-                                                     :value false}}]
-                   :type "basic"}]
-                 [{:conditions [{:identifiers [{:vendor_id 13364 :product_id 1088}
-                                                {:vendor_id 7504}]
-                                 :type "device_unless"}
-                                {:name "left_control_pressed"
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}
+                                {:name "built_in_left_command_pressed"
                                  :type "variable_if"
                                  :value true}]
-                   :description "[No hardware swap] Double Ctrl tap (2)"
+                   :description "[Built-in Keyboard] Double Cmd tap (2)"
+                   :from {:key_code "left_option"}
+                   :to [{:key_code "spacebar"
+                         :modifiers ["command" "shift"]}]
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in Keyboard] Left Option -> Left Command / Double tap (1)"
+                   :from {:key_code "left_option"
+                          :modifiers {:optional ["any"]}}
+                   :to [{:set_variable {:name "built_in_left_command_pressed"
+                                        :value true}}
+                        {:key_code "left_command"}]
+                   :to_delayed_action {:to_if_canceled [{:set_variable {:name "built_in_left_command_pressed"
+                                                                        :value false}}]
+                                       :to_if_invoked [{:set_variable {:name "built_in_left_command_pressed"
+                                                                       :value false}}]}
+                   :type "basic"}]
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}
+                                {:name "built_in_left_control_pressed"
+                                 :type "variable_if"
+                                 :value true}]
+                   :description "[Built-in Keyboard] Double Ctrl tap (2)"
                    :from {:key_code "left_control"}
                    :to [{:key_code "spacebar"
                          :modifiers ["control" "command" "option"]}]
                    :type "basic"}]
-                 [{:conditions [{:identifiers [{:vendor_id 13364 :product_id 1088}
-                                                {:vendor_id 7504}]
-                                 :type "device_unless"}]
-                   :description "[No hardware swap] Left Control -> Left Command / Double tap (1)"
+                 [{:conditions [{:identifiers [{:is_built_in_keyboard true}]
+                                 :type "device_if"}]
+                   :description "[Built-in Keyboard] Left Control / Double tap (1)"
                    :from {:key_code "left_control"
                           :modifiers {:optional ["any"]}}
-                   :to [{:set_variable {:name "left_control_pressed"
+                   :to [{:set_variable {:name "built_in_left_control_pressed"
                                         :value true}}
-                        {:key_code "left_command"}]
-                   :to_delayed_action {:to_if_canceled [{:set_variable {:name "left_control_pressed"
+                        {:key_code "left_control"}]
+                   :to_delayed_action {:to_if_canceled [{:set_variable {:name "built_in_left_control_pressed"
                                                                         :value false}}]
-                                       :to_if_invoked [{:set_variable {:name "left_control_pressed"
+                                       :to_if_invoked [{:set_variable {:name "built_in_left_control_pressed"
                                                                        :value false}}]}
-                   :to_after_key_up [{:conditions [{:name "ctrl_tab_active"
-                                                    :type "variable_if"
-                                                    :value true}]
-                                      :key_code "return_or_enter"}
-                                     {:set_variable {:name "ctrl_tab_active"
-                                                     :value false}}]
                    :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.mitchellh.ghostty" "com.microsoft.VSCode" "^com.todesktop.230313mzl4w4u92"]
                                  :type "frontmost_application_unless"}]
@@ -683,7 +670,7 @@
                    :description "Double Control tap (2)"
                    :from {:key_code "left_command"}
                    :to [{:key_code "spacebar"
-                         :modifiers ["control" "command" "option"]}]
+                         :modifiers ["command" "shift"]}]
                    :type "basic"}]
                  [{:description "Double Control tap (1)"
                    :from {:key_code "left_command"
@@ -708,7 +695,7 @@
                    :description "Double Win tap (2)"
                    :from {:key_code "left_control"}
                    :to [{:key_code "spacebar"
-                         :modifiers ["command" "shift"]}]
+                         :modifiers ["control" "command" "option"]}]
                    :type "basic"}]
                  [{:description "Double Win tap (1)"
                    :from {:key_code "left_control"
