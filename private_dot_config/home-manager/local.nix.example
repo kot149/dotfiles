@@ -1,8 +1,11 @@
-{ pkgs, ... }:
+{ pkgs, nixTerraform, ... }:
 
 {
-  home.packages = with pkgs; [
+  home.packages = (with pkgs; [
     # list extra packages here
+  ]) ++ [
+    # cached via nixpkgs-terraform.cachix.org (avoids local unfree build)
+    # nixTerraform
   ];
 
   localDeny.packages = with pkgs; [
