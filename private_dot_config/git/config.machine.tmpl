@@ -14,7 +14,9 @@
 
 [core]
 	editor = {{ .git_editor | quote }}
+{{- if eq .git_user_name "kot149" }}
 
 
 [url "git@github.com-kot149:"]
 	insteadOf = https://github.com/
+{{- end }}
