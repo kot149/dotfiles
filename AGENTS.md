@@ -1,6 +1,6 @@
 ## Repository purpose
 
-These are personal dotfiles managed by **chezmoi** (source of truth for files in `$HOME`) and **Nix Home Manager** (declarative package set). The repo targets macOS, Linux (including WSL), and Windows from a single source tree.
+These are personal dotfiles managed by **chezmoi** (source of truth for files in `$HOME`) and **Nix Home Manager** (declarative package set). On macOS, **nix-darwin** is also used for system-level settings (source: `private_dot_config/nix-darwin/`, applied by `.chezmoiscripts/run_onchange_after_nix-darwin.sh.tmpl`). The repo targets macOS, Linux (including WSL), and Windows from a single source tree.
 
 ## How files map to `$HOME`
 
@@ -40,6 +40,16 @@ Rules:
 - If multiple files were edited, run `chezmoi apply -v` once per target path (not a single bare apply).
 - After applying, mention any runtime step the user still needs (e.g. restart zellij, reload shell) — but only the parts that genuinely require the user, not the apply itself.
 
+Nix files need an extra switch step: a targeted `chezmoi apply -v <target>` does **not** run the `run_onchange_*` scripts, so after editing Home Manager files (`private_dot_config/home-manager/`, e.g. `common.nix.tmpl`) or nix-darwin files (`private_dot_config/nix-darwin/`), apply the target and then run the corresponding switch yourself in the same turn:
+
+```sh
+# Home Manager (after applying ~/.config/home-manager/<file>)
+nix run home-manager/master -- switch --flake "$HOME/.config/home-manager#default"
+
+# nix-darwin (after applying ~/.config/nix-darwin/<file>; needs sudo, may prompt the user)
+cd ~/.config/nix-darwin && sudo -H nix run github:LnL7/nix-darwin#darwin-rebuild -- switch --flake .#"$(hostname -s)"
+```
+
 ## Common commands
 
 Apply / diff / status (from anywhere):
@@ -59,6 +69,14 @@ nix run home-manager/master -- switch --flake "$HOME/.config/home-manager#defaul
 ```
 
 The Home Manager flake lives at `private_dot_config/home-manager/` (rendered to `~/.config/home-manager/`). Edit `common.nix.tmpl` to change cross-platform packages; `linux-*.nix`, `darwin.nix`, `wsl.nix` for OS-specific bits. `local.nix` (gitignored, not in repo) is auto-included if present and can set `localDeny.packages = [ ... ]` to remove packages from the common set.
+
+nix-darwin (macOS system-level settings; invoked automatically by `.chezmoiscripts/run_onchange_after_nix-darwin.sh.tmpl`):
+
+```sh
+cd ~/.config/nix-darwin && sudo -H nix run github:LnL7/nix-darwin#darwin-rebuild -- switch --flake .#"$(hostname -s)"
+```
+
+The nix-darwin flake lives at `private_dot_config/nix-darwin/` (rendered to `~/.config/nix-darwin/`). Edit `darwin-configuration.nix.tmpl` for macOS system settings (`system.defaults.*`, `system.startup.*`, etc.). Note the split: **Home Manager** owns packages and user-level dotfile programs, **nix-darwin** owns macOS system settings — do not assume the repo is "Home Manager only".
 
 macOS-specific re-apply helpers (see README for full list):
 
