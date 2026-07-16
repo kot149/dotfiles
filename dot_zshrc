@@ -510,4 +510,48 @@ alias docker-prune-all='docker system prune -a --volumes'
 alias docker-compose-down-all='docker-compose down --volumes --remove-orphans'
 alias docker-volume-prune-all='docker volume prune'
 
+# herdr: 現在のワークスペースを main(2分割) / lazygit / nvim の3タブ構成にする
+hdr-init() {
+  if [[ "$HERDR_ENV" != "1" ]]; then
+    echo "hdr-init: not running inside a herdr session" >&2
+    return 1
+  fi
+  if ! command -v herdr >/dev/null 2>&1; then
+    echo "herdr: command not found" >&2
+    return 1
+  fi
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "hdr-init: jq is required" >&2
+    return 1
+  fi
+
+  local ws main_pane main_tab lg_pane nv_pane
+  ws=$(herdr workspace list | jq -r '.result.workspaces[] | select(.focused).workspace_id')
+  if [[ -z "$ws" ]]; then
+    echo "hdr-init: could not resolve focused workspace" >&2
+    return 1
+  fi
+
+  main_pane=$(herdr pane list | jq -r --arg ws "$ws" '.result.panes[] | select(.workspace_id==$ws and .focused).pane_id')
+  if [[ -z "$main_pane" ]]; then
+    echo "hdr-init: could not resolve focused pane" >&2
+    return 1
+  fi
+  main_tab=$(herdr pane list | jq -r --arg p "$main_pane" '.result.panes[] | select(.pane_id==$p).tab_id')
+
+  # tab1: main (2分割)
+  herdr tab rename "$main_tab" "main" >/dev/null
+  herdr pane split "$main_pane" --direction right --no-focus >/dev/null
+
+  # tab2: lazygit
+  lg_pane=$(herdr tab create --workspace "$ws" --label "lazygit" --no-focus | jq -r '.result.root_pane.pane_id')
+  herdr pane run "$lg_pane" "lazygit"
+
+  # tab3: nvim
+  nv_pane=$(herdr tab create --workspace "$ws" --label "nvim" --no-focus | jq -r '.result.root_pane.pane_id')
+  herdr pane run "$nv_pane" "nvim ."
+
+  herdr tab focus "$main_tab"
+}
+
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
