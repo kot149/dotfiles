@@ -47,6 +47,16 @@
     "deny": {{ $deny | toPrettyJson | indent 4 | trim }},
     "defaultMode": "acceptEdits"
   },
+  "autoMode": {
+    "soft_deny": [
+      "$defaults",
+      "Do not run `git push` (in any form, including `git push --force`, `git push -u`, `gh repo sync`, or pushing tags) unless the user has explicitly instructed pushing in this conversation.",
+      "Do not create or update GitHub issues (`gh issue create`, `gh issue edit`, `gh issue close`, `gh issue reopen`, or the equivalent REST/GraphQL API calls) unless the user has explicitly instructed the create/update in this conversation.",
+      "Do not create or update GitHub pull requests (`gh pr create`, `gh pr edit`, `gh pr merge`, `gh pr close`, `gh pr reopen`, `gh pr ready`, or the equivalent REST/GraphQL API calls) unless the user has explicitly instructed the create/update in this conversation.",
+      "Do not create or update GitHub releases (`gh release create`, `gh release edit`, `gh release delete`, or the equivalent REST/GraphQL API calls) unless the user has explicitly instructed the create/update in this conversation.",
+      "Do not post comments to GitHub issues or pull requests (`gh issue comment`, `gh pr comment`, `gh pr review`, or any `gh api` / `curl` call that writes to `/repos/*/issues/*/comments`, `/repos/*/pulls/*/comments`, `/repos/*/pulls/*/reviews`, or similar comment/review endpoints) unless the user has explicitly instructed the comment in this conversation."
+    ]
+  },
   "env": {
     "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1",
     "CLAUDE_AFK_TIMEOUT_MS": "2147483647"
