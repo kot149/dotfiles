@@ -1,3 +1,4 @@
+onboarding = false
 [ui]
 agent_panel_sort = "spaces"
 
@@ -14,3 +15,6 @@ next_tab = "alt+shift+right"
 
 previous_workspace = "ctrl+alt+up"
 next_workspace = "ctrl+alt+down"
+
+[ui.toast]
+delivery = "herdr"
