@@ -3,7 +3,7 @@ onboarding = false
 agent_panel_sort = "spaces"
 
 [keys]
-prefix = "f3"
+prefix = "alt+r"
 
 focus_pane_left = "alt+left"
 focus_pane_down = "alt+down"
@@ -16,5 +16,13 @@ next_tab = "alt+shift+right"
 previous_workspace = "ctrl+alt+up"
 next_workspace = "ctrl+alt+down"
 
+split_vertical = "prefix+slash"
+
 [ui.toast]
 delivery = "herdr"
+
+[[keys.command]]
+key = "prefix+i"
+type = "shell"
+command = "env HERDR_ENV=1 zsh -ic 'hdr-init'"
+description = "init herdr workspace template (main/lazygit/nvim)"
