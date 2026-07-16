@@ -307,11 +307,12 @@ if command -v abbr &> /dev/null; then
 
   abbr -S ag='antigravity' >> /dev/null
 
-  abbr -S hd='herdr' >> /dev/null
   abbr -S herder='herdr' >> /dev/null
+  abbr -S hr='herdr' >> /dev/null
   abbr -S hdr='herdr' >> /dev/null
   abbr -S hrd='herdr' >> /dev/null
   abbr -S hrdr='herdr' >> /dev/null
+  abbr -S hrder='herdr' >> /dev/null
 
   abbr -S spf='superfile' >> /dev/null
 else
