@@ -9,7 +9,7 @@ fi
 # nix
 if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 alias home-manager-update='nix flake update --flake "$HOME/.config/home-manager" && home-manager switch --flake "$HOME/.config/home-manager#default"'
-alias nix-cleanup='nix-store --optimize && home-manager expire-generations "-30 days"'
+alias nix-cleanup=' nh clean all --keep-since 30d --keep-one'
 # Use zsh for nix shell
 export NIX_BUILD_SHELL=zsh
 export PAGER=moor
@@ -213,6 +213,7 @@ rm() {
 
 alias git-reset-all="git reset --hard && git clean -fd"
 alias force-push='git push --force-with-lease --force-if-includes'
+
 alias claude-commit='claude --model claude-sonnet-5 "/commit-message"'
 alias sonnet='claude --model claude-sonnet-5'
 alias opus='claude --model "claude-opus-4-7[1m]"'
