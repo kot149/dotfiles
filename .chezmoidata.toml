@@ -132,6 +132,7 @@ agent_shell_allow = [
   "gh config get *",
   "gh codespace list*",
   "gh auth status*",
+  "pre-commit run*",
   "jq *",
   "yq *",
   "tree *",
