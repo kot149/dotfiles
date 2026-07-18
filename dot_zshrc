@@ -529,7 +529,7 @@ hdr-init() {
     return 1
   fi
 
-  local ws main_pane main_tab lg_pane nv_pane
+  local ws main_pane main_tab sub_pane nv_pane
   ws=$(herdr workspace list | jq -r '.result.workspaces[] | select(.focused).workspace_id')
   if [[ -z "$ws" ]]; then
     echo "hdr-init: could not resolve focused workspace" >&2
@@ -547,9 +547,9 @@ hdr-init() {
   herdr tab rename "$main_tab" "main" >/dev/null
   herdr pane split "$main_pane" --direction right --no-focus >/dev/null
 
-  # tab2: lazygit
-  lg_pane=$(herdr tab create --workspace "$ws" --label "lazygit" --no-focus | jq -r '.result.root_pane.pane_id')
-  herdr pane run "$lg_pane" "lazygit"
+  # tab2: sub (2分割)
+  sub_pane=$(herdr tab create --workspace "$ws" --label "sub" --no-focus | jq -r '.result.root_pane.pane_id')
+  herdr pane split "$sub_pane" --direction right --no-focus >/dev/null
 
   # tab3: nvim
   nv_pane=$(herdr tab create --workspace "$ws" --label "nvim" --no-focus | jq -r '.result.root_pane.pane_id')
