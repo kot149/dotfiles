@@ -477,6 +477,13 @@ Set-PSReadLineKeyHandler -Chord Alt+h -ScriptBlock {
     Invoke-FzfHistory
 }
 
+Set-PSReadLineKeyHandler -Chord Alt+b -ScriptBlock {
+    if (Get-Command fbr -ErrorAction SilentlyContinue) {
+        fbr
+        [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+    }
+}
+
 Set-PSReadLineKeyHandler -Chord Alt+d -ScriptBlock {
     if (Get-Command fcd -ErrorAction SilentlyContinue) {
         fcd
