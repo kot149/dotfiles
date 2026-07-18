@@ -26,3 +26,19 @@ key = "prefix+i"
 type = "shell"
 command = "env HERDR_ENV=1 zsh -ic 'hdr-init'"
 description = "init herdr workspace template (main/lazygit/nvim)"
+
+[[keys.command]]
+key = "alt+g"
+type = "popup"
+command = "lazygit"
+description = "lazygit (popup)"
+width = "90%"
+height = "90%"
+
+[[keys.command]]
+key = "alt+f"
+type = "popup"
+command = "hunk diff"
+description = "hunk diff (popup)"
+width = "90%"
+height = "90%"
