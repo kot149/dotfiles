@@ -126,6 +126,17 @@ fpath=(~/.zsh/completion $fpath)
 
 source $ZSH/oh-my-zsh.sh
 
+sheldon() {
+  # libgit2 (used by sheldon) doesn't understand ~/.ssh/config Host aliases,
+  # so run it under a fake HOME to bypass ~/.gitconfig's insteadOf rewrite.
+  local fake_home="${XDG_CACHE_HOME:-$HOME/.cache}/sheldon-home"
+  mkdir -p "$fake_home"
+  [[ -L "$fake_home/.zsh" ]] || ln -sfn "$HOME/.zsh" "$fake_home/.zsh"
+  HOME="$fake_home" command sheldon \
+    --config-dir "${XDG_CONFIG_HOME:-$HOME/.config}/sheldon" \
+    --data-dir "${XDG_DATA_HOME:-$HOME/.local/share}/sheldon" \
+    "$@"
+}
 eval "$(sheldon source)"
 
 # User configuration
