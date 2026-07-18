@@ -117,7 +117,10 @@ HYPHEN_INSENSITIVE="true"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git aws aliases colorize copyfile copypath docker docker-compose python pip virtualenv node)
+plugins=(git aws aliases colorize copyfile copypath python pip virtualenv node)
+if command -v docker &> /dev/null; then
+  plugins+=(docker docker-compose)
+fi
 
 fpath=(~/.zsh/completion $fpath)
 
