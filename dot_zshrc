@@ -372,6 +372,7 @@ if command -v fzf &> /dev/null; then
     fi
   }
 
+  bindkey -s '^[b' 'fbr\n'
   bindkey -s '^[d' 'fcd\n'
   bindkey -s '^[e' 'superfile\n'
   bindkey -s '^[f' 'fz\n'
