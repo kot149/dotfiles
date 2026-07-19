@@ -1,0 +1,56 @@
+{{- $shellAllow := list -}}
+{{- range .agent_shell_allow -}}
+  {{- $shellAllow = append $shellAllow . -}}
+{{- end -}}
+{{- $scriptPrefixes := list "npm run" "pnpm run" "pnpm" "yarn run" "yarn" "bun run" "bun" -}}
+{{- range .agent_shell_allow_js_scripts -}}
+  {{- $script := . -}}
+  {{- range $scriptPrefixes -}}
+    {{- $shellAllow = append $shellAllow (printf "%s %s *" . $script) -}}
+  {{- end -}}
+{{- end -}}
+{{- $binPrefixes := list "npx" "pnpm exec" "pnpm dlx" "pnpm" "yarn exec" "yarn dlx" "yarn" "bunx" "bun x" "bun" -}}
+{{- range .agent_shell_allow_js_bins -}}
+  {{- $bin := . -}}
+  {{- $shellAllow = append $shellAllow (printf "%s *" $bin) -}}
+  {{- range $binPrefixes -}}
+    {{- $shellAllow = append $shellAllow (printf "%s %s *" . $bin) -}}
+  {{- end -}}
+{{- end -}}
+{{- $allowSet := dict -}}
+{{- range $shellAllow -}}
+  {{- $_ := set $allowSet . true -}}
+  {{- $_ := set $allowSet (printf "rtk %s" .) true -}}
+  {{- if hasSuffix " *" . -}}
+    {{- $bare := trimSuffix " *" . -}}
+    {{- $_ := set $allowSet $bare true -}}
+    {{- $_ := set $allowSet (printf "rtk %s" $bare) true -}}
+  {{- end -}}
+  {{- if or (hasPrefix "pnpm " .) (hasPrefix "npm " .) (hasPrefix "yarn " .) -}}
+    {{- $_ := set $allowSet (printf "corepack %s" .) true -}}
+  {{- end -}}
+{{- end -}}
+{{- range .agent_shell_allow_no_rtk -}}
+  {{- $_ := set $allowSet . true -}}
+{{- end -}}
+{{- $allow := list -}}
+{{- range $key, $_ := $allowSet -}}
+  {{- $allow = append $allow (printf "command(%s)" $key) -}}
+{{- end -}}
+{{- $allow = sortAlpha $allow -}}
+{{- $denySet := dict -}}
+{{- range .agent_shell_deny -}}
+  {{- $_ := set $denySet . true -}}
+  {{- $_ := set $denySet (printf "rtk %s" .) true -}}
+{{- end -}}
+{{- $deny := list -}}
+{{- range $key, $_ := $denySet -}}
+  {{- $deny = append $deny (printf "command(%s)" $key) -}}
+{{- end -}}
+{{- $deny = sortAlpha $deny -}}
+{
+  "permissions": {
+    "allow": {{ $allow | toPrettyJson | indent 4 | trim }},
+    "deny": {{ $deny | toPrettyJson | indent 4 | trim }}
+  }
+}
