@@ -13,6 +13,7 @@ alias nix-cleanup=' nh clean all --keep-since 30d --keep-one'
 # Use zsh for nix shell
 export NIX_BUILD_SHELL=zsh
 export PAGER=moor
+export OPENCODE_CONFIG=$HOME/.config/opencode/opencode.local.json
 
 #################################  HISTORY  #################################
 # history

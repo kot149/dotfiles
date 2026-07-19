@@ -16,6 +16,8 @@ if(-not $env:path.Split(';').Contains('.')){
     $env:path += ";."
 }
 
+$env:OPENCODE_CONFIG = "$HOME\.config\opencode\opencode.local.json"
+
 ###################################
 # Modules
 ###################################
