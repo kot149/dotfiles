@@ -1,0 +1,48 @@
+{{- $shellAllow := list -}}
+{{- range .agent_shell_allow -}}
+  {{- $shellAllow = append $shellAllow . -}}
+{{- end -}}
+{{- $scriptPrefixes := list "npm run" "pnpm run" "pnpm" "yarn run" "yarn" "bun run" "bun" -}}
+{{- range .agent_shell_allow_js_scripts -}}
+  {{- $script := . -}}
+  {{- range $scriptPrefixes -}}
+    {{- $shellAllow = append $shellAllow (printf "%s %s *" . $script) -}}
+  {{- end -}}
+{{- end -}}
+{{- $binPrefixes := list "npx" "pnpm exec" "pnpm dlx" "pnpm" "yarn exec" "yarn dlx" "yarn" "bunx" "bun x" "bun" -}}
+{{- range .agent_shell_allow_js_bins -}}
+  {{- $bin := . -}}
+  {{- $shellAllow = append $shellAllow (printf "%s *" $bin) -}}
+  {{- range $binPrefixes -}}
+    {{- $shellAllow = append $shellAllow (printf "%s %s *" . $bin) -}}
+  {{- end -}}
+{{- end -}}
+{{- $bashRules := dict -}}
+{{- $_ := set $bashRules "*" "ask" -}}
+{{- range $shellAllow -}}
+  {{- $_ := set $bashRules . "allow" -}}
+  {{- $_ := set $bashRules (printf "rtk %s" .) "allow" -}}
+  {{- if hasSuffix " *" . -}}
+    {{- $bare := trimSuffix " *" . -}}
+    {{- $_ := set $bashRules $bare "allow" -}}
+    {{- $_ := set $bashRules (printf "rtk %s" $bare) "allow" -}}
+  {{- end -}}
+  {{- if or (hasPrefix "pnpm " .) (hasPrefix "npm " .) (hasPrefix "yarn " .) -}}
+    {{- $_ := set $bashRules (printf "corepack %s" .) "allow" -}}
+  {{- end -}}
+{{- end -}}
+{{- range .agent_shell_allow_no_rtk -}}
+  {{- $_ := set $bashRules . "allow" -}}
+{{- end -}}
+{{- range .agent_shell_deny -}}
+  {{- $_ := set $bashRules . "deny" -}}
+  {{- $_ := set $bashRules (printf "rtk %s" .) "deny" -}}
+{{- end -}}
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "bash": {{ $bashRules | toPrettyJson | indent 4 | trim }},
+    "edit": "allow",
+    "webfetch": "ask"
+  }
+}
