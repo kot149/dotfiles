@@ -1,0 +1,38 @@
+{{- if eq .chezmoi.os "windows" -}}
+#!/usr/bin/env pwsh
+$ErrorActionPreference = "Stop"
+
+# checksum: {{ include ".chezmoitemplates/antigravity/settings.json.tmpl" | sha256sum }}
+
+Write-Host "Updating Antigravity CLI config..."
+
+$configFile = "{{ joinPath .chezmoi.homeDir ".gemini/antigravity-cli/settings.json" }}"
+$specFile = [System.IO.Path]::GetTempFileName()
+
+try {
+  New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($configFile)) | Out-Null
+
+  @'
+{{ include ".chezmoitemplates/antigravity/settings.json.tmpl" }}
+'@ | Set-Content -LiteralPath $specFile -Encoding utf8NoBOM
+
+  $specJson = Get-Content -LiteralPath $specFile -Raw | ConvertFrom-Json
+
+  if (-not (Test-Path -LiteralPath $configFile) -or ((Get-Item -LiteralPath $configFile).Length -eq 0)) {
+    Copy-Item -LiteralPath $specFile -Destination $configFile -Force
+    Write-Host "Created $configFile"
+    Write-Host "Done."
+    exit 0
+  }
+
+  $configJson = Get-Content -LiteralPath $configFile -Raw | ConvertFrom-Json
+  $configJson | Add-Member -NotePropertyName 'permissions' -NotePropertyValue $specJson.permissions -Force
+  $configJson | ConvertTo-Json -Depth 32 | Set-Content -LiteralPath $configFile -Encoding utf8NoBOM
+  Write-Host "Merged managed permissions into $configFile"
+
+  Write-Host "Done."
+}
+finally {
+  Remove-Item -LiteralPath $specFile -Force -ErrorAction SilentlyContinue
+}
+{{- end -}}

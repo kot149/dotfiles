@@ -1,0 +1,35 @@
+{{- if ne .chezmoi.os "windows" -}}
+#!/bin/bash
+set -euo pipefail
+
+# checksum: {{ include ".chezmoitemplates/antigravity/settings.json.tmpl" | sha256sum }}
+
+echo "Updating Antigravity CLI config..."
+
+config_file="{{ joinPath .chezmoi.homeDir ".gemini/antigravity-cli/settings.json" }}"
+spec_file="$(mktemp)"
+output_file="$(mktemp)"
+
+cleanup() {
+  rm -f "$spec_file" "$output_file"
+}
+trap cleanup EXIT
+
+mkdir -p "$(dirname "$config_file")"
+cat >"$spec_file" <<'JSON'
+{{ include ".chezmoitemplates/antigravity/settings.json.tmpl" }}
+JSON
+
+if [ ! -f "$config_file" ] || [ ! -s "$config_file" ]; then
+  cp "$spec_file" "$config_file"
+  echo "Created $config_file"
+  echo "Done."
+  exit 0
+fi
+
+jq --slurpfile spec "$spec_file" '.permissions = $spec[0].permissions' "$config_file" >"$output_file"
+mv "$output_file" "$config_file"
+echo "Merged managed permissions into $config_file"
+
+echo "Done."
+{{- end -}}
