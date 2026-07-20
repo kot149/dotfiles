@@ -2,7 +2,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# checksum: {{ include ".chezmoitemplates/antigravity/settings.json.tmpl" | sha256sum }}
+# checksum: {{ includeTemplate "antigravity/settings.json.tmpl" . | sha256sum }}
 
 echo "Updating Antigravity CLI config..."
 
@@ -17,7 +17,7 @@ trap cleanup EXIT
 
 mkdir -p "$(dirname "$config_file")"
 cat >"$spec_file" <<'JSON'
-{{ include ".chezmoitemplates/antigravity/settings.json.tmpl" }}
+{{ includeTemplate "antigravity/settings.json.tmpl" . }}
 JSON
 
 if [ ! -f "$config_file" ] || [ ! -s "$config_file" ]; then

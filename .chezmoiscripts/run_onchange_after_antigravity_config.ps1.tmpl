@@ -2,7 +2,7 @@
 #!/usr/bin/env pwsh
 $ErrorActionPreference = "Stop"
 
-# checksum: {{ include ".chezmoitemplates/antigravity/settings.json.tmpl" | sha256sum }}
+# checksum: {{ includeTemplate "antigravity/settings.json.tmpl" . | sha256sum }}
 
 Write-Host "Updating Antigravity CLI config..."
 
@@ -13,7 +13,7 @@ try {
   New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($configFile)) | Out-Null
 
   @'
-{{ include ".chezmoitemplates/antigravity/settings.json.tmpl" }}
+{{ includeTemplate "antigravity/settings.json.tmpl" . }}
 '@ | Set-Content -LiteralPath $specFile -Encoding utf8NoBOM
 
   $specJson = Get-Content -LiteralPath $specFile -Raw | ConvertFrom-Json
