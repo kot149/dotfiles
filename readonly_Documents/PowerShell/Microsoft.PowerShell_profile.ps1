@@ -531,8 +531,10 @@ function fbr() {
     if ($branches) {
         $branch = $branches | fzf --height=40% --reverse --border
         if ($branch) {
-            $branchName = ($branch -split '\s+')[0] -replace '^\*?\s*', ''
-            git checkout $branchName
+            $branchName = (($branch -replace '^\*?\s*', '') -split '\s+')[0]
+            if ($branchName) {
+                git checkout $branchName
+            }
         }
     }
 }
