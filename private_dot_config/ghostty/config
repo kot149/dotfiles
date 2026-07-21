@@ -48,6 +48,39 @@ keybind = ctrl+x=text:\x18
 keybind = ctrl+e=text:\x05
 keybind = ctrl+/=text:\x1f
 
+# 物理 Ctrl キー (Karabiner が Cmd に変換) 経由でも Ctrl 制御文字を送出する
+# 物理 Cmd / 物理 Ctrl どちらでも <C-*> が nvim/シェルに届くようにするための二重登録
+keybind = cmd+right=text:\x1b[1;5C
+keybind = cmd+left=text:\x1b[1;5D
+keybind = cmd+a=text:\x01
+keybind = cmd+b=text:\x02
+keybind = cmd+d=text:\x04
+keybind = cmd+e=text:\x05
+keybind = cmd+f=text:\x06
+keybind = cmd+g=text:\x07
+keybind = cmd+h=text:\x08
+keybind = cmd+i=text:\x09
+keybind = cmd+j=text:\x0a
+keybind = cmd+k=text:\x0b
+keybind = cmd+l=text:\x0c
+keybind = cmd+m=text:\x0d
+keybind = cmd+n=text:\x0e
+keybind = cmd+o=text:\x0f
+keybind = cmd+p=text:\x10
+keybind = cmd+q=text:\x11
+keybind = cmd+r=text:\x12
+keybind = cmd+s=text:\x13
+keybind = cmd+t=text:\x14
+keybind = cmd+u=text:\x15
+keybind = cmd+w=text:\x17
+keybind = cmd+x=text:\x18
+keybind = cmd+y=text:\x19
+keybind = cmd+z=text:\x1a
+keybind = cmd+/=text:\x1f
+# cmd+c / cmd+v はコピー&ペーストとして残す (ctrl+c/ctrl+v と同じ扱い)
+keybind = performable:cmd+c=copy_to_clipboard:mixed
+keybind = cmd+v=paste_from_clipboard
+
 # ctrl+X デフォルトを下のレイヤに通す
 keybind = ctrl+,=unbind
 # ctrl+c / ctrl+v は例外: コピー&ペーストとして Ghostty に残す
