@@ -61,7 +61,7 @@ local function save_file()
   end
 end
 
-map({ "n", "i", "v" }, "<C-s>", function() vim.cmd("stopinsert"); save_file() end,
+map({ "n", "i", "v" }, "<C-s>", function() save_file() end,
   { noremap = true, silent = true, desc = "Save file" })
 
 -- Ctrl+W: タブ/バッファを閉じる (ウィンドウ操作は C-hjkl で代替)
