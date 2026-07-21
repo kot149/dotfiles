@@ -64,6 +64,10 @@ end
 map({ "n", "i", "v" }, "<C-s>", function() save_file() end,
   { noremap = true, silent = true, desc = "Save file" })
 
+-- Ctrl+A: 全選択 (VSCode 風)
+map({ "n", "v" }, "<C-a>", "<Esc>ggVG", { noremap = true, silent = true, desc = "Select all" })
+map("i", "<C-a>", "<Esc>ggVG", { noremap = true, silent = true, desc = "Select all" })
+
 -- Ctrl+W: タブ/バッファを閉じる (ウィンドウ操作は C-hjkl で代替)
 -- 他のバッファに切り替えてから削除することで、ウィンドウごと閉じてnvimが終了するのを防ぐ
 -- 未保存時は Save / Discard / Cancel を確認 (VSCode 風)
