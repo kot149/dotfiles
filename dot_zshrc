@@ -8,7 +8,8 @@ fi
 
 # nix
 if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
-alias home-manager-update='nix flake update --flake "$HOME/.config/home-manager" && home-manager switch --flake "$HOME/.config/home-manager#default"'
+alias home-manager-switch='nh home switch ~/.config/home-manager/ -c default'
+alias home-manager-update='nh home switch ~/.config/home-manager/ -c default -u'
 alias nix-cleanup=' nh clean all --keep-since 30d --keep-one'
 # Use zsh for nix shell
 export NIX_BUILD_SHELL=zsh
