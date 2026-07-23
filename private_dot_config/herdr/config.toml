@@ -3,7 +3,7 @@ onboarding = false
 agent_panel_sort = "spaces"
 
 [keys]
-prefix = "alt+r"
+prefix = "f4"
 
 focus_pane_left = "alt+left"
 focus_pane_down = "alt+down"
@@ -36,9 +36,17 @@ width = "90%"
 height = "90%"
 
 [[keys.command]]
-key = "alt+f"
+key = "prefix+f"
 type = "popup"
 command = "hunk diff"
-description = "hunk diff (popup)"
+description = "hunk diff (working tree)"
+width = "90%"
+height = "90%"
+
+[[keys.command]]
+key = "prefix+shift+f"
+type = "popup"
+command = '''zsh -ic 'base=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main); hunk diff "$base...HEAD"' '''
+description = "hunk diff (branch vs base)"
 width = "90%"
 height = "90%"
