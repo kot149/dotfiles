@@ -221,7 +221,14 @@ function rm {
 Set-Alias cat Get-Content
 # New-Alias -Name grep -Value Select-String
 
-function force-push { git push --force-with-lease --force-if-includes @args }
+function push {
+    if ($args.Count -gt 0 -and $args[0] -eq '-f') {
+        $rest = $args | Select-Object -Skip 1
+        git push --force-with-lease --force-if-includes @rest
+    } else {
+        git push @args
+    }
+}
 
 function sonnet { claude --model claude-sonnet-5 @args }
 function opus { claude --model 'claude-opus-4-7[1m]' @args }

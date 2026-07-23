@@ -228,7 +228,14 @@ rm() {
 }
 
 alias git-reset-all="git reset --hard && git clean -fd"
-alias force-push='git push --force-with-lease --force-if-includes'
+push() {
+  if [[ "$1" == "-f" ]]; then
+    shift
+    git push --force-with-lease --force-if-includes "$@"
+  else
+    git push "$@"
+  fi
+}
 
 alias claude-commit='claude --model claude-sonnet-5 "/commit-message"'
 alias sonnet='claude --model claude-sonnet-5'
