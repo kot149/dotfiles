@@ -22,6 +22,10 @@
     hunk = {
       url = "github:modem-dev/hunk";
     };
+    ax = {
+      url = "github:yusukebe/ax";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixpkgs-terraform = {
       url = "github:stackbuilders/nixpkgs-terraform";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -34,7 +38,7 @@
     {{- end }}
   };
 
-  outputs = { nixpkgs, home-manager, nix-claude-code, codex-cli-nix, herdr, hunk, nixpkgs-terraform{{ if eq .chezmoi.os "linux" }}, nixgl{{ end }}, ... }:
+  outputs = { nixpkgs, home-manager, nix-claude-code, codex-cli-nix, herdr, hunk, ax, nixpkgs-terraform{{ if eq .chezmoi.os "linux" }}, nixgl{{ end }}, ... }:
     let
       {{ $nixArch := .chezmoi.arch -}}
       {{- if eq .chezmoi.arch "amd64" }}{{ $nixArch = "x86_64" }}{{ end -}}
@@ -73,6 +77,7 @@
           nixCodexCli = codex-cli-nix.packages.${system}.default;
           nixHerdr = herdr.packages.${system}.default;
           nixHunk = hunk.packages.${system}.hunk;
+          nixAx = ax.packages.${system}.default;
           nixTerraform = nixpkgs-terraform.packages.${system}."terraform-1.14";
           {{- if eq .chezmoi.os "linux" }}
           nixglPackages = nixgl.packages.${system};
