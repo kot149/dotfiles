@@ -1,4 +1,4 @@
-{ config, lib, pkgs, nixClaudeCode, nixCodexCli, nixHerdr, nixHunk, ... }:
+{ config, lib, pkgs, nixClaudeCode, nixCodexCli, nixHerdr, nixHunk, nixAx, ... }:
 
 let
   basePackages = (with pkgs; [
@@ -75,6 +75,7 @@ let
     nixCodexCli
     nixHerdr
     nixHunk
+    nixAx
     opencode
     rtk
 
