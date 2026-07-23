@@ -157,11 +157,17 @@ map("i", "<C-p>", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = tr
 -- Ctrl+Shift+P: コマンドパレット
 map("n", "<C-S-p>", "<Cmd>Telescope commands<CR>", { noremap = true, silent = true, desc = "Command Palette" })
 
--- Ctrl+F: ファイル内検索
+-- Ctrl+F: ファイル内検索 (VSCode 風。選択があれば選択テキストで検索)
 map("n", "<C-f>", "/", { noremap = true, desc = "Find in file" })
+map("i", "<C-f>", "<Esc>/", { noremap = true, desc = "Find in file" })
+map("v", "<C-f>", "y/\\V<C-r>=escape(@\", '/\\')<CR><CR>",
+  { noremap = true, silent = true, desc = "Find selection" })
 
--- Ctrl+H: 検索と置換
+-- Ctrl+H: 検索と置換 (VSCode 風。選択があれば選択テキストを置換対象に)
 map("n", "<C-h>", ":%s/", { noremap = true, desc = "Find and Replace" })
+map("i", "<C-h>", "<Esc>:%s/", { noremap = true, desc = "Find and Replace" })
+map("v", "<C-h>", "y:%s/\\V<C-r>=escape(@\", '/\\')<CR>/",
+  { noremap = true, desc = "Replace selection" })
 
 -- Ctrl+Shift+F: ワークスペース全体検索
 map("n", "<C-S-f>", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = true, desc = "Find in Files" })
@@ -330,7 +336,8 @@ map("t", "<Esc>", "<C-\\><C-n>", { noremap = true, desc = "Exit Terminal Mode" }
 
 map("n", "<C-\\>", "<Cmd>vsplit<CR>", { noremap = true, silent = true, desc = "Split Right" })
 -- ウィンドウ間の移動 (C-w の代替。C-w はバッファ閉じるに使用)
-map("n", "<C-h>", "<C-w>h", { noremap = true, silent = true })
+-- 注: C-h は「検索と置換」に割り当てているため、左ウィンドウへは <leader>h で移動
+map("n", "<leader>h", "<C-w>h", { noremap = true, silent = true, desc = "Window Left" })
 map("n", "<C-j>", "<C-w>j", { noremap = true, silent = true })
 map("n", "<C-k>", "<C-w>k", { noremap = true, silent = true })
 map("n", "<C-l>", "<C-w>l", { noremap = true, silent = true })
