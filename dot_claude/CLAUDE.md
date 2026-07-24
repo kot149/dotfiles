@@ -19,7 +19,14 @@
 
 ## Code editing
 
-- Finalize process: Remove ALL meta-comments about your changes, such as `// Added XXX`, `# Removed XXX`, `// XXX has been moved to...` from the code you newly wrote or modified before applying the changes. Do NOT remove or alter comments that already existed in the codebase.
+- Do not leave meta-comments about the edit itself in code you write or modify. A comment must describe what the code IS or WHY it exists in its final state, never the history of the edit, the diff from a previous version, or the assistant's activity. Before finalizing changes, scan for and remove any comment that only makes sense while reviewing the diff, including but not limited to:
+    - Additions and deletions: `// Added foo`, `# Removed old handler`, `// New: retry logic`
+    - Rename, move, extraction: `// Renamed from bar`, `// Moved from utils.ts`, `// Extracted into helper()`
+    - Comparison with prior code: `// Now uses async`, `// Changed from sync to async`, `// Previously returned null`
+    - Replacement or deprecation notes tied to this edit: `// Replaces the old handler`, `// No longer needed`, `// Superseded by X`
+    - References to the user's request or conversation: `// As requested`, `// Per feedback`, `// Fix for the bug you mentioned`, `// TODO from the plan above`
+    - Narration of the assistant's work: `// Fixed the bug`, `// Refactored for clarity`, `// Cleaned up imports`
+  Do NOT remove or alter comments that already existed in the codebase, even if they look like meta-comments; only apply this rule to comments you are about to write or have just written.
 
 ## Claude Code specific
 
