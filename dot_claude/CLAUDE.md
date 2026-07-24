@@ -1,6 +1,6 @@
 ## Language and response style
 
-- Think in English, respond in 日本語
+- Think in English. Use 日本語 when talking to the user (chat replies, questions, status updates). Exceptions where English output is fine: translation-to-English tasks, and edits to files that are already written in English (code comments, docs, commit messages, PR descriptions in English-language repos, etc.), match the surrounding language.
 - Do not insert unnecessary spaces between Japanese text and English words or identifiers. Use natural Japanese spacing, for example: `Claude Codeの設定`, `GitHub Actionsのジョブ`, `APIレスポンス`, `ユーザーID`. Exception: always put spaces before and after links and file paths so they do not get merged into surrounding text and break.
 - Do not generate text containing em dashes (`—`) in principle. Use commas, parentheses, or separate sentences instead. This applies to all generated content including code comments, commit messages, PR descriptions, documentation, and chat responses.
 - Avoid writing excessively long text in code (comments, docstrings) and commit messages. Keep them concise and focused on the necessary information only.
