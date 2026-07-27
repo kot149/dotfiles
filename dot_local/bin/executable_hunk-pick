@@ -11,13 +11,13 @@ base="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo or
 
 labels=(
   "Uncommitted changes (unstaged + staged)"
-  "├─ Unstaged changes"
-  "└─ Staged changes"
+  " ├─ Unstaged changes"
+  " └─ Staged changes"
   "Branch changes (${base}...HEAD)"
-  "└─ Branch changes + uncommitted changes (${base})"
+  " └─ Branch changes + uncommitted changes (${base})"
 )
 
-choice="$(printf '%s\n' "${labels[@]}" | fzf --prompt='hunk diff > ' --height=100% --reverse --no-sort)" || exit 0
+choice="$(printf '%s\n' "${labels[@]}" | fzf --prompt='hunk diff > ' --height=100% --reverse --no-sort --bind='q:abort')" || exit 0
 
 case "$choice" in
   "${labels[0]}") exec hunk diff HEAD ;;
