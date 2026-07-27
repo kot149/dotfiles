@@ -50,6 +50,12 @@ nix run home-manager/master -- switch --flake "$HOME/.config/home-manager#defaul
 cd ~/.config/nix-darwin && sudo -H nix run github:LnL7/nix-darwin#darwin-rebuild -- switch --flake .#"$(hostname -s)"
 ```
 
+herdr config needs a reload: after applying `~/.config/herdr/config.toml`, run the reload yourself in the same turn so the running session picks it up (no restart needed):
+
+```sh
+herdr server reload-config
+```
+
 ## Common commands
 
 Apply / diff / status (from anywhere):
