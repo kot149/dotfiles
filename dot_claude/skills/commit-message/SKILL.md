@@ -9,21 +9,24 @@ Generate a concise, meaningful commit message based on the current staged change
 
 ## Steps
 
-1. Run `git diff --cached --name-status` and `git diff --name-status` simultaneously to get the list of staged and unstaged files
-2. Determine the commit target:
-   - If there are staged files: use those as the commit target (ignore unstaged)
-   - If there are no staged files but there are unstaged files: treat all unstaged files as the commit target (they will be staged with `git add` before committing)
-   - If neither exists: inform the user there is nothing to commit and stop
-3. Run `git diff --cached` (or `git diff` if using unstaged) to inspect the actual diff of the target files
-4. Analyze the changes to understand:
+1. Determine the commit target:
+   - **If the commit target is clear from the current session** (files you edited or created this session): use those session-touched files as the target. You do not need to strictly follow the staged/unstaged inspection flow below, but still run `git diff --cached --name-status` and `git diff --name-status` to guard against two hazards, and handle them before committing:
+     - The same file may have been modified by another session or by the user outside this session. If a target file has unexpected changes beyond what this session made, stop and confirm with the user before committing.
+     - Files unrelated to this session may already be staged. Unstage them with `git reset HEAD <file>` so only session-touched files are included. Never commit them silently.
+   - **Otherwise**, run `git diff --cached --name-status` and `git diff --name-status` simultaneously to get the list of staged and unstaged files, then:
+     - If there are staged files: use those as the commit target (ignore unstaged)
+     - If there are no staged files but there are unstaged files: treat all unstaged files as the commit target (they will be staged with `git add` before committing)
+     - If neither exists: inform the user there is nothing to commit and stop
+2. Run `git diff --cached` (or `git diff` if using unstaged) on the target files to inspect the actual diff
+3. Analyze the changes to understand:
    - What was changed (files, functions, logic)
    - Why it was likely changed (bug fix, feature, refactor, etc.)
-5. Run `git log --oneline -20` to study the existing commit history and identify patterns:
+4. Run `git log --oneline -20` to study the existing commit history and identify patterns:
    - Prefix style (e.g., `feat:`, `feat(scope):`, `[Feature]`, no prefix)
    - Language (English, Japanese, mixed)
    - Capitalization and punctuation conventions
    - Scope usage and format
-6. Generate a commit message that **follows the existing commit history style as the top priority**
+5. Generate a commit message that **follows the existing commit history style as the top priority**
    - If the history has a consistent style, match it exactly
    - If no clear pattern exists, fall back to Conventional Commits format:
      - `feat:` for new features
@@ -34,9 +37,9 @@ Generate a concise, meaningful commit message based on the current staged change
      - `test:` for test additions or changes
      - `style:` for formatting changes
      - `perf:` for performance improvements
-7. Keep the subject line under 72 characters
-8. Write in imperative mood ("Add feature" not "Added feature")
-9. If `$ARGUMENTS` is provided, treat it as additional context or a hint for the commit message
+6. Keep the subject line under 72 characters
+7. Write in imperative mood ("Add feature" not "Added feature")
+8. If `$ARGUMENTS` is provided, treat it as additional context or a hint for the commit message
 
 ## Output
 
