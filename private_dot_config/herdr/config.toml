@@ -38,15 +38,7 @@ height = "90%"
 [[keys.command]]
 key = "prefix+f"
 type = "popup"
-command = "hunk diff"
-description = "hunk diff (working tree)"
-width = "90%"
-height = "90%"
-
-[[keys.command]]
-key = "prefix+shift+f"
-type = "popup"
-command = '''zsh -ic 'base=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main); hunk diff "$base...HEAD"' '''
-description = "hunk diff (branch vs base)"
+command = "zsh -ic 'hunk-pick'"
+description = "hunk diff (pick range)"
 width = "90%"
 height = "90%"
