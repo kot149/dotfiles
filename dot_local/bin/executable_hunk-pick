@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Pick a diff range with fzf and open it in hunk.
+set -euo pipefail
+
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  echo "hunk-pick: not inside a git repository" >&2
+  exit 1
+fi
+
+base="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main)"
+
+labels=(
+  "未ステージの変更"
+  "ステージ済みの変更"
+  "未コミットの変更 (未ステージ + ステージ済み)"
+  "ブランチの変更 (${base}...HEAD)"
+  "ブランチの変更 + 未コミットの変更 (${base})"
+)
+
+choice="$(printf '%s\n' "${labels[@]}" | fzf --prompt='hunk diff > ' --height=100% --reverse --no-sort)" || exit 0
+
+case "$choice" in
+  "${labels[0]}") exec hunk diff ;;
+  "${labels[1]}") exec hunk diff --staged ;;
+  "${labels[2]}") exec hunk diff HEAD ;;
+  "${labels[3]}") exec hunk diff "${base}...HEAD" ;;
+  "${labels[4]}") exec hunk diff "${base}" ;;
+  *) exit 0 ;;
+esac
