@@ -10,19 +10,19 @@ fi
 base="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main)"
 
 labels=(
-  "未ステージの変更"
-  "ステージ済みの変更"
-  "未コミットの変更 (未ステージ + ステージ済み)"
-  "ブランチの変更 (${base}...HEAD)"
-  "ブランチの変更 + 未コミットの変更 (${base})"
+  "Uncommitted changes (unstaged + staged)"
+  "├─ Unstaged changes"
+  "└─ Staged changes"
+  "Branch changes (${base}...HEAD)"
+  "└─ Branch changes + uncommitted changes (${base})"
 )
 
 choice="$(printf '%s\n' "${labels[@]}" | fzf --prompt='hunk diff > ' --height=100% --reverse --no-sort)" || exit 0
 
 case "$choice" in
-  "${labels[0]}") exec hunk diff ;;
-  "${labels[1]}") exec hunk diff --staged ;;
-  "${labels[2]}") exec hunk diff HEAD ;;
+  "${labels[0]}") exec hunk diff HEAD ;;
+  "${labels[1]}") exec hunk diff ;;
+  "${labels[2]}") exec hunk diff --staged ;;
   "${labels[3]}") exec hunk diff "${base}...HEAD" ;;
   "${labels[4]}") exec hunk diff "${base}" ;;
   *) exit 0 ;;
