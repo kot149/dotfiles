@@ -4,6 +4,13 @@
             {
                 "key": "alt+t",
                 "command": "workbench.action.terminal.toggleTerminal"
+            },
+            {
+                "key": "shift+enter",
+                "commands": [
+                    "-markdown-preview-enhanced.runCodeChunk",
+                    "markdown-preview-enhanced.runCodeChunk"
+                ]
             }
         ],
         "darwin": [
@@ -105,6 +112,15 @@
             {
                 "key": "alt+t",
                 "command": "workbench.action.terminal.toggleTerminal"
+            },
+            {
+                "key": "shift+enter",
+                "command": "-markdown-preview-enhanced.runCodeChunk"
+            },
+            {
+                "key": "shift+enter",
+                "command": "markdown-preview-enhanced.runCodeChunk",
+                "when": "editorTextFocus && !findInputFocussed && !replaceInputFocussed && editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/"
             }
         ],
         "darwin": [
