@@ -36,7 +36,7 @@ width = "90%"
 height = "90%"
 
 [[keys.command]]
-key = "prefix+f"
+key = "prefix+d"
 type = "popup"
 command = "zsh -ic 'hunk-pick'"
 description = "hunk diff (pick range)"
