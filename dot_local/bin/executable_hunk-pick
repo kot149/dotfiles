@@ -14,10 +14,40 @@ labels=(
   " ├─ Unstaged changes"
   " └─ Staged changes"
   "Branch changes (${base}...HEAD)"
-  " └─ Branch changes + uncommitted changes (${base})"
+  " ├─ Branch changes + uncommitted changes (${base})"
 )
 
-choice="$(printf '%s\n' "${labels[@]}" | fzf --prompt='hunk diff > ' --height=100% --reverse --no-sort --bind='q:abort')" || exit 0
+max_commits=50
+
+# Commits on the current branch, newest first. Falls back to recent history
+# when the branch has no commits ahead of the base (e.g. sitting on main).
+commits=()
+while IFS= read -r line; do
+  commits+=("$line")
+done < <(git log --format='%h %s' -n "${max_commits}" "${base}..HEAD" 2>/dev/null || true)
+
+if [ "${#commits[@]}" -eq 0 ]; then
+  while IFS= read -r line; do
+    commits+=("$line")
+  done < <(git log --format='%h %s' -n "${max_commits}" HEAD 2>/dev/null || true)
+fi
+
+# Render the commits as the remaining children of "Branch changes".
+commit_labels=()
+last=$(( ${#commits[@]} - 1 ))
+for i in "${!commits[@]}"; do
+  if [ "$i" -eq "$last" ]; then
+    commit_labels+=(" └─ ${commits[$i]}")
+  else
+    commit_labels+=(" ├─ ${commits[$i]}")
+  fi
+done
+
+if [ "${#commits[@]}" -eq 0 ]; then
+  labels[4]=" └─ Branch changes + uncommitted changes (${base})"
+fi
+
+choice="$(printf '%s\n' "${labels[@]}" ${commit_labels[@]+"${commit_labels[@]}"} | fzf --prompt='hunk diff > ' --height=100% --reverse --no-sort --bind='q:abort')" || exit 0
 
 case "$choice" in
   "${labels[0]}") exec hunk diff HEAD ;;
@@ -25,5 +55,17 @@ case "$choice" in
   "${labels[2]}") exec hunk diff --staged ;;
   "${labels[3]}") exec hunk diff "${base}...HEAD" ;;
   "${labels[4]}") exec hunk diff "${base}" ;;
-  *) exit 0 ;;
+  "") exit 0 ;;
+  *)
+    commit_line="${choice#*─ }"
+    sha="${commit_line%% *}"
+    if git rev-parse --verify --quiet "${sha}^{commit}" >/dev/null; then
+      if git rev-parse --verify --quiet "${sha}^" >/dev/null; then
+        exec hunk diff "${sha}^..${sha}"
+      else
+        exec hunk diff "$(git hash-object -t tree /dev/null)..${sha}"
+      fi
+    fi
+    exit 0
+    ;;
 esac
