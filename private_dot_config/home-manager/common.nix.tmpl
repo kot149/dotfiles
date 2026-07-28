@@ -1,4 +1,4 @@
-{ config, lib, pkgs, nixClaudeCode, nixCodexCli, nixHerdr, nixHunk, nixAx, nixOmp, ... }:
+{ config, lib, pkgs, llmAgents, ... }:
 
 let
   basePackages = (with pkgs; [
@@ -70,15 +70,15 @@ let
     nil
     stylua
 
-    # ai
-    nixClaudeCode
-    nixCodexCli
-    nixHerdr
-    nixHunk
-    nixAx
-    opencode
-    nixOmp
-    rtk
+    # ai (from llm-agents.nix, prebuilt in cache.numtide.com)
+    llmAgents.claude-code
+    llmAgents.codex
+    llmAgents.herdr
+    llmAgents.hunk
+    llmAgents.ax
+    llmAgents.opencode
+    llmAgents.omp
+    llmAgents.rtk
 
     # misc
     curl
