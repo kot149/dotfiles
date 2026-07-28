@@ -7,25 +7,10 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nix-claude-code = {
-      url = "github:ryoppippi/nix-claude-code";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    codex-cli-nix = {
-      url = "github:sadjow/codex-cli-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    herdr = {
-      url = "github:ogulcancelik/herdr";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    hunk = {
-      url = "github:modem-dev/hunk";
-    };
-    ax = {
-      url = "github:yusukebe/ax";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # Source of every AI CLI (claude-code, codex, herdr, hunk, ax, opencode,
+    # omp, rtk). Deliberately not following nixpkgs: the cache at
+    # cache.numtide.com is built against the pins in this flake, and its own
+    # nixpkgs still supports x86_64-darwin, which it evaluates for all systems.
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs-terraform = {
       url = "github:stackbuilders/nixpkgs-terraform";
@@ -39,7 +24,7 @@
     {{- end }}
   };
 
-  outputs = { nixpkgs, home-manager, nix-claude-code, codex-cli-nix, herdr, hunk, ax, llm-agents, nixpkgs-terraform{{ if eq .chezmoi.os "linux" }}, nixgl{{ end }}, ... }:
+  outputs = { nixpkgs, home-manager, llm-agents, nixpkgs-terraform{{ if eq .chezmoi.os "linux" }}, nixgl{{ end }}, ... }:
     let
       {{ $nixArch := .chezmoi.arch -}}
       {{- if eq .chezmoi.arch "amd64" }}{{ $nixArch = "x86_64" }}{{ end -}}
@@ -74,12 +59,7 @@
         ] ++ (if builtins.pathExists ./local.nix then [ ./local.nix ] else []);
         extraSpecialArgs = {
           inherit username;
-          nixClaudeCode = nix-claude-code.packages.${system}.default;
-          nixCodexCli = codex-cli-nix.packages.${system}.default;
-          nixHerdr = herdr.packages.${system}.default;
-          nixHunk = hunk.packages.${system}.hunk;
-          nixAx = ax.packages.${system}.default;
-          nixOmp = llm-agents.packages.${system}.omp;
+          llmAgents = llm-agents.packages.${system};
           nixTerraform = nixpkgs-terraform.packages.${system}."terraform-1.14";
           {{- if eq .chezmoi.os "linux" }}
           nixglPackages = nixgl.packages.${system};
