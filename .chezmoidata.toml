@@ -6,6 +6,16 @@ git_editor = "code --wait"
 git_commit_gpgsign = true
 git_safe_directories = []
 
+# Binary caches. Rendered into both the Home Manager user nix.conf
+# (private_dot_config/home-manager/common.nix.tmpl) and the system-wide
+# /etc/nix/nix.custom.conf (.chezmoiscripts/run_onchange_before_nix-custom-conf.sh.tmpl).
+nix_substituters = [
+  { url = "https://codex-cli.cachix.org", key = "codex-cli.cachix.org-1:1Br3H1hHoRYG22n//cGKJOk3cQXgYobUel6O8DgSing=" },
+  { url = "https://nix-community.cachix.org", key = "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=" },
+  { url = "https://nixpkgs-terraform.cachix.org", key = "nixpkgs-terraform.cachix.org-1:8Sit092rIdAVENA3ZVeH9hzSiqI/jng6JiCrQ1Dmusw=" },
+  { url = "https://cache.numtide.com", key = "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=" },
+]
+
 agent_plain_allow = [
   "Edit",
   "WebSearch",

@@ -1,0 +1,57 @@
+{{- if ne .chezmoi.os "windows" -}}
+#!/bin/bash
+set -euo pipefail
+
+# Substituters requested through the user-level nix.conf are dropped by the Nix
+# daemon unless the user is in trusted-users, so the caches have to be declared
+# system-wide as well. Determinate Nix owns /etc/nix/nix.conf and pulls user
+# settings in from nix.custom.conf.
+#
+# substituters: {{ toJson .nix_substituters }}
+
+conf=/etc/nix/nix.custom.conf
+
+# Only meaningful on daemon installs that include nix.custom.conf.
+grep -q '!include nix.custom.conf' /etc/nix/nix.conf 2>/dev/null || exit 0
+
+begin='# BEGIN chezmoi managed'
+end='# END chezmoi managed'
+
+block=$(cat <<'EOF'
+# BEGIN chezmoi managed
+trusted-users = root {{ .chezmoi.username }}
+extra-substituters = {{ range $i, $s := .nix_substituters }}{{ if $i }} {{ end }}{{ $s.url }}{{ end }}
+extra-trusted-public-keys = {{ range $i, $s := .nix_substituters }}{{ if $i }} {{ end }}{{ $s.key }}{{ end }}
+# END chezmoi managed
+EOF
+)
+
+existing=$(cat "$conf" 2>/dev/null || true)
+kept=$(printf '%s\n' "$existing" | awk -v b="$begin" -v e="$end" '$0==b{s=1} !s; $0==e{s=0}')
+if [ -n "$kept" ]; then
+	desired="$kept"$'\n'"$block"
+else
+	desired="$block"
+fi
+
+if [ "$existing" = "$desired" ]; then
+	exit 0
+fi
+
+echo "Updating $conf (sudo required)..."
+printf '%s\n' "$desired" | sudo tee "$conf" >/dev/null
+
+echo "Restarting the Nix daemon..."
+{{ if eq .chezmoi.os "darwin" -}}
+for label in systems.determinate.nix-daemon org.nixos.nix-daemon; do
+	if sudo launchctl print "system/$label" >/dev/null 2>&1; then
+		sudo launchctl kickstart -k "system/$label"
+		break
+	fi
+done
+{{- else -}}
+if command -v systemctl >/dev/null 2>&1; then
+	sudo systemctl restart nix-daemon
+fi
+{{- end }}
+{{ end -}}
