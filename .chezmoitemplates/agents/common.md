@@ -27,5 +27,3 @@
     - References to the user's request or conversation: `// As requested`, `// Per feedback`, `// Fix for the bug you mentioned`, `// TODO from the plan above`
     - Narration of the assistant's work: `// Fixed the bug`, `// Refactored for clarity`, `// Cleaned up imports`
   Do NOT remove or alter comments that already existed in the codebase, even if they look like meta-comments; only apply this rule to comments you are about to write or have just written.
-
-@~/.codex/RTK.md

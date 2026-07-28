@@ -1,0 +1,4 @@
+{{ include ".chezmoitemplates/agents/common.md" }}
+## Claude Code specific
+
+- Put context the user must read before an `AskUserQuestion` in same-turn Markdown, not in the length-limited payload fields. Finish all thinking first, then write the text and call the tool as one uninterrupted step: `thinking → text → thinking → tool_use` silently drops the text (anthropics/claude-code#74260), while `thinking → text → tool_use` is safe at any length. Do not split into two turns.
