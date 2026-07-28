@@ -52,6 +52,8 @@ setup_linux.sh
 # Linux-only files that live under paths shared with other OSes
 {{- if ne .chezmoi.os "linux" }}
 .config/pnpm/config.yaml
+.local/share/superfile/**
+.local/share/superfile
 {{- end }}
 
 # Linux and macOS
