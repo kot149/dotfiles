@@ -17,6 +17,11 @@
 - Do not add co-authored-by lines to commit messages without the user's permission.
 - Do not include issue numbers in branch names (e.g. `issue-20`, `fix-123`) in principle. Use a short descriptive slug instead (e.g. `fix-login-redirect`). Exception: when the project rules require it, or when there is a clear reason to include it (existing convention in the repo, tooling that keys off the number, etc.).
 
+## Documentation
+
+- When writing or updating documents (README, design docs, specs, wiki pages, etc.), keep only the latest correct state. Unless explicitly asked to record history, do not leave change logs, revision notes, or corrections such as "Correction: X was wrong", "Previously we used Y", "Updated on 2026-01-01", or "This section was rewritten". Rewrite the affected part so it simply describes how things are now.
+- Exceptions: files whose purpose is history (CHANGELOG, release notes, ADRs, meeting minutes, postmortems) and cases where the user explicitly asks to keep the old content.
+
 ## Code editing
 
 - Do not leave meta-comments about the edit itself in code you write or modify. A comment must describe what the code IS or WHY it exists in its final state, never the history of the edit, the diff from a previous version, or the assistant's activity. Before finalizing changes, scan for and remove any comment that only makes sense while reviewing the diff, including but not limited to:
