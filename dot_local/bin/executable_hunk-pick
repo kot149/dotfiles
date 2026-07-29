@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Pick a diff range with fzf and open it in hunk.
+# Pick a diff range with fzf and open it in hunk. Quitting hunk returns to the
+# picker; leave for good with Esc, q or Left arrow there.
 set -euo pipefail
 
 if ! git rev-parse --git-dir >/dev/null 2>&1; then
@@ -47,25 +48,35 @@ if [ "${#commits[@]}" -eq 0 ]; then
   labels[4]=" └─ Branch changes + uncommitted changes (${base})"
 fi
 
-choice="$(printf '%s\n' "${labels[@]}" ${commit_labels[@]+"${commit_labels[@]}"} | fzf --prompt='hunk diff > ' --height=100% --reverse --no-sort --bind='q:abort')" || exit 0
+while true; do
+  choice="$(printf '%s\n' "${labels[@]}" ${commit_labels[@]+"${commit_labels[@]}"} | fzf --prompt='hunk diff > ' --height=100% --reverse --no-sort --bind='q:abort,left:abort')" || exit 0
 
-case "$choice" in
-  "${labels[0]}") exec hunk diff HEAD ;;
-  "${labels[1]}") exec hunk diff ;;
-  "${labels[2]}") exec hunk diff --staged ;;
-  "${labels[3]}") exec hunk diff "${base}...HEAD" ;;
-  "${labels[4]}") exec hunk diff "${base}" ;;
-  "") exit 0 ;;
-  *)
-    commit_line="${choice#*─ }"
-    sha="${commit_line%% *}"
-    if git rev-parse --verify --quiet "${sha}^{commit}" >/dev/null; then
-      if git rev-parse --verify --quiet "${sha}^" >/dev/null; then
-        exec hunk diff "${sha}^..${sha}"
-      else
-        exec hunk diff "$(git hash-object -t tree /dev/null)..${sha}"
+  diff_args=()
+  case "$choice" in
+    "${labels[0]}") diff_args=(HEAD) ;;
+    "${labels[1]}") diff_args=() ;;
+    "${labels[2]}") diff_args=(--staged) ;;
+    "${labels[3]}") diff_args=("${base}...HEAD") ;;
+    "${labels[4]}") diff_args=("${base}") ;;
+    "") exit 0 ;;
+    *)
+      commit_line="${choice#*─ }"
+      sha="${commit_line%% *}"
+      if ! git rev-parse --verify --quiet "${sha}^{commit}" >/dev/null; then
+        continue
       fi
-    fi
-    exit 0
-    ;;
-esac
+      if git rev-parse --verify --quiet "${sha}^" >/dev/null; then
+        diff_args=("${sha}^..${sha}")
+      else
+        diff_args=("$(git hash-object -t tree /dev/null)..${sha}")
+      fi
+      ;;
+  esac
+
+  status=0
+  hunk diff ${diff_args[@]+"${diff_args[@]}"} || status=$?
+  if [ "${status}" -ne 0 ]; then
+    echo "hunk-pick: hunk exited with status ${status}" >&2
+    exit "${status}"
+  fi
+done
