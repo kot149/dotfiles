@@ -48,8 +48,48 @@ if [ "${#commits[@]}" -eq 0 ]; then
   labels[4]=" └─ Branch changes + uncommitted changes (${base})"
 fi
 
+items=("${labels[@]}" ${commit_labels[@]+"${commit_labels[@]}"})
+
+# The entries fzf shows for a query. --no-sort keeps them in input order, which
+# is what the interactive picker displays too.
+filtered_items() {
+  if [ -z "$1" ]; then
+    printf '%s\n' "${items[@]}"
+  else
+    printf '%s\n' "${items[@]}" | fzf --filter="$1" --no-sort || true
+  fi
+}
+
+# 1-based position of an entry among the filtered ones, so the cursor can be
+# restored when the picker reopens.
+cursor_position() {
+  local target="$1" query="$2" position=1 line
+  while IFS= read -r line; do
+    if [ "${line}" = "${target}" ]; then
+      printf '%s' "${position}"
+      return
+    fi
+    position=$(( position + 1 ))
+  done < <(filtered_items "${query}")
+  printf '1'
+}
+
+query=""
+position=1
+
 while true; do
-  choice="$(printf '%s\n' "${labels[@]}" ${commit_labels[@]+"${commit_labels[@]}"} | fzf --prompt='hunk diff > ' --height=100% --reverse --no-sort --bind='q:abort,left:abort')" || exit 0
+  # --print-query puts the query on the first line, the selection on the second.
+  # pos() needs the result event because filtering is not done yet on start.
+  fzf_output="$(printf '%s\n' "${items[@]}" | fzf \
+    --prompt='hunk diff > ' --height=100% --reverse --no-sort --sync \
+    --print-query --query="${query}" \
+    --bind='q:abort,left:abort' \
+    --bind="result:pos(${position})+unbind(result)")" || exit 0
+
+  mapfile -t fzf_lines <<<"${fzf_output}"
+  query="${fzf_lines[0]-}"
+  choice="${fzf_lines[1]-}"
+  position="$(cursor_position "${choice}" "${query}")"
 
   diff_args=()
   case "$choice" in
