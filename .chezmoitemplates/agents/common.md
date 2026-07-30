@@ -7,6 +7,7 @@
 
 ## Tools
 
+- Invoke shell commands by their bare name (`ls`, `find`, `grep`), never by absolute path (`/bin/ls`, `/usr/bin/find`). Absolute paths bypass the permission allowlist and force a manual approval prompt. If a shell alias or function shadows the command, use `command ls` or `\ls` instead. Prefer the dedicated Read, Glob, and Grep tools over shelling out for file reads and searches in the first place.
 - Use GitHub CLI (`gh` command) to interact with GitHub.
 - Use `jq` or `yq` to parse JSON, YAML, TOML, XML, CSV or other structured data formats when needed.
 - When adding a package or changing a package version in manifests like `package.json`, `pyproject.toml`, or `Cargo.toml`, prefer running the package manager's command (e.g. `npm install`, `uv add`, `cargo add`) over editing the file directly. When initializing a project, use the `init` command or a `create-xxx-app` scaffolder instead of hand-creating files.

@@ -17,6 +17,18 @@
     {{- $shellAllow = append $shellAllow (printf "%s %s *" . $bin) -}}
   {{- end -}}
 {{- end -}}
+{{- /* Models occasionally call read-only tools by absolute path to dodge shell aliases.
+       Mirror the already-allowed bare form so it does not trigger a manual prompt. */ -}}
+{{- $absDirs := list "/bin" "/usr/bin" -}}
+{{- $absBins := list "ls" "cat" "find" "grep" "head" "tail" "wc" "stat" "file" "du" "df" "sort" "uniq" "cut" "basename" "dirname" "realpath" "date" "which" -}}
+{{- range $absBins -}}
+  {{- $bin := . -}}
+  {{- if has (printf "%s *" $bin) $shellAllow -}}
+    {{- range $absDirs -}}
+      {{- $shellAllow = append $shellAllow (printf "%s/%s *" . $bin) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
 {{- $allow := list -}}
 {{- range .agent_plain_allow -}}
   {{- $allow = append $allow . -}}
@@ -38,8 +50,15 @@
 {{- end -}}
 {{- $deny := list -}}
 {{- range .agent_shell_deny -}}
-  {{- $deny = append $deny (printf "Bash(%s)" .) -}}
-  {{- $deny = append $deny (printf "Bash(rtk %s)" .) -}}
+  {{- $rule := . -}}
+  {{- $deny = append $deny (printf "Bash(%s)" $rule) -}}
+  {{- $deny = append $deny (printf "Bash(rtk %s)" $rule) -}}
+  {{- if has (first (splitList " " $rule)) $absBins -}}
+    {{- range $absDirs -}}
+      {{- $deny = append $deny (printf "Bash(%s/%s)" . $rule) -}}
+      {{- $deny = append $deny (printf "Bash(rtk %s/%s)" . $rule) -}}
+    {{- end -}}
+  {{- end -}}
 {{- end -}}
 {
   "permissions": {
