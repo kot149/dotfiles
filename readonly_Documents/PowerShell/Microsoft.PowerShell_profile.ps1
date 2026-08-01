@@ -9,7 +9,13 @@
 ###################################
 # Starship
 ###################################
-Invoke-Expression (&starship init powershell)
+# Agent CLIs (Codex, Claude Code, ...) spawn pwsh with TERM=dumb and a sandbox that
+# denies writes to ~/.cache/starship, so starship prepends an error to every command's
+# output. Skip the prompt entirely for those shells.
+$script:IsAgentShell = ($env:TERM -eq 'dumb') -or [bool]$env:CODEX_SANDBOX -or [bool]$env:CLAUDECODE
+if (-not $script:IsAgentShell) {
+    Invoke-Expression (&starship init powershell)
+}
 
 # Add cwd to PATH
 if(-not $env:path.Split(';').Contains('.')){
