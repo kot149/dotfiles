@@ -49,28 +49,19 @@ output_path = Path(sys.argv[3])
 spec_doc = parse(spec_path.read_text())
 config_doc = parse(config_path.read_text())
 
-# Apply managed top-level scalar keys while preserving unmanaged user settings.
 for key, value in spec_doc.items():
-    if isinstance(value, Table):
+    if not isinstance(value, Table):
+        config_doc[key] = value
         continue
-    config_doc[key] = value
+    dest = config_doc.get(key)
+    if dest is None:
+        config_doc[key] = value
+        continue
+    if not isinstance(dest, Table):
+        fail(f"existing {key} value is not a TOML table")
+    for sub_key, sub_value in value.items():
+        dest[sub_key] = sub_value
 
-tui_table = spec_doc.get("tui")
-if not isinstance(tui_table, Table):
-    fail("tui table not found in managed Codex config template")
-
-managed_status_line = tui_table.get("status_line")
-if managed_status_line is None:
-    fail("status_line not found in managed Codex config template")
-
-config_tui = config_doc.get("tui")
-if config_tui is None:
-    config_tui = {}
-    config_doc["tui"] = config_tui
-elif not isinstance(config_tui, Table):
-    fail("existing tui value is not a TOML table")
-
-config_tui["status_line"] = managed_status_line
 output_path.write_text(dumps(config_doc))
 PY
 
