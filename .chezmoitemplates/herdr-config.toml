@@ -43,7 +43,11 @@ height = "90%"
 [[keys.command]]
 key = "prefix+d"
 type = "popup"
+{{ if eq .chezmoi.os "windows" -}}
+command = "pwsh -NoLogo -File \"{{ .chezmoi.homeDir }}/.local/bin/hunk-pick.ps1\""
+{{ else -}}
 command = "hunk-pick"
+{{ end -}}
 description = "hunk diff (pick range)"
 width = "90%"
 height = "90%"
