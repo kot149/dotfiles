@@ -1,0 +1,20 @@
+{{- $home := .chezmoi.homeDir | replace "\\" "/" -}}
+{
+  "description": "User-level Codex hooks",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Shell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '{{ $home }}/.codex/hooks/check-package-manager.sh'",
+            "commandWindows": "pwsh -NoProfile -File \"{{ $home }}/.codex/hooks/check-package-manager.ps1\"",
+            "timeout": 15,
+            "statusMessage": "Checking package manager"
+          }
+        ]
+      }
+    ]
+  }
+}

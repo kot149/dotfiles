@@ -114,7 +114,7 @@ if [[ "${FORCE_PM:-}" == "1" ]] || echo "$COMMAND" | grep -q 'FORCE_PM=1'; then
     exit 0
 fi
 
-cat <<EOF >&2
+REASON=$(cat <<EOF
 [Package Manager Mismatch]
 
   Detected PM: $USED_PM
@@ -126,4 +126,19 @@ To force execution, set FORCE_PM=1:
 
   FORCE_PM=1 $COMMAND
 EOF
-exit 2
+)
+
+printf '%s\n' "$REASON" >&2
+
+# Deny via hook JSON output; a non-zero exit status is not a block signal in Codex.
+python3 - "$REASON" <<'PYEOF'
+import json, sys
+
+print(json.dumps({
+    "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "deny",
+        "permissionDecisionReason": sys.argv[1],
+    }
+}))
+PYEOF
