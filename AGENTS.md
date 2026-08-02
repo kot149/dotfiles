@@ -105,6 +105,23 @@ When adding new tunable values, prefer threading them through `.chezmoidata.toml
 
 `.chezmoidata.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_no_rtk`, and `agent_shell_deny` arrays consumed by AI-agent settings templates (e.g. `dot_claude/settings.json.tmpl`, `dot_codex/...`). Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Entries in `agent_shell_allow` are emitted both bare and with an auto-generated `rtk <cmd>` variant — put commands that should be allowed **without** the `rtk` wrapper (e.g. `rtk` itself) in `agent_shell_allow_no_rtk`, which emits only the bare form.
 
+## Agent hooks
+
+Hook scripts shared by more than one agent live in `.chezmoitemplates/agents/` and are pulled into each agent's config directory by a one-line `{{ include ... }}` wrapper, so there is a single implementation per script:
+
+- `check-package-manager.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
+- `check-package-manager.ps1` (pwsh port, Windows only) → `~/.codex/hooks/`
+
+Registration differs per agent:
+
+- Claude Code: `hooks.PreToolUse` in `dot_claude/settings.json.tmpl`, always the bash script.
+- Codex CLI: `dot_codex/hooks.json.tmpl` → `~/.codex/hooks.json`. A handler takes `command` (used on macOS/Linux) and `commandWindows` (used on Windows), so the bash and pwsh variants are registered side by side.
+
+Two Codex-specific details:
+
+- **Blocking** requires JSON on stdout with `hookSpecificOutput.permissionDecision = "deny"` plus a non-empty `permissionDecisionReason`, and exit status 0. A non-zero exit only marks the hook as failed; it does not stop the tool call. Claude Code accepts the same JSON, which is why the shared scripts use it instead of `exit 2`.
+- **Trust**: Codex will not run a user-level hook until it is trusted. The TUI prompts "Hooks need review" on the next launch and records the decision in `~/.codex/config.toml` as `[hooks.state."<hooks.json path>:<event>:<group>:<index>"]` with `trusted_hash`. The hash covers the handler definition, so **any edit to `hooks.json` requires re-trusting** (a `codex exec` run silently skips untrusted hooks). This state is per-machine and is not managed by chezmoi.
+
 ## User-level agent instructions
 
 Per-agent global instruction files live under each agent's config directory and are distinct from this repo-level `AGENTS.md`:
