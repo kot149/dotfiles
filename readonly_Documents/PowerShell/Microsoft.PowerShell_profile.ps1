@@ -625,6 +625,57 @@ function cdworktree() {
 Set-Alias fz zi
 Set-Alias fzz fz
 
+# herdr: 現在のワークスペースを main(2分割) / sub(2分割) / nvim の3タブ構成にする
+function hdr-init {
+    if ($env:HERDR_ENV -ne "1") {
+        Write-Host "hdr-init: not running inside a herdr session" -ForegroundColor Red
+        return
+    }
+    if (-not (Get-Command herdr -ErrorAction SilentlyContinue)) {
+        Write-Host "herdr: command not found" -ForegroundColor Red
+        return
+    }
+
+    # herdr はUTF-8でJSONを返すので、コンソールがCP932だとパネル名などが壊れて
+    # ConvertFrom-Json が失敗する
+    $prevEncoding = [Console]::OutputEncoding
+    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    try {
+        $ws = ((herdr workspace list | ConvertFrom-Json).result.workspaces |
+               Where-Object { $_.focused }).workspace_id
+        if (-not $ws) {
+            Write-Host "hdr-init: could not resolve focused workspace" -ForegroundColor Red
+            return
+        }
+
+        $panes = (herdr pane list | ConvertFrom-Json).result.panes
+        $mainPane = ($panes | Where-Object { $_.workspace_id -eq $ws -and $_.focused })
+        if (-not $mainPane) {
+            Write-Host "hdr-init: could not resolve focused pane" -ForegroundColor Red
+            return
+        }
+        $mainTab = $mainPane.tab_id
+
+        # tab1: main (2分割)
+        herdr tab rename $mainTab "main" | Out-Null
+        herdr pane split $mainPane.pane_id --direction right --no-focus | Out-Null
+
+        # tab2: sub (2分割)
+        $subPane = (herdr tab create --workspace $ws --label "sub" --no-focus |
+                    ConvertFrom-Json).result.root_pane.pane_id
+        herdr pane split $subPane --direction right --no-focus | Out-Null
+
+        # tab3: nvim
+        $nvPane = (herdr tab create --workspace $ws --label "nvim" --no-focus |
+                   ConvertFrom-Json).result.root_pane.pane_id
+        herdr pane run $nvPane "nvim ." | Out-Null
+
+        herdr tab focus $mainTab | Out-Null
+    } finally {
+        [Console]::OutputEncoding = $prevEncoding
+    }
+}
+
 function Remove-Nul {
     $targetPath = "."
     $files = Get-ChildItem $targetPath -Force
