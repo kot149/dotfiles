@@ -10,6 +10,7 @@ Library/Preferences/com.knollsoft.Rectangle.plist
 {{- if ne .chezmoi.os "windows" }}
 winget.json
 lazygit-diff.ps1
+.local/bin/hunk-pick.ps1
 
 AppData/**
 AppData/Roaming/Code/User/settings.json
@@ -66,4 +67,5 @@ setup_linux.sh
 .config/sheldon/plugins.toml
 .config/ghostty
 .config/ghostty/config
+.local/bin/hunk-pick
 {{- end}}
