@@ -787,6 +787,8 @@ agent_shell_allow = [
   "hunk difftool *",
   "hunk session *",
   "hunk skill path*",
+
+  "agent-browser *",
 ]
 
 # package.json script names to allow across every JS package manager.
@@ -796,6 +798,8 @@ agent_shell_allow_js_scripts = [
   "build",
   "test",
   "test:e2e",
+  "test:frontend",
+  "build:ui",
   "lint",
   "format",
   "format:check",
@@ -812,6 +816,7 @@ agent_shell_allow_js_bins = [
   "tsc",
   "tsgo",
   "oxlint",
+  "oxfmt",
   "eslint",
 ]
 
