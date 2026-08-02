@@ -25,7 +25,11 @@ delivery = "herdr"
 [[keys.command]]
 key = "prefix+i"
 type = "shell"
+{{ if eq .chezmoi.os "windows" -}}
+command = "pwsh -NoLogo -Command \"$env:HERDR_ENV='1'; hdr-init\""
+{{ else -}}
 command = "env HERDR_ENV=1 zsh -ic 'hdr-init'"
+{{ end -}}
 description = "init herdr workspace template (main/lazygit/nvim)"
 
 [[keys.command]]
