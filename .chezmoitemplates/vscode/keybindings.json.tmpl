@@ -11,6 +11,13 @@
                     "-markdown-preview-enhanced.runCodeChunk",
                     "markdown-preview-enhanced.runCodeChunk"
                 ]
+            },
+            {
+                "keys": [
+                    "cmd+i",
+                    "ctrl+i"
+                ],
+                "command": "-workbench.action.terminal.chat.start"
             }
         ],
         "darwin": [
@@ -121,6 +128,14 @@
                 "key": "shift+enter",
                 "command": "markdown-preview-enhanced.runCodeChunk",
                 "when": "editorTextFocus && !findInputFocussed && !replaceInputFocussed && editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/"
+            },
+            {
+                "key": "cmd+i",
+                "command": "-workbench.action.terminal.chat.start"
+            },
+            {
+                "key": "ctrl+i",
+                "command": "-workbench.action.terminal.chat.start"
             }
         ],
         "darwin": [
