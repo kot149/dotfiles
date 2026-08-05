@@ -1,6 +1,6 @@
 ---
 name: autosquash
-description: 現在のブランチの fixup! / squash! コミットを `git rebase -i --autosquash` でまとめるスキル。ユーザーが「autosquashして」「fixupコミットをまとめて」「rebase --autosquashして」などと依頼した場合に使用する。マージ先ブランチは必ず `gh pr view` で対象PRの base ブランチを取得して確定させる。
+description: 現在のブランチの fixup! / squash! コミットを `git rebase -i --autosquash` でまとめるスキル。ユーザーが「autosquashして」「fixupコミットをまとめて」「rebase --autosquashして」などと依頼した場合に使用する。マージ先ブランチは `origin/HEAD` と merge-base の距離からローカルで特定し、判断が割れる場合のみ PR 情報やユーザーへの確認で確定させる。
 ---
 
 # autosquash
@@ -10,8 +10,7 @@ description: 現在のブランチの fixup! / squash! コミットを `git reba
 ## 前提
 
 - 作業ディレクトリが Git リポジトリ配下であること。
-- `gh` CLI が使用可能で認証済みであること。
-- 作業ブランチが GitHub にプッシュ済みで、対応する PR が存在する場合はそこから base を決定する。
+- `origin` リモートが設定されていること (base をローカルで特定するため)。
 
 ## 手順
 
@@ -27,24 +26,54 @@ description: 現在のブランチの fixup! / squash! コミットを `git reba
 
 ### 2. マージ先ブランチ (base) を確定する
 
-**必ず PR 情報から base ブランチを取得する。** 推測しない。
+rebase の起点にするため base ブランチを決める。ローカルの情報だけで決まるので `gh` は必須にしない。**当てずっぽうで `main` を使わず、必ず下記の手順で根拠を持って決める。**
+
+#### 2-1. リモート追跡refを最新化する
 
 ```bash
-gh pr view --json baseRefName,headRefName,number,title,url
+git fetch --prune origin
 ```
 
-- 現在のブランチに紐づく PR が存在する場合、その `baseRefName` を採用する。
-- PR が見つからない場合 (`no pull requests found` エラー等) は、`AskUserQuestion` で base ブランチを確認する。リポジトリの慣例に応じて `main` / `master` / `develop` など複数候補を提示する。
-
-取得した base ブランチ名を以降 `<BASE>` とする。
-
-### 3. リモートの base を最新化する
+#### 2-2. デフォルトブランチを取得する
 
 ```bash
-git fetch origin <BASE>
+git rev-parse --abbrev-ref origin/HEAD
 ```
 
-### 4. fixup!/squash! コミットの有無を確認する
+`origin/HEAD` が未設定で失敗する場合は `git remote set-head origin -a` を実行してから再取得する。
+
+#### 2-3. merge-base が最も近いリモートブランチを求める
+
+stacked ブランチ (base が `main` ではなく別の feature ブランチ) を拾うため、候補ごとに HEAD からの距離を測る。現在ブランチ自身の追跡ref は候補から除外する。
+
+```bash
+CUR=$(git rev-parse --abbrev-ref HEAD)
+UP=$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)
+for r in $(git for-each-ref --format='%(refname:short)' --exclude=refs/remotes/origin/HEAD refs/remotes/origin/); do
+  [ "$r" = "origin/$CUR" ] && continue
+  [ "$r" = "$UP" ] && continue
+  mb=$(git merge-base HEAD "$r" 2>/dev/null) || continue
+  [ "$mb" = "$(git rev-parse HEAD)" ] && continue
+  echo "$(git rev-list --count "$mb"..HEAD) $r"
+done | sort -n | head -5
+```
+
+先頭 (HEAD までの距離が最小) が base の最有力候補。
+
+#### 2-4. 確定させる
+
+- ユーザーが base を明示している場合はそれを採用し、2-2 / 2-3 は検証にだけ使う
+- 2-2 と 2-3 の結果が一致すればそれを `<BASE>` として確定する
+- 食い違う場合、または 2-3 で同距離の候補が複数並ぶ場合のみ判断材料を増やす:
+  - `gh` が使えるなら `gh pr view --json baseRefName,headRefName,number,title,url` の `baseRefName` を優先する。PR の base は宣言された正解なので、ローカルのヒューリスティックより信頼できる
+  - `gh` が使えない / PR が無い場合は `AskUserQuestion` で候補を提示して選ばせる
+- 確定した base と根拠 (デフォルトブランチ / merge-base 距離 / PR) を、4. の承認依頼で明記する
+
+`git merge-base --fork-point` は reflog 依存で、clone し直した環境や別マシンでは空振りするため確定の根拠には使わない。
+
+rebase の起点を誤ると base 側のコミットまで書き換えてしまうため、base の確定に自信が持てない場合は 4. の承認時に必ずその旨を伝える。
+
+### 3. fixup!/squash! コミットの有無を確認する
 
 ```bash
 git log --oneline origin/<BASE>..HEAD
@@ -52,7 +81,7 @@ git log --oneline origin/<BASE>..HEAD
 
 このリスト内に `fixup!` / `squash!` プレフィックスのコミットが存在するかを確認する。1件も無い場合は「autosquash 対象のコミットはありません」と報告して終了する。
 
-### 5. rebase 内容をユーザーに提示して承認を得る
+### 4. rebase 内容をユーザーに提示して承認を得る
 
 autosquash によってどのコミットがどこにまとめられるかを、`git log` の結果から抜粋してユーザーに提示する。破壊的操作 (履歴書き換え) なので **必ず承認を得てから実行する**。
 
@@ -65,7 +94,7 @@ base: origin/<BASE>
 実行してよろしいですか?
 ```
 
-### 6. autosquash を実行する
+### 5. autosquash を実行する
 
 承認後、エディタを開かず非対話で autosquash する:
 
@@ -76,7 +105,7 @@ GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash origin/<BASE>
 - `GIT_SEQUENCE_EDITOR=:` により todo リストは編集せずそのまま採用される (autosquash による並び替え・fixup 指定を活かす)。
 - コンフリクトが発生した場合は rebase を中断せず状況をユーザーに報告し、`git rebase --abort` するか手動解決するかを確認する。**勝手に `--abort` しない。**
 
-### 7. 結果を確認する
+### 6. 結果を確認する
 
 ```bash
 git log --oneline origin/<BASE>..HEAD
@@ -84,7 +113,7 @@ git log --oneline origin/<BASE>..HEAD
 
 fixup!/squash! コミットが消えて、対応する元コミットにまとまっていることを確認する。
 
-### 8. force push はユーザーが行う
+### 7. force push はユーザーが行う
 
 autosquash 後はリモートと履歴が乖離するため force push が必要だが、**AI は絶対に force push を実行しない**。ユーザー自身が実行する。
 

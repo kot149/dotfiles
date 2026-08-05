@@ -19,7 +19,6 @@ description: 現在の未コミット変更を、既存の適切なコミット�
 ## 前提
 
 - 作業ディレクトリが Git リポジトリ配下であること
-- `gh` CLI が使用可能で認証済みであること (base ブランチ特定のため)
 - 現在ブランチが保護ブランチ (`main` / `master` / `develop` など) でないこと
 - 方式 B を選ぶ場合は git 2.55 以降であること (`git --version` で確認する)
 
@@ -41,20 +40,50 @@ description: 現在の未コミット変更を、既存の適切なコミット�
 
 ### 2. マージ先ブランチ (base) を確定する
 
-fixup 対象にできるコミット範囲を確定するため、PR 情報から base ブランチを取得する。
+fixup 対象にできるコミット範囲を確定するため base ブランチを決める。ローカルの情報だけで決まるので `gh` は必須にしない。
+
+#### 2-1. リモート追跡refを最新化する
 
 ```bash
-gh pr view --json baseRefName,headRefName,number,title,url
+git fetch --prune origin
 ```
 
-- PR が存在する場合、その `baseRefName` を採用する
-- PR が見つからない場合は `AskUserQuestion` で base ブランチを確認する (候補: `main` / `master` / `develop` など)
-
-取得した base ブランチ名を以降 `<BASE>` とする。
+#### 2-2. デフォルトブランチを取得する
 
 ```bash
-git fetch origin <BASE>
+git rev-parse --abbrev-ref origin/HEAD
 ```
+
+`origin/HEAD` が未設定で失敗する場合は `git remote set-head origin -a` を実行してから再取得する。
+
+#### 2-3. merge-base が最も近いリモートブランチを求める
+
+stacked ブランチ (base が `main` ではなく別の feature ブランチ) を拾うため、候補ごとに HEAD からの距離を測る。現在ブランチ自身の追跡ref は候補から除外する。
+
+```bash
+CUR=$(git rev-parse --abbrev-ref HEAD)
+UP=$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)
+for r in $(git for-each-ref --format='%(refname:short)' --exclude=refs/remotes/origin/HEAD refs/remotes/origin/); do
+  [ "$r" = "origin/$CUR" ] && continue
+  [ "$r" = "$UP" ] && continue
+  mb=$(git merge-base HEAD "$r" 2>/dev/null) || continue
+  [ "$mb" = "$(git rev-parse HEAD)" ] && continue
+  echo "$(git rev-list --count "$mb"..HEAD) $r"
+done | sort -n | head -5
+```
+
+先頭 (HEAD までの距離が最小) が base の最有力候補。
+
+#### 2-4. 確定させる
+
+- ユーザーが base を明示している場合はそれを採用し、2-2 / 2-3 は検証にだけ使う
+- 2-2 と 2-3 の結果が一致すればそれを `<BASE>` として確定する
+- 食い違う場合、または 2-3 で同距離の候補が複数並ぶ場合のみ判断材料を増やす:
+  - `gh` が使えるなら `gh pr view --json baseRefName,headRefName,number,title,url` の `baseRefName` を優先する。PR の base は宣言された正解なので、ローカルのヒューリスティックより信頼できる
+  - `gh` が使えない / PR が無い場合は `AskUserQuestion` で候補を提示して選ばせる
+- どの経路で決めた場合も、確定した base と根拠 (デフォルトブランチ / merge-base 距離 / PR) を計画提示時に明記する
+
+`git merge-base --fork-point` は reflog 依存で、clone し直した環境や別マシンでは空振りするため確定の根拠には使わない。
 
 ### 3. fixup 対象コミットの候補を取得する
 
