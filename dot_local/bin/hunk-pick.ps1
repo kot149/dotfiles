@@ -15,10 +15,66 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-$base = git symbolic-ref --short refs/remotes/origin/HEAD 2>$null
-if ($LASTEXITCODE -ne 0 -or -not $base) {
-    $base = 'origin/main'
+$defaultBase = git symbolic-ref --short refs/remotes/origin/HEAD 2>$null
+if ($LASTEXITCODE -ne 0 -or -not $defaultBase) {
+    $defaultBase = 'origin/main'
 }
+
+$maxBaseCandidates = 50
+
+# Refs that could be the branch point, in preference order for ties: the
+# repository default branch first, then recently updated local and origin
+# branches.
+function Get-BaseCandidates {
+    $refs = @($defaultBase)
+    $branches = @(git for-each-ref --sort=-committerdate --count=$maxBaseCandidates `
+        --format='%(refname:short)' refs/heads refs/remotes/origin 2>$null)
+    if ($LASTEXITCODE -eq 0) { $refs += $branches }
+    return $refs
+}
+
+# The branch the current one was most likely created from: the candidate with
+# the fewest commits between its merge base and HEAD. Ancestors of HEAD win over
+# diverged branches, so a base that has moved on does not beat the real one.
+function Get-DetectedBase {
+    $current = git rev-parse --abbrev-ref HEAD 2>$null
+    if ($LASTEXITCODE -ne 0) { $current = '' }
+
+    $bestBase = ''
+    $bestRank = 0
+    $bestAhead = 0
+
+    foreach ($cand in Get-BaseCandidates) {
+        if (-not $cand) { continue }
+        if ($cand -eq $current -or $cand -eq "origin/$current" -or $cand -eq 'origin/HEAD') { continue }
+
+        git rev-parse --verify --quiet "$cand^{commit}" *> $null
+        if ($LASTEXITCODE -ne 0) { continue }
+
+        # Commits HEAD has that the candidate does not. Zero means HEAD is
+        # already contained in it, so there is no branch diff to show.
+        $ahead = git rev-list --count "$cand..HEAD" 2>$null
+        if ($LASTEXITCODE -ne 0) { continue }
+        $ahead = [int]$ahead
+        if ($ahead -le 0) { continue }
+
+        git merge-base --is-ancestor $cand HEAD *> $null
+        $rank = if ($LASTEXITCODE -eq 0) { 0 } else { 1 }
+
+        if (-not $bestBase -or $rank -lt $bestRank -or ($rank -eq $bestRank -and $ahead -lt $bestAhead)) {
+            $bestBase = $cand
+            $bestRank = $rank
+            $bestAhead = $ahead
+        }
+    }
+
+    if ($bestBase) { return $bestBase }
+    return $defaultBase
+}
+
+# HUNK_PICK_BASE overrides the detection, e.g. when the branch point is
+# ambiguous.
+$base = if ($env:HUNK_PICK_BASE) { $env:HUNK_PICK_BASE } else { Get-DetectedBase }
 
 $labels = @(
     'Uncommitted changes (unstaged + staged)'
