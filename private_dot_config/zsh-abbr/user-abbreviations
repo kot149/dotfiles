@@ -1,0 +1,80 @@
+# zsh-abbr のユーザースコープ略語定義。
+# zsh-abbr がプラグイン読み込み時にこのファイルを 1 回読むだけなので、
+# .zshrc で `abbr` を都度呼ぶより起動が速い。
+#
+# 注意: 対話的に `abbr foo=bar` を実行すると zsh-abbr がこのファイルを
+# アルファベット順に書き直し、コメントも消える。永続的な追加はこのファイルを
+# 編集して `chezmoi apply -v ~/.config/zsh-abbr/user-abbreviations` する。
+# 一時的な略語は `abbr -S` を使えばこのファイルには書き込まれない。
+
+# eza
+abbr la='eza -a -1 -F=auto --group-directories-first'
+abbr ll='eza -1 -l -F=auto --group-directories-first --header --time-style=long-iso'
+abbr lla='eza -1 -la -F=auto --group-directories-first --header --time-style=long-iso'
+
+# グローバル略語 (行頭以外でも展開)
+abbr -g GE='| grep -E "%"'
+
+# git
+abbr g=git
+abbr gi=git
+abbr gti=git
+abbr 'git cl'='git clone'
+abbr 'git st'='git status'
+abbr 'git sw'='git switch'
+abbr 'git co'='git checkout'
+abbr 'git ch'='git checkout'
+abbr 'git m'='git checkout main'
+abbr 'git br'='git branch'
+abbr 'git fe'='git fetch'
+abbr 'git pl'='git pull'
+abbr 'git pul'='git pull'
+abbr 'git ad'='git add'
+abbr 'git cm'='git commit -m "%"'
+abbr 'git cmm'='git commit -m "%"'
+abbr 'git cmt'='git commit -m "%"'
+abbr 'git mg'='git merge'
+abbr 'git mr'='git merge'
+abbr 'git ps'='git push'
+abbr 'git ph'='git push'
+abbr 'git psh'='git push'
+abbr 'git pb'='git publish'
+abbr 'git pub'='git publish'
+
+abbr lg=lazygit
+
+# dotfiles
+abbr zrc='. ~/.zshrc'
+abbr cz=chezmoi
+abbr 'chezmoi ad'='chezmoi add'
+abbr 'chezmoi ap'='chezmoi apply'
+abbr sld=sheldon
+
+# oh-my-zsh plugins
+abbr cpa=copypath
+abbr cpf=copyfile
+
+# python
+abbr va='. .venv/bin/activate'
+
+# タスクランナー
+abbr ji='just init'
+abbr jb='just build'
+abbr jf='just flash'
+abbr mb='mise build'
+abbr cm='cargo make'
+abbr ur='uv run'
+
+# タイポ救済
+abbr pmpn=pnpm
+abbr pnpn=pnpm
+abbr pmpm=pnpm
+abbr herder=herdr
+abbr hr=herdr
+abbr hdr=herdr
+abbr hrd=herdr
+abbr hrdr=herdr
+abbr hrder=herdr
+
+abbr ag=antigravity
+abbr spf=superfile
