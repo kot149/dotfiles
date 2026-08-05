@@ -128,6 +128,16 @@ fpath=(~/.zsh/completion $fpath)
 
 source $ZSH/oh-my-zsh.sh
 
+# zsh-abbr (本体は sheldon が読み込む)。略語定義は下記ファイルに置いてあり、
+# zsh-abbr は読み込み時に 1 回それを読むだけなので .zshrc で abbr を都度呼ぶより速い。
+# パス既定値は ~/.config/zsh/abbreviations があればそちら、無ければこちらという
+# 分岐仕様なので明示的に固定する。設定は sheldon より前に済ませる必要がある。
+export ABBR_USER_ABBREVIATIONS_FILE=${XDG_CONFIG_HOME:-$HOME/.config}/zsh-abbr/user-abbreviations
+ABBR_SET_EXPANSION_CURSOR=1
+if [[ ! -f $ABBR_USER_ABBREVIATIONS_FILE ]]; then
+  echo "Warning: zsh-abbr abbreviations not found: $ABBR_USER_ABBREVIATIONS_FILE"
+fi
+
 sheldon() {
   # libgit2 (used by sheldon) doesn't understand ~/.ssh/config Host aliases,
   # so run it under a fake HOME to bypass ~/.gitconfig's insteadOf rewrite.
@@ -270,78 +280,6 @@ local-ignore() {
 }
 alias ls='eza -1 -F=auto --group-directories-first'
 alias tree='eza --tree -F=auto'
-
-if command -v abbr &> /dev/null; then
-  ABBR_SET_EXPANSION_CURSOR=1
-
-  abbr -S la='eza -a -1 -F=auto --group-directories-first' >> /dev/null
-  abbr -S ll='eza -1 -l -F=auto --group-directories-first --header --time-style=long-iso' >> /dev/null
-  abbr -S lla='eza -1 -la -F=auto --group-directories-first --header --time-style=long-iso' >> /dev/null
-
-  abbr -S -g GE='| grep -E "%"' >> /dev/null
-
-  abbr -S g=git >> /dev/null
-  abbr -S gi=git >> /dev/null
-  abbr -S gti=git >> /dev/null
-  abbr -S 'git cl'='git clone' >> /dev/null
-  abbr -S 'git st'='git status' >> /dev/null
-  abbr -S 'git sw'='git switch' >> /dev/null
-  abbr -S 'git co'='git checkout' >> /dev/null
-  abbr -S 'git ch'='git checkout' >> /dev/null
-  abbr -S 'git m'='git checkout main' >> /dev/null
-  abbr -S 'git br'='git branch' >> /dev/null
-  abbr -S 'git fe'='git fetch' >> /dev/null
-  abbr -S 'git pl'='git pull' >> /dev/null
-  abbr -S 'git pul'='git pull' >> /dev/null
-  abbr -S 'git ad'='git add' >> /dev/null
-  abbr -S 'git cm'='git commit -m "%"' >> /dev/null
-  abbr -S 'git cmm'='git commit -m "%"' >> /dev/null
-  abbr -S 'git cmt'='git commit -m "%"' >> /dev/null
-  abbr -S 'git mg'='git merge' >> /dev/null
-  abbr -S 'git mr'='git merge' >> /dev/null
-  abbr -S 'git ps'='git push' >> /dev/null
-  abbr -S 'git ph'='git push' >> /dev/null
-  abbr -S 'git psh'='git push' >> /dev/null
-  abbr -S 'git pb'='git publish' >> /dev/null
-  abbr -S 'git pub'='git publish' >> /dev/null
-
-  abbr -S 'lg'='lazygit' >> /dev/null
-
-  abbr -S zrc='. ~/.zshrc' >> /dev/null
-  abbr -S cz='chezmoi' >> /dev/null
-  abbr -S 'chezmoi ad'='chezmoi add' >> /dev/null
-  abbr -S 'chezmoi ap'='chezmoi apply' >> /dev/null
-  abbr -S sld='sheldon' >> /dev/null
-
-  abbr -S cpa='copypath' >> /dev/null
-  abbr -S cpf='copyfile' >> /dev/null
-
-  abbr -S va='. .venv/bin/activate' >> /dev/null
-
-  abbr -S ji='just init' >> /dev/null
-  abbr -S jb='just build' >> /dev/null
-  abbr -S jf='just flash' >> /dev/null
-
-  abbr -S mb='mise build' >> /dev/null
-  abbr -S cm='cargo make' >> /dev/null
-  abbr -S ur='uv run' >> /dev/null
-  abbr -S pmpn='pnpm' >> /dev/null
-  abbr -S pnpn='pnpm' >> /dev/null
-  abbr -S pmpm='pnpm' >> /dev/null
-
-  abbr -S ag='antigravity' >> /dev/null
-
-  abbr -S herder='herdr' >> /dev/null
-  abbr -S hr='herdr' >> /dev/null
-  abbr -S hdr='herdr' >> /dev/null
-  abbr -S hrd='herdr' >> /dev/null
-  abbr -S hrdr='herdr' >> /dev/null
-  abbr -S hrder='herdr' >> /dev/null
-
-  abbr -S spf='superfile' >> /dev/null
-else
-  echo "Warning: zsh-abbr not found"
-fi
 
 function mtouch {
     mkdir -p "$(dirname "$1")" && touch "$1"
