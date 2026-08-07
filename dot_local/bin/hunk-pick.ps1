@@ -15,6 +15,13 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+$emptyTree = @() | git hash-object -t tree --stdin
+
+# A repository without any commit has no HEAD, and no base branch to compare
+# against, so the entries that need a revision are built accordingly.
+git rev-parse --verify --quiet HEAD *> $null
+$hasHead = $LASTEXITCODE -eq 0
+
 $defaultBase = git symbolic-ref --short refs/remotes/origin/HEAD 2>$null
 if ($LASTEXITCODE -ne 0 -or -not $defaultBase) {
     $defaultBase = 'origin/main'
@@ -74,40 +81,91 @@ function Get-DetectedBase {
 
 # HUNK_PICK_BASE overrides the detection, e.g. when the branch point is
 # ambiguous.
-$base = if ($env:HUNK_PICK_BASE) { $env:HUNK_PICK_BASE } else { Get-DetectedBase }
+$base = if ($env:HUNK_PICK_BASE) {
+    $env:HUNK_PICK_BASE
+} elseif ($hasHead) {
+    Get-DetectedBase
+} else {
+    $defaultBase
+}
 
-$labels = @(
-    'Uncommitted changes (unstaged + staged)'
-    ' ├─ Unstaged changes'
-    ' └─ Staged changes'
-    "Branch changes ($base...HEAD)"
-    " ├─ Branch changes + uncommitted changes ($base)"
-)
+$hasBase = $false
+if ($hasHead) {
+    git rev-parse --verify --quiet "$base^{commit}" *> $null
+    $hasBase = $LASTEXITCODE -eq 0
+}
+
+# Parallel lists: $labels[$i] is shown by fzf, $actions[$i] holds the arguments
+# passed to `hunk diff` ($null for a non-selectable header).
+$labels = [System.Collections.Generic.List[string]]::new()
+$actions = [System.Collections.Generic.List[object]]::new()
+
+function Add-Entry {
+    param([string]$Label, [object]$Action)
+
+    $labels.Add($Label)
+    $actions.Add($Action)
+}
+
+if ($hasHead) {
+    Add-Entry 'Uncommitted changes (unstaged + staged)' @('HEAD')
+} else {
+    Add-Entry 'Uncommitted changes (unstaged + staged)' @($emptyTree)
+}
+Add-Entry ' ├─ Unstaged changes' @()
+Add-Entry ' └─ Staged changes' @('--staged')
 
 $maxCommits = 50
 
 # Commits on the current branch, newest first. Falls back to recent history
 # when the branch has no commits ahead of the base (e.g. sitting on main).
-$commits = @(git log --format='%h %s' -n $maxCommits "$base..HEAD" 2>$null)
-if ($LASTEXITCODE -ne 0) { $commits = @() }
-
-if ($commits.Count -eq 0) {
-    $commits = @(git log --format='%h %s' -n $maxCommits HEAD 2>$null)
+$commits = @()
+if ($hasHead) {
+    $range = if ($hasBase) { "$base..HEAD" } else { 'HEAD' }
+    $commits = @(git log --format='%h %s' -n $maxCommits $range 2>$null)
     if ($LASTEXITCODE -ne 0) { $commits = @() }
+
+    if ($commits.Count -eq 0 -and $hasBase) {
+        $commits = @(git log --format='%h %s' -n $maxCommits HEAD 2>$null)
+        if ($LASTEXITCODE -ne 0) { $commits = @() }
+    }
 }
 
-# Render the commits as the remaining children of "Branch changes".
-$commitLabels = @()
-for ($i = 0; $i -lt $commits.Count; $i++) {
-    $prefix = if ($i -eq $commits.Count - 1) { ' └─ ' } else { ' ├─ ' }
-    $commitLabels += "$prefix$($commits[$i])"
+# Children of the branch section: the combined branch + uncommitted entry
+# followed by the individual commits.
+$childLabels = [System.Collections.Generic.List[string]]::new()
+$childActions = [System.Collections.Generic.List[object]]::new()
+
+if ($hasBase) {
+    $childLabels.Add("Branch changes + uncommitted changes ($base)")
+    $childActions.Add(@($base))
 }
 
-if ($commits.Count -eq 0) {
-    $labels[4] = " └─ Branch changes + uncommitted changes ($base)"
+foreach ($commit in $commits) {
+    $sha = ($commit -split ' ' | Select-Object -First 1)
+    git rev-parse --verify --quiet "$sha^" *> $null
+    if ($LASTEXITCODE -eq 0) {
+        $childActions.Add(@("$sha^..$sha"))
+    } else {
+        $childActions.Add(@("$emptyTree..$sha"))
+    }
+    $childLabels.Add($commit)
 }
 
-$items = @($labels) + $commitLabels
+if ($childLabels.Count -gt 0) {
+    if ($hasBase) {
+        Add-Entry "Branch changes ($base...HEAD)" @("$base...HEAD")
+    } else {
+        Add-Entry 'Commits' $null
+    }
+
+    for ($i = 0; $i -lt $childLabels.Count; $i++) {
+        $prefix = if ($i -eq $childLabels.Count - 1) { ' └─ ' } else { ' ├─ ' }
+        Add-Entry "$prefix$($childLabels[$i])" $childActions[$i]
+    }
+}
+
+$items = @($labels)
 
 # The entries fzf shows for a query. --no-sort keeps them in input order, which
 # is what the interactive picker displays too.
@@ -149,34 +207,14 @@ while ($true) {
 
     $query = if ($output.Count -ge 1) { $output[0] } else { '' }
     $choice = if ($output.Count -ge 2) { $output[1] } else { '' }
+    if ($choice -eq '') { exit 0 }
     $position = Get-CursorPosition -Target $choice -Query $query
 
-    $diffArgs = @()
-    if ($choice -eq '') {
-        exit 0
-    } elseif ($choice -eq $labels[0]) {
-        $diffArgs = @('HEAD')
-    } elseif ($choice -eq $labels[1]) {
-        $diffArgs = @()
-    } elseif ($choice -eq $labels[2]) {
-        $diffArgs = @('--staged')
-    } elseif ($choice -eq $labels[3]) {
-        $diffArgs = @("$base...HEAD")
-    } elseif ($choice -eq $labels[4]) {
-        $diffArgs = @($base)
-    } else {
-        $sha = ($choice -replace '^.*?─ ', '') -split ' ' | Select-Object -First 1
-        git rev-parse --verify --quiet "$sha^{commit}" *> $null
-        if ($LASTEXITCODE -ne 0) { continue }
+    $index = $labels.IndexOf($choice)
+    if ($index -lt 0) { continue }
 
-        git rev-parse --verify --quiet "$sha^" *> $null
-        if ($LASTEXITCODE -eq 0) {
-            $diffArgs = @("$sha^..$sha")
-        } else {
-            $emptyTree = @() | git hash-object -t tree --stdin
-            $diffArgs = @("$emptyTree..$sha")
-        }
-    }
+    $diffArgs = $actions[$index]
+    if ($null -eq $diffArgs) { continue }
 
     & hunk diff @diffArgs
     $status = $LASTEXITCODE
