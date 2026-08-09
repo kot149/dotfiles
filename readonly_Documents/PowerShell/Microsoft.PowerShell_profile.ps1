@@ -240,6 +240,62 @@ function sonnet { claude --model claude-sonnet-5 @args }
 function opus { claude --model 'claude-opus-5[1m]' @args }
 function fable { claude --model claude-fable-5 @args }
 
+function Invoke-ClaudeGpt {
+    param(
+        [Parameter(Mandatory)][string]$Model,
+        [Parameter(Mandatory)][string]$Effort,
+        [Parameter(ValueFromRemainingArguments=$true)][string[]]$ClaudeArgs
+    )
+
+    try {
+        Invoke-RestMethod -Uri 'http://127.0.0.1:8317/v1/models' -Headers @{
+            Authorization = 'Bearer sk-local-cliproxy'
+        } -TimeoutSec 1 | Out-Null
+    } catch {
+        $proxy = Get-Command cli-proxy-api, server -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if (-not $proxy) {
+            Write-Error 'CLIProxyAPI is not installed'
+            return
+        }
+        $config = Join-Path $HOME '.config\cli-proxy-api\config.yaml'
+        Start-Process -FilePath $proxy.Source -ArgumentList @('-config', $config) -WindowStyle Hidden
+        Start-Sleep -Seconds 1
+    }
+
+    $names = @(
+        'ANTHROPIC_BASE_URL',
+        'ANTHROPIC_AUTH_TOKEN',
+        'CLAUDE_CODE_SUBAGENT_MODEL',
+        'CLAUDE_CODE_ALWAYS_ENABLE_EFFORT',
+        'CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY',
+        'CLAUDE_CODE_MAX_CONTEXT_TOKENS',
+        'ENABLE_TOOL_SEARCH'
+    )
+    $previous = @{}
+    foreach ($name in $names) {
+        $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+    }
+
+    try {
+        $env:ANTHROPIC_BASE_URL = 'http://127.0.0.1:8317'
+        $env:ANTHROPIC_AUTH_TOKEN = 'sk-local-cliproxy'
+        $env:CLAUDE_CODE_SUBAGENT_MODEL = "$Model($Effort)"
+        $env:CLAUDE_CODE_ALWAYS_ENABLE_EFFORT = '1'
+        $env:CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY = '3'
+        $env:CLAUDE_CODE_MAX_CONTEXT_TOKENS = '1050000'
+        $env:ENABLE_TOOL_SEARCH = 'false'
+        claude --model "$Model($Effort)" --effort $Effort @ClaudeArgs
+    } finally {
+        foreach ($name in $names) {
+            [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process')
+        }
+    }
+}
+
+function luna { Invoke-ClaudeGpt -Model gpt-5.6-luna -Effort xhigh -ClaudeArgs $args }
+function sol { Invoke-ClaudeGpt -Model gpt-5.6-sol -Effort high -ClaudeArgs $args }
+
 function git-logout {
 	cmdkey /delete:git:https://github.com
 }

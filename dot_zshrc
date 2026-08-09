@@ -252,6 +252,42 @@ alias sonnet='claude --model claude-sonnet-5'
 alias opus='claude --model "claude-opus-5[1m]"'
 alias fable='claude --model claude-fable-5'
 
+_claude_gpt() {
+  local model="$1"
+  local effort="$2"
+  shift 2
+
+  if ! curl --silent --fail --max-time 1 http://127.0.0.1:8317/v1/models \
+      -H 'Authorization: Bearer sk-local-cliproxy' >/dev/null 2>&1; then
+    local proxy_bin
+    proxy_bin=$(command -v cli-proxy-api 2>/dev/null || command -v server 2>/dev/null) || {
+      echo "CLIProxyAPI is not installed" >&2
+      return 1
+    }
+    mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}/cli-proxy-api"
+    "$proxy_bin" -config "${XDG_CONFIG_HOME:-$HOME/.config}/cli-proxy-api/config.yaml" \
+      >"${XDG_CACHE_HOME:-$HOME/.cache}/cli-proxy-api/server.log" 2>&1 &!
+    sleep 1
+  fi
+
+  ANTHROPIC_BASE_URL=http://127.0.0.1:8317 \
+  ANTHROPIC_AUTH_TOKEN=sk-local-cliproxy \
+  CLAUDE_CODE_SUBAGENT_MODEL="${model}(${effort})" \
+  CLAUDE_CODE_ALWAYS_ENABLE_EFFORT=1 \
+  CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY=3 \
+  CLAUDE_CODE_MAX_CONTEXT_TOKENS=1050000 \
+  ENABLE_TOOL_SEARCH=false \
+    claude --model "${model}(${effort})" --effort "$effort" "$@"
+}
+
+luna() {
+  _claude_gpt gpt-5.6-luna xhigh "$@"
+}
+
+sol() {
+  _claude_gpt gpt-5.6-sol high "$@"
+}
+
 # .git/info/exclude にローカル限定の無視パターンを追加する
 local-ignore() {
   if [ $# -eq 0 ]; then
