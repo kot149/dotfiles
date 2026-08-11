@@ -255,7 +255,18 @@ alias fable='claude --model claude-fable-5'
 _claude_gpt() {
   local model="$1"
   local effort="$2"
-  shift 2
+  local subagent_model="$model"
+  local subagent_effort="$effort"
+  if (( $# >= 4 )); then
+    subagent_model="$3"
+    subagent_effort="$4"
+    shift 4
+  elif (( $# >= 3 )); then
+    subagent_model="$3"
+    shift 3
+  else
+    shift 2
+  fi
 
   if ! curl --silent --fail --max-time 1 http://127.0.0.1:8317/v1/models \
       -H 'Authorization: Bearer sk-local-cliproxy' >/dev/null 2>&1; then
@@ -272,7 +283,7 @@ _claude_gpt() {
 
   ANTHROPIC_BASE_URL=http://127.0.0.1:8317 \
   ANTHROPIC_AUTH_TOKEN=sk-local-cliproxy \
-  CLAUDE_CODE_SUBAGENT_MODEL="${model}(${effort})" \
+  CLAUDE_CODE_SUBAGENT_MODEL="${subagent_model}(${subagent_effort})" \
   CLAUDE_CODE_ALWAYS_ENABLE_EFFORT=1 \
   CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY=3 \
   CLAUDE_CODE_MAX_CONTEXT_TOKENS=1050000 \
@@ -285,7 +296,7 @@ luna() {
 }
 
 sol() {
-  _claude_gpt gpt-5.6-sol high "$@"
+  _claude_gpt gpt-5.6-sol medium gpt-5.6-luna xhigh "$@"
 }
 
 # .git/info/exclude にローカル限定の無視パターンを追加する

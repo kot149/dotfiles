@@ -244,8 +244,17 @@ function Invoke-ClaudeGpt {
     param(
         [Parameter(Mandatory)][string]$Model,
         [Parameter(Mandatory)][string]$Effort,
+        [Parameter()][string]$SubagentModel,
+        [Parameter()][string]$SubagentEffort,
         [Parameter(ValueFromRemainingArguments=$true)][string[]]$ClaudeArgs
     )
+
+    if ([string]::IsNullOrWhiteSpace($SubagentModel)) {
+        $SubagentModel = $Model
+    }
+    if ([string]::IsNullOrWhiteSpace($SubagentEffort)) {
+        $SubagentEffort = $Effort
+    }
 
     try {
         Invoke-RestMethod -Uri 'http://127.0.0.1:8317/v1/models' -Headers @{
@@ -280,7 +289,7 @@ function Invoke-ClaudeGpt {
     try {
         $env:ANTHROPIC_BASE_URL = 'http://127.0.0.1:8317'
         $env:ANTHROPIC_AUTH_TOKEN = 'sk-local-cliproxy'
-        $env:CLAUDE_CODE_SUBAGENT_MODEL = "$Model($Effort)"
+        $env:CLAUDE_CODE_SUBAGENT_MODEL = "$SubagentModel($SubagentEffort)"
         $env:CLAUDE_CODE_ALWAYS_ENABLE_EFFORT = '1'
         $env:CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY = '3'
         $env:CLAUDE_CODE_MAX_CONTEXT_TOKENS = '1050000'
@@ -294,7 +303,7 @@ function Invoke-ClaudeGpt {
 }
 
 function luna { Invoke-ClaudeGpt -Model gpt-5.6-luna -Effort xhigh -ClaudeArgs $args }
-function sol { Invoke-ClaudeGpt -Model gpt-5.6-sol -Effort high -ClaudeArgs $args }
+function sol { Invoke-ClaudeGpt -Model gpt-5.6-sol -Effort medium -SubagentModel gpt-5.6-luna -SubagentEffort xhigh -ClaudeArgs $args }
 
 function git-logout {
 	cmdkey /delete:git:https://github.com
