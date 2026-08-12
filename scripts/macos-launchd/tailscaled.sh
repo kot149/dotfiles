@@ -3,10 +3,13 @@ set -eu
 
 PLIST=/Library/LaunchDaemons/com.tailscale.tailscaled.plist
 LABEL=com.tailscale.tailscaled
-# Resolve to the actual /nix/store path. ~/.nix-profile lives under the
-# FileVault-encrypted user home, which root's launchd cannot read at boot
-# (`No such file or directory` -> service ends up in the penalty box).
-TAILSCALED=$(readlink -f "$(which tailscaled)")
+# Resolve to a root-readable executable. ~/.nix-profile lives under the
+# FileVault-encrypted user home, and the Nix entrypoint is a shell wrapper.
+TAILSCALED=$(readlink -f "$(command -v tailscaled)")
+TAILSCALED_DIR=${TAILSCALED%/*}
+if [ -x "$TAILSCALED_DIR/.tailscaled-wrapped" ]; then
+    TAILSCALED="$TAILSCALED_DIR/.tailscaled-wrapped"
+fi
 
 sudo tee "$PLIST" >/dev/null <<EOF
 <?xml version="1.0" encoding="UTF-8"?>

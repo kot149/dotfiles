@@ -8,6 +8,15 @@ if ! git rev-parse --git-dir >/dev/null 2>&1; then
   exit 1
 fi
 
+empty_tree="$(git hash-object -t tree /dev/null)"
+
+# A repository without any commit has no HEAD, and no base branch to compare
+# against, so the entries that need a revision are built accordingly.
+has_head=false
+if git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
+  has_head=true
+fi
+
 default_base="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main)"
 
 max_base_candidates=50
@@ -61,47 +70,96 @@ detect_base() {
 
 # HUNK_PICK_BASE overrides the detection, e.g. when the branch point is
 # ambiguous.
-base="${HUNK_PICK_BASE:-$(detect_base)}"
+if [ "${has_head}" = true ]; then
+  base="${HUNK_PICK_BASE:-$(detect_base)}"
+else
+  base="${HUNK_PICK_BASE:-${default_base}}"
+fi
 
-labels=(
-  "Uncommitted changes (unstaged + staged)"
-  " ├─ Unstaged changes"
-  " └─ Staged changes"
-  "Branch changes (${base}...HEAD)"
-  " ├─ Branch changes + uncommitted changes (${base})"
-)
+has_base=false
+if [ "${has_head}" = true ] && git rev-parse --verify --quiet "${base}^{commit}" >/dev/null 2>&1; then
+  has_base=true
+fi
+
+# Parallel arrays: labels[i] is shown by fzf, actions[i] holds the arguments
+# passed to `hunk diff` (space separated, "@none" for a non-selectable header).
+labels=()
+actions=()
+
+add_entry() {
+  labels+=("$1")
+  actions+=("$2")
+}
+
+if [ "${has_head}" = true ]; then
+  add_entry "Uncommitted changes (unstaged + staged)" "HEAD"
+else
+  add_entry "Uncommitted changes (unstaged + staged)" "${empty_tree}"
+fi
+add_entry " ├─ Unstaged changes" ""
+add_entry " └─ Staged changes" "--staged"
 
 max_commits=50
 
 # Commits on the current branch, newest first. Falls back to recent history
 # when the branch has no commits ahead of the base (e.g. sitting on main).
 commits=()
-while IFS= read -r line; do
-  commits+=("$line")
-done < <(git log --format='%h %s' -n "${max_commits}" "${base}..HEAD" 2>/dev/null || true)
-
-if [ "${#commits[@]}" -eq 0 ]; then
+if [ "${has_head}" = true ]; then
+  range=HEAD
+  if [ "${has_base}" = true ]; then
+    range="${base}..HEAD"
+  fi
   while IFS= read -r line; do
     commits+=("$line")
-  done < <(git log --format='%h %s' -n "${max_commits}" HEAD 2>/dev/null || true)
-fi
+  done < <(git log --format='%h %s' -n "${max_commits}" "${range}" 2>/dev/null || true)
 
-# Render the commits as the remaining children of "Branch changes".
-commit_labels=()
-last=$(( ${#commits[@]} - 1 ))
-for i in "${!commits[@]}"; do
-  if [ "$i" -eq "$last" ]; then
-    commit_labels+=(" └─ ${commits[$i]}")
-  else
-    commit_labels+=(" ├─ ${commits[$i]}")
+  if [ "${#commits[@]}" -eq 0 ] && [ "${has_base}" = true ]; then
+    while IFS= read -r line; do
+      commits+=("$line")
+    done < <(git log --format='%h %s' -n "${max_commits}" HEAD 2>/dev/null || true)
   fi
-done
-
-if [ "${#commits[@]}" -eq 0 ]; then
-  labels[4]=" └─ Branch changes + uncommitted changes (${base})"
 fi
 
-items=("${labels[@]}" ${commit_labels[@]+"${commit_labels[@]}"})
+# Children of the branch section: the combined branch + uncommitted entry
+# followed by the individual commits.
+child_labels=()
+child_actions=()
+
+if [ "${has_base}" = true ]; then
+  child_labels+=("Branch changes + uncommitted changes (${base})")
+  child_actions+=("${base}")
+fi
+
+if [ "${#commits[@]}" -gt 0 ]; then
+  for i in "${!commits[@]}"; do
+    sha="${commits[$i]%% *}"
+    if git rev-parse --verify --quiet "${sha}^" >/dev/null 2>&1; then
+      child_actions+=("${sha}^..${sha}")
+    else
+      child_actions+=("${empty_tree}..${sha}")
+    fi
+    child_labels+=("${commits[$i]}")
+  done
+fi
+
+if [ "${#child_labels[@]}" -gt 0 ]; then
+  if [ "${has_base}" = true ]; then
+    add_entry "Branch changes (${base}...HEAD)" "${base}...HEAD"
+  else
+    add_entry "Commits" "@none"
+  fi
+
+  last=$(( ${#child_labels[@]} - 1 ))
+  for i in "${!child_labels[@]}"; do
+    if [ "$i" -eq "$last" ]; then
+      add_entry " └─ ${child_labels[$i]}" "${child_actions[$i]}"
+    else
+      add_entry " ├─ ${child_labels[$i]}" "${child_actions[$i]}"
+    fi
+  done
+fi
+
+items=("${labels[@]}")
 
 # The entries fzf shows for a query. --no-sort keeps them in input order, which
 # is what the interactive picker displays too.
@@ -127,6 +185,18 @@ cursor_position() {
   printf '1'
 }
 
+# Index of an entry in items, or -1 when it is not there.
+entry_index() {
+  local target="$1" i
+  for i in "${!items[@]}"; do
+    if [ "${items[$i]}" = "${target}" ]; then
+      printf '%s' "$i"
+      return
+    fi
+  done
+  printf '%s' -1
+}
+
 query=""
 position=1
 
@@ -142,29 +212,21 @@ while true; do
   mapfile -t fzf_lines <<<"${fzf_output}"
   query="${fzf_lines[0]-}"
   choice="${fzf_lines[1]-}"
+  if [ -z "${choice}" ]; then
+    exit 0
+  fi
   position="$(cursor_position "${choice}" "${query}")"
 
-  diff_args=()
-  case "$choice" in
-    "${labels[0]}") diff_args=(HEAD) ;;
-    "${labels[1]}") diff_args=() ;;
-    "${labels[2]}") diff_args=(--staged) ;;
-    "${labels[3]}") diff_args=("${base}...HEAD") ;;
-    "${labels[4]}") diff_args=("${base}") ;;
-    "") exit 0 ;;
-    *)
-      commit_line="${choice#*─ }"
-      sha="${commit_line%% *}"
-      if ! git rev-parse --verify --quiet "${sha}^{commit}" >/dev/null; then
-        continue
-      fi
-      if git rev-parse --verify --quiet "${sha}^" >/dev/null; then
-        diff_args=("${sha}^..${sha}")
-      else
-        diff_args=("$(git hash-object -t tree /dev/null)..${sha}")
-      fi
-      ;;
-  esac
+  index="$(entry_index "${choice}")"
+  if [ "${index}" -lt 0 ]; then
+    continue
+  fi
+  action="${actions[$index]}"
+  if [ "${action}" = "@none" ]; then
+    continue
+  fi
+
+  read -r -a diff_args <<<"${action}"
 
   status=0
   hunk diff ${diff_args[@]+"${diff_args[@]}"} || status=$?
