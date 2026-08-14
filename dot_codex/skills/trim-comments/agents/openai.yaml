@@ -1,0 +1,4 @@
+interface:
+  display_name: "Trim Comments"
+  short_description: "Shrink comments and docstrings to the non-obvious parts."
+  default_prompt: "Trim the comments in these changes."

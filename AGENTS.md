@@ -122,6 +122,32 @@ Two Codex-specific details:
 - **Blocking** requires JSON on stdout with `hookSpecificOutput.permissionDecision = "deny"` plus a non-empty `permissionDecisionReason`, and exit status 0. A non-zero exit only marks the hook as failed; it does not stop the tool call. Claude Code accepts the same JSON, which is why the shared scripts use it instead of `exit 2`.
 - **Trust**: Codex will not run a user-level hook until it is trusted. The TUI prompts "Hooks need review" on the next launch and records the decision in `~/.codex/config.toml` as `[hooks.state."<hooks.json path>:<event>:<group>:<index>"]` with `trusted_hash`. The hash covers the handler definition, so **any edit to `hooks.json` requires re-trusting** (a `codex exec` run silently skips untrusted hooks). This state is per-machine and is not managed by chezmoi.
 
+## Agent skills
+
+Skills come from three places, and which one a skill belongs to decides where you edit it:
+
+1. **Self-authored, single agent** — checked in under `dot_claude/skills/<name>/SKILL.md` or `dot_codex/skills/<name>/SKILL.md`. Codex skills additionally carry `agents/openai.yaml` for their TUI interface metadata. Scripts shipped with a skill need the `executable_` prefix (e.g. `dot_claude/skills/keychain-credentials/scripts/executable_keychain-cred.sh`).
+2. **Self-authored, shared between agents** — body lives in `.chezmoitemplates/agents/skills/<name>.md` and each agent gets a one-line `{{ include ... }}` wrapper named `SKILL.md.tmpl`, same pattern as the shared hooks. A shared body must not depend on tooling only one agent has: where it wants `AskUserQuestion` (Claude-only), it also states the plain-text fallback, which is how `commit-message` stays identical for both agents. Skills built around Claude subagents (`Agent`), such as `deep-review` and `pr-review-brief`, stay Claude-only.
+3. **Third-party** — declared in `.chezmoidata.toml` as `[[agent_skills]]` and materialized by `.chezmoiexternal.toml.tmpl` as `type = "archive"` externals pulled from a pinned GitHub tarball. This is the cross-platform path: it works on Windows as-is (no symlinks, no Nix), unlike Home Manager, which is non-Windows only.
+
+Adding a third-party skill:
+
+```toml
+[[agent_skills]]
+repo = "owner/name"
+rev = "<commit SHA>"      # gh api repos/owner/name/commits/HEAD --jq .sha
+prefix = "skills"         # directory inside the repo holding the skills
+names = ["skill-name"]    # one entry per skill dir under prefix
+agents = ["claude"]       # "claude" and/or "codex" -> ~/.<agent>/skills/<name>
+```
+
+Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.codex/skills`). The template derives `include` and `stripComponents` from `prefix`, so each skill lands with `SKILL.md` at the root of its target directory. Updating a skill means bumping `rev`; `refreshPeriod = "168h"` only controls re-download of the pinned tarball, never which commit is used.
+
+Two things not managed here:
+
+- **Claude Code plugins** supply their own skills. The enabled `cloudflare@cloudflare` marketplace covers the whole `cloudflare/skills` set for Claude, so those are declared for `agents = ["codex"]` only — Codex has no plugin mechanism.
+- The **`skills` CLI** (`npx skills add`, vercel-labs) installs into `~/.agents/skills` and symlinks each agent directory at it, tracked in a per-machine `~/.agents/.skill-lock.json`. Use it to *discover* skills, then transcribe the pick into `[[agent_skills]]`. Do not run it against a skill already declared here: it would replace the external's directory with a symlink into `~/.agents/skills`.
+
 ## User-level agent instructions
 
 Per-agent global instruction files live under each agent's config directory and are distinct from this repo-level `AGENTS.md`:

@@ -56,7 +56,9 @@ Handling the user's answer:
 - If the user picks `Other` and supplies a custom message: use that text verbatim as the commit message and commit.
 - If the user cancels / picks nothing: abort without committing.
 
-**IMPORTANT**: Do NOT add `Co-Authored-By` or any Claude attribution to the commit message. The commit author must be the user only.
+If `AskUserQuestion` is not available, present the same 3 candidates as a numbered list in plain text, mark the recommended one, and let the user reply with a number or a message of their own. Do not commit before the user has chosen.
+
+**IMPORTANT**: Do NOT add `Co-Authored-By` or any agent attribution to the commit message. The commit author must be the user only.
 
 ## Example
 
