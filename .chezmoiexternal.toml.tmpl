@@ -19,3 +19,23 @@ type = "git-repo"
 url = "https://github.com/Descolada/AHK-v2-libraries.git"
 refreshPeriod = "168h"
 {{- end }}
+
+{{/* Third-party agent skills, declared in .chezmoidata.toml as [[agent_skills]].
+     Each skill is extracted straight out of a pinned GitHub tarball, so the same
+     definition works on macOS, Linux and Windows without symlinks or Nix.
+     stripComponents drops the archive's top-level <repo>-<rev> directory plus the
+     in-repo prefix, leaving SKILL.md at the root of the target directory. */}}
+{{- range $skill := .agent_skills }}
+{{- $strip := add 2 (len (splitList "/" $skill.prefix)) }}
+{{- range $agent := $skill.agents }}
+{{- range $name := $skill.names }}
+
+[".{{ $agent }}/skills/{{ $name }}"]
+type = "archive"
+url = "https://github.com/{{ $skill.repo }}/archive/{{ $skill.rev }}.tar.gz"
+include = ["*/{{ $skill.prefix }}/{{ $name }}/**"]
+stripComponents = {{ $strip }}
+refreshPeriod = "168h"
+{{- end }}
+{{- end }}
+{{- end }}

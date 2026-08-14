@@ -863,3 +863,78 @@ agent_shell_deny = [
   "chezmoi apply *--force*",
   "chezmoi apply *-f *",
 ]
+
+# Third-party agent skills, materialized by .chezmoiexternal.toml.tmpl as archive
+# externals (works on every OS, Windows included -- no symlinks, no Nix).
+#
+#   repo    GitHub owner/name
+#   rev     commit SHA to pin (bump manually; that is the whole update flow)
+#   prefix  directory inside the repo that holds the skills
+#   names   skill directory names under prefix
+#   agents  which agent config dirs receive them (~/.<agent>/skills/<name>)
+#
+# Self-authored skills are not listed here; they are checked into dot_claude/skills
+# and dot_codex/skills (shared bodies live in .chezmoitemplates/agents/skills).
+
+[[agent_skills]]
+repo = "yusukebe/ax"
+rev = "8abbca2fc400c2ff4866248ba1ec9309b948812f"
+prefix = "skills"
+names = ["ax"]
+agents = ["claude"]
+
+[[agent_skills]]
+repo = "herdrdev/herdr"
+rev = "d76657f2c7fc18dcce3b9af43842c8afaba1646b"
+prefix = "skills"
+names = ["herdr"]
+agents = ["claude"]
+
+[[agent_skills]]
+repo = "shadcn/improve"
+rev = "03369ee6d7cafbfcecc4346539b05b3dc0a603bb"
+prefix = "skills"
+names = ["improve"]
+agents = ["claude"]
+
+[[agent_skills]]
+repo = "vercel-labs/skills"
+rev = "c6f69c631292444cc541ac6d91e2226b0ff247da"
+prefix = "skills"
+names = ["find-skills"]
+agents = ["claude"]
+
+[[agent_skills]]
+repo = "vercel-labs/agent-browser"
+rev = "548b159b30eef119ccf6846c8bc807d0eaa3f6f8"
+prefix = "skills"
+names = ["agent-browser"]
+agents = ["claude"]
+
+[[agent_skills]]
+repo = "tokoroten/prompt-review"
+rev = "0a83fd9eeead58fe92d0b04522da9e6840a71940"
+prefix = ".claude/skills"
+names = ["prompt-review"]
+agents = ["claude"]
+
+# Claude Code gets these from the enabled cloudflare@cloudflare plugin, so only
+# Codex (which has no plugin mechanism) needs them materialized.
+[[agent_skills]]
+repo = "cloudflare/skills"
+rev = "f96bff754e428838818017f75817f0f9428acd48"
+prefix = "skills"
+names = [
+  "agents-sdk",
+  "cloudflare",
+  "cloudflare-email-service",
+  "cloudflare-one",
+  "cloudflare-one-migrations",
+  "durable-objects",
+  "sandbox-sdk",
+  "turnstile-spin",
+  "web-perf",
+  "workers-best-practices",
+  "wrangler",
+]
+agents = ["codex"]
