@@ -14,7 +14,7 @@ os:
 git:
   pagers:
 {{- if eq .chezmoi.os "windows" }}
-    - externalDiffCommand: '~/AppData/Local/lazygit/lazygit-diff.ps1'
+    - externalDiffCommand: 'pwsh -NoLogo -NoProfile -File "{{ .chezmoi.homeDir }}/AppData/Local/lazygit/lazygit-diff.ps1"'
 {{- else }}
     - pager: hunk pager --mode split
 {{- end }}

@@ -6,6 +6,74 @@
 # oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\hunk.omp.json" | Invoke-Expression
 # oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\montys.omp.json" | Invoke-Expression
 
+function Get-CachedShellInitPath {
+    param(
+        [Parameter(Mandatory)]
+        [string]$CommandName,
+
+        [Parameter(Mandatory)]
+        [string]$CacheName,
+
+        [Parameter(Mandatory)]
+        [scriptblock]$Generator,
+
+        [string]$CacheVersion = '1'
+    )
+
+    $command = Get-Command $CommandName -ErrorAction SilentlyContinue
+    if (-not $command) {
+        return $null
+    }
+
+    $commandInvoker = if ($command.CommandType -in 'Application', 'ExternalScript') {
+        $command.Source
+    } else {
+        $CommandName
+    }
+    $commandIdentitySource = "${CacheVersion}:$($command.CommandType):$($command.Source):$($command.Definition)"
+    try {
+        $cacheDir = Join-Path $env:LOCALAPPDATA 'PowerShell\InitCache'
+        $commandPathBytes = [System.Text.Encoding]::UTF8.GetBytes($commandIdentitySource)
+        $sha256 = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            $commandPathHash = $sha256.ComputeHash($commandPathBytes)
+        } finally {
+            $sha256.Dispose()
+        }
+        $commandIdentity = ([BitConverter]::ToString($commandPathHash) -replace '-', '').Substring(0, 12).ToLowerInvariant()
+        $cachePath = Join-Path $cacheDir "$CacheName-$commandIdentity.ps1"
+        $cacheFile = Get-Item -LiteralPath $cachePath -ErrorAction SilentlyContinue
+        $refresh = -not $cacheFile
+
+        if (-not $refresh) {
+            $cacheTime = $cacheFile.LastWriteTimeUtc
+            $sourceFile = Get-Item -LiteralPath $command.Source -ErrorAction SilentlyContinue
+            if ($sourceFile -and $sourceFile.LastWriteTimeUtc -gt $cacheTime) {
+                $refresh = $true
+            }
+        }
+
+        if ($refresh) {
+            New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
+            $tempPath = "$cachePath.$PID.tmp"
+            try {
+                $scriptText = & $Generator $commandInvoker | Out-String
+                if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($scriptText)) {
+                    return $null
+                }
+                [System.IO.File]::WriteAllText($tempPath, $scriptText, [System.Text.UTF8Encoding]::new($false))
+                Move-Item -LiteralPath $tempPath -Destination $cachePath -Force | Out-Null
+            } finally {
+                Remove-Item -LiteralPath $tempPath -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        return $cachePath
+    } catch {
+        return $null
+    }
+}
+
 ###################################
 # Starship
 ###################################
@@ -13,8 +81,29 @@
 # denies writes to ~/.cache/starship, so starship prepends an error to every command's
 # output. Skip the prompt entirely for those shells.
 $script:IsAgentShell = ($env:TERM -eq 'dumb') -or [bool]$env:CODEX_SANDBOX -or [bool]$env:CLAUDECODE
-if (-not $script:IsAgentShell) {
-    Invoke-Expression (&starship init powershell)
+$script:PowerShellCommandLine = [Environment]::CommandLine
+$script:IsNonInteractive = $script:PowerShellCommandLine -match
+    '(?i)(?:^|\s)-(?:NonInteractive|noni)\b'
+$script:RunsCommand = $script:PowerShellCommandLine -match
+    '(?i)(?:^|\s)-(?:Command|CommandWithArgs|EncodedCommand|File|c|cwa|ec|e|f)\b'
+$script:KeepsShellOpen = $script:PowerShellCommandLine -match
+    '(?i)(?:^|\s)-(?:NoExit|noe)\b'
+$script:IsInteractiveShell = -not $script:IsAgentShell -and
+    [Environment]::UserInteractive -and
+    -not [Console]::IsInputRedirected -and
+    -not $script:IsNonInteractive -and
+    ($script:KeepsShellOpen -or -not $script:RunsCommand)
+
+if ($script:IsInteractiveShell) {
+    $starshipInitPath = Get-CachedShellInitPath -CommandName starship -CacheName starship -CacheVersion 'full-init-v1' -Generator {
+        param($commandPath)
+        & $commandPath init powershell --print-full-init
+    }
+    if ($starshipInitPath) {
+        . $starshipInitPath
+    } elseif (Get-Command starship -ErrorAction SilentlyContinue) {
+        Invoke-Expression (&starship init powershell --print-full-init | Out-String)
+    }
 }
 
 # Add cwd to PATH
@@ -27,7 +116,11 @@ $env:OPENCODE_CONFIG = "$HOME\.config\opencode\opencode.local.json"
 ###################################
 # Modules
 ###################################
-Import-Module syntax-highlighting
+if ($script:IsInteractiveShell) {
+    Import-Module syntax-highlighting -ErrorAction SilentlyContinue
+}
+$script:CanUsePSReadLine = $script:IsInteractiveShell -and
+    [bool](Get-Command Set-PSReadLineKeyHandler -ErrorAction SilentlyContinue)
 
 # Import-Module -Name Terminal-Icons
 
@@ -144,17 +237,19 @@ function Get-CurrentCommandNameForCompletion {
     return $m.Groups[1].Value
 }
 
-Set-PSReadLineKeyHandler -Key Tab -ScriptBlock {
-    $cmd = Get-CurrentCommandNameForCompletion
-    switch ($cmd) {
-        'git'     { Initialize-CompletionForCommand -Command 'git' }
-        'docker'  { Initialize-CompletionForCommand -Command 'docker' }
-        'gh'      { Initialize-CompletionForCommand -Command 'gh' }
-        'uv'      { Initialize-CompletionForCommand -Command 'uv' }
-        'chezmoi' { Initialize-CompletionForCommand -Command 'chezmoi' }
-        'winget'  { Initialize-CompletionForCommand -Command 'winget' }
+if ($script:CanUsePSReadLine) {
+    Set-PSReadLineKeyHandler -Key Tab -ScriptBlock {
+        $cmd = Get-CurrentCommandNameForCompletion
+        switch ($cmd) {
+            'git'     { Initialize-CompletionForCommand -Command 'git' }
+            'docker'  { Initialize-CompletionForCommand -Command 'docker' }
+            'gh'      { Initialize-CompletionForCommand -Command 'gh' }
+            'uv'      { Initialize-CompletionForCommand -Command 'uv' }
+            'chezmoi' { Initialize-CompletionForCommand -Command 'chezmoi' }
+            'winget'  { Initialize-CompletionForCommand -Command 'winget' }
+        }
+        [Microsoft.PowerShell.PSConsoleReadLine]::MenuComplete()
     }
-    [Microsoft.PowerShell.PSConsoleReadLine]::MenuComplete()
 }
 
 ###################################
@@ -356,57 +451,62 @@ function unset() {
 }
 
 # posh-abbr
-$profile_dir = Split-Path -Parent $PROFILE
-Import-Module "$profile_dir\posh-abbr\posh-abbr.psd1" -Force
+if ($script:IsInteractiveShell) {
+    $profile_dir = Split-Path -Parent $PROFILE
+    $poshAbbrModule = "$profile_dir\posh-abbr\posh-abbr.psd1"
+    if (Test-Path -LiteralPath $poshAbbrModule) {
+        Import-Module $poshAbbrModule -Force
 
-abbr g git
-abbr gi git
-abbr gti git
-abbr 'git cl' 'git clone'
-abbr 'git st' 'git status'
-abbr 'git sw' 'git switch'
-abbr 'git co' 'git checkout'
-abbr 'git ch' 'git checkout'
-abbr 'git m' 'git checkout main'
-abbr 'git br' 'git branch'
-abbr 'git fe' 'git fetch'
-abbr 'git pl' 'git pull'
-abbr 'git pul' 'git pull'
-abbr 'git ad' 'git add'
-abbr 'git cm' 'git commit -m "%"'
-abbr 'git cmm' 'git commit -m "%"'
-abbr 'git cmt' 'git commit -m "%"'
-abbr 'git mg' 'git merge'
-abbr 'git mr' 'git merge'
-abbr 'git ps' 'git push'
-abbr 'git ph' 'git push'
-abbr 'git psh' 'git push'
-abbr 'git pb' 'git publish'
-abbr 'git pub' 'git publish'
+        abbr g git
+        abbr gi git
+        abbr gti git
+        abbr 'git cl' 'git clone'
+        abbr 'git st' 'git status'
+        abbr 'git sw' 'git switch'
+        abbr 'git co' 'git checkout'
+        abbr 'git ch' 'git checkout'
+        abbr 'git m' 'git checkout main'
+        abbr 'git br' 'git branch'
+        abbr 'git fe' 'git fetch'
+        abbr 'git pl' 'git pull'
+        abbr 'git pul' 'git pull'
+        abbr 'git ad' 'git add'
+        abbr 'git cm' 'git commit -m "%"'
+        abbr 'git cmm' 'git commit -m "%"'
+        abbr 'git cmt' 'git commit -m "%"'
+        abbr 'git mg' 'git merge'
+        abbr 'git mr' 'git merge'
+        abbr 'git ps' 'git push'
+        abbr 'git ph' 'git push'
+        abbr 'git psh' 'git push'
+        abbr 'git pb' 'git publish'
+        abbr 'git pub' 'git publish'
 
-abbr lg lazygit
+        abbr lg lazygit
 
-abbr cz 'chezmoi'
-abbr cza 'chezmoi add'
-abbr 'chezmoi a' 'chezmoi add'
-abbr 'chezmoi ad' 'chezmoi add'
+        abbr cz 'chezmoi'
+        abbr cza 'chezmoi add'
+        abbr 'chezmoi a' 'chezmoi add'
+        abbr 'chezmoi ad' 'chezmoi add'
 
-abbr va '.venv\Scripts\activate'
+        abbr va '.venv\Scripts\activate'
 
-abbr mb 'mise build'
-abbr ur 'uv run'
-abbr cm 'cargo make'
-abbr pnpn pnpm
-abbr pmpn pnpm
-abbr pmpm pnpm
+        abbr mb 'mise build'
+        abbr ur 'uv run'
+        abbr cm 'cargo make'
+        abbr pnpn pnpm
+        abbr pmpn pnpm
+        abbr pmpm pnpm
 
-abbr ag Antigravity
+        abbr ag Antigravity
 
-abbr hd herdr
-abbr herder herdr
-abbr hdr herdr
-abbr hrd herdr
-abbr hrdr herdr
+        abbr hd herdr
+        abbr herder herdr
+        abbr hdr herdr
+        abbr hrd herdr
+        abbr hrdr herdr
+    }
+}
 
 # Remove conflicting aliases
 Remove-Item Alias:ni -Force -ErrorAction Ignore
@@ -481,38 +581,73 @@ function global:TabExpansion2 {
 # FZF
 ###################################
 
-Invoke-Expression (& {
-    $hook = if ($PSVersionTable.PSVersion.Major -lt 6) { 'prompt' } else { 'pwd' }
-    (zoxide init --hook $hook powershell | Out-String)
-})
+if ($script:IsInteractiveShell) {
+    $zoxideHook = if ($PSVersionTable.PSVersion.Major -lt 6) { 'prompt' } else { 'pwd' }
+    $zoxideGenerator = {
+        param($commandPath)
+        & $commandPath init --hook $zoxideHook powershell
+    }.GetNewClosure()
+    $zoxideInitPath = Get-CachedShellInitPath -CommandName zoxide -CacheName "zoxide-$zoxideHook" -Generator $zoxideGenerator
+    Remove-Variable zoxideGenerator
+    if ($zoxideInitPath) {
+        . $zoxideInitPath
+    } elseif (Get-Command zoxide -ErrorAction SilentlyContinue) {
+        Invoke-Expression (&zoxide init --hook $zoxideHook powershell | Out-String)
+    }
+}
 
 # direnv hook
-if (Get-Command direnv -ErrorAction SilentlyContinue) {
+if ($script:IsInteractiveShell -and (Get-Command direnv -ErrorAction SilentlyContinue)) {
     if (-not $env:HOME) { $env:HOME = $env:USERPROFILE }
     if (-not $env:DIRENV_BASH) {
         $gitBash = $null
+        $bashCommand = Get-Command bash -CommandType Application -ErrorAction SilentlyContinue
+        $gitCommand = Get-Command git -CommandType Application -ErrorAction SilentlyContinue
+        $gitBashFromPath = if ($gitCommand) {
+            $gitPath = $gitCommand.Source
+            $resolved = (Get-Item -Force $gitPath -ErrorAction SilentlyContinue).Target
+            if ($resolved) { $gitPath = $resolved }
+            $gitDir = Split-Path -Parent $gitPath
+            Join-Path (Split-Path -Parent $gitDir) 'usr\bin\bash.exe'
+        }
         $candidates = @(
-            (Get-Command bash -All -ErrorAction SilentlyContinue |
-                Where-Object { $_.Source -notlike "*System32*" -and $_.Source -notlike "*WindowsApps*" } |
-                Select-Object -ExpandProperty Source)
-            (Get-Command git -ErrorAction SilentlyContinue | ForEach-Object {
-                $src = $_.Source
-                $resolved = (Get-Item -Force $src -ErrorAction SilentlyContinue).Target
-                if ($resolved) { $src = $resolved }
-                $gitDir = Split-Path -Parent $src
-                Join-Path (Split-Path -Parent $gitDir) 'usr\bin\bash.exe'
-            })
+            $gitBashFromPath
+            if ($bashCommand -and
+                $bashCommand.Source -notlike '*System32*' -and
+                $bashCommand.Source -notlike '*WindowsApps*') {
+                $bashCommand.Source
+            }
             "$env:ProgramFiles\Git\usr\bin\bash.exe"
             "$env:ProgramFiles\Git\bin\bash.exe"
             "${env:ProgramFiles(x86)}\Git\usr\bin\bash.exe"
             "$env:LOCALAPPDATA\Programs\Git\usr\bin\bash.exe"
         )
-        foreach ($c in $candidates) {
-            if ($c -and (Test-Path $c)) { $gitBash = $c; break }
+        foreach ($candidate in $candidates) {
+            if ($candidate -and (Test-Path -LiteralPath $candidate)) {
+                $gitBash = $candidate
+                break
+            }
+        }
+        if (-not $gitBash) {
+            $gitBash = Get-Command bash -All -CommandType Application -ErrorAction SilentlyContinue |
+                Where-Object {
+                    $_.Source -notlike '*System32*' -and
+                    $_.Source -notlike '*WindowsApps*' -and
+                    (Test-Path -LiteralPath $_.Source)
+                } |
+                Select-Object -First 1 -ExpandProperty Source
         }
         if ($gitBash) { $env:DIRENV_BASH = $gitBash }
     }
-    Invoke-Expression "$(direnv hook pwsh)"
+    $direnvInitPath = Get-CachedShellInitPath -CommandName direnv -CacheName direnv -Generator {
+        param($commandPath)
+        & $commandPath hook pwsh
+    }
+    if ($direnvInitPath) {
+        . $direnvInitPath
+    } else {
+        Invoke-Expression (&direnv hook pwsh | Out-String)
+    }
 }
 
 function Invoke-FzfHistory {
@@ -553,40 +688,42 @@ function Invoke-FzfHistory {
     [Microsoft.PowerShell.PSConsoleReadLine]::Insert($cmd)
 }
 
-Set-PSReadLineKeyHandler -Chord Alt+h -ScriptBlock {
-    Invoke-FzfHistory
-}
-
-Set-PSReadLineKeyHandler -Chord Alt+b -ScriptBlock {
-    if (Get-Command fbr -ErrorAction SilentlyContinue) {
-        fbr
-        [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+if ($script:CanUsePSReadLine) {
+    Set-PSReadLineKeyHandler -Chord Alt+h -ScriptBlock {
+        Invoke-FzfHistory
     }
-}
 
-Set-PSReadLineKeyHandler -Chord Alt+d -ScriptBlock {
-    if (Get-Command fcd -ErrorAction SilentlyContinue) {
-        fcd
-        [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+    Set-PSReadLineKeyHandler -Chord Alt+b -ScriptBlock {
+        if (Get-Command fbr -ErrorAction SilentlyContinue) {
+            fbr
+            [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+        }
     }
-}
 
-Set-PSReadLineKeyHandler -Chord Alt+e -ScriptBlock {
-    if (Get-Command superfile -ErrorAction SilentlyContinue) {
-        & superfile
+    Set-PSReadLineKeyHandler -Chord Alt+d -ScriptBlock {
+        if (Get-Command fcd -ErrorAction SilentlyContinue) {
+            fcd
+            [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+        }
     }
-}
 
-Set-PSReadLineKeyHandler -Chord Alt+f -ScriptBlock {
-    if (Get-Command fz -ErrorAction SilentlyContinue) {
-        fz
-        [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+    Set-PSReadLineKeyHandler -Chord Alt+e -ScriptBlock {
+        if (Get-Command superfile -ErrorAction SilentlyContinue) {
+            & superfile
+        }
     }
-}
 
-Set-PSReadLineKeyHandler -Chord Alt+g -ScriptBlock {
-    if (Get-Command lazygit -ErrorAction SilentlyContinue) {
-        & lazygit
+    Set-PSReadLineKeyHandler -Chord Alt+f -ScriptBlock {
+        if (Get-Command fz -ErrorAction SilentlyContinue) {
+            fz
+            [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+        }
+    }
+
+    Set-PSReadLineKeyHandler -Chord Alt+g -ScriptBlock {
+        if (Get-Command lazygit -ErrorAction SilentlyContinue) {
+            & lazygit
+        }
     }
 }
 
