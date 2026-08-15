@@ -1,3 +1,13 @@
+typeset -U path PATH
+
+# WSL の interop で引き継ぐ Windows 側の PATH は drvfs 上にあり走査が非常に遅い。
+# 存在しないコマンドの検索は PATH 全体を舐めるため 1 回あたり約 230ms かかり、
+# 起動処理中の command -v だけで 1 秒近くを消費する。起動中は退避しておき、
+# mise を読み込む直前 (元々 /mnt が並んでいた位置) で復元する。
+typeset -a _win_path
+_win_path=(${path:#^/mnt/*})
+path=(${path:#/mnt/*})
+
 export PATH=$HOME/.local/bin:/usr/local/bin:$PATH
 
 if [ -x /opt/homebrew/bin/brew ]; then
@@ -196,7 +206,7 @@ export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
 # go
-export PATH="$(go env GOPATH)/bin:$PATH"
+export PATH="${GOPATH:-$HOME/go}/bin:$PATH"
 
 # oh-my-posh
 # if command -v oh-my-posh &> /dev/null; then
@@ -339,9 +349,18 @@ if command -v batcat &> /dev/null; then
   alias bat='batcat';
 fi
 
+path+=($_win_path)
+unset _win_path
+
 # mise
+# mise hook-env はセッション確立を行う初回呼び出しだけで約 250ms かかるため、
+# プロンプト表示をブロックしないよう activate ごと遅延させる。
 if command -v mise &> /dev/null; then
-  eval "$(mise activate zsh)"
+  if (( $+functions[zsh-defer] )); then
+    zsh-defer -c 'eval "$(mise activate zsh)"'
+  else
+    eval "$(mise activate zsh)"
+  fi
 fi
 
 # direnv
