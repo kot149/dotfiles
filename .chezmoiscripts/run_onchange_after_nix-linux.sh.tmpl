@@ -13,6 +13,12 @@ else
   echo "auto-optimise-store = true" | sudo tee -a "$NIX_CONF" > /dev/null
 fi
 
+if grep -q "^experimental-features" "$NIX_CONF" 2>/dev/null; then
+  sudo sed -i 's/^experimental-features.*/experimental-features = nix-command flakes/' "$NIX_CONF"
+else
+  echo "experimental-features = nix-command flakes" | sudo tee -a "$NIX_CONF" > /dev/null
+fi
+
 echo "Done"
 
 {{- end -}}
