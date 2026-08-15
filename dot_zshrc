@@ -30,7 +30,7 @@ export OPENCODE_CONFIG=$HOME/.config/opencode/opencode.local.json
 # history
 HISTFILE=$HOME/.zsh_history     # 履歴を保存するファイル
 HISTSIZE=100000                 # メモリ上に保存する履歴のサイズ
-SAVEHIST=1000000                # 上述のファイルに保存する履歴のサイズ
+SAVEHIST=1000000                # HISTFILEに保存する履歴のサイズ
 
 # share .zshhistory
 setopt inc_append_history       # 実行時に履歴をファイルにに追加していく
@@ -41,18 +41,15 @@ setopt hist_save_no_dups        # 重複するコマンドが保存されると�
 setopt extended_history         # コマンドのタイムスタンプをHISTFILEに記録する
 setopt hist_expire_dups_first   # HISTFILEのサイズがHISTSIZEを超える場合は、最初に重複を削除します
 
-# コマンドラインでも # 以降をコメントと見なす
-setopt interactive_comments
+setopt interactive_comments     # コマンドラインでも # 以降をコメントと見なす
+
+setopt auto_cd                  # ディレクトリ名だけでcdする
+
+zstyle ":completion:*:commands" rehash 1  # インストールしたコマンドを即座に反映
 
 # Ctrl+S/Ctrl+Q のフロー制御を無効化 (Ctrl+S を保存キーとして使うため)
 unsetopt flow_control
 stty -ixon 2>/dev/null
-
-# インストールしたコマンドを即座に反映
-zstyle ":completion:*:commands" rehash 1
-
-# ディレクトリ名だけでcdする
-setopt auto_cd
 
 # Path to your Oh My Zsh installation.
 if [ -d "$HOME/.oh-my-zsh" ]; then
@@ -63,73 +60,14 @@ else
   echo "Warning: Oh My Zsh not found"
 fi
 
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time Oh My Zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="robbyrussell"
+# プロンプトは starship が担当するため、oh-my-zsh のテーマは読み込まない。
+ZSH_THEME=""
 
-# Set list of themes to pick from when loading at random
-# Setting this variable when ZSH_THEME=random will cause zsh to load
-# a theme from this variable instead of looking in $ZSH/themes/
-# If set to an empty array, this variable will have no effect.
-# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
-
-# Uncomment the following line to use case-sensitive completion.
-# CASE_SENSITIVE="true"
-
-# Uncomment the following line to use hyphen-insensitive completion.
-# Case-sensitive completion must be off. _ and - will be interchangeable.
+# _ と - を相互に補完可能にする
 HYPHEN_INSENSITIVE="true"
 
-# Uncomment one of the following lines to change the auto-update behavior
-# zstyle ':omz:update' mode disabled  # disable automatic updates
-# zstyle ':omz:update' mode auto      # update automatically without asking
-# zstyle ':omz:update' mode reminder  # just remind me to update when it's time
-
-# Uncomment the following line to change how often to auto-update (in days).
-# zstyle ':omz:update' frequency 13
-
-# Uncomment the following line if pasting URLs and other text is messed up.
-# DISABLE_MAGIC_FUNCTIONS="true"
-
-# Uncomment the following line to disable colors in ls.
-# DISABLE_LS_COLORS="true"
-
-# Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
-
-# Uncomment the following line to enable command auto-correction.
-# ENABLE_CORRECTION="true"
-
-# Uncomment the following line to display red dots whilst waiting for completion.
-# You can also set it to another string to have that shown instead of the default red dots.
-# e.g. COMPLETION_WAITING_DOTS="%F{yellow}waiting...%f"
-# Caution: this setting can cause issues with multiline prompts in zsh < 5.7.1 (see #5765)
-# COMPLETION_WAITING_DOTS="true"
-
-# Uncomment the following line if you want to disable marking untracked files
-# under VCS as dirty. This makes repository status check for large repositories
-# much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
-
-# Uncomment the following line if you want to change the command execution time
-# stamp shown in the history command output.
-# You can set one of the optional three formats:
-# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
-# or set a custom format using the strftime function format specifications,
-# see 'man strftime' for details.
-# HIST_STAMPS="mm/dd/yyyy"
-
-# Would you like to use another custom folder than $ZSH/custom?
-# ZSH_CUSTOM=/path/to/new-custom-folder
-
-# Which plugins would you like to load?
-# Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-plugins=(git aws aliases colorize copyfile copypath python pip virtualenv node)
+# git の略語は zsh-abbr 側で定義しているため git プラグインは入れない。
+plugins=(aliases colorize copyfile copypath)
 if command -v docker &> /dev/null; then
   plugins+=(docker docker-compose)
 fi
@@ -161,13 +99,6 @@ sheldon() {
 }
 eval "$(sheldon source)"
 
-# User configuration
-
-# export MANPATH="/usr/local/man:$MANPATH"
-
-# You may need to manually set your language environment
-# export LANG=en_US.UTF-8
-
 # Preferred editor for local and remote sessions
 if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR='nano'
@@ -175,31 +106,9 @@ else
   export EDITOR='code'
 fi
 
-# Compilation flags
-# export ARCHFLAGS="-arch x86_64"
-
-# Set personal aliases, overriding those provided by Oh My Zsh libs,
-# plugins, and themes. Aliases can be placed here, though Oh My Zsh
-# users are encouraged to define aliases within a top-level file in
-# the $ZSH_CUSTOM folder, with .zsh extension. Examples:
-# - $ZSH_CUSTOM/aliases.zsh
-# - $ZSH_CUSTOM/macos.zsh
-# For a full list of active aliases, run `alias`.
-#
-# Example aliases
-# alias zshconfig="mate ~/.zshrc"
-# alias ohmyzsh="mate ~/.oh-my-zsh"
-
 mkcd() {
   mkdir -p "$1" && cd "$1"
 }
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-# bun completions
-[ -s "~/.bun/_bun" ] && source "~/.bun/_bun"
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
@@ -207,11 +116,6 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 
 # go
 export PATH="${GOPATH:-$HOME/go}/bin:$PATH"
-
-# oh-my-posh
-# if command -v oh-my-posh &> /dev/null; then
-#   eval "$(oh-my-posh init zsh --config '~/.oh-my-posh/themes/mytheme2.omp.json')"
-# fi
 
 # Starship
 if command -v starship &> /dev/null; then
@@ -344,11 +248,6 @@ function mtouch {
 
 alias touch='mtouch';
 
-# bat
-if command -v batcat &> /dev/null; then
-  alias bat='batcat';
-fi
-
 path+=($_win_path)
 unset _win_path
 
@@ -366,6 +265,11 @@ fi
 # direnv
 if command -v direnv &> /dev/null; then
   eval "$(direnv hook zsh)"
+fi
+
+# zoxide (z / zi を提供する)
+if command -v zoxide &> /dev/null; then
+  eval "$(zoxide init zsh)"
 fi
 
 # Rust
@@ -388,7 +292,7 @@ if command -v fzf &> /dev/null; then
   }
 
   fz() {
-    local res=$(z | sort -rn | cut -c 12- | fzf)
+    local res=$(zoxide query --list | fzf)
     if [ -n "$res" ]; then
         cd "$res"
     else
@@ -516,16 +420,6 @@ bindkey '^[[1;5C' forward-word
 bindkey '^[[1;5D' backward-word
 bindkey '^[[1;3C' forward-word
 bindkey '^[[1;3D' backward-word
-
-# Added by LM Studio CLI (lms)
-export PATH="$PATH:$HOME/.lmstudio/bin"
-# End of LM Studio CLI section
-
-# docker
-
-### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
-export PATH="$HOME/.rd/bin:$PATH"
-### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
 
 gh() {
   local -x GH_REPO="${GH_REPO:-$(git remote get-url origin 2>/dev/null | sed -E 's|https?://github\.com/||; s|git@github\.com[^:]*:||; s|\.git$||')}"

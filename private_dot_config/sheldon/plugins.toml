@@ -43,12 +43,7 @@ apply = ['defer']
 git = "https://github.com/Tarrasch/zsh-bd"
 apply = ['defer']
 
-[plugins.completions]
-local = '~/.zsh/completion'
-apply = ['defer', "fpath"]
-
-[plugins.rupaz]
-git = "https://github.com/rupa/z"
+# ~/.zsh/completion への fpath 追加は compinit より前に済ませる必要があるため .zshrc 側で行う。
 
 [plugins.abbr]
 github = "olets/zsh-abbr"
