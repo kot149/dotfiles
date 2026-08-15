@@ -24,17 +24,23 @@ refreshPeriod = "168h"
      Each skill is extracted straight out of a pinned GitHub tarball, so the same
      definition works on macOS, Linux and Windows without symlinks or Nix.
      stripComponents drops the archive's top-level <repo>-<rev> directory plus the
-     in-repo prefix, leaving SKILL.md at the root of the target directory. */}}
+     in-repo prefix, leaving SKILL.md at the root of the target directory.
+     flat = true marks a repo that keeps SKILL.md directly under prefix (or at the
+     repo root when prefix is empty) instead of in a per-skill subdirectory. */}}
 {{- range $skill := .agent_skills }}
-{{- $strip := add 2 (len (splitList "/" $skill.prefix)) }}
+{{- $flat := false }}
+{{- if hasKey $skill "flat" }}{{ $flat = $skill.flat }}{{ end }}
 {{- range $agent := $skill.agents }}
 {{- range $name := $skill.names }}
+{{- $parts := list }}
+{{- if $skill.prefix }}{{ $parts = concat $parts (splitList "/" $skill.prefix) }}{{ end }}
+{{- if not $flat }}{{ $parts = append $parts $name }}{{ end }}
 
 [".{{ $agent }}/skills/{{ $name }}"]
 type = "archive"
 url = "https://github.com/{{ $skill.repo }}/archive/{{ $skill.rev }}.tar.gz"
-include = ["*/{{ $skill.prefix }}/{{ $name }}/**"]
-stripComponents = {{ $strip }}
+include = ["*/{{ if $parts }}{{ join "/" $parts }}/{{ end }}**"]
+stripComponents = {{ add 1 (len $parts) }}
 refreshPeriod = "168h"
 {{- end }}
 {{- end }}

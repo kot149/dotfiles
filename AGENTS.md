@@ -141,6 +141,8 @@ names = ["skill-name"]    # one entry per skill dir under prefix
 agents = ["claude"]       # "claude" and/or "codex" -> ~/.<agent>/skills/<name>
 ```
 
+For a repo that keeps `SKILL.md` directly under `prefix` (or at the repo root, with `prefix = ""`) instead of in a per-skill subdirectory, add `flat = true`; `names` then holds the single target directory name.
+
 Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.codex/skills`). The template derives `include` and `stripComponents` from `prefix`, so each skill lands with `SKILL.md` at the root of its target directory. Updating a skill means bumping `rev`; `refreshPeriod = "168h"` only controls re-download of the pinned tarball, never which commit is used.
 
 Two things not managed here:

@@ -918,6 +918,36 @@ prefix = ".claude/skills"
 names = ["prompt-review"]
 agents = ["claude"]
 
+[[agent_skills]]
+repo = "humanlayer/skills"
+rev = "3c2629142c5d437428269b1b722b08c0b87f574d"
+prefix = "plugins/show-me/skills"
+names = ["show-me"]
+agents = ["claude"]
+
+[[agent_skills]]
+repo = "DietrichGebert/ponytail"
+rev = "2ed6c52c9d7e5e56942508591085fd45dea277d3"
+prefix = "skills"
+names = [
+  "ponytail",
+  "ponytail-audit",
+  "ponytail-debt",
+  "ponytail-gain",
+  "ponytail-help",
+  "ponytail-review",
+]
+agents = ["claude"]
+
+# SKILL.md sits at the repo root, so there is no per-skill subdirectory.
+[[agent_skills]]
+repo = "luchasarie/bro-skill"
+rev = "01e51f8092973be58eff3b7271282bd8488a02ae"
+prefix = ""
+names = ["bro"]
+agents = ["claude"]
+flat = true
+
 # Claude Code gets these from the enabled cloudflare@cloudflare plugin, so only
 # Codex (which has no plugin mechanism) needs them materialized.
 [[agent_skills]]
