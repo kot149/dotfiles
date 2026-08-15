@@ -29,15 +29,38 @@ if ($LASTEXITCODE -ne 0 -or -not $defaultBase) {
 
 $maxBaseCandidates = 50
 
-# Refs that could be the branch point, in preference order for ties: the
-# repository default branch first, then recently updated local and origin
-# branches.
+function ConvertTo-BaseCandidate {
+    param([string]$Line)
+
+    $parts = $Line -split "`t", 2
+    if ($parts.Count -ne 2) { return $null }
+
+    $counts = $parts[1] -split ' ', 2
+    if ($counts.Count -ne 2) { return $null }
+
+    return [pscustomobject]@{
+        Ref         = $parts[0]
+        AheadOfHead = [int]$counts[0]
+        BehindHead  = [int]$counts[1]
+    }
+}
+
+# Ask Git for all ahead/behind counts in two batched calls. The default branch
+# stays first for tie-breaking even when it is not among the recent refs.
 function Get-BaseCandidates {
-    $refs = @($defaultBase)
-    $branches = @(git for-each-ref --sort=-committerdate --count=$maxBaseCandidates `
-        --format='%(refname:short)' refs/heads refs/remotes/origin 2>$null)
-    if ($LASTEXITCODE -eq 0) { $refs += $branches }
-    return $refs
+    $format = '%(refname:short)%09%(ahead-behind:HEAD)'
+    $defaultRef = "refs/remotes/$defaultBase"
+    $defaultLines = @(git for-each-ref --format=$format $defaultRef 2>$null)
+    $recentLines = @(git for-each-ref --sort=-committerdate --count=$maxBaseCandidates `
+        --format=$format refs/heads refs/remotes/origin 2>$null)
+
+    $seen = [System.Collections.Generic.HashSet[string]]::new()
+    foreach ($line in @($defaultLines) + @($recentLines)) {
+        $candidate = ConvertTo-BaseCandidate -Line $line
+        if ($null -ne $candidate -and $seen.Add($candidate.Ref)) {
+            $candidate
+        }
+    }
 }
 
 # The branch the current one was most likely created from: the candidate with
@@ -51,22 +74,15 @@ function Get-DetectedBase {
     $bestRank = 0
     $bestAhead = 0
 
-    foreach ($cand in Get-BaseCandidates) {
-        if (-not $cand) { continue }
+    foreach ($candidate in Get-BaseCandidates) {
+        $cand = $candidate.Ref
         if ($cand -eq $current -or $cand -eq "origin/$current" -or $cand -eq 'origin/HEAD') { continue }
 
-        git rev-parse --verify --quiet "$cand^{commit}" *> $null
-        if ($LASTEXITCODE -ne 0) { continue }
-
-        # Commits HEAD has that the candidate does not. Zero means HEAD is
-        # already contained in it, so there is no branch diff to show.
-        $ahead = git rev-list --count "$cand..HEAD" 2>$null
-        if ($LASTEXITCODE -ne 0) { continue }
-        $ahead = [int]$ahead
+        # BehindHead is the number of commits HEAD has that the candidate does
+        # not. AheadOfHead being zero means the candidate is an ancestor.
+        $ahead = $candidate.BehindHead
         if ($ahead -le 0) { continue }
-
-        git merge-base --is-ancestor $cand HEAD *> $null
-        $rank = if ($LASTEXITCODE -eq 0) { 0 } else { 1 }
+        $rank = if ($candidate.AheadOfHead -eq 0) { 0 } else { 1 }
 
         if (-not $bestBase -or $rank -lt $bestRank -or ($rank -eq $bestRank -and $ahead -lt $bestAhead)) {
             $bestBase = $cand
@@ -122,11 +138,11 @@ $maxCommits = 50
 $commits = @()
 if ($hasHead) {
     $range = if ($hasBase) { "$base..HEAD" } else { 'HEAD' }
-    $commits = @(git log --format='%h %s' -n $maxCommits $range 2>$null)
+    $commits = @(git log --format='%h%x09%P%x09%s' -n $maxCommits $range 2>$null)
     if ($LASTEXITCODE -ne 0) { $commits = @() }
 
     if ($commits.Count -eq 0 -and $hasBase) {
-        $commits = @(git log --format='%h %s' -n $maxCommits HEAD 2>$null)
+        $commits = @(git log --format='%h%x09%P%x09%s' -n $maxCommits HEAD 2>$null)
         if ($LASTEXITCODE -ne 0) { $commits = @() }
     }
 }
@@ -142,14 +158,16 @@ if ($hasBase) {
 }
 
 foreach ($commit in $commits) {
-    $sha = ($commit -split ' ' | Select-Object -First 1)
-    git rev-parse --verify --quiet "$sha^" *> $null
-    if ($LASTEXITCODE -eq 0) {
+    $parts = $commit -split "`t", 3
+    if ($parts.Count -ne 3) { continue }
+
+    $sha = $parts[0]
+    if ($parts[1]) {
         $childActions.Add(@("$sha^..$sha"))
     } else {
         $childActions.Add(@("$emptyTree..$sha"))
     }
-    $childLabels.Add($commit)
+    $childLabels.Add("$sha $($parts[2])")
 }
 
 if ($childLabels.Count -gt 0) {

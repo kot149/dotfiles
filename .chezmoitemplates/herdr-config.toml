@@ -56,7 +56,7 @@ height = "90%"
 key = "prefix+d"
 type = "popup"
 {{ if eq .chezmoi.os "windows" -}}
-command = "pwsh -NoLogo -File \"{{ .chezmoi.homeDir }}/.local/bin/hunk-pick.ps1\""
+command = "pwsh -NoLogo -NoProfile -File \"{{ .chezmoi.homeDir }}/.local/bin/hunk-pick.ps1\""
 {{ else -}}
 command = "hunk-pick"
 {{ end -}}
