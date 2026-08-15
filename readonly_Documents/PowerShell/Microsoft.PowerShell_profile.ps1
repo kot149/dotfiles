@@ -255,6 +255,10 @@ if ($script:CanUsePSReadLine) {
 ###################################
 # Aleases
 ###################################
+function zsh {
+    wsl.exe --exec sh -lc 'exec "$HOME/.nix-profile/bin/zsh" "$@"' zsh @args
+}
+
 function mkcd {
     param([Parameter(Mandatory)][string]$Path)
 
