@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fixup"
+  short_description: "Attribute uncommitted changes to the right existing commit and fix it up."
+  default_prompt: "Fixup the uncommitted changes into the right commits."

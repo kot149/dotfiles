@@ -1,0 +1,4 @@
+interface:
+  display_name: "Meta Review"
+  short_description: "Verify review findings against the real code before acting on them."
+  default_prompt: "Verify these review findings."

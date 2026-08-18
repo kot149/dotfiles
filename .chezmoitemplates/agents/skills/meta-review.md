@@ -19,6 +19,19 @@ If `$ARGUMENTS` contains a PR number/URL, file path, or finding text, treat that
 
 Strip the flag out of `$ARGUMENTS` before using the rest as the target. A plain-language equivalent in the request ("fix the valid ones", "verify and fix") counts as `--fix`.
 
+## Subagents
+
+This skill delegates judging to **subagents**: child agents with their own context that cannot see this conversation. Map them onto whatever the running agent provides:
+
+- Claude Code: the `Agent` tool with `subagent_type: "Explore"` (read-only). Put several `Agent` calls in one message to run them in parallel.
+- Codex CLI: `spawn_agent` per batch, then `wait` on all of them (requires `features.multi_agent`; pick a read-only role from `[agents]` in `config.toml`).
+
+Whatever the mechanism, these requirements must hold:
+
+- The judging subagent starts from a **fresh context** and does not inherit this conversation.
+- It is **read-only**. If the agent cannot enforce that, state it in the prompt and make every edit yourself in step 5.
+- Where a step says to run batches in parallel, use the agent's parallel mechanism. If it has none, run them sequentially and say so in the final report.
+
 ## Why an independent subagent is required
 
 Whoever receives the feedback (the author of the code, or an agent that has already read the review context) is prone to these biases:
@@ -27,7 +40,7 @@ Whoever receives the feedback (the author of the code, or an agent that has alre
 - Conversely, unconsciously dismissing findings against code they wrote themselves
 - Knowing the conversation history (why the code was written that way) and therefore assuming that reasoning was correct to begin with
 
-To avoid this, judging is done by a **fresh Agent with no conversation history**. Pass only the finding text and the target file paths; never pass background such as "why it was written this way" or "who raised it". The verdict must rest solely on reading the actual files.
+To avoid this, judging is done by a **fresh subagent with no conversation history**. Pass only the finding text and the target file paths; never pass background such as "why it was written this way" or "who raised it". The verdict must rest solely on reading the actual files.
 
 ## Steps
 
@@ -53,29 +66,25 @@ Decide in this order; earlier rules win over later ones.
 
 1. Multiple findings on the same file/same location must go in the same batch (so duplicate judgments stay consistent). Never split that group
 2. Keeping those groups intact, aim for about 5 findings per batch
-3. If that still fits in fewer than 6 batches (i.e. the rest are all standalone findings), a standalone finding may get its own Agent
-4. Cap parallelism at 8. If it does not fit in 8 batches, raise the per-batch count to pack into 8 parallel agents (never go to 9+ batches)
+3. If that still fits in fewer than 6 batches (i.e. the rest are all standalone findings), a standalone finding may get its own subagent
+4. Cap parallelism at 8. If it does not fit in 8 batches, raise the per-batch count to pack into 8 parallel subagents (never go to 9+ batches)
 
-If there are more than 40 findings, each Agent's share grows and judgments get shallow, so first ask the user whether to narrow by severity/source or run the whole set across several passes.
+If there are more than 40 findings, each subagent's share grows and judgments get shallow, so first ask the user whether to narrow by severity/source or run the whole set across several passes.
 
-Issue all Agent calls **in parallel within a single message**. Never sequentially.
+Launch all batches **in parallel** using the mechanism in "Subagents". Never one batch at a time when parallelism is available.
 
 ### 3. Ask for the verdicts
 
-Launch each subagent with `subagent_type: Explore` (read-only, fast). Pass only the finding text and target file paths in the prompt; say nothing about the history or who raised it.
+Launch one read-only subagent per batch, described as `verify feedback batch #<N>`. Pass only the finding text and target file paths in the prompt; say nothing about the history or who raised it. Use this prompt:
 
 ```
-Agent(
-  description: "verify feedback batch #<N>",
-  subagent_type: "Explore",
-  prompt: """
 Judge independently whether each of the following findings holds, by reading the real code. You are given no background about who raised them or why. That is intentional: base your verdict solely on the current contents of the actual files.
 
 [Required steps]
-1. Always open each finding's FILE with the Read tool. Never judge from the finding text alone
+1. Always open and read each finding's FILE. Never judge from the finding text alone
 2. Read around LINE (roughly 30 lines either side), and if needed the callers, type definitions, and related files
 3. Check whether the target of the finding still exists in the current code. If it was already fixed/removed after the finding was written and the target is gone, mark it STALE
-4. For findings with no FILE (design/approach/spec-level points, or comments not anchored to a line), locate the likely implementation yourself with Grep/Glob and then judge. Only if you cannot locate it, mark UNVERIFIABLE and write in REASON what you searched for and did not find
+4. For findings with no FILE (design/approach/spec-level points, or comments not anchored to a line), locate the likely implementation yourself by searching the repository and then judge. Only if you cannot locate it, mark UNVERIFIABLE and write in REASON what you searched for and did not find
 
 [Verdict criteria] VERDICT is exclusive. When torn, apply this priority order
 - STALE: the code the finding points at has been changed/removed and its target no longer exists
@@ -99,13 +108,11 @@ Output every finding assigned to you without exception. Findings you could not j
 
 Findings:
 <paste this batch's findings here, listing id/claim/file/line/suggestion verbatim>
-"""
-)
 ```
 
 ### 4. Aggregate and present to the user
 
-Aggregate only after every Agent has returned. Match each output back to the original finding by `ID`, and check that every input ID came back. Include any missing ID in the list as UNVERIFIABLE, stating explicitly that no verdict was returned.
+Aggregate only after every subagent has returned. Match each output back to the original finding by `ID`, and check that every input ID came back. Include any missing ID in the list as UNVERIFIABLE, stating explicitly that no verdict was returned.
 
 Present as plain Markdown text, grouped by VERDICT:
 
@@ -121,7 +128,7 @@ Without `--fix`, **stop here and do not proceed to fixes**, leaving the decision
 Only run this when `--fix` was given. Skip it entirely otherwise.
 
 1. Scope: VALID findings, plus the parts of PARTIALLY_VALID findings that the judge said hold. **Never touch INVALID, STALE, or UNVERIFIABLE findings**, which is the whole point of having verified them. If you believe an INVALID finding is worth fixing anyway, say so in the report and leave the code alone
-2. Fix with `Edit`/`Write` yourself. Never delegate the edit to a subagent
+2. Make the edits yourself. Never delegate the edit to a subagent
 3. Apply the finding, not the reviewer's wording: `suggestion` is a proposal, and where the surrounding code implies a better fix, take that and note the difference. Keep each fix to the smallest change that resolves the finding; do not fold in unrelated refactoring
 4. If two findings on the same location conflict, do not fix both. Report the conflict and apply only the one supported by the stronger evidence
 5. If a fix turns out to need a design decision the user has not made (API change, behavior change, dependency addition), stop that one finding, leave it unfixed, and report why. Keep fixing the rest
@@ -132,7 +139,7 @@ Then report per finding id: fixed / skipped (with reason) / needs a decision, fo
 ## Notes
 
 - Never include steering information in the judging prompt, such as "the reviewer is trustworthy" or "this came from an AI review tool". Pass only the finding text and target file paths
-- Judging subagents **never write** (Explore is read-only). Fixes are made by the orchestrator (you)
+- Judging subagents **never write**. Fixes are made by the orchestrator (you)
 - Never assign the same finding to more than one judging subagent (batch so that findings do not overlap)
 - If a finding is too coarse (one comment mixing several points), split it per point before assigning
 
@@ -140,6 +147,6 @@ Then report per finding id: fixed / skipped (with reason) / needs a decision, fo
 
 - **Output format not followed**: extract by matching the `VERDICT:` line loosely. A verdict with no recoverable ID cannot be tied back to a finding, so do not adopt it; present that finding as UNVERIFIABLE
 - **A finding got no verdict**: include the missing ID as UNVERIFIABLE. Never fabricate a verdict or silently drop the finding
-- **The Agent call itself failed**: re-run that batch once. If the retry also fails, present its findings explicitly as "could not be judged". Never discard the other batches' results
-- **A verdict with EVIDENCE: UNREAD**: it was produced without reading the real code, so do not adopt it as-is; present it marked "unverified". Re-submit any VALID-but-UNREAD finding on its own to another Agent for a second judgment (at most once)
-- **Target file does not exist**: it may have been renamed/moved, so look for it with Glob; if still not found, mark STALE
+- **The subagent call itself failed**: re-run that batch once. If the retry also fails, present its findings explicitly as "could not be judged". Never discard the other batches' results
+- **A verdict with EVIDENCE: UNREAD**: it was produced without reading the real code, so do not adopt it as-is; present it marked "unverified". Re-submit any VALID-but-UNREAD finding on its own to another subagent for a second judgment (at most once)
+- **Target file does not exist**: it may have been renamed/moved, so look for it by searching the repository; if still not found, mark STALE

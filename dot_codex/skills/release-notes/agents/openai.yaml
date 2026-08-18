@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release Notes"
+  short_description: "Write the body of a GitHub release, preserving draft state."
+  default_prompt: "Write the release notes for the draft release."

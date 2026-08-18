@@ -1,0 +1,4 @@
+interface:
+  display_name: "Autosquash"
+  short_description: "Squash fixup!/squash! commits into their targets via rebase --autosquash."
+  default_prompt: "Autosquash the fixup commits on this branch."

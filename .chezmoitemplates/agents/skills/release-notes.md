@@ -7,11 +7,15 @@ description: Write the body of a GitHub release. Targets the current draft relea
 
 Write the body of a GitHub release for the current repository, following the repo's existing style.
 
+## Asking the user to choose
+
+Where this document says "ask the user to choose", present the options and wait for a decision. On agents with a selection UI tool (`AskUserQuestion` and similar), use it; on agents without one, present the same options as a numbered plain-text list and let the user reply with numbers or free text. Either way, do not proceed until the user has answered.
+
 ## Steps
 
 1. **Locate the target release** using `gh release list --limit 20 --json name,tagName,isDraft,isPrerelease,publishedAt,createdAt`:
    - If exactly one release is in draft state (`isDraft: true`): that is the target.
-   - If multiple drafts exist: list them and ask the user which one to use via `AskUserQuestion`.
+   - If multiple drafts exist: list them and ask the user which one to use.
    - If no draft exists: ask the user which release/tag to write notes for (offer the most recent releases as options), or whether to create a new draft. Do NOT create a release without confirmation.
 
 2. **Fetch the target release's current state**:
@@ -53,7 +57,7 @@ Write the body of a GitHub release for the current repository, following the rep
 7. **Show the draft to the user** before applying:
    - Print the full proposed body in a fenced block.
    - Note the target release tag, whether it is currently draft, and the previous release used for the diff.
-   - Use `AskUserQuestion` to ask whether to (a) apply as-is, (b) edit and apply, or (c) cancel. Recommend (a) by listing it first with `(Recommended)`.
+   - Ask the user whether to (a) apply as-is, (b) edit and apply, or (c) cancel. Recommend (a) by listing it first with `(Recommended)`.
 
 8. **Apply the update**, preserving draft state:
    - Write the body to a temp file in the scratchpad to avoid shell-escaping issues with multi-line content.

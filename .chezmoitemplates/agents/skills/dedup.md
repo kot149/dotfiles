@@ -7,6 +7,10 @@ description: Detect duplicate/similar code using the `similarity` NixOS package,
 
 Scan the current project for duplicate code using `similarity` (NixOS), present prioritized findings, let the user pick which ones to fix, then refactor and commit each selection.
 
+## Asking the user to choose
+
+Where this document says "ask the user to choose", present the options and wait for a decision. On agents with a selection UI tool (`AskUserQuestion` and similar), use it; on agents without one, present the same options as a numbered plain-text list and let the user reply with numbers or free text. Either way, do not proceed until the user has answered.
+
 ## Step 0: Verify context
 
 Confirm we are in a git repository:
@@ -138,14 +142,10 @@ Example output to user:
 ...
 ```
 
-Then use `AskUserQuestion` to let the user select which ones to fix:
+Then ask the user to choose which ones to fix, allowing multiple selections:
 
-```
-question: "どの重複を修正しますか？（複数選択可）"
-header: "重複修正"
-multiSelect: true
-options: one per finding, label = "#{rank}. {short description}", description = "{similarity}% 類似, 推定{N}行削減"
-```
+- question: `どの重複を修正しますか？（複数選択可）`
+- one option per finding: `#{rank}. {short description}`, annotated with `{similarity}% 類似, 推定{N}行削減`
 
 If the user selects nothing or cancels, stop gracefully.
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dedup"
+  short_description: "Find duplicate code with similarity, then refactor the ones you pick."
+  default_prompt: "Find and fix duplicate code in this repository."

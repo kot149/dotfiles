@@ -18,8 +18,10 @@ macOS Keychain の generic password 項目から ID とパスワードを取り�
 ### 項目があるか調べる
 
 ```shell
-~/.claude/skills/keychain-credentials/scripts/keychain-cred.sh check <service>
+keychain-cred.sh check <service>
 ```
+
+スクリプトはこのスキルのディレクトリ配下 (`<skills>/keychain-credentials/scripts/keychain-cred.sh`) にある。`<skills>` は各 agent のスキル置き場 (`~/.claude/skills` / `~/.codex/skills`) で、以下の例では絶対パスを省略して書く。
 
 見つかれば `found: service=... account=...` を返す。無ければ登録手順を出して終了コード 4 になる。何かを実行する前にまずこれを叩く。
 
@@ -50,7 +52,7 @@ keychain-cred.sh setup <service> [account]
 
 ## 登録
 
-登録は対話入力が必要なので、ユーザー自身に通常のターミナルで実行してもらう。Claude Code の `!` 実行には TTY が無いため代行できない。
+登録は対話入力が必要なので、ユーザー自身に通常のターミナルで実行してもらう。agent 経由のコマンド実行には TTY が無いため代行できない。
 
 ```shell
 security add-generic-password -s '<service>' -a '<account>' -l '<service> (script)' -w

@@ -7,6 +7,10 @@ description: 現在のブランチの fixup! / squash! コミットを `git reba
 
 現在のブランチに積まれている `fixup!` / `squash!` コミットを、対応する元コミットへ `git rebase -i --autosquash` でまとめるスキル。
 
+## ユーザーへの選択提示
+
+このドキュメントで「選択提示」と書いてある箇所は、選択肢を提示してユーザーに選ばせることを指す。選択UIツール (`AskUserQuestion` など) が使える agent ではそれを使い、無い agent では同じ選択肢を番号付きリストのプレーンテキストで提示し、番号または自由記述で答えてもらう。どちらの場合も回答を得るまで次の手順へ進まない。
+
 ## 前提
 
 - 作業ディレクトリが Git リポジトリ配下であること。
@@ -66,7 +70,7 @@ done | sort -n | head -5
 - 2-2 と 2-3 の結果が一致すればそれを `<BASE>` として確定する
 - 食い違う場合、または 2-3 で同距離の候補が複数並ぶ場合のみ判断材料を増やす:
   - `gh` が使えるなら `gh pr view --json baseRefName,headRefName,number,title,url` の `baseRefName` を優先する。PR の base は宣言された正解なので、ローカルのヒューリスティックより信頼できる
-  - `gh` が使えない / PR が無い場合は `AskUserQuestion` で候補を提示して選ばせる
+  - `gh` が使えない / PR が無い場合は候補を選択提示してユーザーに選ばせる
 - 確定した base と根拠 (デフォルトブランチ / merge-base 距離 / PR) を、4. の承認依頼で明記する
 
 `git merge-base --fork-point` は reflog 依存で、clone し直した環境や別マシンでは空振りするため確定の根拠には使わない。

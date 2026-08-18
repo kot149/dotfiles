@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reorganize Commits"
+  short_description: "Restructure branch commits into reviewable logical units."
+  default_prompt: "Reorganize the commits on this branch."

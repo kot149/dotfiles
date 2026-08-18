@@ -1,0 +1,4 @@
+interface:
+  display_name: "Keychain Credentials"
+  short_description: "Pass macOS Keychain credentials to commands without printing them."
+  default_prompt: "Use my Keychain credentials for this command."

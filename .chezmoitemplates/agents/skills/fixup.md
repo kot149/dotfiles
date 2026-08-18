@@ -16,6 +16,10 @@ description: 現在の未コミット変更を、既存の適切なコミット�
 
 方式 A では autosquash による履歴のまとめ直しは既定ではこのスキルの責務ではない。fixup コミットを積むところまでで終了し、ユーザーが続けて autosquash したい場合は [[autosquash]] スキルへ誘導する。ただし `--autosquash` 引数が渡された場合のみ、このスキルが続けて autosquash まで実行する (「引数」参照)。
 
+## ユーザーへの選択提示
+
+このドキュメントで「選択提示」と書いてある箇所は、選択肢を提示してユーザーに選ばせることを指す。選択UIツール (`AskUserQuestion` など) が使える agent ではそれを使い、無い agent では同じ選択肢を番号付きリストのプレーンテキストで提示し、番号または自由記述で答えてもらう。どちらの場合も回答を得るまで次の手順へ進まない。
+
 ## 引数
 
 `--autosquash` (単独でも他の指示と併記でも可):
@@ -90,7 +94,7 @@ done | sort -n | head -5
 - 2-2 と 2-3 の結果が一致すればそれを `<BASE>` として確定する
 - 食い違う場合、または 2-3 で同距離の候補が複数並ぶ場合のみ判断材料を増やす:
   - `gh` が使えるなら `gh pr view --json baseRefName,headRefName,number,title,url` の `baseRefName` を優先する。PR の base は宣言された正解なので、ローカルのヒューリスティックより信頼できる
-  - `gh` が使えない / PR が無い場合は `AskUserQuestion` で候補を提示して選ばせる
+  - `gh` が使えない / PR が無い場合は候補を選択提示してユーザーに選ばせる
 - どの経路で決めた場合も、確定した base と根拠 (デフォルトブランチ / merge-base 距離 / PR) を計画提示時に明記する
 
 `git merge-base --fork-point` は reflog 依存で、clone し直した環境や別マシンでは空振りするため確定の根拠には使わない。
@@ -113,7 +117,7 @@ git log --oneline origin/<BASE>..HEAD
   - (a) staged 分だけを fixup 化する
   - (b) 一旦 `git add -u` 相当で全てを staged にしてから fixup 化する
   - (c) いったん中断してユーザーが整理する
-  のどれかを `AskUserQuestion` で確認する。**勝手に `git add` / `git reset` しない。**
+  のどれかを選択提示して確認する。**勝手に `git add` / `git reset` しない。**
 
 対象範囲が決まったら、変更ごとに以下の方法で帰属先コミットを推定する:
 
@@ -153,7 +157,7 @@ git blame -L <start>,<end> HEAD -- <FILE>
 
 **`--autosquash` 引数が渡されている場合はこの手順をスキップし、方式 A で進める。**
 
-`AskUserQuestion` で以下から選ばせる。選択肢の提示前に、同じターンの Markdown で両方式の違い (履歴を書き換えるか、autosquash が必要か、force push が必要か) を説明しておく。**`options` 配列は必ず方式A、方式Bの順で渡す** (逆順や B を先頭にした提示はしない)。
+以下を選択提示して選ばせる。選択肢の前に、両方式の違い (履歴を書き換えるか、autosquash が必要か、force push が必要か) を本文で説明しておく。**選択肢は必ず方式A、方式Bの順に並べる** (逆順や B を先頭にした提示はしない)。
 
 - **方式 A: fixup コミットを積む (`git commit --fixup`)** — 履歴は書き換えず `fixup!` コミットを積むだけ。内容をレビューしてから [[autosquash]] でまとめられる。既存の履歴に手を入れないので巻き戻しやすい。
 - **方式 B: その場で履歴を書き換える (`git history fixup`)** — 対象コミットへ直接取り込み、子孫コミットを replay する。autosquash 不要。ただし git 2.55 で導入された **EXPERIMENTAL** なコマンドで、マージコミットを含む履歴では使えず、コンフリクトすると abort する。

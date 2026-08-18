@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deep Review"
+  short_description: "Multi-perspective review loop with verification of every finding."
+  default_prompt: "Deep review the current diff."
