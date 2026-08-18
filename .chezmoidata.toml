@@ -871,9 +871,11 @@ agent_shell_deny = [
 #   rev     commit SHA to pin (bump manually; that is the whole update flow)
 #   prefix  directory inside the repo that holds the skills
 #   names   skill directory names under prefix
-#   agents  which config dirs receive them (~/.<agent>/skills/<name>); use
-#           "agents" for the shared ~/.agents/skills store that Codex and most
-#           other agents read natively, "claude" for Claude Code, which does not
+#   agents  which config dirs receive them (~/.<agent>/skills/<name>); one
+#           declaration feeds every listed store, so a skill needed everywhere
+#           lists both "agents" (the shared ~/.agents/skills store that Codex and
+#           most other agents read natively) and "claude" (~/.claude/skills, the
+#           only place Claude Code looks)
 #
 # Self-authored skills are not listed here; they are checked into dot_claude/skills
 # and dot_agents/skills (shared bodies live in .chezmoitemplates/agents/skills).
@@ -883,49 +885,42 @@ repo = "yusukebe/ax"
 rev = "8abbca2fc400c2ff4866248ba1ec9309b948812f"
 prefix = "skills"
 names = ["ax"]
-agents = ["claude"]
+agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "herdrdev/herdr"
 rev = "d76657f2c7fc18dcce3b9af43842c8afaba1646b"
 prefix = "skills"
 names = ["herdr"]
-agents = ["claude"]
+agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "shadcn/improve"
 rev = "03369ee6d7cafbfcecc4346539b05b3dc0a603bb"
 prefix = "skills"
 names = ["improve"]
-agents = ["claude"]
+agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "vercel-labs/skills"
 rev = "c6f69c631292444cc541ac6d91e2226b0ff247da"
 prefix = "skills"
 names = ["find-skills"]
-agents = ["claude"]
+agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "vercel-labs/agent-browser"
 rev = "548b159b30eef119ccf6846c8bc807d0eaa3f6f8"
 prefix = "skills"
 names = ["agent-browser"]
-agents = ["claude"]
-
-[[agent_skills]]
-repo = "tokoroten/prompt-review"
-rev = "0a83fd9eeead58fe92d0b04522da9e6840a71940"
-prefix = ".claude/skills"
-names = ["prompt-review"]
-agents = ["claude"]
+agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "humanlayer/skills"
 rev = "3c2629142c5d437428269b1b722b08c0b87f574d"
 prefix = "plugins/show-me/skills"
 names = ["show-me"]
-agents = ["claude"]
+agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "DietrichGebert/ponytail"
@@ -939,7 +934,7 @@ names = [
   "ponytail-help",
   "ponytail-review",
 ]
-agents = ["claude"]
+agents = ["claude", "agents"]
 
 # SKILL.md sits at the repo root, so there is no per-skill subdirectory.
 [[agent_skills]]
@@ -947,7 +942,7 @@ repo = "luchasarie/bro-skill"
 rev = "01e51f8092973be58eff3b7271282bd8488a02ae"
 prefix = ""
 names = ["bro"]
-agents = ["claude"]
+agents = ["claude", "agents"]
 flat = true
 
 # Claude Code gets these from the enabled cloudflare@cloudflare plugin, so only

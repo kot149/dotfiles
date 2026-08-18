@@ -126,6 +126,8 @@ Two Codex-specific details:
 
 Skills live in two stores. `~/.agents/skills` is the shared store: Codex CLI reads it natively (alongside its own deprecated `~/.codex/skills`), as do opencode, Cursor, Gemini CLI and Amp. `~/.claude/skills` exists because Claude Code is the one agent with no `.agents/` awareness and no setting for extra skill roots, so anything Claude Code should see has to be materialized there as well. Nothing in this repo writes to `~/.codex/skills` any more.
 
+Both stores are generated, never hand-synced and never symlinked together: a skill is declared or written **once** and the same definition materializes into every store that needs it. For self-authored skills the single source is the body under `.chezmoitemplates/agents/skills/`; for third-party skills it is the `[[agent_skills]]` entry, whose `agents` list names the target stores.
+
 Skills come from three places, and which one a skill belongs to decides where you edit it:
 
 1. **Self-authored, single agent** — checked in under `dot_claude/skills/<name>/SKILL.md` (Claude Code) or `dot_agents/skills/<name>/SKILL.md` (shared store). Skills in the shared store additionally carry `agents/openai.yaml`, which supplies Codex's TUI interface metadata and is ignored by agents that do not know it. Scripts shipped with a skill need the `executable_` prefix. Every self-authored skill is currently shared (case 2), so this layout is only for a skill that genuinely cannot be made agent-neutral.
@@ -148,7 +150,8 @@ repo = "owner/name"
 rev = "<commit SHA>"      # gh api repos/owner/name/commits/HEAD --jq .sha
 prefix = "skills"         # directory inside the repo holding the skills
 names = ["skill-name"]    # one entry per skill dir under prefix
-agents = ["claude"]       # "claude" -> ~/.claude/skills, "agents" -> ~/.agents/skills
+agents = ["claude", "agents"]   # one entry per target store; "claude" ->
+                                # ~/.claude/skills, "agents" -> ~/.agents/skills
 ```
 
 For a repo that keeps `SKILL.md` directly under `prefix` (or at the repo root, with `prefix = ""`) instead of in a per-skill subdirectory, add `flat = true`; `names` then holds the single target directory name.
@@ -157,8 +160,8 @@ Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.agents/skills`). The templa
 
 Two things not managed here:
 
-- **Claude Code plugins** supply their own skills. The enabled `cloudflare@cloudflare` marketplace covers the whole `cloudflare/skills` set for Claude, so those are declared for `agents = ["agents"]` only. Codex has its own plugin system (`codex plugin add/list`, `codex plugin marketplace`) but it does not consume Claude Code marketplaces, so Codex gets those skills through `[[agent_skills]]` instead.
-- The **`skills` CLI** (`npx skills add`, vercel-labs) installs into `~/.agents/skills` too, tracked in a per-machine `~/.agents/.skill-lock.json`, and symlinks the non-`.agents` agent directories (Claude Code) at it. Use it to *discover* skills, then transcribe the pick into `[[agent_skills]]`. Do not run it against a skill already declared here: both write to the same directory names, and the CLI copy is per-machine and invisible to `chezmoi status`.
+- **Claude Code plugins** supply their own skills. The enabled `cloudflare@cloudflare` marketplace covers the whole `cloudflare/skills` set for Claude, so those are the one exception to listing both stores: they are declared for `agents = ["agents"]` only, which keeps them from showing up twice for Claude Code (once as `cloudflare:<name>` from the plugin, once as `<name>` from the store). Codex has its own plugin system (`codex plugin add/list`, `codex plugin marketplace`) but it does not consume Claude Code marketplaces, so Codex gets those skills through `[[agent_skills]]` instead.
+- The **`skills` CLI** (`npx skills add`, vercel-labs) installs into `~/.agents/skills` too, tracked in a per-machine `~/.agents/.skill-lock.json`, and symlinks the non-`.agents` agent directories (Claude Code) at it. Use it to *discover* skills, then transcribe the pick into `[[agent_skills]]`. Do not leave a skill installed that way: the copy is per-machine, invisible to `chezmoi status`, pinned by a separate lock file, and it writes to the same directory names this repo manages.
 
 ## User-level agent instructions
 
