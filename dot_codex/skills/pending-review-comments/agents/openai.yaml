@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pending Review Comments"
+  short_description: "Post review findings as pending inline comments on a GitHub PR."
+  default_prompt: "Post the review findings as pending inline comments on the current PR."

@@ -367,54 +367,15 @@ Phase 3bでユーザーが修正を選んだ指摘のみ対象。
 
 ## Phase 4b: Post Pending PR Review
 
-Phase 3bでユーザーが選択Eを選んだ場合のみ実行する。VALIDな指摘をGitHub PRのレビューとして投稿する。
+Phase 3bでユーザーが選択Eを選んだ場合のみ実行する。投稿手順は `pending-review-comments` スキルに委譲する（`Skill` ツールで呼び出す）。手順・pending維持のルール・エラー処理はそちらが持つ。
 
-### 絶対厳守ルール
+deep-review側の前提として、スキルに渡す入力を次のとおり整える:
 
-- **必ずpending状態で作成する**。reviews APIへのPOSTで `event` フィールドを **一切含めない** こと（`event` を省略するとレビューはPENDINGで作成され、ユーザーが手動でSubmitするまで他人には見えない）。`event: COMMENT` 等を指定するとその場で公開されてしまうため禁止
-- **submit系の操作を行わない**: `gh pr review --comment/--approve/--request-changes`、`POST .../reviews/{id}/events` は使用禁止。Submitはユーザーが手動で行う
-- **全指摘をインラインコメントにする**: 各指摘は `comments` 配列の要素として `path` + `line` を指定し、該当行にアンカーする。レビューbodyは空にし、bodyに指摘やサマリーを書かない
+- **対象はVALIDと判定された指摘のみ**。INVALID/UNCERTAINは渡さない
+- 各指摘は `FILE` / `LINE` / タイトル / `DESCRIPTION` / `SUGGESTION` / `<reviewer>` / `<SEVERITY>` を揃えて渡す。コメント先頭のラベルは `[<reviewer> / <SEVERITY>]`（例: `[quality / LOW]`）
+- レビュー対象がPRでない場合（ローカルdiffやファイル指定）はそもそも選択Eを提示しない
 
-### 手順
-
-1. **前提確認** — レビュー対象がPR（`gh pr diff` で取得できるPR番号がある）であることを確認する。ローカルdiffやファイル指定のレビューでは選択Eを提示しない
-2. **既存pendingレビューの確認**:
-   ```
-   gh api repos/{owner}/{repo}/pulls/{number}/reviews --jq '[.[] | select(.state=="PENDING")] | length'
-   ```
-   GitHubは1ユーザーにつき1PRあたり1件しかpendingレビューを持てない。既に存在する場合は投稿せず、その旨をユーザーに報告して指示を仰ぐ（既存pendingをSubmitまたは破棄してもらう）
-3. **アンカー行の検証** — 各指摘の `FILE`/`LINE` がPR diffに含まれる行であることを `gh pr diff <number>` の出力と突き合わせて確認する:
-   - 新規/変更行への指摘: `side: "RIGHT"`、`line` は変更後ファイルの行番号
-   - 削除行への指摘: `side: "LEFT"`、`line` は変更前ファイルの行番号
-   - 複数行にまたがる指摘: `start_line` + `line` で範囲指定してよい
-   - `LINE` がdiff外の場合: 同ファイル内でその指摘に最も関連する **diff内の行** にアンカーし直す。適切な行が見つからない指摘はインライン投稿せず、「diff外のためインライン投稿不可」としてユーザーに報告する
-4. **コメント本文の生成** — 各指摘につき1コメント。先頭に `[<reviewer> / <SEVERITY>]` 形式のラベルを付ける（例: `[quality / LOW]`）。`[deep-review]` のようなツール名ラベルは付けない。形式:
-   ```
-   **[<reviewer> / <SEVERITY>] <FINDING タイトル>**
-
-   <DESCRIPTION>
-
-   **提案:** <SUGGESTION>
-   ```
-5. **投稿** — JSONペイロードをファイルに書き出してPOSTする（`event` は含めない）:
-   ```
-   gh api repos/{owner}/{repo}/pulls/{number}/reviews --input payload.json
-   ```
-   payload.json の形式:
-   ```json
-   {
-     "body": "",
-     "comments": [
-       {"path": "src/foo.ts", "line": 42, "side": "RIGHT", "body": "..."},
-       {"path": "src/bar.ts", "start_line": 10, "line": 15, "side": "RIGHT", "body": "..."}
-     ]
-   }
-   ```
-6. **結果確認と報告** — レスポンスの `state` が `PENDING` であることを確認し、投稿した件数・スキップした件数（diff外等）をユーザーに報告する。「レビューはpending状態です。内容を確認してGitHub上で手動でSubmitしてください」と必ず添えて終了する
-
-### エラー時
-
-- 422（行がdiff外等）で投稿全体が失敗した場合: 失敗したコメントを特定して除外またはアンカー修正し、1回だけ再試行する。それでも失敗したらインライン投稿を断念し、その旨をユーザーに報告する（勝手にbody一括形式へ切り替えない）
+投稿後は結果を報告して終了する。修正は行わない（投稿と修正を両方行う場合はユーザーが明示したときのみ、投稿→修正の順）。
 
 ## Error Handling
 
