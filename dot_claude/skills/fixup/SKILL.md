@@ -1,6 +1,6 @@
 ---
 name: fixup
-description: 現在の未コミット変更を、既存の適切なコミットへ fixup するスキル。ユーザーが「fixupして」「fixupコミット作って」「既存のコミットに紛れ込ませて」「適切なコミットにfixup」などと依頼した場合に使用する。適用方式は `git commit --fixup=<sha>` (fixup コミットを積むだけ) と `git history fixup <sha>` (git 2.55 以降、その場で履歴を書き換え) から選ばせる。変更の帰属先コミットは `git blame` / `git log -p` で機械的に特定し、必ずユーザーに提示して承認を得てから実行する。
+description: 現在の未コミット変更を、既存の適切なコミットへ fixup するスキル。ユーザーが「fixupして」「fixupコミット作って」「既存のコミットに紛れ込ませて」「適切なコミットにfixup」などと依頼した場合に使用する。適用方式は `git commit --fixup=<sha>` (fixup コミットを積むだけ) と `git history fixup <sha>` (git 2.55 以降、その場で履歴を書き換え) から選ばせる。引数に `--autosquash` を渡された場合は方式 A で fixup コミットを積んだ後、続けて autosquash も実行する。変更の帰属先コミットは `git blame` / `git log -p` で機械的に特定し、必ずユーザーに提示して承認を得てから実行する。
 ---
 
 # fixup
@@ -14,7 +14,17 @@ description: 現在の未コミット変更を、既存の適切なコミット�
 | A: fixup コミット方式 | `git commit --fixup=<sha>` | しない (後で autosquash が必要) |
 | B: 履歴書き換え方式 | `git history fixup <sha>` | その場で行う (autosquash 不要) |
 
-方式 A では autosquash による履歴のまとめ直しはこのスキルの責務ではない。fixup コミットを積むところまでで終了し、ユーザーが続けて autosquash したい場合は [[autosquash]] スキルへ誘導する。
+方式 A では autosquash による履歴のまとめ直しは既定ではこのスキルの責務ではない。fixup コミットを積むところまでで終了し、ユーザーが続けて autosquash したい場合は [[autosquash]] スキルへ誘導する。ただし `--autosquash` 引数が渡された場合のみ、このスキルが続けて autosquash まで実行する (「引数」参照)。
+
+## 引数
+
+`--autosquash` (単独でも他の指示と併記でも可):
+
+- 適用方式の質問 (手順 5) をスキップし、**方式 A を選択したものとして扱う**
+- 手順 6 の計画提示では「fixup コミットを積んだ後、続けて autosquash も実行する」ことを明示して承認を得る
+- 手順 7-A で fixup コミットを積んだ後、手順 8 の確認を経て [[autosquash]] スキルを実行する (手順 10)
+
+引数がない場合は従来どおり手順 5 で方式を選ばせ、autosquash は実行しない。
 
 ## 前提
 
@@ -141,6 +151,8 @@ git blame -L <start>,<end> HEAD -- <FILE>
 
 ### 5. 適用方式を選ぶ
 
+**`--autosquash` 引数が渡されている場合はこの手順をスキップし、方式 A で進める。**
+
 `AskUserQuestion` で以下から選ばせる。選択肢の提示前に、同じターンの Markdown で両方式の違い (履歴を書き換えるか、autosquash が必要か、force push が必要か) を説明しておく。**`options` 配列は必ず方式A、方式Bの順で渡す** (逆順や B を先頭にした提示はしない)。
 
 - **方式 A: fixup コミットを積む (`git commit --fixup`)** — 履歴は書き換えず `fixup!` コミットを積むだけ。内容をレビューしてから [[autosquash]] でまとめられる。既存の履歴に手を入れないので巻き戻しやすい。
@@ -166,6 +178,14 @@ git blame -L <start>,<end> HEAD -- <FILE>
 
 base: origin/<BASE>
 作成後、履歴を実際にまとめるには別途 autosquash が必要です。
+実行してよろしいですか?
+```
+
+`--autosquash` 指定時は末尾を次に差し替える:
+
+```
+base: origin/<BASE>
+fixup コミットを積んだ後、続けて autosquash で履歴をまとめます (SHA が変わり force push が必要になります)。
 実行してよろしいですか?
 ```
 
@@ -297,7 +317,7 @@ git status --short
 方式 A の場合:
 
 - 作成した fixup コミットの一覧 (`<sha> fixup! <元コミットのタイトル>`)
-- 履歴を実際にまとめるには `autosquash` スキルを使う旨
+- 履歴を実際にまとめるには `autosquash` スキルを使う旨 (`--autosquash` 指定時は手順 10 へ進むので不要)
 - force push はユーザー自身で行う必要がある旨 (このスキルでは行わない)
 
 方式 B の場合:
@@ -306,6 +326,14 @@ git status --short
 - バックアップブランチ名と元の HEAD SHA (復旧用)
 - SHA が変わったので push には `git push --force-with-lease` が必要な旨。**push はユーザーの責務であり、このスキルでは行わない**
 - 問題なければバックアップブランチはユーザー自身で削除してよい旨
+
+### 10. `--autosquash` 指定時: 続けて autosquash する
+
+`--autosquash` が渡されていた場合のみ実行する。手順 8 の確認が通り、ワーキングツリーに想定外の残余がないことを確かめたうえで、[[autosquash]] スキルを起動して履歴をまとめる。手順 2 で確定した base を autosquash 側へ引き継ぎ、base の再確定をやり直させない。
+
+autosquash が途中で失敗した場合 (コンフリクト等) は、autosquash スキル側の失敗時手順に従う。**fixup コミット自体は既に作成済みなので、勝手に取り消さない。**
+
+完了後は autosquash 後の `git log --oneline origin/<BASE>..HEAD` と、force push が必要な旨を報告する。**push はこのスキルでは行わない。**
 
 ## 注意事項
 
