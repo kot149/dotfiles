@@ -21,7 +21,7 @@ macOS Keychain の generic password 項目から ID とパスワードを取り�
 keychain-cred.sh check <service>
 ```
 
-スクリプトはこのスキルのディレクトリ配下 (`<skills>/keychain-credentials/scripts/keychain-cred.sh`) にある。`<skills>` は各 agent のスキル置き場 (`~/.claude/skills` / `~/.codex/skills`) で、以下の例では絶対パスを省略して書く。
+スクリプトはこのスキルのディレクトリ配下 (`<skills>/keychain-credentials/scripts/keychain-cred.sh`) にある。`<skills>` はこのスキルが置かれているスキルルート (`~/.claude/skills` / `~/.agents/skills`) で、以下の例では絶対パスを省略して書く。
 
 見つかれば `found: service=... account=...` を返す。無ければ登録手順を出して終了コード 4 になる。何かを実行する前にまずこれを叩く。
 

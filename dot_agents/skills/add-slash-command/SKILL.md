@@ -10,7 +10,7 @@ Codex CLI does not currently support arbitrary user-defined slash commands in th
 ## Workflow
 
 1. Gather the skill name, purpose, trigger conditions, expected inputs, and expected output. If any of these are missing, ask before writing files.
-2. Confirm the save location. Prefer `~/.codex/skills/<skill-name>` for immediate local use. In this chezmoi-managed dotfiles repository, prefer `dot_codex/skills/<skill-name>` so it applies to `~/.codex/skills/<skill-name>` after chezmoi apply.
+2. Confirm the save location. Prefer `~/.agents/skills/<skill-name>` for immediate local use, the shared store Codex reads. In this chezmoi-managed dotfiles repository, prefer `dot_agents/skills/<skill-name>` so it applies to `~/.agents/skills/<skill-name>` after chezmoi apply.
 3. Draft the proposed `SKILL.md` content and get confirmation before writing if the user did not already ask you to implement directly.
 4. Create one directory named with lowercase hyphen-case and a required `SKILL.md`.
 5. Add `agents/openai.yaml` when practical so the skill has readable UI metadata.

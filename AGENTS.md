@@ -124,9 +124,11 @@ Two Codex-specific details:
 
 ## Agent skills
 
+Skills live in two stores. `~/.agents/skills` is the shared store: Codex CLI reads it natively (alongside its own deprecated `~/.codex/skills`), as do opencode, Cursor, Gemini CLI and Amp. `~/.claude/skills` exists because Claude Code is the one agent with no `.agents/` awareness and no setting for extra skill roots, so anything Claude Code should see has to be materialized there as well. Nothing in this repo writes to `~/.codex/skills` any more.
+
 Skills come from three places, and which one a skill belongs to decides where you edit it:
 
-1. **Self-authored, single agent** — checked in under `dot_claude/skills/<name>/SKILL.md` or `dot_codex/skills/<name>/SKILL.md`. Codex skills additionally carry `agents/openai.yaml` for their TUI interface metadata. Scripts shipped with a skill need the `executable_` prefix. Every self-authored skill is currently shared (case 2), so this layout is only for a skill that genuinely cannot be made agent-neutral.
+1. **Self-authored, single agent** — checked in under `dot_claude/skills/<name>/SKILL.md` (Claude Code) or `dot_agents/skills/<name>/SKILL.md` (shared store). Skills in the shared store additionally carry `agents/openai.yaml`, which supplies Codex's TUI interface metadata and is ignored by agents that do not know it. Scripts shipped with a skill need the `executable_` prefix. Every self-authored skill is currently shared (case 2), so this layout is only for a skill that genuinely cannot be made agent-neutral.
 2. **Self-authored, shared between agents** — body lives in `.chezmoitemplates/agents/skills/<name>.md` and each agent gets a one-line `{{ include ... }}` wrapper named `SKILL.md.tmpl`, same pattern as the shared hooks. Scripts shipped with a shared skill follow the same pattern: body in `.chezmoitemplates/agents/<script>`, and each agent gets an `executable_<script>.tmpl` wrapper (e.g. `keychain-cred.sh`). This is the default for every self-authored skill in the repo.
 
    A shared body must not hardcode one agent's tool names or call syntax. The repo settles this by naming the capability and mapping it onto each agent once, near the top of the body:
@@ -135,7 +137,7 @@ Skills come from three places, and which one a skill belongs to decides where yo
    - **Subagents** — the body says "サブエージェント" and defines the mapping once: Claude Code's `Agent` tool (`subagent_type: "Explore"` for read-only roles, several calls in one message for parallelism) vs Codex CLI's `spawn_agent`/`wait` (gated by `features.multi_agent`, roles from `[agents]` in `config.toml`), plus the invariants that must hold either way (fresh context, read-only, fall back to sequential when there is no parallel mechanism). `deep-review`, `meta-review`, and `pr-review-brief` are shared this way.
    - **MCP tools** — refer to the server and the kind of operation ("Atlassian MCP のissue取得ツール"), not the tool id, since names differ per agent and some agents load tool schemas lazily.
    - **File and search tools** — say "read the file" / "search the repository", not `Read`/`Grep`/`Glob`/`Edit`.
-   - **Paths into the skill's own directory** — write them relative to the agent's skill root (`~/.claude/skills` vs `~/.codex/skills`), never hardcode one.
+   - **Paths into the skill's own directory** — write them relative to the skill root of whichever store the copy lives in (`~/.claude/skills` vs `~/.agents/skills`), never hardcode one.
 3. **Third-party** — declared in `.chezmoidata.toml` as `[[agent_skills]]` and materialized by `.chezmoiexternal.toml.tmpl` as `type = "archive"` externals pulled from a pinned GitHub tarball. This is the cross-platform path: it works on Windows as-is (no symlinks, no Nix), unlike Home Manager, which is non-Windows only.
 
 Adding a third-party skill:
@@ -146,17 +148,17 @@ repo = "owner/name"
 rev = "<commit SHA>"      # gh api repos/owner/name/commits/HEAD --jq .sha
 prefix = "skills"         # directory inside the repo holding the skills
 names = ["skill-name"]    # one entry per skill dir under prefix
-agents = ["claude"]       # "claude" and/or "codex" -> ~/.<agent>/skills/<name>
+agents = ["claude"]       # "claude" -> ~/.claude/skills, "agents" -> ~/.agents/skills
 ```
 
 For a repo that keeps `SKILL.md` directly under `prefix` (or at the repo root, with `prefix = ""`) instead of in a per-skill subdirectory, add `flat = true`; `names` then holds the single target directory name.
 
-Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.codex/skills`). The template derives `include` and `stripComponents` from `prefix`, so each skill lands with `SKILL.md` at the root of its target directory. Updating a skill means bumping `rev`; `refreshPeriod = "168h"` only controls re-download of the pinned tarball, never which commit is used.
+Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.agents/skills`). The template derives `include` and `stripComponents` from `prefix`, so each skill lands with `SKILL.md` at the root of its target directory. Updating a skill means bumping `rev`; `refreshPeriod = "168h"` only controls re-download of the pinned tarball, never which commit is used.
 
 Two things not managed here:
 
-- **Claude Code plugins** supply their own skills. The enabled `cloudflare@cloudflare` marketplace covers the whole `cloudflare/skills` set for Claude, so those are declared for `agents = ["codex"]` only. Codex has its own plugin system (`codex plugin add/list`, `codex plugin marketplace`) but it does not consume Claude Code marketplaces, so Codex gets those skills through `[[agent_skills]]` instead.
-- The **`skills` CLI** (`npx skills add`, vercel-labs) installs into `~/.agents/skills` and symlinks each agent directory at it, tracked in a per-machine `~/.agents/.skill-lock.json`. Use it to *discover* skills, then transcribe the pick into `[[agent_skills]]`. Do not run it against a skill already declared here: it would replace the external's directory with a symlink into `~/.agents/skills`.
+- **Claude Code plugins** supply their own skills. The enabled `cloudflare@cloudflare` marketplace covers the whole `cloudflare/skills` set for Claude, so those are declared for `agents = ["agents"]` only. Codex has its own plugin system (`codex plugin add/list`, `codex plugin marketplace`) but it does not consume Claude Code marketplaces, so Codex gets those skills through `[[agent_skills]]` instead.
+- The **`skills` CLI** (`npx skills add`, vercel-labs) installs into `~/.agents/skills` too, tracked in a per-machine `~/.agents/.skill-lock.json`, and symlinks the non-`.agents` agent directories (Claude Code) at it. Use it to *discover* skills, then transcribe the pick into `[[agent_skills]]`. Do not run it against a skill already declared here: both write to the same directory names, and the CLI copy is per-machine and invisible to `chezmoi status`.
 
 ## User-level agent instructions
 

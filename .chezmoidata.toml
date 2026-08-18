@@ -871,10 +871,12 @@ agent_shell_deny = [
 #   rev     commit SHA to pin (bump manually; that is the whole update flow)
 #   prefix  directory inside the repo that holds the skills
 #   names   skill directory names under prefix
-#   agents  which agent config dirs receive them (~/.<agent>/skills/<name>)
+#   agents  which config dirs receive them (~/.<agent>/skills/<name>); use
+#           "agents" for the shared ~/.agents/skills store that Codex and most
+#           other agents read natively, "claude" for Claude Code, which does not
 #
 # Self-authored skills are not listed here; they are checked into dot_claude/skills
-# and dot_codex/skills (shared bodies live in .chezmoitemplates/agents/skills).
+# and dot_agents/skills (shared bodies live in .chezmoitemplates/agents/skills).
 
 [[agent_skills]]
 repo = "yusukebe/ax"
@@ -949,7 +951,8 @@ agents = ["claude"]
 flat = true
 
 # Claude Code gets these from the enabled cloudflare@cloudflare plugin, so only
-# Codex (which has no plugin mechanism) needs them materialized.
+# the shared store (read by Codex, which has no Claude Code plugin mechanism)
+# needs them materialized.
 [[agent_skills]]
 repo = "cloudflare/skills"
 rev = "f96bff754e428838818017f75817f0f9428acd48"
@@ -961,10 +964,10 @@ names = [
   "cloudflare-one",
   "cloudflare-one-migrations",
   "durable-objects",
-  "sandbox-sdk",
+  "sandbox-stable",
   "turnstile-spin",
   "web-perf",
   "workers-best-practices",
   "wrangler",
 ]
-agents = ["codex"]
+agents = ["agents"]

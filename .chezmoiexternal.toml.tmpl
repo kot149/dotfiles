@@ -26,7 +26,10 @@ refreshPeriod = "168h"
      stripComponents drops the archive's top-level <repo>-<rev> directory plus the
      in-repo prefix, leaving SKILL.md at the root of the target directory.
      flat = true marks a repo that keeps SKILL.md directly under prefix (or at the
-     repo root when prefix is empty) instead of in a per-skill subdirectory. */}}
+     repo root when prefix is empty) instead of in a per-skill subdirectory.
+     Each entry in agents names a config dir: "agents" is the shared
+     ~/.agents/skills store (read natively by Codex and most other agents),
+     "claude" is ~/.claude/skills, which is Claude Code only. */}}
 {{- range $skill := .agent_skills }}
 {{- $flat := false }}
 {{- if hasKey $skill "flat" }}{{ $flat = $skill.flat }}{{ end }}
