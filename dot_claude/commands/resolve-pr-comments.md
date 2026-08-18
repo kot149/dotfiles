@@ -62,7 +62,20 @@ Step 4: **各スレッドを分析する** — 未resolveの各review threadに�
 
 Step 5: **対応済みスレッドをresolveする** — 対応済みと判断した各スレッドに対して:
 
-5a. 必要に応じて返信を残す(修正内容の簡潔な説明）:
+5a. スレッドの最新のレビュワーコメント(自分以外が書いたコメントのうち最新のもの)に 👍 リアクションをつける。対象のコメントIDはStep 2のクエリ結果から取得する:
+
+```bash
+gh api graphql -f query='
+mutation($subjectId: ID!) {
+  addReaction(input: {subjectId: $subjectId, content: THUMBS_UP}) {
+    reaction { content }
+  }
+}' -f subjectId="COMMENT_ID"
+```
+
+既に同じリアクションがついている場合はエラーになるので、その場合は無視して次に進む。
+
+5b. 必要に応じて返信を残す(修正内容の簡潔な説明）:
 ```bash
 gh api graphql -f query='
 mutation($threadId: ID!, $body: String!) {
@@ -72,7 +85,7 @@ mutation($threadId: ID!, $body: String!) {
 }' -f threadId="THREAD_ID" -f body="対応内容の説明"
 ```
 
-5b. スレッドをresolveする:
+5c. スレッドをresolveする:
 ```bash
 gh api graphql -f query='
 mutation($threadId: ID!) {
@@ -82,7 +95,8 @@ mutation($threadId: ID!) {
 }' -f threadId="THREAD_ID"
 ```
 
-返信のガイドライン:
+返信・リアクションのガイドライン:
+- **resolveするスレッドには必ず👍リアクションをつける** — 返信の有無に関わらず、対応済みであることの意思表示として付ける
 - **事実の報告のみ許可**: 返信には「何を変更したか」の事実だけを書く。「修正します」「対応します」など未実施の作業を約束する返信は禁止。
 - 単純な修正（typo、フォーマット等）で既にコードが修正済み: 返信なしでresolveのみ
 - コード変更を伴う修正で既にコードが修正済み: 何を変更したか1行で返信してからresolve
