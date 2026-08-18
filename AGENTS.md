@@ -127,7 +127,7 @@ Two Codex-specific details:
 Skills come from three places, and which one a skill belongs to decides where you edit it:
 
 1. **Self-authored, single agent** — checked in under `dot_claude/skills/<name>/SKILL.md` or `dot_codex/skills/<name>/SKILL.md`. Codex skills additionally carry `agents/openai.yaml` for their TUI interface metadata. Scripts shipped with a skill need the `executable_` prefix (e.g. `dot_claude/skills/keychain-credentials/scripts/executable_keychain-cred.sh`).
-2. **Self-authored, shared between agents** — body lives in `.chezmoitemplates/agents/skills/<name>.md` and each agent gets a one-line `{{ include ... }}` wrapper named `SKILL.md.tmpl`, same pattern as the shared hooks. A shared body must not depend on tooling only one agent has: where it wants `AskUserQuestion` (Claude-only), it also states the plain-text fallback, which is how `commit-message` stays identical for both agents. Skills built around Claude subagents (`Agent`), such as `deep-review` and `pr-review-brief`, stay Claude-only.
+2. **Self-authored, shared between agents** — body lives in `.chezmoitemplates/agents/skills/<name>.md` and each agent gets a one-line `{{ include ... }}` wrapper named `SKILL.md.tmpl`, same pattern as the shared hooks. A shared body must not depend on tooling only one agent has, and must not hardcode one agent's call syntax: where it wants `AskUserQuestion` (Claude-only), it also states the plain-text fallback, which is how `commit-message` stays identical for both agents. Skills written directly against Claude's `Agent` tool (`subagent_type: "Explore"`, parallel dispatch in one message), such as `deep-review`, `pr-review-brief`, and `meta-review`, stay Claude-only. Codex does have subagents (`spawn_agent`/`wait`/`close_agent`, gated by `features.multi_agent`, with roles defined in `[agents]` in `config.toml`), so the blocker is the incompatible call syntax, not a missing capability: sharing such a skill means rewriting its dispatch steps in agent-neutral terms first.
 3. **Third-party** — declared in `.chezmoidata.toml` as `[[agent_skills]]` and materialized by `.chezmoiexternal.toml.tmpl` as `type = "archive"` externals pulled from a pinned GitHub tarball. This is the cross-platform path: it works on Windows as-is (no symlinks, no Nix), unlike Home Manager, which is non-Windows only.
 
 Adding a third-party skill:
@@ -147,7 +147,7 @@ Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.codex/skills`). The templat
 
 Two things not managed here:
 
-- **Claude Code plugins** supply their own skills. The enabled `cloudflare@cloudflare` marketplace covers the whole `cloudflare/skills` set for Claude, so those are declared for `agents = ["codex"]` only — Codex has no plugin mechanism.
+- **Claude Code plugins** supply their own skills. The enabled `cloudflare@cloudflare` marketplace covers the whole `cloudflare/skills` set for Claude, so those are declared for `agents = ["codex"]` only. Codex has its own plugin system (`codex plugin add/list`, `codex plugin marketplace`) but it does not consume Claude Code marketplaces, so Codex gets those skills through `[[agent_skills]]` instead.
 - The **`skills` CLI** (`npx skills add`, vercel-labs) installs into `~/.agents/skills` and symlinks each agent directory at it, tracked in a per-machine `~/.agents/.skill-lock.json`. Use it to *discover* skills, then transcribe the pick into `[[agent_skills]]`. Do not run it against a skill already declared here: it would replace the external's directory with a symlink into `~/.agents/skills`.
 
 ## User-level agent instructions
