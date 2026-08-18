@@ -10,16 +10,16 @@ agent_panel_sort = "spaces"
 [keys]
 prefix = "f4"
 
-focus_pane_left = "alt+left"
-focus_pane_down = "alt+down"
-focus_pane_up = "alt+up"
-focus_pane_right = "alt+right"
+focus_pane_left = "ctrl+alt+left"
+focus_pane_down = "ctrl+alt+down"
+focus_pane_up = "ctrl+alt+up"
+focus_pane_right = "ctrl+alt+right"
 
-previous_tab = "alt+shift+left"
-next_tab = "alt+shift+right"
+previous_tab = "alt+left"
+next_tab = "alt+right"
 
-previous_workspace = "ctrl+alt+up"
-next_workspace = "ctrl+alt+down"
+previous_workspace = "alt+up"
+next_workspace = "alt+down"
 
 split_vertical = "prefix+slash"
 
