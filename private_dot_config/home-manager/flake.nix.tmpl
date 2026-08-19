@@ -12,10 +12,11 @@
     # cache.numtide.com is built against the pins in this flake, and its own
     # nixpkgs still supports x86_64-darwin, which it evaluates for all systems.
     llm-agents.url = "github:numtide/llm-agents.nix";
-    nixpkgs-terraform = {
-      url = "github:stackbuilders/nixpkgs-terraform";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # Deliberately not following nixpkgs: the terraform builds cached at
+    # nixpkgs-terraform.cachix.org are made against the pins in this flake, so
+    # overriding nixpkgs changes the store path and forces a local Go build of
+    # an unfree package that cache.nixos.org will never carry.
+    nixpkgs-terraform.url = "github:stackbuilders/nixpkgs-terraform";
     {{- if eq .chezmoi.os "linux" }}
     nixgl = {
       url = "github:guibou/nixGL";
