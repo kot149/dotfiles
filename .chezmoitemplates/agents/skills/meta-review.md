@@ -42,6 +42,16 @@ Whoever receives the feedback (the author of the code, or an agent that has alre
 
 To avoid this, judging is done by a **fresh subagent with no conversation history**. Pass only the finding text and the target file paths; never pass background such as "why it was written this way" or "who raised it". The verdict must rest solely on reading the actual files.
 
+### Exception: when you have no context to begin with
+
+What is required is a judgment free of those biases, not the subagent mechanism itself. If you (the orchestrator) genuinely hold none of the biasing context, you may judge the findings yourself and skip the subagents. That applies only when all of the following hold:
+
+- You did not write or edit the code under review in this conversation
+- You have not seen the reasoning behind either the code or the review in this conversation (no design discussion, no review you ran yourself)
+- The findings came from outside (pasted text, a GitHub PR, a file), not from a review produced earlier in this session
+
+If any of them fails (deep-review/codex-review ran earlier in this session, you made the changes, the user explained the intent behind the code), delegate to subagents as described. When judging yourself, follow the same required steps and verdict criteria as the judging prompt in step 3, always read the real files instead of judging from the finding text, and state in the final report that the verdicts were made in-context without subagents.
+
 ## Steps
 
 ### 1. Collect the findings to verify
@@ -61,6 +71,8 @@ Break each finding down into: `{id: sequence number, claim: what is claimed, fil
 Always assign `id` as `F1`, `F2`, ... . It is the only key for matching a judging subagent's output back to the original finding; never match by summary text. If one comment mixes several points, split it per point and give each its own id.
 
 ### 2. Split the judging subagents into batches
+
+Skip this step and step 3's delegation when the exception above applies; judge the findings yourself and go to step 4.
 
 Decide in this order; earlier rules win over later ones.
 
