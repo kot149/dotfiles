@@ -5,7 +5,7 @@ description: ブランチのコミット履歴を、レビューしやすい論�
 
 # reorganize-commits
 
-`origin/<BASE>..HEAD` の範囲にあるコミット履歴を、**レビューしやすい論理単位**へ整理し直すスキル。次の 3 種類の操作を組み合わせる。
+`<MB>..HEAD` の範囲にあるコミット履歴を、**レビューしやすい論理単位**へ整理し直すスキル。次の 3 種類の操作を組み合わせる。
 
 - **分割**: 1 コミットの変更が多すぎる / 複数の関心事が混ざっている場合、論理単位ごとに分ける
 - **統合**: 同じ関心事に対する修正の繰り返し (typo 修正、レビュー指摘対応、WIP) で細切れになっている場合、1 つにまとめる
@@ -20,7 +20,7 @@ description: ブランチのコミット履歴を、レビューしやすい論�
 ## 前提
 
 - 作業ディレクトリが Git リポジトリ配下であること
-- `gh` CLI が使用可能で認証済みであること (base ブランチ特定のため)
+- `origin` リモートが設定されていること (base をローカルで特定するため)。`gh` は base の判断が割れた場合の補助にのみ使う
 - 現在ブランチが保護ブランチ (`main` / `master` / `develop` など) でないこと
 - 未コミット変更が無いこと (ある場合は事前にユーザーと処理方針を合意する)
 - rebase / merge / cherry-pick が進行中でないこと
@@ -64,31 +64,22 @@ description: ブランチのコミット履歴を、レビューしやすい論�
 
 保護ブランチ上、detached HEAD、rebase/merge 進行中の場合は中断する。
 
-### 2. base ブランチを確定する
+### 2. マージ先ブランチ (base) と起点コミットを確定する
 
-```bash
-gh pr view --json baseRefName,headRefName,number,title,url
-```
+整理範囲を確定するため base ブランチと分岐点を決める。ローカルの情報だけで決まるので `gh` は必須にしない。
 
-- PR がある場合は `baseRefName` を採用
-- PR が無い場合は選択提示で確認 (候補: `main` / `master` / `develop`)
+{{ includeTemplate "agents/skills/_shared/git-base.md" . }}
 
-以降 `<BASE>` とする。
+`git rev-list --count "$MB"..HEAD` が 0 なら整理対象が無い旨を伝えて終了する。
 
-```bash
-git fetch origin <BASE>
-```
-
-`git rev-list --count origin/<BASE>..HEAD` が 0 なら整理対象が無い旨を伝えて終了する。
-
-**`origin/<BASE>` より前のコミットは絶対に触らない。**
+**`<MB>` より前のコミットは絶対に触らない。**
 
 ### 3. 現状を調査する
 
 ```bash
-git log --reverse --format='%h %s' origin/<BASE>..HEAD
-git log --stat --format='%h %s' origin/<BASE>..HEAD
-git diff origin/<BASE>...HEAD --stat
+git log --reverse --format='%h %s' <MB>..HEAD
+git log --stat --format='%h %s' <MB>..HEAD
+git diff "$MB" HEAD --stat
 ```
 
 コミット数が多い場合や個別の中身を見る必要がある場合:
@@ -102,7 +93,7 @@ git show -M -C <SHA>
 生成物の候補を洗い出す (リポジトリの実態に合わせてパターンは調整する):
 
 ```bash
-git diff origin/<BASE>...HEAD --name-only
+git diff "$MB" HEAD --name-only
 ```
 
 ### 4. 整理方針を立ててユーザー承認を得る
@@ -151,7 +142,7 @@ git branch "${BACKUP_BRANCH}"
 ### 6-A. 方式 A: 全面組み直し
 
 ```bash
-git reset --soft origin/<BASE>
+git reset --soft "$MB"
 git reset
 ```
 
@@ -234,14 +225,14 @@ HEAD_TREE=$(git rev-parse "HEAD^{tree}")
 - `TREE_MATCH` であれば成功
 - `TREE_MISMATCH` の場合は **ユーザーに即報告し、リカバリ方針を確認する**。自己判断で `git reset --hard "${BACKUP_BRANCH}"` などの破壊的操作をしない (ユーザーが承認すれば実行してよい)
 
-各コミットが単体でビルド・テストが通ることまでは検証しない。必要な場合は `git rebase --exec '<test command>' origin/<BASE>` をユーザーに案内する。
+各コミットが単体でビルド・テストが通ることまでは検証しない。必要な場合は `git rebase --exec '<test command>' "$MB"` をユーザーに案内する。
 
 ### 9. 結果報告
 
 以下をユーザーに伝える:
 
 - バックアップブランチ名 (`${BACKUP_BRANCH}`) と、そのまま残す旨 (削除は後日ユーザー判断)
-- 整理前後の履歴の対比 (`git log --oneline origin/<BASE>..${BACKUP_BRANCH}` と `git log --oneline origin/<BASE>..HEAD`)
+- 整理前後の履歴の対比 (`git log --oneline <MB>..${BACKUP_BRANCH}` と `git log --oneline <MB>..HEAD`)
 - ツリー差分検証の結果 (MATCH / MISMATCH)
 - force push が必要な旨、および **AI は force push しない** こと (`git push --force-with-lease origin HEAD` はユーザーが実行)
 - リカバリ方法 (`git reset --hard "${BACKUP_BRANCH}"`)
@@ -259,7 +250,8 @@ git branch -D "${BACKUP_BRANCH}"
 - **バックアップブランチ作成は省略しない。** Step 5 を飛ばして書き換えに進むことは絶対にしない
 - **ツリー差分検証は省略しない。** Step 8 の `TREE_MATCH` を確認せずに完了報告しない
 - **保護ブランチ上では実行しない**
-- **`origin/<BASE>` より前のコミットは触らない**
+- **`<MB>` より前のコミットは触らない**
+- **base の取り込みはこのスキルでは行わない。** 起点は常に merge-base (`<MB>`) に固定し、履歴の整理以外の変化を起こさない
 - **コンフリクト時に勝手に `--abort` / `--skip` しない。** ユーザー判断を仰ぐ
 - **hunk 単位の複雑な分割は AI が自動化しない。** ユーザーに `git add -p` を委ねる
 - **`git add -A` / `git add .` は使わない**

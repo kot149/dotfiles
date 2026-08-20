@@ -52,57 +52,18 @@ description: 現在の未コミット変更を、既存の適切なコミット�
 
 現在ブランチが `main` / `master` / `develop` などの保護ブランチである場合は中断してユーザーに確認する。
 
-### 2. マージ先ブランチ (base) を確定する
+### 2. マージ先ブランチ (base) と起点コミットを確定する
 
-fixup 対象にできるコミット範囲を確定するため base ブランチを決める。ローカルの情報だけで決まるので `gh` は必須にしない。
+fixup 対象にできるコミット範囲を確定するため base ブランチと分岐点を決める。ローカルの情報だけで決まるので `gh` は必須にしない。
 
-#### 2-1. リモート追跡refを最新化する
+{{ includeTemplate "agents/skills/_shared/git-base.md" . }}
 
-```bash
-git fetch --prune origin
-```
-
-#### 2-2. デフォルトブランチを取得する
-
-```bash
-git rev-parse --abbrev-ref origin/HEAD
-```
-
-`origin/HEAD` が未設定で失敗する場合は `git remote set-head origin -a` を実行してから再取得する。
-
-#### 2-3. merge-base が最も近いリモートブランチを求める
-
-stacked ブランチ (base が `main` ではなく別の feature ブランチ) を拾うため、候補ごとに HEAD からの距離を測る。現在ブランチ自身の追跡ref は候補から除外する。
-
-```bash
-CUR=$(git rev-parse --abbrev-ref HEAD)
-UP=$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)
-for r in $(git for-each-ref --format='%(refname:short)' --exclude=refs/remotes/origin/HEAD refs/remotes/origin/); do
-  [ "$r" = "origin/$CUR" ] && continue
-  [ "$r" = "$UP" ] && continue
-  mb=$(git merge-base HEAD "$r" 2>/dev/null) || continue
-  [ "$mb" = "$(git rev-parse HEAD)" ] && continue
-  echo "$(git rev-list --count "$mb"..HEAD) $r"
-done | sort -n | head -5
-```
-
-先頭 (HEAD までの距離が最小) が base の最有力候補。
-
-#### 2-4. 確定させる
-
-- ユーザーが base を明示している場合はそれを採用し、2-2 / 2-3 は検証にだけ使う
-- 2-2 と 2-3 の結果が一致すればそれを `<BASE>` として確定する
-- 食い違う場合、または 2-3 で同距離の候補が複数並ぶ場合のみ判断材料を増やす:
-  - `gh` が使えるなら `gh pr view --json baseRefName,headRefName,number,title,url` の `baseRefName` を優先する。PR の base は宣言された正解なので、ローカルのヒューリスティックより信頼できる
-  - `gh` が使えない / PR が無い場合は候補を選択提示してユーザーに選ばせる
-- どの経路で決めた場合も、確定した base と根拠 (デフォルトブランチ / merge-base 距離 / PR) を計画提示時に明記する
-
-`git merge-base --fork-point` は reflog 依存で、clone し直した環境や別マシンでは空振りするため確定の根拠には使わない。
+fixup 対象の範囲は `<MB>..HEAD` (= `<MB>..HEAD`) とする。
 
 ### 3. fixup 対象コミットの候補を取得する
 
 ```bash
-git log --oneline origin/<BASE>..HEAD
+git log --oneline <MB>..HEAD
 ```
 
 これがブランチ上で fixup 可能なコミット群。既に `fixup!` / `squash!` プレフィックスが付いたコミットは fixup 対象から除外する (それらはさらに元のコミットに紐づいているため)。
@@ -126,7 +87,7 @@ git log --oneline origin/<BASE>..HEAD
 各変更ファイルについて:
 
 ```bash
-git log --oneline origin/<BASE>..HEAD -- <FILE>
+git log --oneline <MB>..HEAD -- <FILE>
 ```
 
 このファイルを触っている候補コミットを列挙する。1件しか無ければ、そのコミットが第一候補。
@@ -145,7 +106,7 @@ git diff [--cached] -U0 <FILE>
 git blame -L <start>,<end> HEAD -- <FILE>
 ```
 
-で確認する。blame 結果のコミット SHA が `origin/<BASE>..HEAD` の範囲内なら、それが fixup 先の最有力候補。範囲外 (base より前のコミット) なら、そのファイルを触っている最新のブランチ内コミットへ fixup する提案に切り替える。
+で確認する。blame 結果のコミット SHA が `<MB>..HEAD` の範囲内なら、それが fixup 先の最有力候補。範囲外 (base より前のコミット) なら、そのファイルを触っている最新のブランチ内コミットへ fixup する提案に切り替える。
 
 **新規追加行のみの hunk** は blame で辿れないので、4-1 のファイル単位候補から選ぶ。
 
@@ -180,7 +141,7 @@ git blame -L <start>,<end> HEAD -- <FILE>
 [2] fixup → <sha2> fix: handle empty payload
     - src/api/handler.ts の hunk @@ -42,7 +42,10 @@ のみ
 
-base: origin/<BASE>
+base: origin/<BASE> (起点: <MB> = ブランチ分岐時点のコミット)
 作成後、履歴を実際にまとめるには別途 autosquash が必要です。
 実行してよろしいですか?
 ```
@@ -188,7 +149,7 @@ base: origin/<BASE>
 `--autosquash` 指定時は末尾を次に差し替える:
 
 ```
-base: origin/<BASE>
+base: origin/<BASE> (起点: <MB> = ブランチ分岐時点のコミット)
 fixup コミットを積んだ後、続けて autosquash で履歴をまとめます (SHA が変わり force push が必要になります)。
 実行してよろしいですか?
 ```
@@ -296,7 +257,7 @@ git branch backup/fixup-$(date +%Y%m%d-%H%M%S)
 ### 8. 結果を確認する
 
 ```bash
-git log --oneline origin/<BASE>..HEAD
+git log --oneline <MB>..HEAD
 git status --short
 ```
 
@@ -326,7 +287,7 @@ git status --short
 
 方式 B の場合:
 
-- 書き換え後の `git log --oneline origin/<BASE>..HEAD`
+- 書き換え後の `git log --oneline <MB>..HEAD`
 - バックアップブランチ名と元の HEAD SHA (復旧用)
 - SHA が変わったので push には `git push --force-with-lease` が必要な旨。**push はユーザーの責務であり、このスキルでは行わない**
 - 問題なければバックアップブランチはユーザー自身で削除してよい旨
@@ -337,16 +298,16 @@ git status --short
 
 autosquash が途中で失敗した場合 (コンフリクト等) は、autosquash スキル側の失敗時手順に従う。**fixup コミット自体は既に作成済みなので、勝手に取り消さない。**
 
-完了後は autosquash 後の `git log --oneline origin/<BASE>..HEAD` と、force push が必要な旨を報告する。**push はこのスキルでは行わない。**
+完了後は autosquash 後の `git log --oneline <MB>..HEAD` と、force push が必要な旨を報告する。**push はこのスキルでは行わない。**
 
 ## 注意事項
 
 - **保護ブランチ上では実行しない。** 現在ブランチが `main` / `master` / `develop` などの場合は中断する。
-- **base より前のコミットには fixup しない。** origin/<BASE>..HEAD の範囲外は他人の履歴なので触らない。範囲外にしか帰属先が無い変更は、通常のコミットにするようユーザーに提案する。
+- **base より前のコミットには fixup しない。** <MB>..HEAD の範囲外は他人の履歴なので触らない。範囲外にしか帰属先が無い変更は、通常のコミットにするようユーザーに提案する。
 - **既存の `fixup!` / `squash!` コミットには fixup しない。** それらはさらに元のコミットへ紐づいているため、二重 fixup は混乱の元。
 - **hunk 単位の複雑な分割は AI 側で自動化しない。** 誤って別の hunk を巻き込むリスクが高いので、ユーザーに `git add -p` を委ねる。
 - **`git add -A` / `git add .` は使わない。** 常にファイルを明示指定する (`.env` などの誤コミット防止)。
 - **force push はしない。** autosquash 後 / 履歴書き換え後の push はユーザーの責務。
-- **方式 B は履歴を破壊的に書き換える。** 実行前に必ずバックアップブランチを作り、`--dry-run` で確認する。マージコミットを含む履歴では使えないので、`git log --merges origin/<BASE>..HEAD` にヒットする場合は方式 A に切り替える。
+- **方式 B は履歴を破壊的に書き換える。** 実行前に必ずバックアップブランチを作り、`--dry-run` で確認する。マージコミットを含む履歴では使えないので、`git log --merges <MB>..HEAD` にヒットする場合は方式 A に切り替える。
 - **方式 B では `--update-refs=head` を既定で使う。** 既定値の `--update-refs=branches` だと、B-1 で作成したバックアップブランチが対象コミットと同じ SHA を指しているため、バックアップごと書き換わってしまい復旧不能になる。バックアップを保護するため常に `--update-refs=head` を指定する。
 - 帰属先が本当にわからない変更は「新規コミットにする」選択肢を必ず残す。無理に既存コミットへ紛れ込ませない。
