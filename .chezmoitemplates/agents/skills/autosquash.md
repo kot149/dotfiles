@@ -77,10 +77,21 @@ done | sort -n | head -5
 
 rebase の起点を誤ると base 側のコミットまで書き換えてしまうため、base の確定に自信が持てない場合は 4. の承認時に必ずその旨を伝える。
 
+#### 2-5. rebase の起点は base の先端ではなく merge-base にする
+
+`origin/<BASE>` の先端を起点にすると、ブランチを切った後に進んだ base 側のコミットまで取り込まれてしまい、純粋な fixup の折りたたみではなくなる。autosquash はコミットのまとめだけを行うべきなので、**起点はブランチが分岐した時点のコミット (merge-base) に固定する**。
+
+```bash
+MB=$(git merge-base HEAD origin/<BASE>)
+echo "$MB"
+```
+
+以降の手順ではこの `<MB>` を起点として使う。`<MB>` が `origin/<BASE>` の先端と一致しない場合 (base が先に進んでいる場合)、base の取り込みはこのスキルの担当外であり、必要ならユーザーが別途 rebase する旨を 4. の承認依頼で伝える。
+
 ### 3. fixup!/squash! コミットの有無を確認する
 
 ```bash
-git log --oneline origin/<BASE>..HEAD
+git log --oneline <MB>..HEAD
 ```
 
 このリスト内に `fixup!` / `squash!` プレフィックスのコミットが存在するかを確認する。1件も無い場合は「autosquash 対象のコミットはありません」と報告して終了する。
@@ -94,7 +105,7 @@ autosquash によってどのコミットがどこにまとめられるかを、
 以下のコミットを autosquash で以下のようにまとめます:
 - <sha> fixup! feat: add X → <sha> feat: add X に統合
 - <sha> squash! fix: Y → <sha> fix: Y に統合
-base: origin/<BASE>
+base: origin/<BASE> (起点: <MB> = ブランチ分岐時点のコミット)
 実行してよろしいですか?
 ```
 
@@ -103,16 +114,17 @@ base: origin/<BASE>
 承認後、エディタを開かず非対話で autosquash する:
 
 ```bash
-GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash origin/<BASE>
+GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash "$MB"
 ```
 
 - `GIT_SEQUENCE_EDITOR=:` により todo リストは編集せずそのまま採用される (autosquash による並び替え・fixup 指定を活かす)。
+- 起点は 2-5 で求めた merge-base であること。`origin/<BASE>` を直接渡すと base 側の更新まで取り込まれてしまうので使わない。
 - コンフリクトが発生した場合は rebase を中断せず状況をユーザーに報告し、`git rebase --abort` するか手動解決するかを確認する。**勝手に `--abort` しない。**
 
 ### 6. 結果を確認する
 
 ```bash
-git log --oneline origin/<BASE>..HEAD
+git log --oneline <MB>..HEAD
 ```
 
 fixup!/squash! コミットが消えて、対応する元コミットにまとまっていることを確認する。
@@ -134,3 +146,4 @@ autosquash 完了時にユーザーへ以下を伝えるだけに留める:
 - **他人が作業している共有ブランチには実行しない。** rebase 対象は自ブランチのみ。
 - コンフリクト時に destructive な回復 (`--abort`, `reset --hard`) を勝手に実行しない。
 - `--no-verify` などフック無効化フラグは使わない。
+- **base の取り込み (base 側の新しいコミットを HEAD に載せること) はこのスキルでは行わない。** 起点は常に merge-base に固定し、fixup の折りたたみ以外の履歴変化を起こさない。
