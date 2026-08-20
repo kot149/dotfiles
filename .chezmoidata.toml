@@ -936,6 +936,13 @@ names = [
 ]
 agents = ["claude", "agents"]
 
+[[agent_skills]]
+repo = "mattpocock/skills"
+rev = "885e2ca4d842d139e9aef4e48d366c63cb1b8013"
+prefix = "skills/productivity"
+names = ["grill-me", "grilling"]
+agents = ["claude", "agents"]
+
 # SKILL.md sits at the repo root, so there is no per-skill subdirectory.
 [[agent_skills]]
 repo = "luchasarie/bro-skill"
