@@ -10,8 +10,8 @@ if [ "${#cwd}" -gt "$max_cwd" ]; then
   cwd="...${cwd: -$(( max_cwd - 3 ))}"
 fi
 model=$(echo "$input" | jq -r '.model.display_name // .model.id // ""')
+model_id=$(echo "$input" | jq -r '.model.id // ""')
 ctx_pct=$(echo "$input" | jq -r '(.context_window.used_percentage // 0) + 0.5 | floor')
-
 RATE_CACHE="$HOME/.claude/statusline-rate-cache.json"
 MODE_CACHE="$HOME/.claude/statusline-mode-cache"
 
@@ -30,14 +30,24 @@ total_cost=$(echo "$input" | jq -r '.cost.total_cost_usd // ""')
 # must take precedence to avoid falsely showing 💰$x.xx for subscription users.
 # Priority:
 #   1) CLAUDE_CODE_USE_VERTEX / CLAUDE_CODE_USE_BEDROCK env (cloud usage-billed) → api
-#   2) subscription rate_limits present → subscription
-#   3) ANTHROPIC_API_KEY env var → api
-#   4) mode cache
-#   5) .cost.total_cost_usd is a number → api (last-resort heuristic)
+#   2) local ANTHROPIC_BASE_URL → api
+#   3) subscription rate_limits present → subscription
+#   4) ANTHROPIC_API_KEY env var → api
+#   5) mode cache
+#   6) .cost.total_cost_usd is a number → api (last-resort heuristic)
 _cost_is_num=$(echo "$input" | jq -r '(.cost.total_cost_usd | type) == "number"')
 _has_sub_limits=$(echo "$input" | jq -r '(.rate_limits != null) and ((.rate_limits.five_hour.used_percentage | type) == "number")')
 _use_vertex="${CLAUDE_CODE_USE_VERTEX:-${ANTHROPIC_VERTEX_PROJECT_ID:-}}"
 _use_bedrock="${CLAUDE_CODE_USE_BEDROCK:-}"
+_is_local_proxy="false"
+case "${ANTHROPIC_BASE_URL:-}" in
+  http://127.0.0.1|http://127.0.0.1:*|https://127.0.0.1|https://127.0.0.1:*|http://localhost|http://localhost:*|https://localhost|https://localhost:*|http://\[::1\]|http://\[::1\]:*|https://\[::1\]|https://\[::1\]:*)
+    _is_local_proxy="true"
+    ;;
+esac
+case "$model_id $model" in
+  *gpt-5.6-sol*|*gpt-5.6-luna*) _is_local_proxy="true" ;;
+esac
 
 if [ -n "$_use_vertex" ] && [ "$_use_vertex" != "0" ] && [ "$_use_vertex" != "false" ]; then
   is_api_mode="true"
@@ -46,6 +56,10 @@ if [ -n "$_use_vertex" ] && [ "$_use_vertex" != "0" ] && [ "$_use_vertex" != "fa
 elif [ -n "$_use_bedrock" ] && [ "$_use_bedrock" != "0" ] && [ "$_use_bedrock" != "false" ]; then
   is_api_mode="true"
   cloud_provider="bedrock"
+  echo "api" > "$MODE_CACHE"
+elif [ "$_is_local_proxy" = "true" ]; then
+  is_api_mode="true"
+  cloud_provider="proxy"
   echo "api" > "$MODE_CACHE"
 elif [ "$_has_sub_limits" = "true" ]; then
   is_api_mode="false"
@@ -61,6 +75,18 @@ elif [ "$_cost_is_num" = "true" ]; then
   echo "api" > "$MODE_CACHE"
 else
   is_api_mode="false"
+fi
+
+codex_weekly_available="false"
+if [ "$_is_local_proxy" = "true" ] && [ -f "$HOME/.claude/codex-weekly-limit.py" ]; then
+  _python_bin=$(command -v python || command -v python3 || true)
+  if [ -n "$_python_bin" ]; then
+    _codex_weekly_pct=$("$_python_bin" "$HOME/.claude/codex-weekly-limit.py" 2>/dev/null || true)
+    case "$_codex_weekly_pct" in
+      ''|*[!0-9]*) ;;
+      *) seven_pct="$_codex_weekly_pct"; seven_reset=""; codex_weekly_available="true" ;;
+    esac
+  fi
 fi
 
 # Update rate limit cache (subscription mode only)
@@ -131,16 +157,25 @@ if [ "$is_api_mode" = false ] && [ -n "$five_pct" ] && [ -n "$five_reset" ] && [
   five_str="5h: ${five_pct}% (⏱ $(fmt_hm $remaining))"
 fi
 
-# 7d rate limit remaining
+# Weekly rate limit usage
 seven_str=""
-if [ "$is_api_mode" = false ] && [ -n "$seven_pct" ] && [ -n "$seven_reset" ] && [ "$seven_reset" != "null" ]; then
-  remaining=$(( seven_reset - now_epoch ))
-  seven_str="7d: ${seven_pct}% (⏱ $(fmt_dhm $remaining))"
+if [ "$_is_local_proxy" = "true" ]; then
+  if [ "$codex_weekly_available" = "true" ]; then
+    seven_str="Codex weekly: ${seven_pct}%"
+  else
+    seven_str="Codex weekly: N/A"
+  fi
+elif [ -n "$seven_pct" ]; then
+  seven_str="weekly: ${seven_pct}%"
+  if [ -n "$seven_reset" ] && [ "$seven_reset" != "null" ]; then
+    remaining=$(( seven_reset - now_epoch ))
+    seven_str="$seven_str (⏱ $(fmt_dhm $remaining))"
+  fi
 fi
 
 # API billing cost display (direct API / Vertex AI / Bedrock)
 cost_str=""
-if [ "$is_api_mode" = true ]; then
+if [ "$is_api_mode" = true ] && [ "${cloud_provider:-}" != "proxy" ]; then
   case "${cloud_provider:-}" in
     vertex)  provider_label="☁ Vertex" ;;
     bedrock) provider_label="☁ Bedrock" ;;
