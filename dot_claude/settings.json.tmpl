@@ -98,6 +98,15 @@
             "command": "bash ~/.claude/hooks/check-commit-sha-links.sh"
           }
         ]
+      },
+      {
+        "matcher": "Bash|Write|Edit|mcp__.*(?i:jira|confluence|atlassian).*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/check-writing-style.py"
+          }
+        ]
       }
     ]
   },
