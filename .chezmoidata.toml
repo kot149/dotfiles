@@ -959,6 +959,15 @@ prefix = "skills"
 names = ["install-anti-slop"]
 agents = ["claude", "agents"]
 
+# The skill drives the separate `suiko` CLI; without it the skill falls back to
+# its bundled manual checklist.
+[[agent_skills]]
+repo = "nwiizo/suiko"
+rev = "3651215fee9409afe016de8d8347c442e1b5c88d"
+prefix = "skills"
+names = ["suiko"]
+agents = ["claude", "agents"]
+
 # Claude Code gets these from the enabled cloudflare@cloudflare plugin, so only
 # the shared store (read by Codex, which has no Claude Code plugin mechanism)
 # needs them materialized.
