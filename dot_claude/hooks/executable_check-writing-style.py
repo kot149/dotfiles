@@ -5,8 +5,8 @@
 # ///
 """Block Claude-flavored Japanese phrasing before it lands in a document, a ticket, or a PR.
 
-Covers Markdown writes, Jira / Confluence create-update-comment calls, and the
-`gh` commands that post issue / PR / release bodies and comments.
+Covers Markdown and plain-text writes, Jira / Confluence create-update-comment
+calls, and the `gh` commands that post issue / PR / release bodies and comments.
 
 Prose is located with a Markdown parser and matched with a morphological
 analyser, so conjugation, compounds and code blocks are decided by the parsers
@@ -45,7 +45,7 @@ PIN_ADVICE = (
     " (例: 「テストが仕様をpinする」→「テストが仕様を固定し、変わったら落ちるようにする」)"
 )
 
-MARKDOWN_SUFFIXES = (".md", ".markdown", ".mdx")
+PROSE_SUFFIXES = (".md", ".markdown", ".mdx", ".txt")
 
 GH_SUBCOMMAND = re.compile(
     r"\bgh\s+(?:pr|issue|release)\s+"
@@ -118,7 +118,7 @@ def target_texts(tool_name, tool_input, cwd):
 
     if tool_name in ("Write", "Edit"):
         path = tool_input.get("file_path", "")
-        if not path.lower().endswith(MARKDOWN_SUFFIXES):
+        if not path.lower().endswith(PROSE_SUFFIXES):
             return []
         text = tool_input.get("content") or tool_input.get("new_string") or ""
         return [text] if text else []
