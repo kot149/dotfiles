@@ -8,17 +8,23 @@
 Covers Markdown and plain-text writes, Jira / Confluence create-update-comment
 calls, and the `gh` commands that post issue / PR / release bodies and comments.
 
+Every hit is denied rather than handed to the permission prompt, so the advice
+always reaches the model. Repeating the identical call is the way to override a
+hit that is a false positive or a deliberate choice.
+
 Prose is located with a Markdown parser and matched with a morphological
 analyser, so conjugation, compounds and code blocks are decided by the parsers
 instead of by hand-written patterns. Both are imported lazily, so a call that is
 out of scope never pays for them.
 """
 
+import hashlib
 import json
 import os
 import re
 import shlex
 import sys
+import time
 
 # Matched on the dictionary form of a token tagged as a verb, so every
 # conjugation is covered and same-kanji nouns (採用, 転倒) are not.
@@ -196,6 +202,46 @@ def find_issues(texts):
     return findings
 
 
+# A denied call arms a one-shot pass keyed on its exact content, so repeating the
+# same call goes through. That keeps the advice reaching the model on the first
+# try while leaving a way past a false positive.
+OVERRIDE_DIR = os.path.expanduser("~/.cache/claude-writing-style")
+OVERRIDE_TTL = 600
+
+
+def override_key(session_id, tool_name, texts):
+    digest = hashlib.sha256()
+    for part in [session_id, tool_name] + list(texts):
+        digest.update(part.encode("utf-8", "replace") + b"\0")
+    return digest.hexdigest()
+
+
+def consume_override(key):
+    """True when this exact call was denied a moment ago, so it is a deliberate retry."""
+    path = os.path.join(OVERRIDE_DIR, key)
+    try:
+        fresh = time.time() - os.path.getmtime(path) < OVERRIDE_TTL
+        os.remove(path)
+        return fresh
+    except OSError:
+        return False
+
+
+def arm_override(key):
+    try:
+        os.makedirs(OVERRIDE_DIR, exist_ok=True)
+        for name in os.listdir(OVERRIDE_DIR):
+            stale = os.path.join(OVERRIDE_DIR, name)
+            try:
+                if time.time() - os.path.getmtime(stale) >= OVERRIDE_TTL:
+                    os.remove(stale)
+            except OSError:
+                continue
+        open(os.path.join(OVERRIDE_DIR, key), "w").close()
+    except OSError:
+        pass
+
+
 def decide(decision, reason):
     print(
         json.dumps(
@@ -240,16 +286,23 @@ def main():
 
     print(reason, file=sys.stderr)
 
-    if tool_name == "Bash":
-        command = tool_input.get("command", "")
-        if os.environ.get("FORCE_STYLE") == "1" or "FORCE_STYLE=1" in command:
-            return
-        decide(
-            "deny",
-            reason + "\n誤検知の場合は FORCE_STYLE=1 をコマンド先頭に付けて再実行してください。",
-        )
+    key = override_key(payload.get("session_id") or "", tool_name, texts)
+    if consume_override(key):
+        return
 
-    decide("ask", reason + "\n意図した表現であればそのまま承認してください。")
+    command = tool_input.get("command", "") if tool_name == "Bash" else ""
+    if os.environ.get("FORCE_STYLE") == "1" or "FORCE_STYLE=1" in command:
+        return
+
+    arm_override(key)
+    hint = (
+        "\n表現を直して実行し直してください。"
+        "指摘が誤検知、または意図した表現である場合に限り、"
+        "同じ内容のまま同じ操作をもう一度実行すれば通過します。"
+    )
+    if tool_name == "Bash":
+        hint += "\nコマンド先頭に FORCE_STYLE=1 を付けても通過します。"
+    decide("deny", reason + hint)
 
 
 if __name__ == "__main__":
