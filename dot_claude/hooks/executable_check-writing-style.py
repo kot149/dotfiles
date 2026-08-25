@@ -1,8 +1,17 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.9"
+# dependencies = ["fugashi[unidic-lite]", "markdown-it-py"]
+# ///
 """Block Claude-flavored Japanese phrasing before it lands in a document, a ticket, or a PR.
 
 Covers Markdown writes, Jira / Confluence create-update-comment calls, and the
 `gh` commands that post issue / PR / release bodies and comments.
+
+Prose is located with a Markdown parser and matched with a morphological
+analyser, so conjugation, compounds and code blocks are decided by the parsers
+instead of by hand-written patterns. Both are imported lazily, so a call that is
+out of scope never pays for them.
 """
 
 import json
@@ -11,43 +20,30 @@ import re
 import shlex
 import sys
 
-# Each rule is (id, pattern, what to write instead).
-RULES = [
-    (
-        "yoseru",
-        re.compile(r"寄せ(?:る|て|た|ます|れば|ない|られ|よう)"),
-        "「寄せる」→ 何をどの形に合わせるのかを具体的に書く"
-        " (例: 「公開語彙に寄せる」→「公開語彙と同じ invalid_date_value を使う」)",
-    ),
-    (
-        "taosu",
-        re.compile(r"倒(?:す|し(?:て|た|ます|とく))"),
-        "「〜に倒す」→ どちらの値や挙動を選ぶのかを具体的に書く"
-        " (例: 「安全側に倒す」→「判定材料が取れないときは拒否する」)",
-    ),
-    (
-        "test-color",
-        re.compile(
-            r"(?:緑|グリーン|(?<!ス)レッド|赤)(?:く|に|の|を)?"
-            r"(?:なる|なっ|なり|まま|返す|保つ|維持)"
-        ),
-        "テストの赤/緑 → 「テストが通る/成功する」「テストが落ちる/失敗する」と書く"
-        " (例: 「全テストが緑のまま」→「全テストが通ったままで、退行を検出できない」)",
-    ),
-    (
-        "toru",
-        re.compile(r"採(?:る|っ(?:て|た)|り(?:ます|方)|れ(?:ば|る)|らない|ろう)"),
-        "「採る」→「採用する」と書く"
-        " (例: 「この方式を採る」→「この方式を採用する」)",
-    ),
-    (
-        "pin",
-        re.compile(r"(?:[Pp]in|ピン)(?:留め|止め)?(?:する|して|した|され|しま)"),
-        "「pinする/される」→「固定する/される」と書く"
-        " (例: 「テストが仕様をpinする」→「テストが仕様を固定し、変わったら落ちるようにする」)",
-    ),
-]
+# Matched on the dictionary form of a token tagged as a verb, so every
+# conjugation is covered and same-kanji nouns (採用, 転倒) are not.
+VERB_RULES = {
+    "寄せる": "「寄せる」→ 何をどの形に合わせるのかを具体的に書く"
+    " (例: 「公開語彙に寄せる」→「公開語彙と同じ invalid_date_value を使う」)",
+    "倒す": "「〜に倒す」→ どちらの値や挙動を選ぶのかを具体的に書く"
+    " (例: 「安全側に倒す」→「判定材料が取れないときは拒否する」)",
+    "採る": "「採る」→「採用する」と書く"
+    " (例: 「この方式を採る」→「この方式を採用する」)",
+}
 
+COLOR_BASES = {"緑", "赤", "赤い", "グリーン", "レッド"}
+COLOR_TAILS = {"なる", "まま", "返す", "保つ", "維持"}
+# Allows one intervening particle between the colour and the predicate.
+COLOR_WINDOW = 2
+COLOR_ADVICE = (
+    "テストの赤/緑 → 「テストが通る/成功する」「テストが落ちる/失敗する」と書く"
+    " (例: 「全テストが緑のまま」→「全テストが通ったままで、退行を検出できない」)"
+)
+
+PIN_ADVICE = (
+    "「pinする/される」→「固定する/される」と書く"
+    " (例: 「テストが仕様をpinする」→「テストが仕様を固定し、変わったら落ちるようにする」)"
+)
 
 MARKDOWN_SUFFIXES = (".md", ".markdown", ".mdx")
 
@@ -64,9 +60,11 @@ GH_API_WRITE = re.compile(
 MCP_ATLASSIAN = re.compile(r"(?i)^mcp__.*(?:jira|confluence|atlassian)")
 MCP_WRITE_OP = re.compile(r"(?i)(?:create|edit|update|add|post|comment)")
 
-FENCE = re.compile(r"^\s*(?:```|~~~)")
-CODE_SPAN = re.compile(r"`[^`\n]+`")
 URL = re.compile(r"\b(?:https?|git|ssh)://\S+")
+
+# Inline nodes that are not prose; they cut the surrounding text in two so that
+# neighbouring characters are never analysed as one word.
+BREAKING_INLINE = {"code_inline", "image", "html_inline", "softbreak", "hardbreak"}
 
 FILE_FLAGS = ("--body-file", "-F", "--input")
 
@@ -131,34 +129,70 @@ def target_texts(tool_name, tool_input, cwd):
     return []
 
 
-def strip_code(text):
-    """Blank out fenced blocks, code spans and URLs; phrasing rules do not apply there."""
-    lines, in_fence = [], False
-    for line in text.split("\n"):
-        if FENCE.match(line):
-            in_fence = not in_fence
-            lines.append("")
+def prose_segments(text):
+    """Split text into prose runs, dropping code blocks, code spans, link targets and URLs."""
+    from markdown_it import MarkdownIt
+
+    segments = []
+    for token in MarkdownIt("commonmark").parse(text):
+        if token.type != "inline":
             continue
-        lines.append("" if in_fence else line)
-    stripped = "\n".join(lines)
-    stripped = CODE_SPAN.sub(lambda m: " " * len(m.group(0)), stripped)
-    return URL.sub(lambda m: " " * len(m.group(0)), stripped)
+        prose = "".join(
+            child.content
+            if child.type == "text"
+            else "\n"
+            if child.type in BREAKING_INLINE
+            else ""
+            for child in token.children or []
+        )
+        for run in prose.split("\n"):
+            run = URL.sub(" ", run).strip()
+            if run:
+                segments.append(run)
+    return segments
+
+
+def dictionary_form(token):
+    return token.feature.orthBase or token.surface
+
+
+def is_pin(tokens, i):
+    following = dictionary_form(tokens[i + 1]) if i + 1 < len(tokens) else ""
+    if tokens[i].surface.lower() == "pin":
+        return following == "する"
+    if tokens[i].surface == "ピン":
+        return following in ("留める", "止める")
+    return False
+
+
+def find_matches(tokens):
+    """Yield (rule id, surface, advice) for every token that trips a rule."""
+    for i, token in enumerate(tokens):
+        form = dictionary_form(token)
+        part = token.feature.pos1
+        if part == "動詞" and form in VERB_RULES:
+            yield form, token.surface, VERB_RULES[form]
+        elif form in COLOR_BASES and part in ("名詞", "形容詞"):
+            window = tokens[i + 1 : i + 1 + COLOR_WINDOW]
+            if any(dictionary_form(t) in COLOR_TAILS for t in window):
+                yield "color", token.surface, COLOR_ADVICE
+        elif is_pin(tokens, i):
+            yield "pin", token.surface, PIN_ADVICE
 
 
 def find_issues(texts):
+    from fugashi import Tagger
+
+    tagger = Tagger()
     findings, seen = [], set()
     for text in texts:
-        scannable = strip_code(text)
-        for rule_id, pattern, advice in RULES:
-            for m in pattern.finditer(scannable):
-                line_start = scannable.rfind("\n", 0, m.start()) + 1
-                line_end = scannable.find("\n", m.end())
-                line = scannable[line_start : line_end if line_end != -1 else None].strip()
-                key = (rule_id, m.group(0), line)
+        for segment in prose_segments(text):
+            for rule_id, surface, advice in find_matches(list(tagger(segment))):
+                key = (rule_id, surface, segment)
                 if key in seen:
                     continue
                 seen.add(key)
-                findings.append((m.group(0), line[:120], advice))
+                findings.append((surface, segment[:120], advice))
     return findings
 
 
