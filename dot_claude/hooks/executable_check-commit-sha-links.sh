@@ -38,31 +38,32 @@ def is_target(cmd):
 if not is_target(command):
     sys.exit(0)
 
-FILE_FLAGS = ("--body-file", "-F", "--input")
+MAX_BODY_BYTES = 1 << 20
 
 def read_body_files(cmd):
-    """Pull in bodies passed by path. Heredocs break shlex, so failures are ignored."""
+    """Pull in bodies passed by path.
+
+    Any word that names an existing file is read, not just the one after a body
+    flag: a body is just as often piped in (`jq ... file.md | gh api --input -`),
+    and there the path only appears upstream of the pipe. Heredocs break shlex,
+    so failures are ignored.
+    """
     try:
         words = shlex.split(cmd, comments=False)
     except ValueError:
         return []
 
     texts = []
-    for flag in FILE_FLAGS:
-        for i, word in enumerate(words):
-            path = None
-            if word == flag and i + 1 < len(words):
-                path = words[i + 1]
-            elif word.startswith(flag + "="):
-                path = word[len(flag) + 1 :]
-            if not path or path == "-":
+    for word in words:
+        path = word.split("=", 1)[1] if word.startswith("-") and "=" in word else word
+        path = os.path.join(cwd, os.path.expanduser(path))
+        try:
+            if not os.path.isfile(path) or os.path.getsize(path) > MAX_BODY_BYTES:
                 continue
-            path = os.path.join(cwd, os.path.expanduser(path))
-            try:
-                with open(path, encoding="utf-8", errors="replace") as f:
-                    texts.append(f.read())
-            except OSError:
-                continue
+            with open(path, encoding="utf-8", errors="replace") as f:
+                texts.append(f.read())
+        except OSError:
+            continue
     return texts
 
 FENCE = re.compile(r"^\s*(?:```|~~~)")
