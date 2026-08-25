@@ -16,17 +16,22 @@ git rev-parse --abbrev-ref origin/HEAD
 
 stacked ブランチ (base が `main` ではなく別の feature ブランチ) を拾うため、候補ごとに HEAD からの距離を測る。現在ブランチ自身の追跡ref は候補から除外する。
 
+リモートブランチが数百本あるリポジトリでは全数を回すとgitプロセスの起動だけで数十秒かかるため、候補は更新日時の新しい順に絞る。
+
 ```bash
 CUR=$(git rev-parse --abbrev-ref HEAD)
 UP=$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)
-for r in $(git for-each-ref --format='%(refname:short)' --exclude=refs/remotes/origin/HEAD refs/remotes/origin/); do
+HEAD_SHA=$(git rev-parse HEAD)
+for r in $(git for-each-ref --format='%(refname:short)' --sort=-committerdate --count=50 --exclude=refs/remotes/origin/HEAD refs/remotes/origin/); do
   [ "$r" = "origin/$CUR" ] && continue
   [ "$r" = "$UP" ] && continue
   mb=$(git merge-base HEAD "$r" 2>/dev/null) || continue
-  [ "$mb" = "$(git rev-parse HEAD)" ] && continue
+  [ "$mb" = "$HEAD_SHA" ] && continue
   echo "$(git rev-list --count "$mb"..HEAD) $r"
 done | sort -n | head -5
 ```
+
+`--count=50` に base 候補が入らないことはまず無いが、2-2 のデフォルトブランチが結果に現れない場合は `--count` を外して回し直す。
 
 先頭 (HEAD までの距離が最小) が base の最有力候補。
 
