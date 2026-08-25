@@ -952,6 +952,13 @@ names = ["bro"]
 agents = ["claude", "agents"]
 flat = true
 
+[[agent_skills]]
+repo = "dmmulroy/anti-slop"
+rev = "6d538555cb151d4121ed51a27db81890eacf8ae9"
+prefix = "skills"
+names = ["install-anti-slop"]
+agents = ["claude", "agents"]
+
 # Claude Code gets these from the enabled cloudflare@cloudflare plugin, so only
 # the shared store (read by Codex, which has no Claude Code plugin mechanism)
 # needs them materialized.
