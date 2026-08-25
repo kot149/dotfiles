@@ -1,0 +1,3 @@
+#AutoRaise config file
+# Raise/focus as soon as the mouse enters a window instead of waiting for it to stop.
+requireMouseStop=false
