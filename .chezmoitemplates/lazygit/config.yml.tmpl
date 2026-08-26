@@ -12,9 +12,10 @@ os:
   openDirInEditor: "fresh {{ "{{" }}dir{{ "}}" }}"
 
 git:
-  pagers:
+  diffRenderers:
 {{- if eq .chezmoi.os "windows" }}
-    - externalDiffCommand: 'pwsh -NoLogo -NoProfile -File "{{ .chezmoi.homeDir }}/AppData/Local/lazygit/lazygit-diff.ps1"'
+    - type: extDiff
+      command: 'pwsh -NoLogo -NoProfile -File "{{ .chezmoi.homeDir }}/AppData/Local/lazygit/lazygit-diff.ps1"'
 {{- else }}
-    - pager: hunk pager --mode split
+    - command: hunk pager --mode split
 {{- end }}
