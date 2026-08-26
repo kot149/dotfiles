@@ -28,6 +28,9 @@ import rule from "./textlint-rules/textlint-rule-ja-ai-phrasing.js";
 
 const PROSE_SUFFIXES = [".md", ".markdown", ".mdx", ".txt"];
 
+// How much of the offending line to quote back.
+const LINE_EXCERPT = 120;
+
 const GH_SUBCOMMAND = /\bgh\s+(?:pr|issue|release)\s+(?:create|edit|comment|review|reply|update)\b/;
 const GH_API = /\bgh\s+api\b/;
 const GH_API_WRITE =
@@ -144,7 +147,8 @@ async function findIssues(targets) {
     const lines = text.split("\n");
     const { messages } = await kernel.lintText(text, lintOptions(ext));
     for (const message of messages) {
-      const line = (lines[message.line - 1] ?? "").trim().slice(0, 120);
+      const source = (lines[message.line - 1] ?? "").trim();
+      const line = source.length > LINE_EXCERPT ? `${source.slice(0, LINE_EXCERPT)}…` : source;
       const hit = message.range ? text.slice(...message.range) : "";
       const key = `${message.message}\0${hit}\0${line}`;
       if (seen.has(key)) continue;
@@ -230,8 +234,11 @@ async function main() {
   if (findings.length === 0) return;
 
   const detail = findings
-    .map(({ hit, line, advice }) => `  「${hit}」  in: ${line}\n    -> ${advice}`)
-    .join("\n");
+    .map(
+      ({ hit, line, advice }, i) =>
+        `${i + 1}. 該当: 「${hit}」\n   原文: 「${line}」\n   対応: ${advice}`,
+    )
+    .join("\n\n");
   const reason =
     "[言い回しの矯正]\n\n" +
     "曖昧・翻訳調な表現が含まれています。読み手が具体的な動作を想像できる書き方に直してください。\n\n" +
