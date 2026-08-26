@@ -37,6 +37,16 @@ const PIN_ADVICE =
   "「pinする/される」→「固定する/される」と書く" +
   " (例: 「テストが仕様をpinする」→「テストが仕様を固定し、変わったら落ちるようにする」)";
 
+// A label dropped in front of a paragraph, plain or bold:
+// 「結論: ...」「**結論**: ...」「**結論:** ...」「結論：...」
+const LEAD_LABELS = ["結論", "要点", "まとめ", "ポイント", "補足", "概要", "TL;DR"];
+const LEAD_LABEL = new RegExp(
+  String.raw`^(?:\*\*)?(?:${LEAD_LABELS.join("|")})(?:\*\*)?[ \t]*[:：](?:\*\*)?[ \t]*(?=\S)`,
+);
+const LEAD_LABEL_ADVICE =
+  "行頭の「結論:」のようなラベル → ラベルを外して本文をそのまま書くか、文に溶かす" +
+  " (例: 「結論: この方式を採用する」→「この方式を採用する」/「結論としては、この方式を採用する」)";
+
 const URL = /\b(?:https?|git|ssh):\/\/\S+/g;
 
 const dictionaryForm = (token) =>
@@ -76,7 +86,24 @@ function* findMatches(tokens) {
 
 function linter(context) {
   const { Syntax, RuleError, report, getSource, fixer, locator } = context;
+
+  /** Report on the raw paragraph source, where the bold markers are still visible. */
+  const checkLeadLabel = (node) => {
+    const [label] = getSource(node).match(LEAD_LABEL) ?? [];
+    if (!label) return;
+    const range = [0, label.length];
+    report(
+      node,
+      new RuleError(LEAD_LABEL_ADVICE, {
+        padding: locator.range(range),
+        fix: fixer.replaceTextRange(range, ""),
+      }),
+    );
+  };
+
   return {
+    // A list item holds its own Paragraph, so this covers bulleted labels too.
+    [Syntax.Paragraph]: checkLeadLabel,
     async [Syntax.Str](node) {
       const tokens = await tokenize(maskUrls(getSource(node)));
       for (const { index, length, advice, replacement } of findMatches(tokens)) {
