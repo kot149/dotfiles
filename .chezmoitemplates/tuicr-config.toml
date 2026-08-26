@@ -1,2 +1,3 @@
 appearance = "dark"
 single_file_view = true
+diff_view = "side-by-side"
