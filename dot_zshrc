@@ -161,6 +161,21 @@ push() {
   fi
 }
 
+# tuicr (差分レビュー TUI) にサブコマンド branch を足すラッパー。ベースブランチ
+# からの全コミットを開く。起動時のコミットセレクタは飛ばすので、選び直したく
+# なったら TUI 内で :commits を打つ。
+# 単純な書き換えで済む tuicr w / tuicr br は zsh-abbr 側で定義している。
+tuicr() {
+  if [[ "${1:-}" == branch ]]; then
+    shift
+    local base
+    base="$(git-base-branch)" || return
+    command tuicr -r "${base}..HEAD" "$@"
+  else
+    command tuicr "$@"
+  fi
+}
+
 alias claude-commit='claude --model claude-sonnet-5 "/commit-message"'
 alias sonnet='claude --model claude-sonnet-5'
 alias opus='claude --model "claude-opus-5[1m]"'

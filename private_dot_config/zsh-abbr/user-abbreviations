@@ -42,6 +42,9 @@ abbr 'git pb'='git publish'
 abbr 'git pub'='git publish'
 
 abbr lg=lazygit
+abbr tcr=tuicr
+abbr 'tuicr w'='tuicr -w'
+abbr 'tuicr br'='tuicr branch'
 
 # dotfiles
 abbr zrc='. ~/.zshrc'

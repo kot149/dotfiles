@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Print the branch the current one was most likely created from, e.g.
+# `origin/main` or another feature branch. Usable as `git base-branch`.
+set -euo pipefail
+
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  echo "git-base-branch: not inside a git repository" >&2
+  exit 1
+fi
+
+default_base="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main)"
+
+max_base_candidates=50
+
+# Refs that could be the branch point, in preference order for ties: the
+# repository default branch first, then recently updated local and origin
+# branches.
+candidate_refs() {
+  printf '%s\n' "${default_base}"
+  git for-each-ref --sort=-committerdate --count="${max_base_candidates}" \
+    --format='%(refname:short)' refs/heads refs/remotes/origin 2>/dev/null || true
+}
+
+# The candidate with the fewest commits between its merge base and HEAD.
+# Ancestors of HEAD win over diverged branches, so a base that has moved on does
+# not beat the real one.
+detect_base() {
+  local current cand ahead rank best_base="" best_rank="" best_ahead=""
+
+  current="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+
+  while IFS= read -r cand; do
+    [ -n "${cand}" ] || continue
+    case "${cand}" in
+      "${current}" | "origin/${current}" | origin/HEAD) continue ;;
+    esac
+    git rev-parse --verify --quiet "${cand}^{commit}" >/dev/null || continue
+
+    # Commits HEAD has that the candidate does not. Zero means HEAD is already
+    # contained in it, so there is no branch diff to show.
+    ahead="$(git rev-list --count "${cand}..HEAD" 2>/dev/null || echo 0)"
+    [ "${ahead}" -gt 0 ] || continue
+
+    if git merge-base --is-ancestor "${cand}" HEAD 2>/dev/null; then
+      rank=0
+    else
+      rank=1
+    fi
+
+    if [ -z "${best_base}" ] ||
+      [ "${rank}" -lt "${best_rank}" ] ||
+      { [ "${rank}" -eq "${best_rank}" ] && [ "${ahead}" -lt "${best_ahead}" ]; }; then
+      best_base="${cand}"
+      best_rank="${rank}"
+      best_ahead="${ahead}"
+    fi
+  done < <(candidate_refs)
+
+  # `origin` is how origin/HEAD is spelled by `for-each-ref --format
+  # %(refname:short)`; report the branch it points at instead.
+  case "${best_base}" in
+    origin | "") best_base="${default_base}" ;;
+  esac
+
+  printf '%s' "${best_base}"
+}
+
+# A repository without any commit has no HEAD, so there is nothing to detect
+# against and only the default branch name can be reported.
+if git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
+  detect_base
+else
+  printf '%s' "${default_base}"
+fi
+printf '\n'
