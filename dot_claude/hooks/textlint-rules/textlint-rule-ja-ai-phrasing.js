@@ -37,8 +37,8 @@ const VERB_RULES = {
   },
 };
 
-// テストの成否の比喩でしか使わない語。単独で出ても指摘する。
-const COLOR_METAPHORS = new Set(["グリーン", "レッド"]);
+// テストの成否の比喩でしか使わない語。単独で出ても指摘する。大文字小文字は問わない。
+const COLOR_METAPHORS = new Set(["グリーン", "レッド", "green", "red"]);
 // 色そのものも指す語。テストの文脈があるときだけ指摘する。
 const COLOR_BASES = new Set(["緑", "赤", "赤い", "真っ赤"]);
 const COLOR_TAILS = new Set([
@@ -68,6 +68,7 @@ const COLOR_SUBJECTS = new Set([
   "パイプライン",
   "pipeline",
 ]);
+const LATIN_WORD = /^[A-Za-z][A-Za-z0-9_-]*$/;
 // Allows one intervening particle between the colour and the predicate.
 const COLOR_WINDOW = 2;
 // 「全テストが緑」のように主語との間に接頭詞や助詞が挟まる分の余裕。
@@ -98,6 +99,20 @@ const dictionaryForm = (token) =>
 /** Blank out URLs while keeping every other character at its original offset. */
 const maskUrls = (text) => text.replace(URL, (m) => " ".repeat(m.length));
 
+/** The nearest token in the given direction, skipping the whitespace kuromoji emits as 記号. */
+const neighbor = (tokens, i, step) => {
+  for (let j = i + step; j >= 0 && j < tokens.length; j += step) {
+    if (tokens[j].surface_form.trim()) return tokens[j];
+  }
+  return {};
+};
+
+const isAttributive = (tokens, i) => dictionaryForm(neighbor(tokens, i, 1)) === "の";
+
+/** 「Red Hat」「green thread」のように英単語と連なる形。色の比喩ではなく固有名詞や術語。 */
+const isLatinCompound = (tokens, i) =>
+  [-1, 1].some((step) => LATIN_WORD.test(neighbor(tokens, i, step).surface_form ?? ""));
+
 /**
  * テストの成否を色で言い換えた表現。「グリーン」「レッド」は単独でも拾い、
  * 「緑」「赤」は前にテストの主語があるか後ろに状態の述語が続くときだけ拾う。
@@ -106,10 +121,11 @@ const isTestColor = (tokens, i) => {
   const token = tokens[i];
   if (token.pos !== "名詞" && token.pos !== "形容詞") return false;
   const form = dictionaryForm(token);
-  const isMetaphor = COLOR_METAPHORS.has(form);
+  const isMetaphor = COLOR_METAPHORS.has(form.toLowerCase());
   if (!isMetaphor && !COLOR_BASES.has(form)) return false;
-  // 「グリーンのアイコン」のような色そのものの用法を外すため、連体修飾だけは文脈を見る。
-  if (isMetaphor && dictionaryForm(tokens[i + 1] ?? {}) !== "の") return true;
+  // 「グリーンのアイコン」「Red Hat」のような色そのもの / 固有名詞の用法を外すため、
+  // 連体修飾と英単語の複合語だけは文脈を見る。
+  if (isMetaphor && !isAttributive(tokens, i) && !isLatinCompound(tokens, i)) return true;
   const before = tokens.slice(Math.max(0, i - COLOR_SUBJECT_WINDOW), i);
   const after = tokens.slice(i + 1, i + 1 + COLOR_WINDOW);
   return (
