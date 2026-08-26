@@ -37,10 +37,41 @@ const VERB_RULES = {
   },
 };
 
-const COLOR_BASES = new Set(["緑", "赤", "赤い", "グリーン", "レッド"]);
-const COLOR_TAILS = new Set(["なる", "まま", "返す", "保つ", "維持"]);
+// テストの成否の比喩でしか使わない語。単独で出ても指摘する。
+const COLOR_METAPHORS = new Set(["グリーン", "レッド"]);
+// 色そのものも指す語。テストの文脈があるときだけ指摘する。
+const COLOR_BASES = new Set(["緑", "赤", "赤い", "真っ赤"]);
+const COLOR_TAILS = new Set([
+  "なる",
+  "まま",
+  "返す",
+  "保つ",
+  "維持",
+  "戻す",
+  "戻る",
+  "キープ",
+  "状態",
+]);
+const COLOR_SUBJECTS = new Set([
+  "テスト",
+  "test",
+  "ci",
+  "ビルド",
+  "build",
+  "lint",
+  "チェック",
+  "check",
+  "スイート",
+  "suite",
+  "ジョブ",
+  "job",
+  "パイプライン",
+  "pipeline",
+]);
 // Allows one intervening particle between the colour and the predicate.
 const COLOR_WINDOW = 2;
+// 「全テストが緑」のように主語との間に接頭詞や助詞が挟まる分の余裕。
+const COLOR_SUBJECT_WINDOW = 4;
 const COLOR_ADVICE =
   "テストの赤/緑 → 「テストが通る/成功する」「テストが落ちる/失敗する」と書く" +
   " (例: 「全テストが緑のまま」→「全テストが通ったままで、退行を検出できない」)";
@@ -67,6 +98,26 @@ const dictionaryForm = (token) =>
 /** Blank out URLs while keeping every other character at its original offset. */
 const maskUrls = (text) => text.replace(URL, (m) => " ".repeat(m.length));
 
+/**
+ * テストの成否を色で言い換えた表現。「グリーン」「レッド」は単独でも拾い、
+ * 「緑」「赤」は前にテストの主語があるか後ろに状態の述語が続くときだけ拾う。
+ */
+const isTestColor = (tokens, i) => {
+  const token = tokens[i];
+  if (token.pos !== "名詞" && token.pos !== "形容詞") return false;
+  const form = dictionaryForm(token);
+  const isMetaphor = COLOR_METAPHORS.has(form);
+  if (!isMetaphor && !COLOR_BASES.has(form)) return false;
+  // 「グリーンのアイコン」のような色そのものの用法を外すため、連体修飾だけは文脈を見る。
+  if (isMetaphor && dictionaryForm(tokens[i + 1] ?? {}) !== "の") return true;
+  const before = tokens.slice(Math.max(0, i - COLOR_SUBJECT_WINDOW), i);
+  const after = tokens.slice(i + 1, i + 1 + COLOR_WINDOW);
+  return (
+    before.some((t) => COLOR_SUBJECTS.has(dictionaryForm(t).toLowerCase())) ||
+    after.some((t) => COLOR_TAILS.has(dictionaryForm(t)))
+  );
+};
+
 const isPin = (tokens, i) => {
   const next = tokens[i + 1];
   if (!next) return false;
@@ -86,11 +137,8 @@ function* findMatches(tokens) {
       const rule = VERB_RULES[form];
       if (rule.skip?.(tokens, i)) continue;
       yield { ...hit, advice: rule.advice, replacement: rule.fix?.[surface] };
-    } else if (COLOR_BASES.has(form) && (token.pos === "名詞" || token.pos === "形容詞")) {
-      const window = tokens.slice(i + 1, i + 1 + COLOR_WINDOW);
-      if (window.some((t) => COLOR_TAILS.has(dictionaryForm(t)))) {
-        yield { ...hit, advice: COLOR_ADVICE };
-      }
+    } else if (isTestColor(tokens, i)) {
+      yield { ...hit, advice: COLOR_ADVICE };
     } else if (isPin(tokens, i)) {
       yield { ...hit, advice: PIN_ADVICE, replacement: surface.toLowerCase() === "pin" ? "固定" : undefined };
     }
