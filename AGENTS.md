@@ -117,6 +117,12 @@ Registration differs per agent:
 - Claude Code: `hooks.PreToolUse` in `dot_claude/settings.json.tmpl`, always the bash script.
 - Codex CLI: `dot_codex/hooks.json.tmpl` → `~/.codex/hooks.json`. A handler takes `command` (used on macOS/Linux) and `commandWindows` (used on Windows), so the bash and pwsh variants are registered side by side.
 
+`tests/` holds tests for the hooks that carry enough logic to regress. They are plain Bun scripts rather than `bun test` files, because `bun test` cannot resolve the versioned import specifiers the hooks pin their dependencies with:
+
+```sh
+bun run tests/textlint-rule-ja-ai-phrasing.js   # the rule behind check-writing-style.js
+```
+
 Two Codex-specific details:
 
 - **Blocking** requires JSON on stdout with `hookSpecificOutput.permissionDecision = "deny"` plus a non-empty `permissionDecisionReason`, and exit status 0. A non-zero exit only marks the hook as failed; it does not stop the tool call. Claude Code accepts the same JSON, which is why the shared scripts use it instead of `exit 2`.
