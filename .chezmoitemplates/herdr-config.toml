@@ -52,6 +52,16 @@ description = "lazygit (popup)"
 width = "90%"
 height = "90%"
 
+{{ if ne .chezmoi.os "windows" -}}
+[[keys.command]]
+key = "alt+t"
+type = "popup"
+command = "tcr-pick"
+description = "tuicr (pick range)"
+width = "90%"
+height = "90%"
+
+{{ end -}}
 [[keys.command]]
 key = "prefix+d"
 type = "popup"

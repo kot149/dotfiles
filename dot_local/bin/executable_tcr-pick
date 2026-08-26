@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Pick a diff range with fzf and open it in tuicr. Quitting tuicr returns to the
+# picker; leave for good with Esc, q or Left arrow there. The picker itself is
+# pick-loop.
+set -euo pipefail
+
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  echo "tcr-pick: not inside a git repository" >&2
+  exit 1
+fi
+
+# A repository without any commit has no HEAD, and no base branch to compare
+# against, so only the uncommitted changes can be reviewed.
+has_head=false
+if git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
+  has_head=true
+fi
+
+# TCR_PICK_BASE overrides the detection, e.g. when the branch point is
+# ambiguous.
+base="${TCR_PICK_BASE:-$(git-base-branch)}"
+
+has_base=false
+if [ "${has_head}" = true ] && git rev-parse --verify --quiet "${base}^{commit}" >/dev/null 2>&1; then
+  has_base=true
+fi
+
+# Parallel arrays: labels[i] is shown by fzf, actions[i] holds the arguments
+# passed to `tuicr` (space separated, "@none" for a non-selectable header).
+labels=()
+actions=()
+
+add_entry() {
+  labels+=("$1")
+  actions+=("$2")
+}
+
+add_entry "Uncommitted changes (unstaged + staged)" "-w"
+
+max_commits=50
+
+# Commits on the current branch, newest first. Falls back to recent history
+# when the branch has no commits ahead of the base (e.g. sitting on main).
+commits=()
+if [ "${has_head}" = true ]; then
+  range=HEAD
+  if [ "${has_base}" = true ]; then
+    range="${base}..HEAD"
+  fi
+  while IFS= read -r line; do
+    commits+=("$line")
+  done < <(git log --format='%h %s' -n "${max_commits}" "${range}" 2>/dev/null || true)
+
+  if [ "${#commits[@]}" -eq 0 ] && [ "${has_base}" = true ]; then
+    while IFS= read -r line; do
+      commits+=("$line")
+    done < <(git log --format='%h %s' -n "${max_commits}" HEAD 2>/dev/null || true)
+  fi
+fi
+
+# Children of the branch section: the combined branch + uncommitted entry
+# followed by the individual commits. A bare revision reviews that commit alone,
+# which also works for a root commit.
+child_labels=()
+child_actions=()
+
+if [ "${has_base}" = true ]; then
+  child_labels+=("Branch changes + uncommitted changes (${base})")
+  child_actions+=("-r ${base}..HEAD -w")
+fi
+
+if [ "${#commits[@]}" -gt 0 ]; then
+  for i in "${!commits[@]}"; do
+    child_actions+=("-r ${commits[$i]%% *}")
+    child_labels+=("${commits[$i]}")
+  done
+fi
+
+if [ "${#child_labels[@]}" -gt 0 ]; then
+  if [ "${has_base}" = true ]; then
+    add_entry "Branch changes (${base}..HEAD)" "-r ${base}..HEAD"
+  else
+    add_entry "Commits" "@none"
+  fi
+
+  last=$(( ${#child_labels[@]} - 1 ))
+  for i in "${!child_labels[@]}"; do
+    if [ "$i" -eq "$last" ]; then
+      add_entry " └─ ${child_labels[$i]}" "${child_actions[$i]}"
+    else
+      add_entry " ├─ ${child_labels[$i]}" "${child_actions[$i]}"
+    fi
+  done
+fi
+
+entries=()
+for i in "${!labels[@]}"; do
+  entries+=("${labels[$i]}"$'\t'"${actions[$i]}")
+done
+
+pick-loop 'tuicr > ' "${entries[@]}" -- tuicr

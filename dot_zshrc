@@ -430,6 +430,16 @@ if [[ -r /proc/version ]] && grep -q -i "Microsoft" /proc/version; then
 fi
 
 # ZLE key bindings
+# Alt+T で tuicr の差分ピッカーを開く。ウィジェット内から直接起動すると全画面
+# TUI が端末を掴めないので、入力中の行を退避して通常のコマンドとして実行する。
+tcr-pick-widget() {
+  zle push-input
+  BUFFER="tcr-pick"
+  zle accept-line
+}
+zle -N tcr-pick-widget
+bindkey '^[t' tcr-pick-widget
+
 bindkey '^Z' undo
 bindkey '^Y' redo
 bindkey '^[z' suspend
