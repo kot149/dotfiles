@@ -27,6 +27,14 @@ const VERB_RULES = {
     // No fixer: 引き継ぎの意味なら書き換えてはいけないので、置換先は文脈で決まる。
     advice: "「申し送り」→「見送り」と書く (例: 「今回は申し送りとする」→「今回は見送る」)",
   },
+  通す: {
+    // 「目を通す」「筋を通す」は慣用句なので対象外。
+    skip: (tokens, i) => ["目", "筋"].includes(dictionaryForm(tokens[i - 2] ?? {})),
+    advice:
+      "「〜を通す」→ 何をどう扱う / 維持するのかを具体的に書く" +
+      " (例: 「db側のゲートもこの関数を通す」→「db側のゲートもこの関数を経由させる」" +
+      " /「この方針で通す」→「新規ファイルでも同じ命名規則を使う」)",
+  },
 };
 
 const COLOR_BASES = new Set(["緑", "赤", "赤い", "グリーン", "レッド"]);
@@ -76,6 +84,7 @@ function* findMatches(tokens) {
 
     if (token.pos === "動詞" && VERB_RULES[form]) {
       const rule = VERB_RULES[form];
+      if (rule.skip?.(tokens, i)) continue;
       yield { ...hit, advice: rule.advice, replacement: rule.fix?.[surface] };
     } else if (COLOR_BASES.has(form) && (token.pos === "名詞" || token.pos === "形容詞")) {
       const window = tokens.slice(i + 1, i + 1 + COLOR_WINDOW);
