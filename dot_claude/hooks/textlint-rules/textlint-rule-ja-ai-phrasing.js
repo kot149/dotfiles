@@ -23,6 +23,10 @@ const VERB_RULES = {
     // Only the dictionary form is safe to rewrite mechanically; 採った などは指摘だけ。
     fix: { 採る: "採用する" },
   },
+  申し送る: {
+    // No fixer: 引き継ぎの意味なら書き換えてはいけないので、置換先は文脈で決まる。
+    advice: "「申し送り」→「見送り」と書く (例: 「今回は申し送りとする」→「今回は見送る」)",
+  },
 };
 
 const COLOR_BASES = new Set(["緑", "赤", "赤い", "グリーン", "レッド"]);
