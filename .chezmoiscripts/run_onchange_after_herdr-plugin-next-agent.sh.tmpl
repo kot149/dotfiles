@@ -1,0 +1,30 @@
+{{- if ne .chezmoi.os "windows" -}}
+#!/bin/sh
+set -eu
+
+# manifest hash: {{ include "dot_local/share/herdr-plugins/next-agent-py/herdr-plugin.toml" | sha256sum }}
+# script hash: {{ include "dot_local/share/herdr-plugins/next-agent-py/executable_next_agent.py" | sha256sum }}
+# plugin config hash: {{ include "private_dot_config/herdr/plugins/config/local.next-agent/config.toml" | sha256sum }}
+
+plugin_id="local.next-agent"
+plugin_dir="$HOME/.local/share/herdr-plugins/next-agent-py"
+
+if ! command -v herdr >/dev/null 2>&1; then
+  echo "herdr not found; skipping $plugin_id link."
+  exit 0
+fi
+
+if [ ! -f "$plugin_dir/herdr-plugin.toml" ]; then
+  echo "$plugin_dir is missing a manifest; skipping $plugin_id link."
+  exit 0
+fi
+
+if herdr plugin list 2>/dev/null | grep -q "^- $plugin_id "; then
+  echo "$plugin_id already linked."
+else
+  echo "Linking $plugin_id..."
+  herdr plugin link "$plugin_dir"
+fi
+
+herdr server reload-config >/dev/null 2>&1 || true
+{{- end -}}

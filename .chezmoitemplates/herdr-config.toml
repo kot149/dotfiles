@@ -38,6 +38,12 @@ description = "init herdr workspace template (main/lazygit/nvim)"
 
 {{ if ne .chezmoi.os "windows" -}}
 [[keys.command]]
+key = "f20"
+type = "plugin_action"
+command = "local.next-agent.next"
+description = "Focus next blocked/done Agent"
+
+[[keys.command]]
 key = "prefix+b"
 type = "shell"
 command = "herdr plugin pane open --plugin official.browser --entrypoint browser --placement split --focus"
