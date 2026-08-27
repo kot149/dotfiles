@@ -77,6 +77,10 @@ const COLOR_ADVICE =
   "テストの赤/緑 → 「テストが通る/成功する」「テストが落ちる/失敗する」と書く" +
   " (例: 「全テストが緑のまま」→「全テストが通ったままで、退行を検出できない」)";
 
+const LEANING_ADVICE =
+  "「〜寄り」→ どちらに近いかではなく、実際の判断を言い切る" +
+  " (例: 「「直さなくてよい」寄りです」→「今回は直さなくてよい」)";
+
 const PIN_ADVICE =
   "「pinする/される」→「固定する/される」と書く" +
   " (例: 「テストが仕様をpinする」→「テストが仕様を固定し、変わったら落ちるようにする」)";
@@ -100,12 +104,14 @@ const dictionaryForm = (token) =>
 const maskUrls = (text) => text.replace(URL, (m) => " ".repeat(m.length));
 
 /** The nearest token in the given direction, skipping the whitespace kuromoji emits as 記号. */
-const neighbor = (tokens, i, step) => {
+const neighborIndex = (tokens, i, step) => {
   for (let j = i + step; j >= 0 && j < tokens.length; j += step) {
-    if (tokens[j].surface_form.trim()) return tokens[j];
+    if (tokens[j].surface_form.trim()) return j;
   }
-  return {};
+  return -1;
 };
+
+const neighbor = (tokens, i, step) => tokens[neighborIndex(tokens, i, step)] ?? {};
 
 const isAttributive = (tokens, i) => dictionaryForm(neighbor(tokens, i, 1)) === "の";
 
@@ -134,6 +140,24 @@ const isTestColor = (tokens, i) => {
   );
 };
 
+/** 「〜寄り」が付く先の語。閉じ括弧が挟まるときは括弧の中の末尾の語を見る。 */
+const leaningBase = (tokens, i) => {
+  const j = neighborIndex(tokens, i, -1);
+  if (j < 0) return {};
+  return tokens[j].pos_detail_1 === "括弧閉" ? neighbor(tokens, j, -1) : tokens[j];
+};
+
+/**
+ * 名詞以外に付く「寄り」。「安全寄り」「「見送り」寄り」のような名詞に付く形は
+ * 語として定着しているので対象外で、用言や文を受ける形だけを指摘する。
+ * 「歩み寄り」「左寄り」「寄り道」は一語にまとまるので surface が一致しない。
+ */
+const isLeaning = (tokens, i) => {
+  if (tokens[i].pos !== "名詞" || tokens[i].surface_form !== "寄り") return false;
+  const base = leaningBase(tokens, i);
+  return Boolean(base.pos) && base.pos !== "名詞";
+};
+
 const isPin = (tokens, i) => {
   const next = tokens[i + 1];
   if (!next) return false;
@@ -153,6 +177,8 @@ function* findMatches(tokens) {
       const rule = VERB_RULES[form];
       if (rule.skip?.(tokens, i)) continue;
       yield { ...hit, advice: rule.advice, replacement: rule.fix?.[surface] };
+    } else if (isLeaning(tokens, i)) {
+      yield { ...hit, advice: LEANING_ADVICE };
     } else if (isTestColor(tokens, i)) {
       yield { ...hit, advice: COLOR_ADVICE };
     } else if (isPin(tokens, i)) {
