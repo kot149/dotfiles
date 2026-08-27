@@ -1,0 +1,24 @@
+id = "local.copy-output"
+name = "Copy Output"
+version = "0.1.0"
+min_herdr_version = "0.8.2"
+description = "Copy the whole output of a command run in a pane"
+platforms = ["linux", "macos"]
+
+[[actions]]
+id = "copy"
+title = "Copy last command output"
+contexts = ["pane", "workspace"]
+command = ["uv", "run", "--script", "copy_output.py", "copy"]
+
+[[actions]]
+id = "pick"
+title = "Pick a command output to copy"
+contexts = ["pane", "workspace"]
+command = ["uv", "run", "--script", "copy_output.py", "pick"]
+
+[[panes]]
+id = "picker"
+title = "Copy Output"
+placement = "overlay"
+command = ["uv", "run", "--script", "copy_output.py", "picker"]

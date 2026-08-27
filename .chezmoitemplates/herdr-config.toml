@@ -79,3 +79,11 @@ command = "hunk-pick"
 description = "hunk diff (pick range)"
 width = "90%"
 height = "90%"
+
+{{ if ne .chezmoi.os "windows" -}}
+[[keys.command]]
+key = "prefix+y"
+type = "plugin_action"
+command = "local.copy-output.pick"
+description = "Pick a command output to copy"
+{{ end -}}

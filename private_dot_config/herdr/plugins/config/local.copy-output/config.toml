@@ -1,0 +1,7 @@
+# U+276F, the character starship puts in front of the typed command.
+prompt_marker = "\u276F"
+# U+E0B6, the powerline cap opening starship's status line above the
+# prompt. That line is trailing noise, not command output.
+header_marker = "\uE0B6"
+# Pane lines to scan, counting back from the bottom of the scrollback.
+max_lines = 5000
