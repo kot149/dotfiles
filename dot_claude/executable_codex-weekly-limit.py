@@ -11,6 +11,11 @@ from urllib.request import Request, urlopen
 CODEX_HOME = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
 AUTH_DIR = Path(os.environ.get("CLI_PROXY_API_AUTH_DIR", Path.home() / ".cli-proxy-api"))
 CACHE_FILE = Path(os.environ.get("CODEX_WEEKLY_CACHE", Path.home() / ".claude" / "codex-weekly-limit.json"))
+# Window name aliases and the plausible range of limit_window_seconds used as a fallback probe.
+WINDOW_SPECS = (
+    ("five", ("primary_window", "primaryWindow", "five_hour", "fiveHour"), (3600, 36000)),
+    ("weekly", ("secondary_window", "secondaryWindow", "weekly", "weekly_window", "weeklyWindow"), (500000, 700000)),
+)
 USAGE_URLS = (
     "https://chatgpt.com/backend-api/wham/usage",
     "https://chatgpt.com/backend-api/codex/usage",
@@ -56,13 +61,15 @@ def read_auth():
 def read_cached():
     try:
         data = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-        percent = data.get("weekly_percent")
         updated = float(data.get("updated_at", 0))
-        if isinstance(percent, (int, float)) and not isinstance(percent, bool):
-            return percent, updated
     except (OSError, ValueError, TypeError):
-        pass
-    return None, 0
+        return {}, 0
+    found = {}
+    for name, _, _ in WINDOW_SPECS:
+        percent = as_number(data.get(f"{name}_percent"))
+        if percent is not None:
+            found[name] = (percent, as_number(data.get(f"{name}_reset")))
+    return found, updated
 
 
 def as_number(value):
@@ -78,16 +85,22 @@ def as_number(value):
     return None
 
 
-def window_percent(window):
+def window_values(window):
     if not isinstance(window, dict):
         return None
     percent = window.get("used_percent")
     if percent is None:
         percent = window.get("usedPercent")
-    return as_number(percent)
+    percent = as_number(percent)
+    if percent is None:
+        return None
+    reset = window.get("reset_at")
+    if reset is None:
+        reset = window.get("resetAt")
+    return max(0, min(100, percent)), as_number(reset)
 
 
-def weekly_percent(data):
+def extract_windows(data):
     rate_limit = (
         data.get("rate_limit")
         or data.get("rateLimits")
@@ -96,36 +109,45 @@ def weekly_percent(data):
         or {}
     )
     if not isinstance(rate_limit, dict):
-        return None, rate_limit, {}
-
-    for key in ("secondary_window", "secondaryWindow", "weekly", "weekly_window", "weeklyWindow"):
-        percent = window_percent(rate_limit.get(key))
-        if percent is not None:
-            return percent, rate_limit, rate_limit.get(key)
+        return {}
 
     windows = [value for value in rate_limit.values() if isinstance(value, dict)]
-    for window in windows:
-        seconds = window.get("limit_window_seconds")
-        if seconds is None:
-            seconds = window.get("limitWindowSeconds")
-        seconds = as_number(seconds)
-        if seconds is not None and 500000 <= seconds <= 700000:
-            percent = window_percent(window)
-            if percent is not None:
-                return percent, rate_limit, window
+    found = {}
+    for name, keys, (low, high) in WINDOW_SPECS:
+        values = None
+        for key in keys:
+            values = window_values(rate_limit.get(key))
+            if values is not None:
+                break
+        if values is None:
+            for window in windows:
+                seconds = window.get("limit_window_seconds")
+                if seconds is None:
+                    seconds = window.get("limitWindowSeconds")
+                seconds = as_number(seconds)
+                if seconds is not None and low <= seconds <= high:
+                    values = window_values(window)
+                    if values is not None:
+                        break
+        if values is not None:
+            found[name] = values
 
-    for item in data.get("additional_rate_limits") or data.get("additionalRateLimits") or []:
-        if isinstance(item, dict):
-            percent, _, window = weekly_percent(item)
-            if percent is not None:
-                return percent, rate_limit, window
-    return None, rate_limit, {}
+    if not found:
+        for item in data.get("additional_rate_limits") or data.get("additionalRateLimits") or []:
+            if isinstance(item, dict):
+                found = extract_windows(item)
+                if found:
+                    break
+
+    if not found:
+        debug(f"no usable window; rate={','.join(sorted(rate_limit))}")
+    return found
 
 
-def fetch_percent():
+def fetch_windows():
     auth = read_auth()
     if auth is None:
-        return None
+        return {}
     access_token, account_id = auth
     for usage_url in USAGE_URLS:
         for delay in (0, 0.25, 0.5, 1):
@@ -143,14 +165,10 @@ def fetch_percent():
                 )
                 with urlopen(request, timeout=5) as response:
                     data = json.load(response)
-                percent, rate_limit, window = weekly_percent(data)
-                if percent is not None:
-                    return max(0, min(100, percent))
-                debug(
-                    f"{usage_url}: top={','.join(sorted(data))}; "
-                    f"rate={','.join(sorted(rate_limit))}; "
-                    f"window={','.join(sorted(window)) if isinstance(window, dict) else 'none'}"
-                )
+                found = extract_windows(data)
+                if found:
+                    return found
+                debug(f"{usage_url}: top={','.join(sorted(data))}")
                 break
             except HTTPError as error:
                 debug(f"{usage_url}: HTTP {error.code}")
@@ -159,15 +177,24 @@ def fetch_percent():
             except Exception as error:
                 debug(f"{usage_url}: {type(error).__name__}")
                 break
-    return None
+    return {}
 
 
-def write_cached(percent):
+def as_payload(windows):
+    payload = {}
+    for name, (percent, reset) in windows.items():
+        payload[f"{name}_percent"] = round(percent)
+        if reset is not None:
+            payload[f"{name}_reset"] = round(reset)
+    return payload
+
+
+def write_cached(windows):
     CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
     fd, temp_name = tempfile.mkstemp(prefix=f".{CACHE_FILE.name}.", dir=CACHE_FILE.parent)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
-            json.dump({"weekly_percent": percent, "updated_at": time.time()}, stream)
+            json.dump(dict(as_payload(windows), updated_at=time.time()), stream)
             stream.write("\n")
         os.replace(temp_name, CACHE_FILE)
     except OSError:
@@ -179,18 +206,18 @@ def write_cached(percent):
 
 def main():
     cached, updated = read_cached()
-    if cached is not None and time.time() - updated < CACHE_TTL:
-        print(round(cached))
+    if cached and time.time() - updated < CACHE_TTL:
+        print(json.dumps(as_payload(cached)))
         return
     try:
-        percent = fetch_percent()
+        windows = fetch_windows()
     except Exception:
-        percent = None
-    if percent is not None:
-        write_cached(percent)
-        print(round(percent))
-    elif cached is not None:
-        print(round(cached))
+        windows = {}
+    if windows:
+        write_cached(windows)
+        print(json.dumps(as_payload(windows)))
+    elif cached:
+        print(json.dumps(as_payload(cached)))
 
 
 if __name__ == "__main__":

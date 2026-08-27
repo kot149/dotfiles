@@ -77,11 +77,19 @@ else
   is_api_mode="false"
 fi
 
+codex_five_available="false"
 codex_weekly_available="false"
 if [ "$_is_local_proxy" = "true" ] && [ -f "$HOME/.claude/codex-weekly-limit.py" ]; then
   _python_bin=$(command -v python || command -v python3 || true)
   if [ -n "$_python_bin" ]; then
-    _codex_weekly_pct=$("$_python_bin" "$HOME/.claude/codex-weekly-limit.py" 2>/dev/null || true)
+    _codex_limits=$("$_python_bin" "$HOME/.claude/codex-weekly-limit.py" 2>/dev/null || true)
+    _codex_five_pct=$(echo "$_codex_limits" | jq -r '.five_percent // ""' 2>/dev/null)
+    _codex_five_reset=$(echo "$_codex_limits" | jq -r '.five_reset // ""' 2>/dev/null)
+    _codex_weekly_pct=$(echo "$_codex_limits" | jq -r '.weekly_percent // ""' 2>/dev/null)
+    case "$_codex_five_pct" in
+      ''|*[!0-9]*) ;;
+      *) five_pct="$_codex_five_pct"; five_reset="$_codex_five_reset"; codex_five_available="true" ;;
+    esac
     case "$_codex_weekly_pct" in
       ''|*[!0-9]*) ;;
       *) seven_pct="$_codex_weekly_pct"; seven_reset=""; codex_weekly_available="true" ;;
@@ -152,7 +160,17 @@ fi
 
 # 5h rate limit block remaining
 five_str=""
-if [ "$is_api_mode" = false ] && [ -n "$five_pct" ] && [ -n "$five_reset" ] && [ "$five_reset" != "null" ]; then
+if [ "$_is_local_proxy" = "true" ]; then
+  if [ "$codex_five_available" = "true" ]; then
+    five_str="Codex 5h: ${five_pct}%"
+    case "$five_reset" in
+      ''|*[!0-9]*) ;;
+      *) five_str="$five_str (⏱ $(fmt_hm $(( five_reset - now_epoch ))))" ;;
+    esac
+  else
+    five_str="Codex 5h: N/A"
+  fi
+elif [ "$is_api_mode" = false ] && [ -n "$five_pct" ] && [ -n "$five_reset" ] && [ "$five_reset" != "null" ]; then
   remaining=$(( five_reset - now_epoch ))
   five_str="5h: ${five_pct}% (⏱ $(fmt_hm $remaining))"
 fi
