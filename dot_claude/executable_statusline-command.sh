@@ -161,12 +161,12 @@ fi
 seven_str=""
 if [ "$_is_local_proxy" = "true" ]; then
   if [ "$codex_weekly_available" = "true" ]; then
-    seven_str="Codex weekly: ${seven_pct}%"
+    seven_str="Codex 7d: ${seven_pct}%"
   else
-    seven_str="Codex weekly: N/A"
+    seven_str="Codex 7d: N/A"
   fi
 elif [ -n "$seven_pct" ]; then
-  seven_str="weekly: ${seven_pct}%"
+  seven_str="7d: ${seven_pct}%"
   if [ -n "$seven_reset" ] && [ "$seven_reset" != "null" ]; then
     remaining=$(( seven_reset - now_epoch ))
     seven_str="$seven_str (⏱ $(fmt_dhm $remaining))"
