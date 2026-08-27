@@ -40,6 +40,15 @@ const MCP_ATLASSIAN = /^mcp__.*(?:jira|confluence|atlassian)/i;
 const MCP_WRITE_OP = /(?:create|edit|update|add|post|comment)/i;
 
 const FILE_FLAGS = ["--body-file", "-F", "--input"];
+// gh fields take name=value, and read the value from a file when it is written name=@path.
+const FIELD_FLAGS = ["-f", "-F", "--field", "--raw-field"];
+// `-f body="$(cat reply.md)"` hands gh the prose without ever putting it on the command line,
+// so the path inside the substitution is the only thing left to scan.
+const SUBSTITUTED_PATH = /\$\(\s*(?:cat\s+|<\s*)([^)]+?)\s*\)|`\s*cat\s+([^`]+?)\s*`/g;
+// Leading VAR=value assignments, so a path built from one can still be resolved.
+const ASSIGNMENT = /(?:^|[\s;&|])([A-Za-z_]\w*)=("[^"]*"|'[^']*'|[^\s;&|]*)/g;
+
+const unquote = (value) => value.replace(/^(['"])(.*)\1$/s, "$2");
 
 /** Split a command line the way a POSIX shell would. Null when the quoting is unbalanced. */
 function splitWords(command) {
@@ -71,26 +80,59 @@ function splitWords(command) {
   return words;
 }
 
-/** Pull in bodies passed by path. Heredocs break the splitter, so failures are ignored. */
+/** The value a flag carries, whether spelled `--flag value` or `--flag=value`. */
+const flagValue = (words, i, flag) => {
+  const word = words[i];
+  if (word === flag) return words[i + 1] ?? null;
+  return word.startsWith(`${flag}=`) ? word.slice(flag.length + 1) : null;
+};
+
+/** The path in a `name=@path` field value, which gh reads the field from. */
+const fieldFile = (value) => value?.match(/^[^=]*=@(.+)$/)?.[1] ?? null;
+
+/** Every path this command could be reading a body from. Duplicates and nulls are fine. */
+function bodyPaths(command) {
+  // Heredocs break the splitter; the substitution scan below still covers those commands.
+  const words = splitWords(command) ?? [];
+  const paths = words.flatMap((_, i) => [
+    ...FILE_FLAGS.map((flag) => flagValue(words, i, flag)),
+    ...FIELD_FLAGS.map((flag) => fieldFile(flagValue(words, i, flag))),
+  ]);
+  for (const match of command.matchAll(SUBSTITUTED_PATH)) paths.push(match[1] ?? match[2]);
+  return paths.filter((target) => target && target !== "-").map(unquote);
+}
+
+function shellVariables(command) {
+  const variables = new Map();
+  for (const [, name, raw] of command.matchAll(ASSIGNMENT)) {
+    const value = unquote(raw);
+    // A value that is itself substituted cannot be resolved, and is never a plain path.
+    if (!/[$`]/.test(value)) variables.set(name, value);
+  }
+  return variables;
+}
+
+const expand = (target, variables) =>
+  target.replace(
+    /\$\{(\w+)\}|\$(\w+)/g,
+    (whole, braced, bare) => variables.get(braced ?? bare) ?? whole,
+  );
+
+/** Pull in bodies passed by path. Unresolvable and unreadable paths are simply not scanned. */
 function readBodyFiles(command, cwd) {
-  const words = splitWords(command);
-  if (!words) return [];
-
+  const variables = shellVariables(command);
   const texts = [];
-  for (const flag of FILE_FLAGS) {
-    words.forEach((word, i) => {
-      let target = null;
-      if (word === flag && i + 1 < words.length) target = words[i + 1];
-      else if (word.startsWith(`${flag}=`)) target = word.slice(flag.length + 1);
-      if (!target || target === "-") return;
-
-      const expanded = target.startsWith("~") ? path.join(os.homedir(), target.slice(1)) : target;
-      try {
-        texts.push(fs.readFileSync(path.resolve(cwd, expanded), "utf8"));
-      } catch {
-        // Unreadable or nonexistent paths are simply not scanned.
-      }
-    });
+  for (const target of new Set(bodyPaths(command))) {
+    const resolved = expand(target, variables);
+    if (resolved.includes("$")) continue;
+    const expanded = resolved.startsWith("~")
+      ? path.join(os.homedir(), resolved.slice(1))
+      : resolved;
+    try {
+      texts.push(fs.readFileSync(path.resolve(cwd, expanded), "utf8"));
+    } catch {
+      // Unreadable or nonexistent paths are simply not scanned.
+    }
   }
   return texts;
 }
