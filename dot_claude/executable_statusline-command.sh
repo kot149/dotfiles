@@ -168,7 +168,7 @@ if [ "$_is_local_proxy" = "true" ]; then
       *) five_str="$five_str (⏱ $(fmt_hm $(( five_reset - now_epoch ))))" ;;
     esac
   else
-    five_str="Codex 5h: N/A"
+    five_str="Codex 5h: n/a"
   fi
 elif [ "$is_api_mode" = false ] && [ -n "$five_pct" ] && [ -n "$five_reset" ] && [ "$five_reset" != "null" ]; then
   remaining=$(( five_reset - now_epoch ))
@@ -181,7 +181,7 @@ if [ "$_is_local_proxy" = "true" ]; then
   if [ "$codex_weekly_available" = "true" ]; then
     seven_str="Codex 7d: ${seven_pct}%"
   else
-    seven_str="Codex 7d: N/A"
+    seven_str="Codex 7d: n/a"
   fi
 elif [ -n "$seven_pct" ]; then
   seven_str="7d: ${seven_pct}%"
