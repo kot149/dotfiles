@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reply PR Comments"
+  short_description: "Reply to PR review comments, citing the commit that fixed each one."
+  default_prompt: "Reply to the unresolved review comments on this PR."
