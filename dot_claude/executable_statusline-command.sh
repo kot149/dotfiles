@@ -86,13 +86,14 @@ if [ "$_is_local_proxy" = "true" ] && [ -f "$HOME/.claude/codex-weekly-limit.py"
     _codex_five_pct=$(echo "$_codex_limits" | jq -r '.five_percent // ""' 2>/dev/null)
     _codex_five_reset=$(echo "$_codex_limits" | jq -r '.five_reset // ""' 2>/dev/null)
     _codex_weekly_pct=$(echo "$_codex_limits" | jq -r '.weekly_percent // ""' 2>/dev/null)
+    _codex_weekly_reset=$(echo "$_codex_limits" | jq -r '.weekly_reset // ""' 2>/dev/null)
     case "$_codex_five_pct" in
       ''|*[!0-9]*) ;;
       *) five_pct="$_codex_five_pct"; five_reset="$_codex_five_reset"; codex_five_available="true" ;;
     esac
     case "$_codex_weekly_pct" in
       ''|*[!0-9]*) ;;
-      *) seven_pct="$_codex_weekly_pct"; seven_reset=""; codex_weekly_available="true" ;;
+      *) seven_pct="$_codex_weekly_pct"; seven_reset="$_codex_weekly_reset"; codex_weekly_available="true" ;;
     esac
   fi
 fi
@@ -180,6 +181,10 @@ seven_str=""
 if [ "$_is_local_proxy" = "true" ]; then
   if [ "$codex_weekly_available" = "true" ]; then
     seven_str="7d: ${seven_pct}%"
+    case "$seven_reset" in
+      ''|*[!0-9]*) ;;
+      *) seven_str="$seven_str (⏱ $(fmt_dhm $(( seven_reset - now_epoch ))))" ;;
+    esac
   else
     seven_str="7d: n/a"
   fi
