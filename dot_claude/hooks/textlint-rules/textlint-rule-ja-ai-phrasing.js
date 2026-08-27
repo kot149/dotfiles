@@ -158,12 +158,15 @@ const isLeaning = (tokens, i) => {
   return Boolean(base.pos) && base.pos !== "名詞";
 };
 
-const isPin = (tokens, i) => {
-  const next = tokens[i + 1];
-  if (!next) return false;
-  if (tokens[i].surface_form.toLowerCase() === "pin") return dictionaryForm(next) === "する";
-  if (tokens[i].surface_form === "ピン") return ["留める", "止める"].includes(dictionaryForm(next));
-  return false;
+/** 動詞化した pin の動詞トークンの位置。「pin する」のように空白が挟まる形も拾う。 */
+const pinVerbIndex = (tokens, i) => {
+  const j = neighborIndex(tokens, i, 1);
+  if (j < 0) return -1;
+  const verb = dictionaryForm(tokens[j]);
+  const surface = tokens[i].surface_form;
+  if (surface.toLowerCase() === "pin") return verb === "する" ? j : -1;
+  if (surface === "ピン") return ["留める", "止める"].includes(verb) ? j : -1;
+  return -1;
 };
 
 /** Yield { index, length, advice, replacement } for every token that trips a rule. */
@@ -181,8 +184,17 @@ function* findMatches(tokens) {
       yield { ...hit, advice: LEANING_ADVICE };
     } else if (isTestColor(tokens, i)) {
       yield { ...hit, advice: COLOR_ADVICE };
-    } else if (isPin(tokens, i)) {
-      yield { ...hit, advice: PIN_ADVICE, replacement: surface.toLowerCase() === "pin" ? "固定" : undefined };
+    } else {
+      const j = pinVerbIndex(tokens, i);
+      if (j < 0) continue;
+      // 「pin する」の空白ごと「固定する」に寄せるため、書き換えは動詞の直前まで含める。
+      const isLatin = surface.toLowerCase() === "pin";
+      yield {
+        ...hit,
+        advice: PIN_ADVICE,
+        replacement: isLatin ? "固定" : undefined,
+        fixEnd: tokens[j].word_position - 1,
+      };
     }
   }
 }
@@ -209,11 +221,13 @@ function linter(context) {
     [Syntax.Paragraph]: checkLeadLabel,
     async [Syntax.Str](node) {
       const tokens = await tokenize(maskUrls(getSource(node)));
-      for (const { index, length, advice, replacement } of findMatches(tokens)) {
+      for (const { index, length, advice, replacement, fixEnd } of findMatches(tokens)) {
         const range = [index, index + length];
         // padding over index so the reported range covers the whole match.
         const options = { padding: locator.range(range) };
-        if (replacement !== undefined) options.fix = fixer.replaceTextRange(range, replacement);
+        if (replacement !== undefined) {
+          options.fix = fixer.replaceTextRange([index, fixEnd ?? range[1]], replacement);
+        }
         report(node, new RuleError(advice, options));
       }
     },

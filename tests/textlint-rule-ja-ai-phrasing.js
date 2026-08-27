@@ -126,6 +126,8 @@ await expectHit("pin", [
   ["テストが仕様をpinする。", "pin"],
   ["仕様をPinしている。", "Pin"],
   ["仕様をピン留めする。", "ピン"],
+  ["ruff 0.14.9 に pin されている。", "pin"],
+  ["バージョンを pin する。", "pin"],
 ]);
 
 await expectClean("動詞化していない pin", ["ピンを刺す。", "pinned という名前にする。"]);
@@ -155,6 +157,7 @@ check(
 for (const [text, output] of [
   ["この方式を採る。", "この方式を採用する。"],
   ["テストが仕様をpinする。", "テストが仕様を固定する。"],
+  ["バージョンを pin する。", "バージョンを 固定する。"],
   ["結論: この方式を採用する。", "この方式を採用する。"],
 ]) {
   check(`fixer: ${text}`, await fixed(text), output);
