@@ -40,23 +40,36 @@ if not is_target(command):
 
 MAX_BODY_BYTES = 1 << 20
 
-def read_body_files(cmd):
-    """Pull in bodies passed by path.
+SHELL_SPLIT = re.compile(r"""[\s"'`()$;|&<>=,]+""")
 
-    Any word that names an existing file is read, not just the one after a body
-    flag: a body is just as often piped in (`jq ... file.md | gh api --input -`),
-    and there the path only appears upstream of the pipe. Heredocs break shlex,
-    so failures are ignored.
+def path_candidates(cmd):
+    """Every word that could name a body file.
+
+    Any word is a candidate, not just the one after a body flag: a body is just
+    as often piped in (`jq ... file.md | gh api --input -`), and there the path
+    only appears upstream of the pipe. shlex keeps a quoted path with spaces in
+    one piece; splitting the raw string on shell metacharacters additionally
+    reaches a path buried in a command substitution (`-f body="$(cat reply.md)"`),
+    which shlex hands back as one opaque word. Heredocs break shlex, so failures
+    are ignored.
     """
     try:
         words = shlex.split(cmd, comments=False)
     except ValueError:
-        return []
+        words = []
+    candidates = [
+        word.split("=", 1)[1] if word.startswith("-") and "=" in word else word
+        for word in words
+    ]
+    return candidates + SHELL_SPLIT.split(cmd)
 
-    texts = []
-    for word in words:
-        path = word.split("=", 1)[1] if word.startswith("-") and "=" in word else word
-        path = os.path.join(cwd, os.path.expanduser(path))
+def read_body_files(cmd):
+    texts, seen = [], set()
+    for candidate in path_candidates(cmd):
+        path = os.path.join(cwd, os.path.expanduser(candidate))
+        if path in seen:
+            continue
+        seen.add(path)
         try:
             if not os.path.isfile(path) or os.path.getsize(path) > MAX_BODY_BYTES:
                 continue
