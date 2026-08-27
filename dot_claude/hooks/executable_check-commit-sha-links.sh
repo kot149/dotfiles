@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Keep commit SHAs auto-linkable in GitHub PR / issue / release bodies.
-# GitHub only linkifies a bare lowercase hex SHA that is delimited by whitespace,
-# so backtick-wrapped or punctuation-hugging SHAs silently lose their link.
+# GitHub only linkifies a bare lowercase hex SHA delimited by whitespace or ASCII
+# punctuation, so a backtick-wrapped SHA, or one hugging a full-width character
+# such as （）, silently loses its link.
 # Block by default; set FORCE_SHA=1 to allow.
 
 INPUT=$(cat)
@@ -96,9 +97,19 @@ SHA = re.compile(r"(?<![0-9a-zA-Z_-])[0-9a-f]{7,40}(?![0-9a-zA-Z_-])")
 CODE_SPAN = re.compile(r"`([^`\n]+)`")
 URL = re.compile(r"\b(?:https?|git|ssh)://\S+")
 # Quotes count as boundaries because the raw command string is scanned as-is,
-# so a body that opens or closes on a SHA is not a violation.
-LEADING_OK = " \t\n\"'"
-TRAILING_OK = LEADING_OK + ".,;:!?)"
+# so a body that opens or closes on a SHA is not a violation. ASCII parens are
+# fine on both sides; their full-width counterparts are not.
+LEADING_OK = " \t\n\"'("
+TRAILING_OK = " \t\n\"'.,;:!?)"
+
+FULLWIDTH_PARENS = {"（": "(", "）": ")"}
+
+def glued_reason(char, side):
+    reason = f"{char!r} is glued to the {side} of it"
+    ascii_alt = FULLWIDTH_PARENS.get(char)
+    if ascii_alt:
+        reason += f" (use the ASCII {ascii_alt!r} instead)"
+    return reason
 
 def blank(pattern, text):
     return pattern.sub(lambda m: " " * len(m.group(0)), text)
@@ -135,9 +146,9 @@ def find_issues(text):
         if prev_char == "[" and scannable[end : end + 2] == "](":
             continue
         if prev_char not in LEADING_OK:
-            issues.append((m.group(0), f"{prev_char!r} is glued to the front of it"))
+            issues.append((m.group(0), glued_reason(prev_char, "front")))
         elif next_char not in TRAILING_OK:
-            issues.append((m.group(0), f"{next_char!r} is glued to the end of it"))
+            issues.append((m.group(0), glued_reason(next_char, "end")))
     return issues
 
 texts = [command] + read_body_files(command)
@@ -168,14 +179,17 @@ REASON=$(cat <<EOF
 [Commit SHA is not auto-linkable]
 
 GitHub only turns a commit SHA into a link when it is written bare and
-delimited by whitespace. These will render as plain text:
+delimited by whitespace or ASCII punctuation. Full-width characters such as
+（）「」、。 break the link. These will render as plain text:
 
 $FINDINGS
 
-Rewrite each one as a bare SHA surrounded by spaces, for example:
+Rewrite each one as a bare SHA delimited by spaces or ASCII punctuation,
+for example:
 
   Reverted in 1a2b3c4 because the migration was not idempotent.
   See 1a2b3c4 (hunk-pick) for the base-branch detection.
+  ベースブランチ判定は 1a2b3c4 (hunk-pick) を参照。
 
 If the match is a false positive (a hash that is not a commit SHA, or a
 deliberate literal), re-run with FORCE_SHA=1 prepended to the command.
