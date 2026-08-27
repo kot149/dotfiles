@@ -162,13 +162,13 @@ fi
 five_str=""
 if [ "$_is_local_proxy" = "true" ]; then
   if [ "$codex_five_available" = "true" ]; then
-    five_str="Codex 5h: ${five_pct}%"
+    five_str="5h: ${five_pct}%"
     case "$five_reset" in
       ''|*[!0-9]*) ;;
       *) five_str="$five_str (⏱ $(fmt_hm $(( five_reset - now_epoch ))))" ;;
     esac
   else
-    five_str="Codex 5h: n/a"
+    five_str="5h: n/a"
   fi
 elif [ "$is_api_mode" = false ] && [ -n "$five_pct" ] && [ -n "$five_reset" ] && [ "$five_reset" != "null" ]; then
   remaining=$(( five_reset - now_epoch ))
@@ -179,9 +179,9 @@ fi
 seven_str=""
 if [ "$_is_local_proxy" = "true" ]; then
   if [ "$codex_weekly_available" = "true" ]; then
-    seven_str="Codex 7d: ${seven_pct}%"
+    seven_str="7d: ${seven_pct}%"
   else
-    seven_str="Codex 7d: n/a"
+    seven_str="7d: n/a"
   fi
 elif [ -n "$seven_pct" ]; then
   seven_str="7d: ${seven_pct}%"
@@ -210,12 +210,19 @@ if [ "$is_api_mode" = true ] && [ "${cloud_provider:-}" != "proxy" ]; then
   fi
 fi
 
+# Model family icon
+case "$(echo "$model_id $model" | tr 'A-Z' 'a-z')" in
+  *gpt*|*codex*|*openai*|*o1*|*o3*|*o4*) model_icon="" ;;
+  *claude*|*opus*|*sonnet*|*haiku*)      model_icon="" ;;
+  *)                                     model_icon="󰚩" ;;
+esac
+
 # Output: items separated by " | "
 SEP="\033[0m\033[38;5;240m | \033[0m"
 
 # Line 1: model | ctx [| rate limits | cost]
 if [ -n "$model" ]; then
-  printf "\033[38;5;67m󰚩  %s\033[0m" "$model"
+  printf "\033[38;5;67m%s  %s\033[0m" "$model_icon" "$model"
 fi
 printf "$SEP"
 printf "\033[38;5;109mctx %s%%\033[0m" "$ctx_pct"
