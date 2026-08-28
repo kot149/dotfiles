@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Brief"
+  short_description: "Gather the background context behind a PR."
+  default_prompt: "Prepare a brief for this PR."
