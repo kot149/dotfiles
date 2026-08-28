@@ -1,3 +1,8 @@
+---
+name: resolve-pr-comments
+description: GitHub PRのレビューコメント（レビュースレッド）を確認し、対応済みのものをresolveするスキル。ユーザーが「レビューコメントをresolveして」「対応済みの指摘を解決済みにして」「resolve PR comments」などと依頼した場合に使用する。必要に応じて返信と👍リアクションを残し、最後に未resolveのコメントを報告する。判断に迷うスレッドは絶対にresolveしない。
+---
+
 # Resolve PR Comments
 
 ## Goal
@@ -46,7 +51,7 @@ query($owner: String!, $repo: String!, $pr: Int!, $cursor: String) {
 }' -f owner="OWNER" -f repo="REPO" -F pr=NUMBER
 ```
 
-Step 3: **現在のコード差分を確認する** — PRの変更内容を把握するために `gh pr diff <NUMBER>` を実行する。各コメントが指摘しているファイルとコードの現在の状態も `Read` ツールで確認する。
+Step 3: **現在のコード差分を確認する** — PRの変更内容を把握するために `gh pr diff <NUMBER>` を実行する。各コメントが指摘しているファイルとコードの現在の状態もファイルを読んで確認する。
 
 Step 4: **各スレッドを分析する** — 未resolveの各review threadについて、以下を判定する:
 

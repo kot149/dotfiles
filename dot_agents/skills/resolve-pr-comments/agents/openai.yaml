@@ -1,0 +1,4 @@
+interface:
+  display_name: "Resolve PR Comments"
+  short_description: "Resolve PR review threads that are already addressed, and report the rest."
+  default_prompt: "Resolve the addressed review comments on this PR."
