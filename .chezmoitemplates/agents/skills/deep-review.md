@@ -1,6 +1,6 @@
 ---
 name: deep-review
-description: 複数の観点別レビュワーサブエージェントを並列実行し、judgeサブエージェントが各指摘を実コードで検証してから、妥当な指摘を修正して再レビューするループ型の深掘りコードレビュー。security/quality/naming/perf/a11y/test/arch/meta/spec の9視点を独立コンテキストでレビューし、PR本文からJira/Confluence等の仕様ドキュメントも取得して仕様整合性まで見る。ユーザーが「deep review」「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」などと依頼した場合、またはPR番号・差分範囲を指定してレビューを求めた場合に使用する。指摘をPRのpendingレビューコメントとして投稿することもできる。
+description: 複数の観点別レビュワーサブエージェントを並列実行し、judgeサブエージェントが各指摘を実コードで検証してから、妥当な指摘を修正して再レビューするループ型の深掘りコードレビュー。security/quality/naming/comment/perf/a11y/test/arch/meta/spec の10視点を独立コンテキストでレビューし、PR本文からJira/Confluence等の仕様ドキュメントも取得して仕様整合性まで見る。ユーザーが「deep review」「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」などと依頼した場合、またはPR番号・差分範囲を指定してレビューを求めた場合に使用する。指摘をPRのpendingレビューコメントとして投稿することもできる。
 ---
 
 # Deep Review
@@ -35,13 +35,14 @@ $ARGUMENTS
 
 このドキュメントで「選択提示」と書いてある箇所は、選択肢を提示してユーザーに選ばせることを指す。選択UIツール（`AskUserQuestion` など）が使える agent ではそれを使い、無い agent では同じ選択肢を番号付きリストのプレーンテキストで提示し、番号または自由記述で答えてもらう。どちらの場合も回答を得るまで次へ進まない。
 
-## Reviewers (9視点)
+## Reviewers (10視点)
 
 | ラベル | 視点 | チェック項目 |
 |---|---|---|
 | security | セキュリティ | インジェクション, 認証・認可, 機密情報露出, 入力バリデーション, XSS/CSRF, 安全でない暗号化 |
 | quality | コード品質 | 可読性, 関数の責務分離, エラーハンドリング, DRY, 不変性, ネストの深さ, マジックナンバー |
 | naming | 命名 | 名前から内容・役割が推測できるか, 誤解を招く名前, 既存の他機能・役割との名前被り・紛らわしさ, 同一概念の表記ゆれ, スコープに対する情報量の過不足。※casing規約 (camelCase/snake_case等) の違反はチェック対象外 |
+| comment | コメント品質 | 冗長・自明なコメント/docstring, 重複, 編集経緯を語るメタコメント, 逆に必要なWhy・制約・落とし穴の欠落。判断基準は [[trim-comments]] に従う |
 | perf | パフォーマンス | N+1, 不要な再レンダリング, メモリリーク, 計算量, キャッシュ漏れ, バンドルサイズ, 不要なループ |
 | a11y | アクセシビリティ | WCAG 2.2, aria属性, キーボード操作, スクリーンリーダー, コントラスト, フォーカス管理 |
 | test | テスト品質 | カバレッジの漏れ, 境界値, 実装依存の脆さ, モック過多, AAAパターン, テスト名の明瞭さ |
@@ -71,9 +72,9 @@ $ARGUMENTS
 
 4. **ループカウンタ初期化** — `ROUND=1`, `MAX_ROUNDS=5`
 
-## Phase 1: Parallel Detail Review (8視点)
+## Phase 1: Parallel Detail Review (9視点)
 
-security/quality/naming/perf/a11y/test/arch/spec の8つのレビュワーサブエージェントを **並列で起動** する。
+security/quality/naming/comment/perf/a11y/test/arch/spec の9つのレビュワーサブエージェントを **並列で起動** する。
 
 各サブエージェントは `<視点名> review round $ROUND` として起動し、次のpromptを渡す:
 
@@ -103,9 +104,27 @@ $DIFF
 ```
 
 並列起動の注意:
-- 8件すべてを **まとめて並列起動** する。1件ずつ順に起動するのは避ける（直列化されて遅くなる）
+- 9件すべてを **まとめて並列起動** する。1件ずつ順に起動するのは避ける（直列化されて遅くなる）
 - 各サブエージェントは独立コンテキストなので、共有の前提知識は明示的にpromptに含める
 - `naming` のpromptには追加で次の2点を含める: 「既存の他機能・役割との名前被りや紛らわしさは、コードベース内の類似名を実際に検索して確認すること」「camelCase/snake_case等のcasing規約違反は指摘しないこと」
+- `comment` のpromptには追加で後述の「comment レビュワーの判断基準」を含める
+
+### comment レビュワーの判断基準
+
+判断基準は [[trim-comments]] スキルに委譲する。共通テンプレートに加えて次をpromptに含める:
+
+```
+コメント・docstringのみを評価対象とし、ロジック・識別子名・シグネチャへの指摘は出さないでください。
+
+判断基準は trim-comments スキル（自分と同じスキルストア内の `../trim-comments/SKILL.md`）を読み、その「2. コメントを収集して分類する」（残す / 削る / 短くする / 移動・一本化する）と「3. 触ってはいけないもの」に従ってください。読めなかった場合のみ「コードを読めば分かることは書かない。コードから読み取れないことだけを書く」を原則に自分で判断してください。
+
+このレビューでの追加ルール:
+- ファイルは編集せず、指摘のみを返す
+- 「残す」に該当する情報（Why・制約・外部要因・落とし穴）が必要なのに書かれていない箇所も指摘してよい
+- 編集の経緯を語るメタコメント（「〜を追加」「〜に変更」「旧実装では」「リクエストに従い」等）は削る対象として指摘する
+- 今回のdiffで触れていない既存コメントへの指摘は LOW 止まりにする
+- SUGGESTION には置き換え後のコメント文を書く（削除すべきなら「削除」と書く）
+```
 
 ### spec レビュワー専用プロンプト
 
@@ -156,7 +175,7 @@ $DIFF
 
 ## Phase 1b: Meta Review (アプローチ妥当性)
 
-`meta` は他8人と並列で良いが、promptが異なる。Phase 1と同じ並列起動に9つ目のサブエージェントとして含めてよい。`meta review round $ROUND` として起動する。
+`meta` は他9人と並列で良いが、promptが異なる。Phase 1と同じ並列起動に10個目のサブエージェントとして含めてよい。`meta review round $ROUND` として起動する。
 
 ```
 あなたはアプローチそのものを評価するメタレビュワーです。コードの細部ではなく「このアプローチが適切か」を問います。
@@ -189,9 +208,9 @@ $DIFF
 
 ## Phase 2: Collect & Aggregate
 
-**重要**: 9つのサブエージェント **全て** が完了するまで次のPhaseに進んではならない。1つでも未完了のレビュワーがある状態でPhase 3以降に進むことを禁止する。Phase 1とPhase 1bは9並列でまとめて起動し、全結果が揃うまでオーケストレーターは判断を保留する。
+**重要**: 10個のサブエージェント **全て** が完了するまで次のPhaseに進んではならない。1つでも未完了のレビュワーがある状態でPhase 3以降に進むことを禁止する。Phase 1とPhase 1bは10並列でまとめて起動し、全結果が揃うまでオーケストレーターは判断を保留する。
 
-全9件の結果が揃ったら:
+全10件の結果が揃ったら:
 
 1. 各レビュワーの返答をパースし、`FINDING`ブロックを抽出
 2. 全員が「LGTM」ならその旨をユーザーに報告して終了
@@ -206,7 +225,7 @@ judgeは **必ず複数のサブエージェントに分割して並列実行** 
 集約後のfindings総数 `N` に応じて分割方針を選ぶ。両方式とも **全judgeを並列起動** する。
 
 1. **観点別分割 (デフォルト, N ≤ 24)** — レビュワーラベルごとにjudgeを分ける:
-   - `judge-security`, `judge-quality`, `judge-naming`, `judge-perf`, `judge-a11y`, `judge-test`, `judge-arch`, `judge-spec`, `judge-meta` の最大9並列
+   - `judge-security`, `judge-quality`, `judge-naming`, `judge-comment`, `judge-perf`, `judge-a11y`, `judge-test`, `judge-arch`, `judge-spec`, `judge-meta` の最大10並列
    - そのラベルでfindingsが0件のjudgeは起動しない
    - 各judgeは自分の観点の指摘だけを精査するため、コードのどこを読めばよいか集中しやすい
 
@@ -242,7 +261,7 @@ judgeは **必ず複数のサブエージェントに分割して並列実行** 
 ---
 VERDICT: VALID|INVALID|DUPLICATE
 ORIGINAL_FINDING: <元の指摘タイトル>
-REVIEWER: <security|quality|naming|perf|a11y|test|arch|spec|meta>
+REVIEWER: <security|quality|naming|comment|perf|a11y|test|arch|spec|meta>
 FIX_TARGET: <CODE|SPEC|EITHER|N/A>  # specの指摘のみ
 SEVERITY: CRITICAL|HIGH|MEDIUM|LOW
 FILE: <ファイルパス>
