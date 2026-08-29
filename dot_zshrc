@@ -212,6 +212,9 @@ _claude_gpt() {
 
   ANTHROPIC_BASE_URL=http://127.0.0.1:8317 \
   ANTHROPIC_AUTH_TOKEN=sk-local-cliproxy \
+  ANTHROPIC_DEFAULT_HAIKU_MODEL="${subagent_model}(${subagent_effort})" \
+  ANTHROPIC_DEFAULT_OPUS_MODEL="${subagent_model}(${subagent_effort})" \
+  ANTHROPIC_DEFAULT_SONNET_MODEL="${subagent_model}(${subagent_effort})" \
   CLAUDE_CODE_SUBAGENT_MODEL="${subagent_model}(${subagent_effort})" \
   CLAUDE_CODE_ALWAYS_ENABLE_EFFORT=1 \
   CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY=3 \

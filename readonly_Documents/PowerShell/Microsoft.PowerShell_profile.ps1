@@ -374,6 +374,9 @@ function Invoke-ClaudeGpt {
     $names = @(
         'ANTHROPIC_BASE_URL',
         'ANTHROPIC_AUTH_TOKEN',
+        'ANTHROPIC_DEFAULT_HAIKU_MODEL',
+        'ANTHROPIC_DEFAULT_OPUS_MODEL',
+        'ANTHROPIC_DEFAULT_SONNET_MODEL',
         'CLAUDE_CODE_SUBAGENT_MODEL',
         'CLAUDE_CODE_ALWAYS_ENABLE_EFFORT',
         'CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY',
@@ -388,6 +391,9 @@ function Invoke-ClaudeGpt {
     try {
         $env:ANTHROPIC_BASE_URL = 'http://127.0.0.1:8317'
         $env:ANTHROPIC_AUTH_TOKEN = 'sk-local-cliproxy'
+        $env:ANTHROPIC_DEFAULT_HAIKU_MODEL = "$SubagentModel($SubagentEffort)"
+        $env:ANTHROPIC_DEFAULT_OPUS_MODEL = "$SubagentModel($SubagentEffort)"
+        $env:ANTHROPIC_DEFAULT_SONNET_MODEL = "$SubagentModel($SubagentEffort)"
         $env:CLAUDE_CODE_SUBAGENT_MODEL = "$SubagentModel($SubagentEffort)"
         $env:CLAUDE_CODE_ALWAYS_ENABLE_EFFORT = '1'
         $env:CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY = '3'
