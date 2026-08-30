@@ -58,16 +58,18 @@ description = "lazygit (popup)"
 width = "90%"
 height = "90%"
 
-{{ if ne .chezmoi.os "windows" -}}
 [[keys.command]]
 key = "alt+t"
 type = "popup"
+{{ if eq .chezmoi.os "windows" -}}
+command = "pwsh -NoLogo -NoProfile -File \"{{ .chezmoi.homeDir }}/.local/bin/tcr-pick.ps1\""
+{{ else -}}
 command = "tcr-pick"
+{{ end -}}
 description = "tuicr (pick range)"
 width = "90%"
 height = "90%"
 
-{{ end -}}
 [[keys.command]]
 key = "prefix+d"
 type = "popup"
