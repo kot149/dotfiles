@@ -197,6 +197,10 @@ _claude_gpt() {
     shift 2
   fi
 
+  local agents_json
+  printf -v agents_json '{"luna":{"description":"General-purpose agent using the configured Luna model","prompt":"Complete the delegated task accurately and concisely.","model":"%s(%s)"}}' \
+    "$subagent_model" "$subagent_effort"
+
   if ! curl --silent --fail --max-time 1 http://127.0.0.1:8317/v1/models \
       -H 'Authorization: Bearer sk-local-cliproxy' >/dev/null 2>&1; then
     local proxy_bin
@@ -220,7 +224,10 @@ _claude_gpt() {
   CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY=3 \
   CLAUDE_CODE_MAX_CONTEXT_TOKENS=1050000 \
   ENABLE_TOOL_SEARCH=false \
-    claude --model "${model}(${effort})" --effort "$effort" "$@"
+    claude --model "${model}(${effort})" --effort "$effort" \
+      --agents "$agents_json" \
+      --append-system-prompt 'Use the luna agent type for general-purpose delegation. Use another agent type only when its specialized capabilities are required.' \
+      "$@"
 }
 
 luna() {

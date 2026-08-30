@@ -388,6 +388,14 @@ function Invoke-ClaudeGpt {
         $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
     }
 
+    $agents = @{
+        luna = @{
+            description = 'General-purpose agent using the configured Luna model'
+            prompt = 'Complete the delegated task accurately and concisely.'
+            model = "$SubagentModel($SubagentEffort)"
+        }
+    } | ConvertTo-Json -Compress
+
     try {
         $env:ANTHROPIC_BASE_URL = 'http://127.0.0.1:8317'
         $env:ANTHROPIC_AUTH_TOKEN = 'sk-local-cliproxy'
@@ -399,7 +407,9 @@ function Invoke-ClaudeGpt {
         $env:CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY = '3'
         $env:CLAUDE_CODE_MAX_CONTEXT_TOKENS = '1050000'
         $env:ENABLE_TOOL_SEARCH = 'false'
-        claude --model "$Model($Effort)" --effort $Effort @ClaudeArgs
+        claude --model "$Model($Effort)" --effort $Effort --agents $agents `
+            --append-system-prompt 'Use the luna agent type for general-purpose delegation. Use another agent type only when its specialized capabilities are required.' `
+            @ClaudeArgs
     } finally {
         foreach ($name in $names) {
             [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process')
