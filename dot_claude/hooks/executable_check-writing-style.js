@@ -47,6 +47,8 @@ const FIELD_FLAGS = ["-f", "-F", "--field", "--raw-field"];
 const SUBSTITUTED_PATH = /\$\(\s*(?:cat\s+|<\s*)([^)]+?)\s*\)|`\s*cat\s+([^`]+?)\s*`/g;
 // Leading VAR=value assignments, so a path built from one can still be resolved.
 const ASSIGNMENT = /(?:^|[\s;&|])([A-Za-z_]\w*)=("[^"]*"|'[^']*'|[^\s;&|]*)/g;
+// `cd` into the directory a body file is written to, so a relative path still resolves.
+const CD = /(?:^|[\s;&|(])cd\s+(?!-(?:\s|$))("[^"]*"|'[^']*'|[^\s;&|)]+)/g;
 
 const unquote = (value) => value.replace(/^(['"])(.*)\1$/s, "$2");
 
@@ -90,6 +92,10 @@ const flagValue = (words, i, flag) => {
 /** The path in a `name=@path` field value, which gh reads the field from. */
 const fieldFile = (value) => value?.match(/^[^=]*=@(.+)$/)?.[1] ?? null;
 
+// `-F key=value` is a field for gh api and a file for gh pr / issue; the `key=@path`
+// form is already resolved by fieldFile, so a leftover name=value is never a path.
+const FIELD_SPEC = /^[A-Za-z_][\w.[\]-]*=/;
+
 /** Every path this command could be reading a body from. Duplicates and nulls are fine. */
 function bodyPaths(command) {
   // Heredocs break the splitter; the substitution scan below still covers those commands.
@@ -99,7 +105,9 @@ function bodyPaths(command) {
     ...FIELD_FLAGS.map((flag) => fieldFile(flagValue(words, i, flag))),
   ]);
   for (const match of command.matchAll(SUBSTITUTED_PATH)) paths.push(match[1] ?? match[2]);
-  return paths.filter((target) => target && target !== "-").map(unquote);
+  return paths
+    .map((target) => target && unquote(target))
+    .filter((target) => target && target !== "-" && !FIELD_SPEC.test(target));
 }
 
 function shellVariables(command) {
@@ -118,23 +126,48 @@ const expand = (target, variables) =>
     (whole, braced, bare) => variables.get(braced ?? bare) ?? whole,
   );
 
-/** Pull in bodies passed by path. Unresolvable and unreadable paths are simply not scanned. */
-function readBodyFiles(command, cwd) {
-  const variables = shellVariables(command);
-  const texts = [];
-  for (const target of new Set(bodyPaths(command))) {
-    const resolved = expand(target, variables);
-    if (resolved.includes("$")) continue;
-    const expanded = resolved.startsWith("~")
-      ? path.join(os.homedir(), resolved.slice(1))
-      : resolved;
+const expandHome = (target) =>
+  target.startsWith("~") ? path.join(os.homedir(), target.slice(1)) : target;
+
+/** The directories the command runs in: the cwd it starts in, plus every one it cd's into. */
+function baseDirs(command, cwd, variables) {
+  const bases = [cwd];
+  for (const [, raw] of command.matchAll(CD)) {
+    const target = expand(unquote(raw), variables);
+    if (target.includes("$")) continue;
+    bases.push(path.resolve(bases.at(-1), expandHome(target)));
+  }
+  return bases;
+}
+
+const readFrom = (bases, target) => {
+  for (const base of bases) {
     try {
-      texts.push(fs.readFileSync(path.resolve(cwd, expanded), "utf8"));
+      return fs.readFileSync(path.resolve(base, target), "utf8");
     } catch {
-      // Unreadable or nonexistent paths are simply not scanned.
+      // Try the next directory the command runs in.
     }
   }
-  return texts;
+  return null;
+};
+
+/**
+ * Pull in bodies passed by path, looking each path up in every directory the command
+ * runs in. Paths that stay unreadable are reported so the call can be denied instead
+ * of passing unchecked.
+ */
+function readBodyFiles(command, cwd) {
+  const variables = shellVariables(command);
+  const bases = baseDirs(command, cwd, variables);
+  const texts = [];
+  const unreadable = [];
+  for (const target of new Set(bodyPaths(command))) {
+    const resolved = expand(target, variables);
+    const text = resolved.includes("$") ? null : readFrom(bases, expandHome(resolved));
+    if (text === null) unreadable.push(resolved);
+    else texts.push(text);
+  }
+  return { texts, unreadable };
 }
 
 function collectStrings(value) {
@@ -144,31 +177,36 @@ function collectStrings(value) {
   return [];
 }
 
-/** Return the texts worth scanning for this call, empty when the tool is out of scope. */
+/**
+ * Return the texts worth scanning for this call, and the body paths that could not be
+ * read. Both are empty when the tool is out of scope.
+ */
 function targetTexts(toolName, toolInput, cwd) {
   const asMarkdown = (texts) => texts.map((text) => ({ text, ext: ".md" }));
+  const scan = (targets) => ({ targets, unreadable: [] });
 
   if (toolName === "Bash") {
     const command = toolInput.command ?? "";
     const isGhWrite =
       GH_SUBCOMMAND.test(command) || (GH_API.test(command) && GH_API_WRITE.test(command));
-    if (!isGhWrite) return [];
+    if (!isGhWrite) return scan([]);
+    const { texts, unreadable } = readBodyFiles(command, cwd);
     // The command line itself is not Markdown; backticks in it are not code spans.
-    return [{ text: command, ext: ".txt" }, ...asMarkdown(readBodyFiles(command, cwd))];
+    return { targets: [{ text: command, ext: ".txt" }, ...asMarkdown(texts)], unreadable };
   }
 
   if (toolName === "Write" || toolName === "Edit") {
     const filePath = (toolInput.file_path ?? "").toLowerCase();
-    if (!PROSE_SUFFIXES.some((suffix) => filePath.endsWith(suffix))) return [];
+    if (!PROSE_SUFFIXES.some((suffix) => filePath.endsWith(suffix))) return scan([]);
     const text = toolInput.content || toolInput.new_string || "";
-    return text ? asMarkdown([text]) : [];
+    return scan(text ? asMarkdown([text]) : []);
   }
 
   if (MCP_ATLASSIAN.test(toolName) && MCP_WRITE_OP.test(toolName)) {
-    return asMarkdown(collectStrings(toolInput));
+    return scan(asMarkdown(collectStrings(toolInput)));
   }
 
-  return [];
+  return scan([]);
 }
 
 const kernel = new TextlintKernel();
@@ -269,11 +307,11 @@ async function main() {
   const toolInput = payload.tool_input ?? {};
   const cwd = payload.cwd || process.cwd();
 
-  const targets = targetTexts(toolName, toolInput, cwd);
+  const { targets, unreadable } = targetTexts(toolName, toolInput, cwd);
   if (targets.length === 0) return;
 
   const findings = await findIssues(targets);
-  if (findings.length === 0) return;
+  if (findings.length === 0 && unreadable.length === 0) return;
 
   const detail = findings
     .map(
@@ -281,10 +319,21 @@ async function main() {
         `${i + 1}. 該当: 「${hit}」\n   原文: 「${line}」\n   対応: ${advice}`,
     )
     .join("\n\n");
-  const reason =
-    "[言い回しの矯正]\n\n" +
-    "曖昧・翻訳調な表現が含まれています。読み手が具体的な動作を想像できる書き方に直してください。\n\n" +
-    `${detail}\n`;
+  const parts = ["[言い回しの矯正]\n"];
+  if (findings.length > 0) {
+    parts.push(
+      "曖昧・翻訳調な表現が含まれています。読み手が具体的な動作を想像できる書き方に直してください。\n",
+      `${detail}\n`,
+    );
+  }
+  if (unreadable.length > 0) {
+    parts.push(
+      "本文を渡しているファイルを読めず、表現を確認できませんでした: " +
+        unreadable.map((target) => `「${target}」`).join(", ") +
+        "\n本文ファイルを先に別のコマンドで書き出してから、絶対パスを渡して投稿し直してください。\n",
+    );
+  }
+  const reason = parts.join("\n");
 
   console.error(reason);
 
