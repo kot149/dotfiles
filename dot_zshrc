@@ -291,6 +291,45 @@ unset _win_path
 # mise
 if command -v mise &> /dev/null; then
   path=("${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims" $path)
+  eval "$(mise activate zsh --no-hook-env)"
+  _mise_hook() {
+    eval "$(command mise hook-env -s zsh "$@")"
+  }
+
+  typeset -g _mise_hook_cache="${XDG_CACHE_HOME:-$HOME/.cache}/mise/hook-env-$$.zsh"
+  mkdir -p "${_mise_hook_cache:h}"
+  (umask 077; command mise hook-env -s zsh --reason precmd >| "${_mise_hook_cache}.tmp" &&
+    mv -f "${_mise_hook_cache}.tmp" "$_mise_hook_cache") &!
+  typeset -g _mise_hook_pid=$!
+
+  _mise_hook_preexec() {
+    if [[ -n ${_mise_hook_cache:-} ]]; then
+      zmodload zsh/zselect
+      while [[ ! -r $_mise_hook_cache ]] && kill -0 $_mise_hook_pid 2>/dev/null; do
+        zselect -t 1
+      done
+      if [[ -r $_mise_hook_cache ]]; then
+        source "$_mise_hook_cache"
+      else
+        _mise_hook --reason precmd
+      fi
+      command rm -f -- "$_mise_hook_cache" "${_mise_hook_cache}.tmp"
+      unset _mise_hook_cache _mise_hook_pid
+    else
+      _mise_hook --reason precmd
+    fi
+  }
+  _mise_hook_chpwd() {
+    _mise_hook --reason chpwd
+  }
+  _mise_hook_cleanup() {
+    [[ -n ${_mise_hook_pid:-} ]] && kill $_mise_hook_pid 2>/dev/null
+    [[ -n ${_mise_hook_cache:-} ]] && command rm -f -- "$_mise_hook_cache" "${_mise_hook_cache}.tmp"
+  }
+  autoload -Uz add-zsh-hook
+  add-zsh-hook preexec _mise_hook_preexec
+  add-zsh-hook chpwd _mise_hook_chpwd
+  add-zsh-hook zshexit _mise_hook_cleanup
 fi
 
 # direnv
