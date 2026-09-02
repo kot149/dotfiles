@@ -11,8 +11,6 @@ import json
 import os
 import subprocess
 import sys
-import tomllib
-from pathlib import Path
 
 SUPPORTED_STATES = frozenset({"idle", "working", "blocked", "done", "unknown"})
 DISPLAY_ORDER = "display"
@@ -29,12 +27,21 @@ def load_config(config_dir: str) -> tuple[tuple[str, ...], str]:
     if not config_dir:
         return DEFAULT_STATES, DISPLAY_ORDER
 
-    path = Path(config_dir) / "config.toml"
+    path = os.path.join(config_dir, "config.toml")
     try:
-        raw = tomllib.loads(path.read_text(encoding="utf-8"))
+        with open(path, "rb") as handle:
+            text = handle.read()
     except FileNotFoundError:
         return DEFAULT_STATES, DISPLAY_ORDER
-    except (OSError, tomllib.TOMLDecodeError) as err:
+    except OSError as err:
+        raise NextAgentError(f"read Next Agent configuration {path}: {err}") from err
+
+    # Imported here so the common no-config path skips the interpreter cost.
+    import tomllib
+
+    try:
+        raw = tomllib.loads(text.decode("utf-8"))
+    except (UnicodeDecodeError, tomllib.TOMLDecodeError) as err:
         raise NextAgentError(f"read Next Agent configuration {path}: {err}") from err
 
     unknown = set(raw) - {"states", "order"}
