@@ -289,14 +289,8 @@ path+=($_win_path)
 unset _win_path
 
 # mise
-# mise hook-env はセッション確立を行う初回呼び出しだけで約 250ms かかるため、
-# プロンプト表示をブロックしないよう activate ごと遅延させる。
 if command -v mise &> /dev/null; then
-  if (( $+functions[zsh-defer] )); then
-    zsh-defer -c 'eval "$(mise activate zsh)"'
-  else
-    eval "$(mise activate zsh)"
-  fi
+  path=("${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims" $path)
 fi
 
 # direnv

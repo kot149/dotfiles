@@ -12,39 +12,28 @@
 
 shell = "zsh"
 
-[plugins.zsh-defer]
-github = "romkatv/zsh-defer"
-
-[templates]
-defer = "{% for file in files %}zsh-defer source \"{{ file }}\"\n{% endfor %}"
-
 [plugins]
 
 [plugins.compinit]
-inline = 'autoload -Uz compinit && zsh-defer compinit'
-
-[plugins.zsh-autosuggetions]
-git = "https://github.com/zsh-users/zsh-autosuggestions"
-apply = ['defer']
-
-[plugins.zsh-completions]
-git = "https://github.com/zsh-users/zsh-completions"
-apply = ['defer']
-
-[plugins.zsh-syntax-highlighting]
-git = "https://github.com/zsh-users/zsh-syntax-highlighting"
-apply = ['defer']
-
-[plugins.zsh-shift-select]
-git = "https://github.com/jirutka/zsh-shift-select"
-apply = ['defer']
-
-[plugins.zsh-bd]
-git = "https://github.com/Tarrasch/zsh-bd"
-apply = ['defer']
-
-# ~/.zsh/completion への fpath 追加は compinit より前に済ませる必要があるため .zshrc 側で行う。
+inline = 'autoload -Uz compinit && compinit -C'
 
 [plugins.abbr]
 github = "olets/zsh-abbr"
 use = ["zsh-abbr.plugin.zsh"]
+
+[plugins.zsh-autosuggetions]
+git = "https://github.com/zsh-users/zsh-autosuggestions"
+
+[plugins.zsh-completions]
+git = "https://github.com/zsh-users/zsh-completions"
+
+[plugins.zsh-syntax-highlighting]
+git = "https://github.com/zsh-users/zsh-syntax-highlighting"
+
+[plugins.zsh-shift-select]
+git = "https://github.com/jirutka/zsh-shift-select"
+
+[plugins.zsh-bd]
+git = "https://github.com/Tarrasch/zsh-bd"
+
+# ~/.zsh/completion への fpath 追加は compinit より前に済ませる必要があるため .zshrc 側で行う。
