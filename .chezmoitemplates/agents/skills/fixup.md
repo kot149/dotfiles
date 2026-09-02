@@ -210,11 +210,15 @@ git commit --fixup=<TARGET_SHA>
 1. 現在の index をいったんクリア: `git reset` (ワーキングツリーはそのまま)
 2. コミット [n] に含める変更だけを staged 化する
    - ファイル全体なら: `git add <FILE>`
-   - hunk 単位なら: `git add -p <FILE>` は対話式なので使わず、patch を経由する:
+   - hunk 単位なら: 対話式の `git add -p` は使えないので、patch を書き出して必要な hunk だけ残し、index へ適用する:
      ```bash
-     git diff <FILE> > /tmp/hunk-N.patch  # 事前にエディタで該当 hunk だけ残す形はAIには不向き
+     git diff -U3 <FILE> > <SCRATCH>/fixup-N.patch
+     # <SCRATCH>/fixup-N.patch を編集し、このコミットに含める hunk だけ残す
+     git apply --cached --check <SCRATCH>/fixup-N.patch   # 先に適用可否を確認
+     git apply --cached <SCRATCH>/fixup-N.patch
      ```
-     hunk 単位の分割は誤りやすいので、hunk 分割が必要な場合は **ユーザーに `git add -p` を手動で実行してもらい、その後にこのスキルへ戻ってくる** よう案内する。勝手に hunk を書き換えない。
+     patch を編集する際は hunk ヘッダ (`@@ -a,b +c,d @@`) の行数を残した hunk の実体と一致させる。手計算が面倒な場合は `git apply --cached --recount` を使うと行数を再計算してくれる。
+     適用後は必ず `git diff --cached` で staged 内容が意図した hunk と一致していることを確認する。ずれていたら `git reset` してやり直す。
 3. `git commit --fixup=<TARGET_SHA_n>` を実行
 4. 次の fixup コミットへ
 
@@ -244,7 +248,7 @@ git branch backup/fixup-$(date +%Y%m%d-%H%M%S)
 対象コミットごとに以下を繰り返す:
 
 1. index をクリアする: `git reset` (ワーキングツリーはそのまま)
-2. そのコミットに取り込む変更だけを staged 化する (方式 A の A-2 と同じ制約。`git add -A` / `git add .` は使わない。hunk 単位はユーザーに `git add -p` を委ねる)
+2. そのコミットに取り込む変更だけを staged 化する (方式 A の A-2 と同じ制約。`git add -A` / `git add .` は使わない。hunk 単位は patch を経由して `git apply --cached` する)
 3. `git status --short` で staged 内容を検証する
 4. dry-run で結果を確認する:
    ```bash
@@ -324,7 +328,7 @@ autosquash が途中で失敗した場合 (コンフリクト等) は、autosqua
 - **保護ブランチ上では実行しない。** 現在ブランチが `main` / `master` / `develop` などの場合は中断する。
 - **base より前のコミットには fixup しない。** <MB>..HEAD の範囲外は他人の履歴なので触らない。範囲外にしか帰属先が無い変更は、通常のコミットにするようユーザーに提案する。
 - **既存の `fixup!` / `squash!` コミットには fixup しない。** それらはさらに元のコミットへ紐づいているため、二重 fixup は混乱の元。
-- **hunk 単位の複雑な分割は AI 側で自動化しない。** 誤って別の hunk を巻き込むリスクが高いので、ユーザーに `git add -p` を委ねる。
+- **hunk 単位で分割したら staged 内容を必ず検証する。** patch 経由の分割は別の hunk を巻き込む余地があるので、`git diff --cached` で意図した hunk だけが載っていることを確認してから commit する。
 - **`git add -A` / `git add .` は使わない。** 常にファイルを明示指定する (`.env` などの誤コミット防止)。
 - **force push はしない。** autosquash 後 / 履歴書き換え後の push はユーザーの責務。
 - **方式 B は履歴を破壊的に書き換える。** 実行前に必ずバックアップブランチを作り、`--dry-run` で確認する。マージコミットを含む履歴では使えないので、`git log --merges <MB>..HEAD` にヒットする場合は方式 A に切り替える。

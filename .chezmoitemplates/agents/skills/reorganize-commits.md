@@ -193,7 +193,14 @@ git commit -m "<コミットメッセージ>"
 を繰り返す。
 
 - **`git add -A` / `git add .` は使わない。** 常にファイルを明示指定する
-- ファイル内の hunk 単位で分ける必要がある場合は、対話式 `git add -p` を **ユーザーに手動実行してもらう** よう案内する (AI が自動化しない)。パッチを scratchpad に書き出して `git apply --cached` する方法も取れるが、適用結果は必ず `git diff --cached` で確認する
+- ファイル内の hunk 単位で分ける必要がある場合は、対話式 `git add -p` は使えないので patch を経由する:
+  ```bash
+  git diff -U3 <FILE> > <SCRATCH>/unit-N.patch
+  # <SCRATCH>/unit-N.patch を編集し、この単位に含める hunk だけ残す
+  git apply --cached --check <SCRATCH>/unit-N.patch
+  git apply --cached <SCRATCH>/unit-N.patch
+  ```
+  hunk ヘッダ (`@@ -a,b +c,d @@`) の行数は残した hunk の実体と一致させる。手計算が面倒なら `git apply --cached --recount` で再計算させる。適用後は必ず `git diff --cached` で staged 内容を確認し、ずれていたら `git reset` してやり直す
 - 移動リファクタのコミットは、移動後に `git show -M --stat` で rename として認識されることを確認する。認識されない場合は移動と編集が混ざっている
 - コミットメッセージはリポジトリの既存スタイル (`git log --oneline -20`) に合わせる。[[commit-message]] スキルの規約に従い、`Co-Authored-By` は付けない
 - 各コミット後に `git status --short` で残差を確認する
@@ -253,7 +260,7 @@ git branch -D "${BACKUP_BRANCH}"
 - **`<MB>` より前のコミットは触らない**
 - **base の取り込みはこのスキルでは行わない。** 起点は常に merge-base (`<MB>`) に固定し、履歴の整理以外の変化を起こさない
 - **コンフリクト時に勝手に `--abort` / `--skip` しない。** ユーザー判断を仰ぐ
-- **hunk 単位の複雑な分割は AI が自動化しない。** ユーザーに `git add -p` を委ねる
+- **hunk 単位で分割したら staged 内容を必ず検証する。** patch 経由の分割は別の hunk を巻き込む余地があるので、`git diff --cached` で意図した hunk だけが載っていることを確認してから commit する
 - **`git add -A` / `git add .` は使わない**
 - **force push はしない。** ユーザーの責務
 - 範囲内に merge コミットがある場合、整理すると履歴が線形化される。実行前にユーザーへ警告し、承認を得る
