@@ -96,9 +96,29 @@ const fieldFile = (value) => value?.match(/^[^=]*=@(.+)$/)?.[1] ?? null;
 // form is already resolved by fieldFile, so a leftover name=value is never a path.
 const FIELD_SPEC = /^[A-Za-z_][\w.[\]-]*=/;
 
+/**
+ * Drop heredoc bodies. A heredoc carries data, not command words: a script written with
+ * one can mention `--body-file path` without this call ever reading that path.
+ */
+function stripHeredocBodies(command) {
+  const kept = [];
+  let terminator = null;
+  for (const line of command.split("\n")) {
+    if (terminator !== null) {
+      if (line.trim() === terminator) terminator = null;
+      continue;
+    }
+    kept.push(line);
+    const opener = line.match(/<<(?!<)-?\s*(['"]?)([A-Za-z_]\w*)\1/);
+    if (opener) terminator = opener[2];
+  }
+  return kept.join("\n");
+}
+
 /** Every path this command could be reading a body from. Duplicates and nulls are fine. */
-function bodyPaths(command) {
-  // Heredocs break the splitter; the substitution scan below still covers those commands.
+function bodyPaths(rawCommand) {
+  const command = stripHeredocBodies(rawCommand);
+  // The opening line survives the strip, so a heredoc-fed gh call still exposes its flags.
   const words = splitWords(command) ?? [];
   const paths = words.flatMap((_, i) => [
     ...FILE_FLAGS.map((flag) => flagValue(words, i, flag)),
