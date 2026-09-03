@@ -2,3 +2,4 @@
 ## Claude Code specific
 
 - Put context the user must read before an `AskUserQuestion` in same-turn Markdown, not in the length-limited payload fields. Finish all thinking first, then write the text and call the tool as one uninterrupted step: `thinking → text → thinking → tool_use` silently drops the text (anthropics/claude-code#74260), while `thinking → text → tool_use` is safe at any length. Do not split into two turns.
+- In auto mode, write Bash reads and searches with absolute paths instead of `cd <dir> && <command> <relative path>`. When the repository has `Read()` deny rules, the auto mode classifier refuses to resolve a path that follows an in-command `cd` and escalates to a manual approval prompt (Claude Code 2.1.257 and later). Pass this on to subagents too: with several forks running in parallel, the `cd` form buries the session in approval prompts.
