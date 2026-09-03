@@ -943,6 +943,15 @@ prefix = "skills/productivity"
 names = ["grilling"]
 agents = ["claude", "agents"]
 
+# grill-with-docs は grilling と domain-modeling を呼び出すだけのスキルなので、
+# domain-modeling も併せて入れる。
+[[agent_skills]]
+repo = "mattpocock/skills"
+rev = "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76"
+prefix = "skills/engineering"
+names = ["grill-with-docs", "domain-modeling"]
+agents = ["claude", "agents"]
+
 # SKILL.md sits at the repo root, so there is no per-skill subdirectory.
 [[agent_skills]]
 repo = "luchasarie/bro-skill"
