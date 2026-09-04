@@ -198,6 +198,25 @@ function collectStrings(value) {
 }
 
 /**
+ * The prose a body file carries, as separate texts.
+ *
+ * A JSON body holds its prose in string values, and the punctuation around them belongs
+ * to the format rather than to the author. Read as one Markdown document, those braces
+ * and quotes pair up with the backticks inside the prose, and a review payload of a few
+ * hundred lines hides most of its sentences in phantom code spans. Splitting on the
+ * string values gives every sentence a scope of its own.
+ */
+function bodyProse(text) {
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === "object") return collectStrings(parsed);
+  } catch {
+    // Not JSON, so the file already is the prose.
+  }
+  return [text];
+}
+
+/**
  * Return the texts worth scanning for this call, and the body paths that could not be
  * read. Both are empty when the tool is out of scope.
  */
@@ -211,8 +230,9 @@ function targetTexts(toolName, toolInput, cwd) {
       GH_SUBCOMMAND.test(command) || (GH_API.test(command) && GH_API_WRITE.test(command));
     if (!isGhWrite) return scan([]);
     const { texts, unreadable } = readBodyFiles(command, cwd);
+    const prose = texts.flatMap(bodyProse);
     // The command line itself is not Markdown; backticks in it are not code spans.
-    return { targets: [{ text: command, ext: ".txt" }, ...asMarkdown(texts)], unreadable };
+    return { targets: [{ text: command, ext: ".txt" }, ...asMarkdown(prose)], unreadable };
   }
 
   if (toolName === "Write" || toolName === "Edit") {
