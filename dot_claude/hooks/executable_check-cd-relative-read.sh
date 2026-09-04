@@ -34,25 +34,13 @@ PATTERN_FIRST = {"grep", "egrep", "fgrep", "rg", "ag", "ack", "sed", "awk", "fd"
 
 ENV_ASSIGN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 RELATIVE_PATH = re.compile(r"/|\.[A-Za-z0-9_]+$")
-SEPARATORS = {"&&", "||", "|", ";", "&", "(", ")"}
-REDIRECTS = {">", ">>", "<", "<<", "2>", "&>"}
 
 
-def segments_of(command):
-    """Split into command segments, tokenizing first so quoted `|` stays intact."""
-    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
-    lexer.whitespace_split = True
-    segment = []
-    for token in lexer:
-        if token in SEPARATORS:
-            yield segment
-            segment = []
-        else:
-            segment.append(token)
-    yield segment
-
-
-def strip_prefixes(words):
+def words_of(segment):
+    try:
+        words = shlex.split(segment)
+    except ValueError:
+        return None
     while words and (ENV_ASSIGN.match(words[0]) or os.path.basename(words[0]) == "rtk"):
         words = words[1:]
     return words
@@ -64,32 +52,13 @@ def looks_relative(word):
     return bool(RELATIVE_PATH.search(word))
 
 
-def positionals_of(words):
-    """Arguments that name a path: no flags, no redirection targets."""
-    result = []
-    skip_next = False
-    for word in words:
-        if skip_next:
-            skip_next = False
-            continue
-        if word in REDIRECTS or word.startswith((">", "<")):
-            skip_next = True
-            continue
-        if word.startswith("-"):
-            continue
-        result.append(word)
-    return result
-
-
-try:
-    all_segments = list(segments_of(command))
-except ValueError:
-    sys.exit(0)
-
+segments = re.split(r"(?:&&|\|\||[;|]|\n)", command)
 seen_cd = False
 
-for words in all_segments:
-    words = strip_prefixes(words)
+for segment in segments:
+    words = words_of(segment)
+    if words is None:
+        sys.exit(0)
     if not words:
         continue
 
@@ -105,7 +74,7 @@ for words in all_segments:
     if not seen_cd or name not in READ_CMDS:
         continue
 
-    positionals = positionals_of(words[1:])
+    positionals = [w for w in words[1:] if not w.startswith("-")]
     if name in PATTERN_FIRST:
         positionals = positionals[1:]
 
