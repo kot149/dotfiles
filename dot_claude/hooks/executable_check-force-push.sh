@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ask for confirmation before force-pushing to a remote.
+# Ask for confirmation before pushing to a remote.
 
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
@@ -14,7 +14,7 @@ else
     exit 0
 fi
 
-TARGET=$("$PYTHON" - "$COMMAND" <<'PYEOF'
+DETECTED=$("$PYTHON" - "$COMMAND" <<'PYEOF'
 import os
 import re
 import shlex
@@ -47,20 +47,23 @@ for segment in re.split(r'(?:&&|\|\||[;|]|\n)', command):
         continue
 
     push_args = args[push_index + 1 :]
-    if any(
+    force = any(
         arg == "-f"
         or (arg.startswith("-") and not arg.startswith("--") and "f" in arg[1:])
         or arg.startswith("--force")
         for arg in push_args
-    ):
-        print("git push " + " ".join(push_args))
-        sys.exit(0)
+    )
+    kind = "force" if force else "normal"
+    print(kind + "\tgit push " + " ".join(push_args))
+    sys.exit(0)
 PYEOF
 ) || exit 0
 
-[[ -z "$TARGET" ]] && exit 0
+[[ -z "$DETECTED" ]] && exit 0
 
-REASON=$(cat <<EOF
+IFS=$'\t' read -r PUSH_KIND TARGET <<< "$DETECTED"
+if [[ "$PUSH_KIND" == "force" ]]; then
+    REASON=$(cat <<EOF
 [Force push requires confirmation]
 
   Command: $TARGET
@@ -68,7 +71,18 @@ REASON=$(cat <<EOF
 Force-pushing can discard commits on the remote branch. Confirm this operation
 explicitly if you intend to rewrite the remote history.
 EOF
-)
+    )
+else
+    REASON=$(cat <<EOF
+[Git push requires confirmation]
+
+  Command: $TARGET
+
+This command publishes commits to a remote repository. Confirm the operation
+explicitly if you intend to update the remote branch.
+EOF
+    )
+fi
 
 printf '%s\n' "$REASON" >&2
 
