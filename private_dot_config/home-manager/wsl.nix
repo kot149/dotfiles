@@ -17,7 +17,10 @@ let
   '';
 in
 {
-  home.packages = [ ghosttyWrapped ];
+  home.packages = [
+    ghosttyWrapped
+    pkgs.pulseaudio
+  ];
 
   home.file.".config/tailscale/tailscaled.service.d/wsl.conf".text = ''
     [Service]
