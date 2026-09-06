@@ -1,0 +1,134 @@
+# Third-party agent skills, materialized by .chezmoiexternal.toml.tmpl as archive
+# externals (works on every OS, Windows included -- no symlinks, no Nix).
+#
+#   repo    GitHub owner/name
+#   rev     commit SHA to pin (bump manually; that is the whole update flow)
+#   prefix  directory inside the repo that holds the skills
+#   names   skill directory names under prefix
+#   agents  which config dirs receive them (~/.<agent>/skills/<name>); one
+#           declaration feeds every listed store, so a skill needed everywhere
+#           lists both "agents" (the shared ~/.agents/skills store that Codex and
+#           most other agents read natively) and "claude" (~/.claude/skills, the
+#           only place Claude Code looks)
+#
+# Self-authored skills are not listed here; they are checked into dot_claude/skills
+# and dot_agents/skills (shared bodies live in .chezmoitemplates/agents/skills).
+
+[[agent_skills]]
+repo = "yusukebe/ax"
+rev = "8abbca2fc400c2ff4866248ba1ec9309b948812f"
+prefix = "skills"
+names = ["ax"]
+agents = ["claude", "agents"]
+
+[[agent_skills]]
+repo = "herdrdev/herdr"
+rev = "d76657f2c7fc18dcce3b9af43842c8afaba1646b"
+prefix = "skills"
+names = ["herdr"]
+agents = ["claude", "agents"]
+
+[[agent_skills]]
+repo = "shadcn/improve"
+rev = "03369ee6d7cafbfcecc4346539b05b3dc0a603bb"
+prefix = "skills"
+names = ["improve"]
+agents = ["claude", "agents"]
+
+[[agent_skills]]
+repo = "vercel-labs/skills"
+rev = "c6f69c631292444cc541ac6d91e2226b0ff247da"
+prefix = "skills"
+names = ["find-skills"]
+agents = ["claude", "agents"]
+
+[[agent_skills]]
+repo = "vercel-labs/agent-browser"
+rev = "548b159b30eef119ccf6846c8bc807d0eaa3f6f8"
+prefix = "skills"
+names = ["agent-browser"]
+agents = ["claude", "agents"]
+
+[[agent_skills]]
+repo = "humanlayer/skills"
+rev = "3c2629142c5d437428269b1b722b08c0b87f574d"
+prefix = "plugins/show-me/skills"
+names = ["show-me"]
+agents = ["claude", "agents"]
+
+[[agent_skills]]
+repo = "DietrichGebert/ponytail"
+rev = "2ed6c52c9d7e5e56942508591085fd45dea277d3"
+prefix = "skills"
+names = [
+  "ponytail",
+  "ponytail-audit",
+  "ponytail-debt",
+  "ponytail-gain",
+  "ponytail-help",
+  "ponytail-review",
+]
+agents = ["claude", "agents"]
+
+[[agent_skills]]
+repo = "mattpocock/skills"
+rev = "885e2ca4d842d139e9aef4e48d366c63cb1b8013"
+prefix = "skills/productivity"
+names = ["grilling"]
+agents = ["claude", "agents"]
+
+# grill-with-docs は grilling と domain-modeling を呼び出すだけのスキルなので、
+# domain-modeling も併せて入れる。
+[[agent_skills]]
+repo = "mattpocock/skills"
+rev = "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76"
+prefix = "skills/engineering"
+names = ["grill-with-docs", "domain-modeling"]
+agents = ["claude", "agents"]
+
+# SKILL.md sits at the repo root, so there is no per-skill subdirectory.
+[[agent_skills]]
+repo = "luchasarie/bro-skill"
+rev = "01e51f8092973be58eff3b7271282bd8488a02ae"
+prefix = ""
+names = ["bro"]
+agents = ["claude", "agents"]
+flat = true
+
+[[agent_skills]]
+repo = "dmmulroy/anti-slop"
+rev = "6d538555cb151d4121ed51a27db81890eacf8ae9"
+prefix = "skills"
+names = ["install-anti-slop"]
+agents = ["claude", "agents"]
+
+# The skill drives the separate `suiko` CLI; without it the skill falls back to
+# its bundled manual checklist.
+[[agent_skills]]
+repo = "nwiizo/suiko"
+rev = "3651215fee9409afe016de8d8347c442e1b5c88d"
+prefix = "skills"
+names = ["suiko"]
+agents = ["claude", "agents"]
+
+# Claude Code gets these from the enabled cloudflare@cloudflare plugin, so only
+# the shared store (read by Codex, which has no Claude Code plugin mechanism)
+# needs them materialized.
+[[agent_skills]]
+repo = "cloudflare/skills"
+rev = "f96bff754e428838818017f75817f0f9428acd48"
+prefix = "skills"
+names = [
+  "agents-sdk",
+  "cloudflare",
+  "cloudflare-email-service",
+  "cloudflare-one",
+  "cloudflare-one-migrations",
+  "durable-objects",
+  "sandbox-stable",
+  "turnstile-spin",
+  "web-perf",
+  "workers-best-practices",
+  "wrangler",
+]
+agents = ["agents"]

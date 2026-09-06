@@ -1,0 +1,7 @@
+git_user_name = "kot149"
+git_user_email = "131101078+kot149@users.noreply.github.com"
+git_signing_key = ""
+git_allowed_signers = ""
+git_editor = "code --wait"
+git_commit_gpgsign = true
+git_safe_directories = []
