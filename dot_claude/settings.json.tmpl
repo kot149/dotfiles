@@ -36,10 +36,12 @@
 {{- range $shellAllow -}}
   {{- $allow = append $allow (printf "Bash(%s)" .) -}}
   {{- $allow = append $allow (printf "Bash(rtk %s)" .) -}}
+  {{- $allow = append $allow (printf "Bash(rtk proxy %s)" .) -}}
   {{- if hasSuffix " *" . -}}
     {{- $bare := trimSuffix " *" . -}}
     {{- $allow = append $allow (printf "Bash(%s)" $bare) -}}
     {{- $allow = append $allow (printf "Bash(rtk %s)" $bare) -}}
+    {{- $allow = append $allow (printf "Bash(rtk proxy %s)" $bare) -}}
   {{- end -}}
   {{- if or (hasPrefix "pnpm " .) (hasPrefix "npm " .) (hasPrefix "yarn " .) -}}
     {{- $allow = append $allow (printf "Bash(corepack %s)" .) -}}
@@ -53,10 +55,12 @@
   {{- $rule := . -}}
   {{- $deny = append $deny (printf "Bash(%s)" $rule) -}}
   {{- $deny = append $deny (printf "Bash(rtk %s)" $rule) -}}
+  {{- $deny = append $deny (printf "Bash(rtk proxy %s)" $rule) -}}
   {{- if has (first (splitList " " $rule)) $absBins -}}
     {{- range $absDirs -}}
       {{- $deny = append $deny (printf "Bash(%s/%s)" . $rule) -}}
       {{- $deny = append $deny (printf "Bash(rtk %s/%s)" . $rule) -}}
+      {{- $deny = append $deny (printf "Bash(rtk proxy %s/%s)" . $rule) -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
