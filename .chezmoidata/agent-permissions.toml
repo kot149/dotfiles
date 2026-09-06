@@ -832,8 +832,6 @@ agent_shell_deny = [
   "fd *-x *",
   "sort *-o *",
   "sort *--output*",
-  "git push --force*",
-  "git push -f *",
   "git clean -f*",
   "git checkout -- *",
   "xargs rm*",
