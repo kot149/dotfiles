@@ -83,6 +83,8 @@ let
     llmAgents.omp
     llmAgents.rtk
 
+    antigravity-cli
+
     (callPackage ./pkgs/cli-proxy-api.nix { })
     (callPackage ./pkgs/terminal-browser.nix { })
 
@@ -125,6 +127,7 @@ in
     home.homeDirectory = "{{ .chezmoi.homeDir }}";
 
     localAllowUnfree.packages = [
+      "antigravity-cli"
       "discord"
       "ngrok"
       "terraform"
