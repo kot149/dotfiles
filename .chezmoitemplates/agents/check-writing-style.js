@@ -26,6 +26,11 @@ import os from "node:os";
 import path from "node:path";
 import rule from "./textlint-rules/textlint-rule-ja-ai-phrasing.js";
 
+// Codex edits files by emitting a patch document instead of Claude's Write / Edit
+// calls. Prose lives in the added / changed lines, one "+ text" or "- text" pair
+// per line under a *** Add File / *** Update File header.
+const PATCH_FILE = /^\*{3} (?:Add|Update) File: (.+)$/;
+
 const PROSE_SUFFIXES = [".md", ".markdown", ".mdx", ".txt"];
 
 // How much of the offending line to quote back.
@@ -244,6 +249,34 @@ function targetTexts(toolName, toolInput, cwd) {
 
   if (MCP_ATLASSIAN.test(toolName) && MCP_WRITE_OP.test(toolName)) {
     return scan(asMarkdown(collectStrings(toolInput)));
+  }
+  if (toolName === "apply_patch") {
+    // Codex edits files by emitting a patch document instead of Claude's Write /
+    // Edit calls. Prose lives in the added / removed lines under a file header.
+    const targets = [];
+    let currentFile = null;
+    let currentText = "";
+    const flush = () => {
+      const filePath = (currentFile ?? "").toLowerCase();
+      if (currentText && PROSE_SUFFIXES.some((suffix) => filePath.endsWith(suffix))) {
+        targets.push({ text: currentText, ext: ".md" });
+      }
+      currentFile = null;
+      currentText = "";
+    };
+    for (const line of String(toolInput.command ?? "").split("\n")) {
+      const header = line.match(PATCH_FILE);
+      if (header) {
+        flush();
+        currentFile = header[1];
+        continue;
+      }
+      if (currentFile && (line.startsWith("+") || line.startsWith("-"))) {
+        currentText += `${line.slice(1)}\n`;
+      }
+    }
+    flush();
+    return scan(targets);
   }
 
   return scan([]);

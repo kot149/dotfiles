@@ -4,14 +4,49 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash|Shell",
+        "matcher": "^(Bash|Shell)$",
         "hooks": [
+          {
+            "type": "command",
+            "command": "bash '{{ $home }}/.codex/hooks/check-force-push.sh'",
+            "timeout": 15,
+            "statusMessage": "Checking force push"
+          },
+          {
+            "type": "command",
+            "command": "bash '{{ $home }}/.codex/hooks/check-github-api-write.sh'",
+            "timeout": 15,
+            "statusMessage": "Checking GitHub API write"
+          },
           {
             "type": "command",
             "command": "bash '{{ $home }}/.codex/hooks/check-package-manager.sh'",
             "commandWindows": "pwsh -NoProfile -File \"{{ $home }}/.codex/hooks/check-package-manager.ps1\"",
             "timeout": 15,
             "statusMessage": "Checking package manager"
+          },
+          {
+            "type": "command",
+            "command": "bash '{{ $home }}/.codex/hooks/check-commit-sha-links.sh'",
+            "timeout": 15,
+            "statusMessage": "Checking commit SHA links"
+          },
+          {
+            "type": "command",
+            "command": "bash '{{ $home }}/.codex/hooks/check-cargo-install.sh'",
+            "timeout": 15,
+            "statusMessage": "Checking cargo install"
+          }
+        ]
+      },
+      {
+        "matcher": "^(Bash|Shell|apply_patch)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run '{{ $home }}/.codex/hooks/check-writing-style.js'",
+            "timeout": 30,
+            "statusMessage": "Checking writing style"
           }
         ]
       }
