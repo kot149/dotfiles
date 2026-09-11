@@ -42,6 +42,15 @@ const VERB_RULES = {
   },
 };
 
+// 五段動詞の可能形は kuromoji が別の基本形を立てる (採れる, 倒せる) ため、辞書引きの前に
+// 元の動詞へ戻す。一段動詞の可能形は「られる」が別トークンになるので、ここには要らない。
+const POTENTIAL_FORMS = {
+  採れる: "採る",
+  倒せる: "倒す",
+  通せる: "通す",
+  申し送れる: "申し送る",
+};
+
 // テストの成否の比喩でしか使わない語。単独で出ても指摘する。大文字小文字は問わない。
 const COLOR_METAPHORS = new Set(["グリーン", "レッド", "green", "red"]);
 // 色そのものも指す語。テストの文脈があるときだけ指摘する。
@@ -177,7 +186,8 @@ const pinVerbIndex = (tokens, i) => {
 /** Yield { index, length, advice, replacement } for every token that trips a rule. */
 function* findMatches(tokens) {
   for (const [i, token] of tokens.entries()) {
-    const form = dictionaryForm(token);
+    const dictionary = dictionaryForm(token);
+    const form = POTENTIAL_FORMS[dictionary] ?? dictionary;
     const surface = token.surface_form;
     const hit = { index: token.word_position - 1, length: surface.length };
 
