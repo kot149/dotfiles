@@ -1,0 +1,13 @@
+# Machine-local mise overrides. Copy to mise.local.toml and edit,
+# or run `mise run setup` to generate it interactively.
+# This file is gitignored; values here win over mise.toml [vars].
+[vars]
+git_user_name = "kot149"
+git_user_email = "131101078+kot149@users.noreply.github.com"
+git_signing_key = ""
+git_allowed_signers = ""
+git_editor = "code --wait"
+git_commit_gpgsign = "true"
+# Comma-separated list. Paths cannot contain commas (see templates/gitconfig.tera).
+git_safe_directories = ""
+linux_gui = ""

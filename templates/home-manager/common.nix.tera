@@ -1,0 +1,168 @@
+{ config, lib, pkgs, llmAgents, ... }:
+
+let
+  basePackages = (with pkgs; [
+    # nix
+    nix
+
+    # dotfiles
+    chezmoi
+    mise
+
+    # git
+    git
+    gh
+    lazygit
+    tuicr
+    pre-commit
+    act
+    pinact
+    actionlint
+    git-filter-repo
+
+    # shell
+    zsh
+    oh-my-zsh
+    sheldon
+    starship
+    direnv
+    nix-direnv
+    tree
+    msedit
+    ripgrep
+    zoxide
+    fzf
+    fd
+    bat
+    moor
+    eza
+    superfile
+    fresh-editor
+    rip2
+    jq
+    yq
+    yazi
+    zellij
+
+    # programming
+    cmake
+    nodejs_24
+    pnpm
+    bun
+    ni
+
+    uv
+    pyenv
+    pipenv
+
+    go
+
+    rustup
+    cargo-binstall
+    cargo-make
+    cargo-nextest
+
+    # db
+    mysql84
+    sqlfluff
+
+    # editor
+    neovim
+    (callPackage ./pkgs/tode.nix { })
+    tree-sitter
+    lua-language-server
+    nil
+    stylua
+
+    # ai (from llm-agents.nix, prebuilt in cache.numtide.com)
+    llmAgents.claude-code
+    llmAgents.codex
+    llmAgents.herdr
+    llmAgents.hunk
+    llmAgents.ax
+    llmAgents.opencode
+    llmAgents.omp
+    llmAgents.rtk
+
+    antigravity-cli
+
+    (callPackage ./pkgs/cli-proxy-api.nix { })
+    (callPackage ./pkgs/terminal-browser.nix { })
+
+    # misc
+    curl
+    wget
+    wakeonlan
+    lazydocker
+    btop
+    cloudflared
+    tailscale
+    devcontainer
+    glow
+    rich-cli
+    tdf
+
+    # fonts
+    inconsolata
+    nerd-fonts.inconsolata
+    nerd-fonts.symbols-only
+  ]);
+  denyPackages = config.localDeny.packages;
+in
+{
+  options.localDeny.packages = lib.mkOption {
+    type = lib.types.listOf lib.types.package;
+    default = [ ];
+    description = "Packages to remove from common home.packages";
+  };
+
+  options.localAllowUnfree.packages = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    default = [ ];
+    description = "Package names to permit under allowUnfreePredicate (merged across modules)";
+  };
+
+  config = {
+    home.username = "{{ exec(command="whoami") | trim }}";
+    home.homeDirectory = "{{ get_env(name="HOME", default=get_env(name="USERPROFILE", default="")) }}";
+
+    localAllowUnfree.packages = [
+      "antigravity-cli"
+      "discord"
+      "ngrok"
+      "terraform"
+    ];
+
+    nixpkgs.config.allowUnfreePredicate = pkg:
+      builtins.elem (lib.getName pkg) config.localAllowUnfree.packages;
+
+    # See https://search.nixos.org/packages
+    home.packages = lib.lists.subtractLists denyPackages basePackages;
+
+    programs.home-manager.enable = true;
+    home.stateVersion = "25.11";
+
+    xdg.configFile."nix/nix.conf".force = true;
+
+    nix.package = pkgs.nix;
+
+    nix.settings = {
+      experimental-features = [ "nix-command" "flakes" ];
+      extra-substituters = [
+        {{ read_file(path="generated/nix-substituters-urls.nix") | trim }}
+      ];
+      extra-trusted-public-keys = [
+        {{ read_file(path="generated/nix-substituters-keys.nix") | trim }}
+      ];
+    };
+
+    programs.nh = {
+      enable = true;
+      clean = {
+        enable = true;
+        dates = "weekly";
+        extraArgs = "--keep-since 30d --keep 1";
+      };
+    };
+  };
+}

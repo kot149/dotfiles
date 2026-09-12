@@ -1,159 +1,118 @@
 ## Repository purpose
 
-These are personal dotfiles managed by **chezmoi** (source of truth for files in `$HOME`) and **Nix Home Manager** (declarative package set). On macOS, **nix-darwin** is also used for system-level settings (source: `private_dot_config/nix-darwin/`, applied by `.chezmoiscripts/run_onchange_after_nix-darwin.sh.tmpl`). The repo targets macOS, Linux (including WSL), and Windows from a single source tree.
+Personal dotfiles with [mise](https://mise.jdx.dev) as the source of truth for files in `$HOME` (via `mise bootstrap`) and [Nix Home Manager](https://github.com/nix-community/home-manager) for the declarative package set. On macOS, **nix-darwin** is also used for system-level settings (source: `templates/nix-darwin/`, applied by `mise run apply-nix-darwin`). The repo targets macOS, Linux (including WSL), and Windows from a single source tree.
 
-## How files map to `$HOME`
+## Layout
 
-chezmoi rewrites filenames on apply. Key prefixes used in this repo:
+| Path | Role |
+| --- | --- |
+| `.miserc.toml` | Early-init setting (`auto_env = true`): auto-loads `mise.unix.toml` + `mise.{macos,linux,windows}.toml` for the current platform |
+| `mise.toml` | Common `[vars]`, cross-platform `[dotfiles]`, all `[tasks]` |
+| `mise.unix.toml` | macOS+Linux `[dotfiles]` (loaded with `mise.macos.toml` / `mise.linux.toml`) |
+| `mise.macos.toml` / `mise.linux.toml` / `mise.windows.toml` | OS-specific `[dotfiles]`; Windows also holds `[bootstrap.repos]` |
+| `mise.local.toml` (gitignored) | Per-machine `[vars]` overrides; generate with `mise run setup` |
+| `mise.local.toml.example` | Template for the above |
+| `dotfiles/` | Static file sources, mirrored 1:1 to `$HOME` (e.g. `dotfiles/.zshrc` → `~/.zshrc`) |
+| `templates/` | `*.tera` templates (`mode = "template"`) plus static merge specs (`codex/`, `vscode/`, `macos/`, `pnpm/`, `tuicr/`) |
+| `templates/agents/` | Single-source hook scripts (`hooks/`) and skill bodies (`skills/`, `keychain-cred.sh`), mapped to every agent store |
+| `generated/` | Checked-in outputs of `scripts/generate-agent-files.py`; never hand-edit |
+| `scripts/` | Task implementations (`apply-*.sh`/`.ps1`, `merge-*.py`, `setup.*`, `sync-agent-skills.ts`) |
+| `config/` | Structured inputs: `agent-permissions.toml`, `agent-skills.toml`, `nix-binary-caches.toml` |
 
-- `dot_foo` → `~/.foo` (e.g. `dot_zshrc` → `~/.zshrc`, `dot_claude/` → `~/.claude/`)
-- `private_foo` → `~/foo` with mode `0600`
-- `readonly_foo` → read-only on apply
-- `executable_foo` → `+x`
-- `*.tmpl` → rendered through chezmoi's Go template engine (`.chezmoi.os`, `.chezmoi.arch`, `.chezmoi.username`, etc.); the `.tmpl` suffix is stripped
-- `.chezmoiscripts/run_onchange_*` → re-run when their content hash changes (hashes of dependencies are embedded as comments at the top, e.g. `run_onchange_after_00_home-manager.sh.tmpl`, so editing a referenced file re-triggers the script)
-- `.chezmoitemplates/` → shared template snippets included via `{{ include "..." }}`
+OS layers load automatically via `auto_env` (`.miserc.toml`, an early-init setting that must live outside `mise.toml`). Explicit `MISE_ENV` / `-E` still works and takes precedence over the platform layers.
 
-Per-OS file selection is controlled by `.chezmoiignore.tmpl` (gates `Library/**`, `AppData/**`, `winget.json`, etc. on `.chezmoi.os`).
-
-Files **not** managed by chezmoi (no `dot_`/`private_`/etc. prefix, listed in `.chezmoiignore.tmpl`, or sitting at the repo root as plain docs) live only inside this repository and are never copied to `$HOME`. Notable examples:
-
-- `./AGENTS.md` and `./CLAUDE.md` (this file and its stub) — repo-level agent guidance, read directly from the repo by tools like Codex CLI / Claude Code. Edits take effect immediately; **do not** run `chezmoi apply` for them (it will say "not managed").
-- `./README.md`, `./LICENSE`, `.chezmoiignore.tmpl`, `.chezmoidata.toml`, `.chezmoiscripts/`, `.chezmoitemplates/` — chezmoi metadata / repo docs, not targets.
-
-To check whether a given file is a chezmoi target, run `chezmoi target-path <source>` (prints the destination) or `chezmoi managed | grep <name>`.
+Files at the repo root that are not referenced by any `[dotfiles]` (`AGENTS.md`, `CLAUDE.md`, `README.md`, `mise.*.toml`, `scripts/`, `templates/`, `config/`, `tests/`) live only in this repository. Edits to them take effect immediately with no apply step.
 
 ## Applying changes after editing files (MANDATORY for agents)
 
-Editing a managed file in this repo does **not** change anything in `$HOME` — chezmoi only syncs on `apply`. If you (the agent) edit a managed file here, you **must run `chezmoi apply -v <target>` yourself in the same turn**. Do not tell the user to run it; do not end the turn with "now run apply". The edit-then-apply pair is one atomic action. (Unmanaged files like `./AGENTS.md` / `./CLAUDE.md` skip this step — they are read straight from the repo.)
+Editing a source file here does **not** change anything in `$HOME`. If you (the agent) edit a managed file, apply it yourself in the same turn. Do not tell the user to run it; do not end the turn with "now run apply". The edit-then-apply pair is one atomic action.
 
 Rules:
 
-- Always pass a target path. **Never** run a bare `chezmoi apply` — it may overwrite unrelated files.
-- The target is the **destination path in `$HOME`**, not the source path in the repo. Translate the chezmoi filename prefixes to get it:
-  - `dot_zshrc` → `chezmoi apply -v ~/.zshrc`
-  - `dot_claude/settings.json` → `chezmoi apply -v ~/.claude/settings.json`
-  - `private_dot_config/zellij/config.kdl` → `chezmoi apply -v ~/.config/zellij/config.kdl`
-  - `dot_local/bin/executable_zjdev` → `chezmoi apply -v ~/.local/bin/zjdev`
-  - `foo.tmpl` → target is `foo` (drop the `.tmpl` suffix)
-- If unsure of the target path, run `chezmoi target-path <source-path>` to resolve it before applying.
-- If multiple files were edited, run `chezmoi apply -v` once per target path (not a single bare apply).
-- After applying, mention any runtime step the user still needs (e.g. restart zellij, reload shell) — but only the parts that genuinely require the user, not the apply itself.
-
-Nix files need an extra switch step: a targeted `chezmoi apply -v <target>` does **not** run the `run_onchange_*` scripts, so after editing Home Manager files (`private_dot_config/home-manager/`, e.g. `common.nix.tmpl`) or nix-darwin files (`private_dot_config/nix-darwin/`), apply the target and then run the corresponding switch yourself in the same turn:
-
-```sh
-# Home Manager (after applying ~/.config/home-manager/<file>)
-nix run home-manager/master -- switch --flake "$HOME/.config/home-manager#default"
-
-# nix-darwin (after applying ~/.config/nix-darwin/<file>; needs sudo, may prompt the user)
-cd ~/.config/nix-darwin && sudo -H nix run github:LnL7/nix-darwin#darwin-rebuild -- switch --flake .#"$(hostname -s)"
-```
-
-herdr config needs a reload: after applying `~/.config/herdr/config.toml`, run the reload yourself in the same turn so the running session picks it up (no restart needed):
-
-```sh
-herdr server reload-config
-```
+- Prefer a targeted apply. `mise bootstrap dotfiles apply` accepts target paths: `mise bootstrap dotfiles apply ~/.zshrc`.
+- Symlink entries apply instantly; `template` entries re-render on apply.
+- After editing task inputs (`templates/vscode/*`, `templates/codex/*`, `generated/antigravity-settings.json`, nix files, plist specs, `karabiner.edn`, herdr plugins), run the matching task yourself in the same turn: `mise run apply-vscode-settings`, `mise run apply-codex-config`, `mise run apply-home-manager` + Home Manager switch is inside the task, `mise run apply-nix-darwin` (needs sudo, may prompt), `mise run import-rectangle`, `mise run configure-alttab`, `mise run apply-herdr-plugins` (+ `herdr server reload-config` is inside the task).
+- After editing `config/agent-permissions.toml`, `config/nix-binary-caches.toml`, or `templates/*/*.skel`, run `mise run generate-agent-files` and then apply the affected targets.
+- Full converge: `mise bootstrap` (repos + dotfiles, then the `bootstrap` task which depends on every apply task). Tasks declare `sources`, so unchanged inputs are skipped.
+- Never run `mise bootstrap dotfiles unapply`, `mise bootstrap *--force*`, or `chezmoi apply --force` (all are denied patterns for a reason).
 
 ## Common commands
 
-Apply / diff / status (from anywhere):
-
 ```sh
-chezmoi diff           # preview changes
-chezmoi apply -v       # apply to $HOME (runs run_onchange_* scripts)
-chezmoi status
-chezmoi cd             # cd into this repo
-chezmoi execute-template < file.tmpl   # render a template ad-hoc
+mise bootstrap dotfiles status    # what would change (add --missing for CI gate)
+mise bootstrap dotfiles apply [TARGET]...
+mise bootstrap plan               # dry-run of declarative bootstrap parts
+mise run <tab>                    # list tasks (or: mise tasks ls)
+mise run -n <task>                # print without running
+mise run setup                    # (re)generate mise.local.toml interactively
+bun scripts/sync-agent-skills.ts --list   # preview third-party skill sync
+mise run check-generated          # fail if generated/ is stale
+mise run check-agent-skills       # fail if a pinned skill is missing from its store
+mise run refresh-externals        # update git repos + re-download skills (no auto timer; run periodically)
+bun run tests/textlint-rule-ja-ai-phrasing.js
 ```
 
-Home Manager (invoked automatically by `.chezmoiscripts/run_onchange_after_00_home-manager.sh.tmpl` on non-Windows):
+Home Manager (also runs automatically via `mise run apply-home-manager` on non-Windows):
 
 ```sh
 nix run home-manager/master -- switch --flake "$HOME/.config/home-manager#default"
 ```
 
-The Home Manager flake lives at `private_dot_config/home-manager/` (rendered to `~/.config/home-manager/`). Edit `common.nix.tmpl` to change cross-platform packages; `linux-*.nix`, `darwin.nix`, `wsl.nix` for OS-specific bits. `local.nix` (gitignored, not in repo) is auto-included if present and can set `localDeny.packages = [ ... ]` to remove packages from the common set.
-
-nix-darwin (macOS system-level settings; invoked automatically by `.chezmoiscripts/run_onchange_after_nix-darwin.sh.tmpl`):
+nix-darwin (macOS system settings; also runs via `mise run apply-nix-darwin` with sudo):
 
 ```sh
 cd ~/.config/nix-darwin && sudo -H nix run github:LnL7/nix-darwin#darwin-rebuild -- switch --flake .#"$(hostname -s)"
 ```
 
-The nix-darwin flake lives at `private_dot_config/nix-darwin/` (rendered to `~/.config/nix-darwin/`). Edit `darwin-configuration.nix.tmpl` for macOS system settings (`system.defaults.*`, `system.startup.*`, etc.). Note the split: **Home Manager** owns packages and user-level dotfile programs, **nix-darwin** owns macOS system settings — do not assume the repo is "Home Manager only".
-
-macOS-specific re-apply helpers (see README for full list):
-
-```sh
-chezmoi execute-template -f .chezmoiscripts/run_onchange_import_rectangle.sh.tmpl | sh
-chezmoi execute-template -f .chezmoiscripts/run_onchange_configure_alttab.sh.tmpl | sh
-```
-
-Windows package list lives in `winget.json`: `winget export -o winget.json` / `winget import winget.json`.
+Windows package list lives in `dotfiles/winget.json` (applied to `~/winget.json`): `winget export -o ~/winget.json` / `winget import ~/winget.json`.
 
 ## Configuration layering (important)
 
-1. `.chezmoidata.toml` — repo-wide defaults (git identity, agent allow/deny lists, etc.)
-2. `~/.config/chezmoi/chezmoi.toml` — per-machine overrides (created by `.chezmoi.toml.tmpl` on `chezmoi init`); `[data]` here wins
-3. `private_dot_config/git/config.machine.tmpl` → `~/.config/git/config.machine` — included by the shared `dot_gitconfig.tmpl` for per-host git settings (signing key paths, work email, `safe.directory`, etc.)
+1. `mise.toml [vars]` — repo-wide defaults (git identity, `linux_gui`, `git_safe_directories` as comma-separated string).
+2. `mise.local.toml [vars]` — per-machine overrides (created by `mise run setup`); wins over `mise.toml`.
+3. `~/.config/git/config.machine` (rendered from `templates/git/config.machine.tera`) — included by `~/.gitconfig` for per-host git settings.
 
-When adding new tunable values, prefer threading them through `.chezmoidata.toml` + chezmoi template prompts rather than hardcoding.
+`[vars]` values are strings only. Lists live in `config/*.toml` and are consumed by `scripts/generate-agent-files.py` (permissions, nix caches) or `scripts/sync-agent-skills.ts` (skill pins), never inlined into templates. When adding new tunable values, prefer `mise.toml [vars]` + `mise.local.toml`, not hardcoding.
+
+Machine-resolved values (`whoami`, `hostname -s`, `uname -r` for WSL detection, `arch()` for nix systems) are computed inside templates via `exec()`/`env`/`os()`/`arch()` at render time, so they need no per-machine config.
+
+## generated/ (do not hand-edit)
+
+`generated/claude-settings.json`, `generated/codex-rules`, `generated/opencode.json`, `generated/antigravity-settings.json`, and `generated/nix-substituters-{urls,keys}.nix` are produced by `scripts/generate-agent-files.py` (stdlib only) from `config/agent-permissions.toml`, `config/nix-binary-caches.toml`, and the `templates/*/*.skel` skeletons. The expansion logic (JS script/bin cross products, `rtk`/`rtk proxy`/`corepack`/absolute-path variants, Codex `prefix_rule` patterns) lives exactly once in that script. Regenerate after any input change and commit the result; `mise run check-generated` verifies sync.
 
 ## Agent permission lists
 
-`.chezmoidata.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_no_rtk`, and `agent_shell_deny` arrays consumed by AI-agent settings templates (e.g. `dot_claude/settings.json.tmpl`, `dot_codex/...`). Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Entries in `agent_shell_allow` are emitted both bare and with an auto-generated `rtk <cmd>` variant — put commands that should be allowed **without** the `rtk` wrapper (e.g. `rtk` itself) in `agent_shell_allow_no_rtk`, which emits only the bare form.
+`config/agent-permissions.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_js_scripts`, `agent_shell_allow_js_bins`, `agent_shell_allow_no_rtk`, and `agent_shell_deny`, consumed by the generator (see above). Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Read-only introspection commands for this repo live there too (`mise tasks ls*`, `mise bootstrap dotfiles status*`, `mise bootstrap plan*`, `mise run --dry-run *`), alongside the equivalent `chezmoi` entries, which are kept until the migration settles.
 
 ## Agent hooks
 
-Hook scripts shared by more than one agent live in `.chezmoitemplates/agents/` and are pulled into each agent's config directory by a one-line `{{ include ... }}` wrapper, so there is a single implementation per script:
+Single-source hook scripts live in `templates/agents/hooks/` and are mapped to each agent's hooks directory directly from `mise.toml`/`mise.*.toml` (one source, multiple targets — no wrapper files):
 
-- `check-force-push.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-github-api-write.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-package-manager.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-package-manager.ps1` (pwsh port, Windows only) → `~/.codex/hooks/`
-- `check-commit-sha-links.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-cargo-install.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-writing-style.js` (Bun + textlint, imports `./textlint-rules/` next to it) → `~/.claude/hooks/` and `~/.codex/hooks/`
+- `check-force-push.sh`, `check-github-api-write.sh`, `check-package-manager.sh` (+ `.ps1` Windows port), `check-commit-sha-links.sh`, `check-cargo-install.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
+- `check-writing-style.js` (Bun + textlint, imports `./textlint-rules/` next to it) → both hooks dirs
 
-Registration differs per agent:
+Registration differs per agent: Claude Code uses `hooks.PreToolUse` with the static `generated/claude-settings.json`; Codex CLI uses `templates/codex/hooks.json.tera` → `~/.codex/hooks.json` with `command` (macOS/Linux) + `commandWindows` (Windows) side by side. Codex file edits arrive as `apply_patch`, which `check-writing-style.js` parses; `textlint-rules/` is materialized next to each copy.
 
-- Claude Code: `hooks.PreToolUse` in `dot_claude/settings.json.tmpl`, always the bash script. Tools are named `Bash`, `Write`, `Edit`, `mcp__*`.
-- Codex CLI: `dot_codex/hooks.json.tmpl` → `~/.codex/hooks.json`. A handler takes `command` (used on macOS/Linux) and `commandWindows` (used on Windows), so the bash and pwsh variants are registered side by side. `matcher` is a regex against the tool name; Codex's shell tool is also `Bash`, but its file edits arrive as a single `apply_patch` tool whose `tool_input.command` is the patch document — `check-writing-style.js` parses that patch format, and `textlint-rules/` must be materialized next to each copy.
-
-`tests/` holds tests for the hooks that carry enough logic to regress. They are plain Bun scripts rather than `bun test` files, because `bun test` cannot resolve the versioned import specifiers the hooks pin their dependencies with:
-
-```sh
-bun run tests/textlint-rule-ja-ai-phrasing.js   # the rule behind check-writing-style.js
-```
+`tests/` holds tests for the hooks that carry enough logic to regress (plain Bun scripts, not `bun test` files, because `bun test` cannot resolve the versioned import specifiers the hooks pin).
 
 Two Codex-specific details:
 
-- **Blocking** requires JSON on stdout with `hookSpecificOutput.permissionDecision = "deny"` plus a non-empty `permissionDecisionReason`, and exit status 0. A non-zero exit only marks the hook as failed; it does not stop the tool call. Claude Code accepts the same JSON, which is why the shared scripts use it instead of `exit 2`.
-- **Trust**: Codex will not run a user-level hook until it is trusted. The TUI prompts "Hooks need review" on the next launch and records the decision in `~/.codex/config.toml` as `[hooks.state."<hooks.json path>:<event>:<group>:<index>"]` with `trusted_hash`. The hash covers the handler definition, so **any edit to `hooks.json` requires re-trusting** (a `codex exec` run silently skips untrusted hooks). This state is per-machine and is not managed by chezmoi.
+- **Blocking** requires JSON on stdout with `hookSpecificOutput.permissionDecision = "deny"` plus a non-empty `permissionDecisionReason`, and exit status 0. A non-zero exit only marks the hook as failed.
+- **Trust**: Codex will not run a user-level hook until it is trusted (`~/.codex/config.toml` `[hooks.state.*]`). Any edit to `hooks.json` requires re-trusting. This state is per-machine and is not managed here.
 
 ## Agent skills
 
-Skills live in two stores. `~/.agents/skills` is the shared store: Codex CLI reads it natively (alongside its own deprecated `~/.codex/skills`), as do opencode, Cursor, Gemini CLI and Amp. `~/.claude/skills` exists because Claude Code is the one agent with no `.agents/` awareness and no setting for extra skill roots, so anything Claude Code should see has to be materialized there as well. Nothing in this repo writes to `~/.codex/skills` any more.
+Skills live in two stores. `~/.agents/skills` is the shared store (Codex CLI, opencode, Cursor, Gemini CLI, Amp). `~/.claude/skills` exists for Claude Code, which has no `.agents/` awareness. Nothing here writes to `~/.codex/skills`.
 
-Both stores are generated, never hand-synced and never symlinked together: a skill is declared or written **once** and the same definition materializes into every store that needs it. For self-authored skills the single source is the body under `.chezmoitemplates/agents/skills/`; for third-party skills it is the `[[agent_skills]]` entry, whose `agents` list names the target stores.
+Both stores are generated from single sources, never hand-synced: self-authored bodies live once under `templates/agents/skills/` and each store gets a `[dotfiles]` mapping to the same source; skill scripts map the same way (`templates/agents/keychain-cred.sh` → both `keychain-credentials/scripts/` dirs); Codex TUI metadata (`agents/openai.yaml`) sits next to the `.agents` copy only.
 
-Skills come from three places, and which one a skill belongs to decides where you edit it:
+The base-branch / merge-base procedure that used to be a shared include is inlined into `autosquash.md`, `fixup.md`, and `reorganize-commits.md` (mise templates have no cross-file render include, so a nested include cannot survive as such). If you change that procedure, edit all three bodies identically.
 
-1. **Self-authored, single agent** — checked in under `dot_claude/skills/<name>/SKILL.md` (Claude Code) or `dot_agents/skills/<name>/SKILL.md` (shared store). Skills in the shared store additionally carry `agents/openai.yaml`, which supplies Codex's TUI interface metadata and is ignored by agents that do not know it. Scripts shipped with a skill need the `executable_` prefix. Every self-authored skill is currently shared (case 2), so this layout is only for a skill that genuinely cannot be made agent-neutral.
-2. **Self-authored, shared between agents** — body lives in `.chezmoitemplates/agents/skills/<name>.md` and each agent gets a one-line `{{ include ... }}` wrapper named `SKILL.md.tmpl`, same pattern as the shared hooks. Scripts shipped with a shared skill follow the same pattern: body in `.chezmoitemplates/agents/<script>`, and each agent gets an `executable_<script>.tmpl` wrapper (e.g. `keychain-cred.sh`). This is the default for every self-authored skill in the repo.
+Skills come from three places:
 
-   A procedure needed by more than one skill body (currently the base-branch / merge-base determination in `_shared/git-base.md`, used by `autosquash`, `fixup`, and `reorganize-commits`) lives under `.chezmoitemplates/agents/skills/_shared/` and is pulled in by the bodies with `{{ includeTemplate "agents/skills/_shared/<name>.md" . }}`. Because `include` inserts a file verbatim without rendering it, a body containing such a nested include must be pulled in by its wrapper with `includeTemplate` (`{{ includeTemplate "agents/skills/<name>.md" . -}}`) instead of `include`, or the nested directive is emitted literally. Snippets are numbered as sub-steps (`#### 2-1.` …), so each body supplies its own `### 2. ...` heading and intro before the include.
-
-   A shared body must not hardcode one agent's tool names or call syntax. The repo settles this by naming the capability and mapping it onto each agent once, near the top of the body:
-
-   - **User choice** — the body says "選択提示" / "ask the user to choose" and defines it once: use a selection UI tool (`AskUserQuestion` and similar) where the agent has one, otherwise present the same options as a numbered plain-text list. Never call the tool by name inline.
-   - **Subagents** — the body says "サブエージェント" and defines the mapping once: Claude Code's `Agent` tool (`subagent_type: "Explore"` for read-only roles, several calls in one message for parallelism) vs Codex CLI's `spawn_agent`/`wait` (gated by `features.multi_agent`, roles from `[agents]` in `config.toml`), plus the invariants that must hold either way (fresh context, read-only, fall back to sequential when there is no parallel mechanism). `deep-review`, `meta-review`, and `pr-brief` are shared this way.
-   - **MCP tools** — refer to the server and the kind of operation ("Atlassian MCP のissue取得ツール"), not the tool id, since names differ per agent and some agents load tool schemas lazily.
-   - **File and search tools** — say "read the file" / "search the repository", not `Read`/`Grep`/`Glob`/`Edit`.
-   - **Paths into the skill's own directory** — write them relative to the skill root of whichever store the copy lives in (`~/.claude/skills` vs `~/.agents/skills`), never hardcode one.
-3. **Third-party** — declared in `.chezmoidata.toml` as `[[agent_skills]]` and materialized by `.chezmoiexternal.toml.tmpl` as `type = "archive"` externals pulled from a pinned GitHub tarball. This is the cross-platform path: it works on Windows as-is (no symlinks, no Nix), unlike Home Manager, which is non-Windows only.
+1. **Self-authored, single agent** — under `dotfiles/.agents/skills/<name>/` only. Currently unused; prefer shared (case 2).
+2. **Self-authored, shared** — body in `templates/agents/skills/<name>.md`, mapped to both stores. The default for everything self-authored. Capability mapping (ask-the-user UI, subagents per agent, MCP/file/search tools, skill-relative paths) is documented once at the top of each body; do not hardcode one agent's tool names inline.
+3. **Third-party** — declared in `config/agent-skills.toml` as `[[agent_skills]]` and synced by `mise run sync-agent-skills` (`scripts/sync-agent-skills.ts`, Bun + system `tar`), which downloads the pinned GitHub tarball, extracts `prefix/name` (or `prefix` when `flat = true`), and places it in every listed store.
 
 Adding a third-party skill:
 
@@ -163,24 +122,21 @@ repo = "owner/name"
 rev = "<commit SHA>"      # gh api repos/owner/name/commits/HEAD --jq .sha
 prefix = "skills"         # directory inside the repo holding the skills
 names = ["skill-name"]    # one entry per skill dir under prefix
-agents = ["claude", "agents"]   # one entry per target store; "claude" ->
-                                # ~/.claude/skills, "agents" -> ~/.agents/skills
+agents = ["claude", "agents"]
 ```
 
-For a repo that keeps `SKILL.md` directly under `prefix` (or at the repo root, with `prefix = ""`) instead of in a per-skill subdirectory, add `flat = true`; `names` then holds the single target directory name.
-
-Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.agents/skills`). The template derives `include` and `stripComponents` from `prefix`, so each skill lands with `SKILL.md` at the root of its target directory. Updating a skill means bumping `rev`; `refreshPeriod = "168h"` only controls re-download of the pinned tarball, never which commit is used.
+For a repo that keeps `SKILL.md` directly under `prefix` (or at the repo root, with `prefix = ""`), add `flat = true`; `names` then holds the single target directory name. Then `mise run sync-agent-skills`. Updating a skill means bumping `rev`.
 
 Two things not managed here:
 
-- **Claude Code plugins** supply their own skills. The enabled `cloudflare@cloudflare` marketplace covers the whole `cloudflare/skills` set for Claude, so those are the one exception to listing both stores: they are declared for `agents = ["agents"]` only, which keeps them from showing up twice for Claude Code (once as `cloudflare:<name>` from the plugin, once as `<name>` from the store). Codex has its own plugin system (`codex plugin add/list`, `codex plugin marketplace`) but it does not consume Claude Code marketplaces, so Codex gets those skills through `[[agent_skills]]` instead.
-- The **`skills` CLI** (`npx skills add`, vercel-labs) installs into `~/.agents/skills` too, tracked in a per-machine `~/.agents/.skill-lock.json`, and symlinks the non-`.agents` agent directories (Claude Code) at it. Use it to *discover* skills, then transcribe the pick into `[[agent_skills]]`. Do not leave a skill installed that way: the copy is per-machine, invisible to `chezmoi status`, pinned by a separate lock file, and it writes to the same directory names this repo manages.
+- **Claude Code plugins** supply their own skills. The enabled `cloudflare@cloudflare` marketplace covers the whole `cloudflare/skills` set for Claude, so those are declared for `agents = ["agents"]` only (Codex has no Claude Code plugin mechanism and gets them via sync).
+- The **`skills` CLI** (`npx skills add`) installs into `~/.agents/skills` too. Use it to *discover* skills, then transcribe the pick into `config/agent-skills.toml`. Do not leave a skill installed that way: it is per-machine, invisible to `mise bootstrap dotfiles status`, and collides with synced directories.
 
 ## User-level agent instructions
 
 Per-agent global instruction files live under each agent's config directory and are distinct from this repo-level `AGENTS.md`:
 
-- `dot_claude/CLAUDE.md` → `~/.claude/CLAUDE.md` (Claude Code, applies to *all* projects)
-- `dot_codex/private_AGENTS.md` → `~/.codex/AGENTS.md` (Codex CLI, applies to *all* projects)
+- `dotfiles/.claude/CLAUDE.md` → `~/.claude/CLAUDE.md` (Claude Code, applies to *all* projects)
+- `dotfiles/.codex/AGENTS.md` → `~/.codex/AGENTS.md` (Codex CLI, applies to *all* projects)
 
 Edit those files to change user-global agent behavior; edit this file (`AGENTS.md` / `CLAUDE.md` stub) for repo-specific guidance.

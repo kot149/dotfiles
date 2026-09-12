@@ -1,0 +1,55 @@
+{% set home_dir = get_env(name="HOME", default=get_env(name="USERPROFILE", default="")) | replace(from="\\", to="/") -%}
+{
+  "description": "User-level Codex hooks",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Bash|Shell)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '{{ home_dir }}/.codex/hooks/check-force-push.sh'",
+            "timeout": 15,
+            "statusMessage": "Checking force push"
+          },
+          {
+            "type": "command",
+            "command": "bash '{{ home_dir }}/.codex/hooks/check-github-api-write.sh'",
+            "timeout": 15,
+            "statusMessage": "Checking GitHub API write"
+          },
+          {
+            "type": "command",
+            "command": "bash '{{ home_dir }}/.codex/hooks/check-package-manager.sh'",
+            "commandWindows": "pwsh -NoProfile -File \"{{ home_dir }}/.codex/hooks/check-package-manager.ps1\"",
+            "timeout": 15,
+            "statusMessage": "Checking package manager"
+          },
+          {
+            "type": "command",
+            "command": "bash '{{ home_dir }}/.codex/hooks/check-commit-sha-links.sh'",
+            "timeout": 15,
+            "statusMessage": "Checking commit SHA links"
+          },
+          {
+            "type": "command",
+            "command": "bash '{{ home_dir }}/.codex/hooks/check-cargo-install.sh'",
+            "timeout": 15,
+            "statusMessage": "Checking cargo install"
+          }
+        ]
+      },
+      {
+        "matcher": "^(Bash|Shell|apply_patch)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run '{{ home_dir }}/.codex/hooks/check-writing-style.js'",
+            "timeout": 30,
+            "statusMessage": "Checking writing style"
+          }
+        ]
+      }
+    ]
+  }
+}

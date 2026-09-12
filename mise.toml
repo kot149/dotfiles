@@ -1,0 +1,379 @@
+# Dotfiles repo root. OS-specific layers (mise.unix.toml, mise.{macos,linux,windows}.toml)
+# load automatically via auto_env in .miserc.toml (early-init setting).
+# Machine overrides live in gitignored mise.local.toml (`mise run setup`).
+# Explicit MISE_ENV / `-E` still works and takes precedence over the platform layers.
+
+[vars]
+git_user_name = "kot149"
+git_user_email = "131101078+kot149@users.noreply.github.com"
+git_signing_key = ""
+git_allowed_signers = ""
+git_editor = "code --wait"
+git_commit_gpgsign = "true"
+git_safe_directories = ""
+linux_gui = ""
+
+[dotfiles]
+# --- git ---
+"~/.gitconfig" = { source = "templates/gitconfig.tera", mode = "template" }
+"~/.config/git/config.machine" = { source = "templates/git/config.machine.tera", mode = "template" }
+"~/.config/git/ignore" = { source = "dotfiles/.config/git/ignore" }
+
+# --- shells / runtimes ---
+"~/.bashrc" = { source = "dotfiles/.bashrc" }
+"~/.bash_profile" = { source = "dotfiles/.bash_profile" }
+"~/.bunfig.toml" = { source = "dotfiles/.bunfig.toml" }
+"~/.cargo/config.toml" = { source = "dotfiles/.cargo/config.toml" }
+"~/.npmrc" = { source = "dotfiles/.npmrc" }
+"~/.yarnrc.yml" = { source = "dotfiles/.yarnrc.yml" }
+
+# --- Claude Code ---
+"~/.claude/CLAUDE.md" = { source = "dotfiles/.claude/CLAUDE.md" }
+"~/.claude/commands/add-slash-command.md" = { source = "dotfiles/.claude/commands/add-slash-command.md" }
+"~/.claude/commands/bugfix.md" = { source = "dotfiles/.claude/commands/bugfix.md" }
+"~/.claude/commands/create-pr.md" = { source = "dotfiles/.claude/commands/create-pr.md" }
+"~/.claude/commands/explain-project.md" = { source = "dotfiles/.claude/commands/explain-project.md" }
+"~/.claude/commands/fix-issue.md" = { source = "dotfiles/.claude/commands/fix-issue.md" }
+"~/.claude/commands/lint-fix.md" = { source = "dotfiles/.claude/commands/lint-fix.md" }
+"~/.claude/commands/optimize.md" = { source = "dotfiles/.claude/commands/optimize.md" }
+"~/.claude/commands/perf-audit.md" = { source = "dotfiles/.claude/commands/perf-audit.md" }
+"~/.claude/commands/refactor.md" = { source = "dotfiles/.claude/commands/refactor.md" }
+"~/.claude/commands/security-review.md" = { source = "dotfiles/.claude/commands/security-review.md" }
+"~/.claude/commands/test-gen.md" = { source = "dotfiles/.claude/commands/test-gen.md" }
+"~/.claude/codex-weekly-limit.py" = { source = "dotfiles/.claude/codex-weekly-limit.py" }
+"~/.claude/file-suggestion.sh" = { source = "dotfiles/.claude/file-suggestion.sh" }
+"~/.claude/statusline-command.sh" = { source = "dotfiles/.claude/statusline-command.sh" }
+"~/.claude/hooks/check-cargo-install.sh" = { source = "templates/agents/hooks/check-cargo-install.sh" }
+"~/.claude/hooks/check-commit-sha-links.sh" = { source = "templates/agents/hooks/check-commit-sha-links.sh" }
+"~/.claude/hooks/check-force-push.sh" = { source = "templates/agents/hooks/check-force-push.sh" }
+"~/.claude/hooks/check-github-api-write.sh" = { source = "templates/agents/hooks/check-github-api-write.sh" }
+"~/.claude/hooks/check-package-manager.sh" = { source = "templates/agents/hooks/check-package-manager.sh" }
+"~/.claude/hooks/check-writing-style.js" = { source = "templates/agents/hooks/check-writing-style.js", mode = "copy" }
+"~/.claude/hooks/textlint-rules/textlint-rule-ja-ai-phrasing.js" = { source = "dotfiles/.claude/hooks/textlint-rules/textlint-rule-ja-ai-phrasing.js" }
+"~/.claude/keybindings.json" = { source = "dotfiles/.claude/keybindings.json" }
+"~/.claude/settings.json" = { source = "generated/claude-settings.json" }
+"~/.claude/skills/autosquash/SKILL.md" = { source = "templates/agents/skills/autosquash.md" }
+"~/.claude/skills/commit-message/SKILL.md" = { source = "templates/agents/skills/commit-message.md" }
+"~/.claude/skills/dedup/SKILL.md" = { source = "templates/agents/skills/dedup.md" }
+"~/.claude/skills/deep-review/SKILL.md" = { source = "templates/agents/skills/deep-review.md" }
+"~/.claude/skills/fixup/SKILL.md" = { source = "templates/agents/skills/fixup.md" }
+"~/.claude/skills/keychain-credentials/SKILL.md" = { source = "templates/agents/skills/keychain-credentials.md" }
+"~/.claude/skills/keychain-credentials/scripts/keychain-cred.sh" = { source = "templates/agents/keychain-cred.sh" }
+"~/.claude/skills/meta-review/SKILL.md" = { source = "templates/agents/skills/meta-review.md" }
+"~/.claude/skills/pending-review-comments/SKILL.md" = { source = "templates/agents/skills/pending-review-comments.md" }
+"~/.claude/skills/pr-brief/SKILL.md" = { source = "templates/agents/skills/pr-brief.md" }
+"~/.claude/skills/release-notes/SKILL.md" = { source = "templates/agents/skills/release-notes.md" }
+"~/.claude/skills/reorganize-commits/SKILL.md" = { source = "templates/agents/skills/reorganize-commits.md" }
+"~/.claude/skills/reply-pr-comments/SKILL.md" = { source = "templates/agents/skills/reply-pr-comments.md" }
+"~/.claude/skills/resolve-conflict/SKILL.md" = { source = "templates/agents/skills/resolve-conflict.md" }
+"~/.claude/skills/resolve-pr-comments/SKILL.md" = { source = "templates/agents/skills/resolve-pr-comments.md" }
+"~/.claude/skills/retcon-plan/SKILL.md" = { source = "templates/agents/skills/retcon-plan.md" }
+"~/.claude/skills/trim-comments/SKILL.md" = { source = "templates/agents/skills/trim-comments.md" }
+
+# --- Codex CLI ---
+"~/.codex/AGENTS.md" = { source = "dotfiles/.codex/AGENTS.md" }
+"~/.codex/hooks.json" = { source = "templates/codex/hooks.json.tera", mode = "template" }
+"~/.codex/hooks/check-cargo-install.sh" = { source = "templates/agents/hooks/check-cargo-install.sh" }
+"~/.codex/hooks/check-commit-sha-links.sh" = { source = "templates/agents/hooks/check-commit-sha-links.sh" }
+"~/.codex/hooks/check-force-push.sh" = { source = "templates/agents/hooks/check-force-push.sh" }
+"~/.codex/hooks/check-github-api-write.sh" = { source = "templates/agents/hooks/check-github-api-write.sh" }
+"~/.codex/hooks/check-package-manager.sh" = { source = "templates/agents/hooks/check-package-manager.sh" }
+"~/.codex/hooks/check-package-manager.ps1" = { source = "templates/agents/hooks/check-package-manager.ps1" }
+"~/.codex/hooks/check-writing-style.js" = { source = "templates/agents/hooks/check-writing-style.js", mode = "copy" }
+"~/.codex/hooks/textlint-rules/textlint-rule-ja-ai-phrasing.js" = { source = "dotfiles/.codex/hooks/textlint-rules/textlint-rule-ja-ai-phrasing.js" }
+"~/.codex/rules/default.rules" = { source = "generated/codex-rules" }
+
+# --- shared agent skills store (~/.agents/skills) ---
+"~/.agents/skills/add-slash-command/SKILL.md" = { source = "dotfiles/.agents/skills/add-slash-command/SKILL.md" }
+"~/.agents/skills/add-slash-command/agents/openai.yaml" = { source = "dotfiles/.agents/skills/add-slash-command/agents/openai.yaml" }
+"~/.agents/skills/autosquash/SKILL.md" = { source = "templates/agents/skills/autosquash.md" }
+"~/.agents/skills/autosquash/agents/openai.yaml" = { source = "dotfiles/.agents/skills/autosquash/agents/openai.yaml" }
+"~/.agents/skills/bugfix/SKILL.md" = { source = "dotfiles/.agents/skills/bugfix/SKILL.md" }
+"~/.agents/skills/bugfix/agents/openai.yaml" = { source = "dotfiles/.agents/skills/bugfix/agents/openai.yaml" }
+"~/.agents/skills/commit-message/SKILL.md" = { source = "templates/agents/skills/commit-message.md" }
+"~/.agents/skills/commit-message/agents/openai.yaml" = { source = "dotfiles/.agents/skills/commit-message/agents/openai.yaml" }
+"~/.agents/skills/create-pr/SKILL.md" = { source = "dotfiles/.agents/skills/create-pr/SKILL.md" }
+"~/.agents/skills/create-pr/agents/openai.yaml" = { source = "dotfiles/.agents/skills/create-pr/agents/openai.yaml" }
+"~/.agents/skills/dedup/SKILL.md" = { source = "templates/agents/skills/dedup.md" }
+"~/.agents/skills/dedup/agents/openai.yaml" = { source = "dotfiles/.agents/skills/dedup/agents/openai.yaml" }
+"~/.agents/skills/deep-review/SKILL.md" = { source = "templates/agents/skills/deep-review.md" }
+"~/.agents/skills/deep-review/agents/openai.yaml" = { source = "dotfiles/.agents/skills/deep-review/agents/openai.yaml" }
+"~/.agents/skills/explain-project/SKILL.md" = { source = "dotfiles/.agents/skills/explain-project/SKILL.md" }
+"~/.agents/skills/explain-project/agents/openai.yaml" = { source = "dotfiles/.agents/skills/explain-project/agents/openai.yaml" }
+"~/.agents/skills/fix-issue/SKILL.md" = { source = "dotfiles/.agents/skills/fix-issue/SKILL.md" }
+"~/.agents/skills/fix-issue/agents/openai.yaml" = { source = "dotfiles/.agents/skills/fix-issue/agents/openai.yaml" }
+"~/.agents/skills/fixup/SKILL.md" = { source = "templates/agents/skills/fixup.md" }
+"~/.agents/skills/fixup/agents/openai.yaml" = { source = "dotfiles/.agents/skills/fixup/agents/openai.yaml" }
+"~/.agents/skills/keychain-credentials/SKILL.md" = { source = "templates/agents/skills/keychain-credentials.md" }
+"~/.agents/skills/keychain-credentials/agents/openai.yaml" = { source = "dotfiles/.agents/skills/keychain-credentials/agents/openai.yaml" }
+"~/.agents/skills/keychain-credentials/scripts/keychain-cred.sh" = { source = "templates/agents/keychain-cred.sh" }
+"~/.agents/skills/lint-fix/SKILL.md" = { source = "dotfiles/.agents/skills/lint-fix/SKILL.md" }
+"~/.agents/skills/lint-fix/agents/openai.yaml" = { source = "dotfiles/.agents/skills/lint-fix/agents/openai.yaml" }
+"~/.agents/skills/meta-review/SKILL.md" = { source = "templates/agents/skills/meta-review.md" }
+"~/.agents/skills/meta-review/agents/openai.yaml" = { source = "dotfiles/.agents/skills/meta-review/agents/openai.yaml" }
+"~/.agents/skills/optimize/SKILL.md" = { source = "dotfiles/.agents/skills/optimize/SKILL.md" }
+"~/.agents/skills/optimize/agents/openai.yaml" = { source = "dotfiles/.agents/skills/optimize/agents/openai.yaml" }
+"~/.agents/skills/pending-review-comments/SKILL.md" = { source = "templates/agents/skills/pending-review-comments.md" }
+"~/.agents/skills/pending-review-comments/agents/openai.yaml" = { source = "dotfiles/.agents/skills/pending-review-comments/agents/openai.yaml" }
+"~/.agents/skills/perf-audit/SKILL.md" = { source = "dotfiles/.agents/skills/perf-audit/SKILL.md" }
+"~/.agents/skills/perf-audit/agents/openai.yaml" = { source = "dotfiles/.agents/skills/perf-audit/agents/openai.yaml" }
+"~/.agents/skills/pr-brief/SKILL.md" = { source = "templates/agents/skills/pr-brief.md" }
+"~/.agents/skills/pr-brief/agents/openai.yaml" = { source = "dotfiles/.agents/skills/pr-brief/agents/openai.yaml" }
+"~/.agents/skills/refactor/SKILL.md" = { source = "dotfiles/.agents/skills/refactor/SKILL.md" }
+"~/.agents/skills/refactor/agents/openai.yaml" = { source = "dotfiles/.agents/skills/refactor/agents/openai.yaml" }
+"~/.agents/skills/release-notes/SKILL.md" = { source = "templates/agents/skills/release-notes.md" }
+"~/.agents/skills/release-notes/agents/openai.yaml" = { source = "dotfiles/.agents/skills/release-notes/agents/openai.yaml" }
+"~/.agents/skills/reorganize-commits/SKILL.md" = { source = "templates/agents/skills/reorganize-commits.md" }
+"~/.agents/skills/reorganize-commits/agents/openai.yaml" = { source = "dotfiles/.agents/skills/reorganize-commits/agents/openai.yaml" }
+"~/.agents/skills/reply-pr-comments/SKILL.md" = { source = "templates/agents/skills/reply-pr-comments.md" }
+"~/.agents/skills/reply-pr-comments/agents/openai.yaml" = { source = "dotfiles/.agents/skills/reply-pr-comments/agents/openai.yaml" }
+"~/.agents/skills/resolve-conflict/SKILL.md" = { source = "templates/agents/skills/resolve-conflict.md" }
+"~/.agents/skills/resolve-pr-comments/SKILL.md" = { source = "templates/agents/skills/resolve-pr-comments.md" }
+"~/.agents/skills/resolve-pr-comments/agents/openai.yaml" = { source = "dotfiles/.agents/skills/resolve-pr-comments/agents/openai.yaml" }
+"~/.agents/skills/retcon-plan/SKILL.md" = { source = "templates/agents/skills/retcon-plan.md" }
+"~/.agents/skills/security-review/SKILL.md" = { source = "dotfiles/.agents/skills/security-review/SKILL.md" }
+"~/.agents/skills/security-review/agents/openai.yaml" = { source = "dotfiles/.agents/skills/security-review/agents/openai.yaml" }
+"~/.agents/skills/test-gen/SKILL.md" = { source = "dotfiles/.agents/skills/test-gen/SKILL.md" }
+"~/.agents/skills/test-gen/agents/openai.yaml" = { source = "dotfiles/.agents/skills/test-gen/agents/openai.yaml" }
+"~/.agents/skills/trim-comments/SKILL.md" = { source = "templates/agents/skills/trim-comments.md" }
+"~/.agents/skills/trim-comments/agents/openai.yaml" = { source = "dotfiles/.agents/skills/trim-comments/agents/openai.yaml" }
+
+# --- cross-platform CLI configs ---
+"~/.config/opencode/opencode.json" = { source = "generated/opencode.json" }
+"~/.config/starship.toml" = { source = "dotfiles/.config/starship.toml" }
+"~/.config/bat/config" = { source = "dotfiles/.config/bat/config" }
+"~/.config/btop/btop.conf" = { source = "dotfiles/.config/btop/btop.conf" }
+"~/.config/cli-proxy-api/config.yaml" = { source = "dotfiles/.config/cli-proxy-api/config.yaml" }
+"~/.config/direnv/direnv.toml" = { source = "dotfiles/.config/direnv/direnv.toml" }
+"~/.config/direnv/direnvrc" = { source = "dotfiles/.config/direnv/direnvrc" }
+"~/.config/fresh/config.json" = { source = "dotfiles/.config/fresh/config.json" }
+"~/.config/hunk/config.toml" = { source = "dotfiles/.config/hunk/config.toml" }
+"~/.config/nvim/init.lua" = { source = "dotfiles/.config/nvim/init.lua" }
+"~/.config/nvim/lua/config/keymaps.lua" = { source = "dotfiles/.config/nvim/lua/config/keymaps.lua" }
+"~/.config/nvim/lua/config/lazy.lua" = { source = "dotfiles/.config/nvim/lua/config/lazy.lua" }
+"~/.config/nvim/lua/config/options.lua" = { source = "dotfiles/.config/nvim/lua/config/options.lua" }
+"~/.config/nvim/lua/plugins/colorscheme.lua" = { source = "dotfiles/.config/nvim/lua/plugins/colorscheme.lua" }
+"~/.config/nvim/lua/plugins/completion.lua" = { source = "dotfiles/.config/nvim/lua/plugins/completion.lua" }
+"~/.config/nvim/lua/plugins/editor.lua" = { source = "dotfiles/.config/nvim/lua/plugins/editor.lua" }
+"~/.config/nvim/lua/plugins/lsp.lua" = { source = "dotfiles/.config/nvim/lua/plugins/lsp.lua" }
+"~/.config/nvim/lua/plugins/telescope.lua" = { source = "dotfiles/.config/nvim/lua/plugins/telescope.lua" }
+"~/.config/nvim/lua/plugins/treesitter.lua" = { source = "dotfiles/.config/nvim/lua/plugins/treesitter.lua" }
+"~/.config/nvim/lua/plugins/ui.lua" = { source = "dotfiles/.config/nvim/lua/plugins/ui.lua" }
+"~/.config/uv/uv.toml" = { source = "dotfiles/.config/uv/uv.toml" }
+"~/.config/yazi/yazi.toml" = { source = "dotfiles/.config/yazi/yazi.toml" }
+"~/.config/zellij/config.kdl" = { source = "dotfiles/.config/zellij/config.kdl" }
+"~/.config/zellij/layouts/terminal-workbench-tab.kdl" = { source = "dotfiles/.config/zellij/layouts/terminal-workbench-tab.kdl" }
+"~/.config/zellij/layouts/terminal-workbench.kdl" = { source = "dotfiles/.config/zellij/layouts/terminal-workbench.kdl" }
+"~/.config/zellij/themes/blue.kdl" = { source = "dotfiles/.config/zellij/themes/blue.kdl" }
+
+[tasks.setup]
+description = "First-run setup: write machine-specific mise.local.toml"
+run = "sh scripts/setup.sh"
+run_windows = "pwsh -NoProfile -File scripts/setup.ps1"
+
+[tasks.migrate-from-chezmoi]
+description = "Adopt existing regular files into mise management (backup, apply, drop identical)"
+run = "python3 scripts/migrate-dotfiles.py"
+run_windows = "pwsh -NoProfile -File scripts/migrate-dotfiles.ps1"
+
+[tasks.generate-agent-files]
+description = "Regenerate generated/ from config/*.toml"
+run = "python3 scripts/generate-agent-files.py"
+sources = [
+  "config/agent-permissions.toml",
+  "config/nix-binary-caches.toml",
+  "scripts/generate-agent-files.py",
+  "templates/claude/settings.json.skel",
+  "templates/opencode/opencode.json.skel",
+  "templates/antigravity/settings.json.skel",
+]
+
+[tasks.check-generated]
+description = "Fail if generated/ is stale (run generate-agent-files to refresh)"
+run = "python3 scripts/generate-agent-files.py --check"
+# No sources: the check compares generated/ outputs against their inputs, so
+# it must run every time. With sources, editing only generated/ files would
+# be skipped and reported as success.
+
+[tasks.sync-agent-skills]
+description = "Sync pinned third-party agent skills into ~/.agents/skills and ~/.claude/skills"
+run = "bun scripts/sync-agent-skills.ts"
+# No sources: skill outputs live outside [dotfiles], so deletion/drift is
+# invisible to dotfiles status and to the sync task's own freshness marker.
+# The script syncs missing skills and changed pins.
+
+[tasks.check-agent-skills]
+description = "Fail if any pinned third-party skill is missing or outdated"
+depends = ["sync-agent-skills"]
+run = "bun scripts/sync-agent-skills.ts --check"
+# No sources: skill outputs live outside [dotfiles], so deletion/drift is
+# invisible to dotfiles status and to the sync task's own freshness marker.
+# This check verifies SKILL.md and the installed pin on every bootstrap.
+
+[tasks.refresh-externals]
+description = "Update git-repo externals and re-download pinned skills (replaces refreshPeriod)"
+run = "mise bootstrap repos update && bun scripts/sync-agent-skills.ts --refresh"
+run_windows = "mise bootstrap repos update; bun scripts/sync-agent-skills.ts --refresh"
+
+[tasks.apply-codex-config]
+description = "Merge managed settings into ~/.codex/config.toml"
+run = "sh scripts/apply-codex-config.sh"
+run_windows = "pwsh -NoProfile -File scripts/apply-codex-config.ps1"
+sources = [
+  "templates/codex/config.toml",
+  "scripts/apply-codex-config.sh",
+  "scripts/apply-codex-config.ps1",
+  "scripts/merge-codex-config.py",
+]
+
+[tasks.apply-antigravity-config]
+description = "Merge managed permissions into the Antigravity CLI settings.json"
+run = "sh scripts/apply-antigravity-config.sh"
+run_windows = "pwsh -NoProfile -File scripts/apply-antigravity-config.ps1"
+sources = [
+  "generated/antigravity-settings.json",
+  "scripts/apply-antigravity-config.sh",
+  "scripts/apply-antigravity-config.ps1",
+]
+
+[tasks.apply-vscode-settings]
+description = "Merge managed settings into Code/Cursor settings.json"
+run = "sh scripts/apply-vscode-settings.sh"
+run_windows = "pwsh -NoProfile -File scripts/apply-vscode-settings.ps1"
+sources = [
+  "templates/vscode/settings.json",
+  "scripts/apply-vscode-settings.sh",
+  "scripts/apply-vscode-settings.ps1",
+  "scripts/merge-vscode-settings.py",
+]
+
+[tasks.apply-vscode-keybindings]
+description = "Merge managed keybindings into Code/Cursor keybindings.json"
+run = "sh scripts/apply-vscode-keybindings.sh"
+run_windows = "pwsh -NoProfile -File scripts/apply-vscode-keybindings.ps1"
+sources = [
+  "templates/vscode/keybindings.json",
+  "scripts/apply-vscode-keybindings.sh",
+  "scripts/apply-vscode-keybindings.ps1",
+  "scripts/merge-vscode-keybindings.py",
+]
+
+[tasks.apply-home-manager]
+description = "Home Manager switch (skips on Windows; after nix-custom-conf)"
+depends = ["apply-nix-custom-conf", "generate-agent-files"]
+run = "sh scripts/apply-home-manager.sh"
+run_windows = "echo 'Skipped on Windows (unix-only task)'"
+sources = [
+  "mise.toml",
+  "mise.local.toml",
+  "templates/home-manager/flake.nix.tera",
+  "templates/home-manager/common.nix.tera",
+  "dotfiles/.config/home-manager/linux-common.nix",
+  "dotfiles/.config/home-manager/linux-desktop.nix",
+  "dotfiles/.config/home-manager/linux-headless.nix",
+  "dotfiles/.config/home-manager/darwin.nix",
+  "dotfiles/.config/home-manager/wsl.nix",
+  "dotfiles/.config/home-manager/pkgs/cli-proxy-api.nix",
+  "dotfiles/.config/home-manager/pkgs/terminal-browser.nix",
+  "dotfiles/.config/home-manager/pkgs/tode.nix",
+  "dotfiles/.config/home-manager/pkgs/tode-launcher.sh",
+  "scripts/apply-home-manager.sh",
+  "config/nix-binary-caches.toml",
+]
+
+[tasks.apply-nix-custom-conf]
+description = "Converge /etc/nix/nix.custom.conf (skips on Windows; after nix-linux-conf)"
+depends = ["apply-nix-linux-conf"]
+run = "sh scripts/apply-nix-custom-conf.sh"
+run_windows = "echo 'Skipped on Windows (unix-only task)'"
+sources = ["scripts/apply-nix-custom-conf.sh", "config/nix-binary-caches.toml"]
+
+[tasks.apply-nix-darwin]
+description = "nix-darwin switch (macOS only, skips elsewhere; after home-manager)"
+depends = ["apply-home-manager"]
+run = "sh scripts/apply-nix-darwin.sh"
+run_windows = "echo 'Skipped on Windows (macOS-only task)'"
+sources = [
+  "templates/nix-darwin/flake.nix.tera",
+  "templates/nix-darwin/darwin-configuration.nix.tera",
+  "scripts/apply-nix-darwin.sh",
+]
+
+[tasks.apply-nix-linux-conf]
+description = "Tune /etc/nix/nix.conf (Linux only, skips elsewhere)"
+run = "sh scripts/apply-nix-linux-conf.sh"
+run_windows = "echo 'Skipped on Windows (Linux-only task)'"
+sources = ["scripts/apply-nix-linux-conf.sh"]
+
+[tasks.apply-karabiner-goku]
+description = "Regenerate karabiner.json from karabiner.edn (macOS only; after nix-custom-conf)"
+depends = ["apply-nix-custom-conf"]
+run = "sh scripts/apply-karabiner-goku.sh"
+run_windows = "echo 'Skipped on Windows (macOS-only task)'"
+sources = ["dotfiles/.config/karabiner.edn", "scripts/apply-karabiner-goku.sh"]
+
+[tasks.apply-tailscaled-launchd]
+description = "Install/teardown tailscaled LaunchDaemon (macOS only; after home-manager)"
+depends = ["apply-home-manager"]
+run = "sh scripts/apply-tailscaled-launchd.sh"
+run_windows = "echo 'Skipped on Windows (macOS-only task)'"
+# Check the installed binary on every run, including after Home Manager updates.
+sources = [
+  "scripts/apply-tailscaled-launchd.sh",
+  "scripts/macos-launchd/tailscaled.sh",
+]
+
+[tasks.import-rectangle]
+description = "Import Rectangle settings via defaults (macOS only)"
+run = "sh scripts/import-rectangle.sh"
+run_windows = "echo 'Skipped on Windows (macOS-only task)'"
+sources = ["templates/macos/rectangle.plist", "scripts/import-rectangle.sh"]
+
+[tasks.import-dockdoor]
+description = "Import DockDoor settings via defaults (macOS only)"
+run = "sh scripts/import-dockdoor.sh"
+run_windows = "echo 'Skipped on Windows (macOS-only task)'"
+sources = ["templates/macos/dockdoor.plist", "scripts/import-dockdoor.sh"]
+
+[tasks.configure-alttab]
+description = "Set AltTab previous-window shortcut (macOS only)"
+run = "sh scripts/configure-alttab.sh"
+run_windows = "echo 'Skipped on Windows (macOS-only task)'"
+sources = ["scripts/configure-alttab.sh"]
+
+[tasks.apply-herdr-plugins]
+description = "Link herdr plugins and reload config (skips on Windows/without herdr; after home-manager)"
+depends = ["apply-home-manager"]
+run = "sh scripts/apply-herdr-plugins.sh"
+run_windows = "echo 'Skipped on Windows (unix-only task)'"
+sources = [
+  "dotfiles/.local/share/herdr-plugins/copy-output-py/herdr-plugin.toml",
+  "dotfiles/.local/share/herdr-plugins/copy-output-py/copy_output.py",
+  "dotfiles/.local/share/herdr-plugins/next-agent-py/herdr-plugin.toml",
+  "dotfiles/.local/share/herdr-plugins/next-agent-py/next_agent.py",
+  "dotfiles/.config/herdr/plugins/config/local.copy-output/config.toml",
+  "dotfiles/.config/herdr/plugins/config/local.next-agent/config.toml",
+  "scripts/apply-herdr-plugins.sh",
+]
+
+[tasks.bootstrap]
+description = "Full converge: every apply task that is not covered by declarative bootstrap steps"
+depends = [
+  "generate-agent-files",
+  "sync-agent-skills",
+  "check-agent-skills",
+  "apply-codex-config",
+  "apply-antigravity-config",
+  "apply-vscode-settings",
+  "apply-vscode-keybindings",
+  "apply-home-manager",
+  "apply-nix-custom-conf",
+  "apply-nix-darwin",
+  "apply-nix-linux-conf",
+  "apply-karabiner-goku",
+  "apply-tailscaled-launchd",
+  "import-rectangle",
+  "import-dockdoor",
+  "configure-alttab",
+  "apply-herdr-plugins",
+]

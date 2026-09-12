@@ -1,0 +1,4 @@
+# Machine-local mise overrides (git identity, per-host vars). See mise.local.toml.example.
+mise.local.toml
+# This repo intentionally manages ~/.codex/* dotfiles; undo the global **/.codex ignore.
+!dotfiles/.codex/

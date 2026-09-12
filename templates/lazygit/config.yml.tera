@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/jesseduffield/lazygit/master/schema/config.json
+
+gui:
+  language: "en"
+  commitAuthorShortLength: 6
+quitOnTopLevelReturn: true
+os:
+  editInTerminal: true
+  edit: "fresh {{ "{{" }}filename{{ "}}" }}"
+  editAtLine: "fresh {{ "{{" }}filename{{ "}}" }}:{{ "{{" }}line{{ "}}" }}"
+  editAtLineAndWait: "fresh {{ "{{" }}filename{{ "}}" }}:{{ "{{" }}line{{ "}}" }}"
+  openDirInEditor: "fresh {{ "{{" }}dir{{ "}}" }}"
+
+git:
+  diffRenderers:
+{% if os() == "windows" %}    - type: extDiff
+      command: 'pwsh -NoLogo -NoProfile -File "{{ get_env(name="HOME", default=get_env(name="USERPROFILE", default="")) | replace(from="\\", to="/") }}/AppData/Local/lazygit/lazygit-diff.ps1"'
+{% else %}    - command: hunk pager --mode split
+{% endif -%}

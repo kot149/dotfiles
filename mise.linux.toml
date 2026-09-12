@@ -1,0 +1,6 @@
+# Linux layer (loaded with MISE_ENV="unix,linux").
+
+[dotfiles]
+"~/.config/lazygit/config.yml" = { source = "templates/lazygit/config.yml.tera", mode = "template" }
+"~/.config/pnpm/config.yaml" = { source = "templates/pnpm/config.yaml" }
+"~/.local/share/superfile/toggleDotFile" = { source = "dotfiles/.local/share/superfile/toggleDotFile" }

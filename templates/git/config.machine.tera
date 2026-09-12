@@ -1,0 +1,21 @@
+{% set_global qbs = "\\" -%}
+[user]
+	name = "{{ vars.git_user_name | replace(from=qbs, to=qbs ~ qbs) | replace(from='"', to=qbs ~ '"') }}"
+	email = "{{ vars.git_user_email | replace(from=qbs, to=qbs ~ qbs) | replace(from='"', to=qbs ~ '"') }}"
+	signingkey = "{% if vars.git_signing_key != "" %}{{ vars.git_signing_key | replace(from=qbs, to=qbs ~ qbs) | replace(from='"', to=qbs ~ '"') }}{% else %}{{ get_env(name="HOME", default=get_env(name="USERPROFILE", default="")) | replace(from=qbs, to=qbs ~ qbs) | replace(from='"', to=qbs ~ '"') }}/.ssh/id_ed25519_github_kot149.pub{% endif %}"
+
+[commit]
+	gpgsign = {{ vars.git_commit_gpgsign }}
+
+[gpg]
+	format = ssh
+
+[gpg "ssh"]
+	allowedSignersFile = "{% if vars.git_allowed_signers != "" %}{{ vars.git_allowed_signers | replace(from=qbs, to=qbs ~ qbs) | replace(from='"', to=qbs ~ '"') }}{% else %}{{ get_env(name="HOME", default=get_env(name="USERPROFILE", default="")) | replace(from=qbs, to=qbs ~ qbs) | replace(from='"', to=qbs ~ '"') }}/.ssh/allowed_signers{% endif %}"
+
+[core]
+	editor = "{{ vars.git_editor | replace(from=qbs, to=qbs ~ qbs) | replace(from='"', to=qbs ~ '"') }}"
+{% if vars.git_user_name == "kot149" %}
+
+[url "git@github.com-kot149:"]
+	insteadOf = https://github.com/{% endif %}

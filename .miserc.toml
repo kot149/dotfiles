@@ -1,0 +1,5 @@
+# Early-init mise settings (read before mise.toml; see
+# https://mise.jdx.dev/configuration/settings.html#early-initialization).
+# auto_env automatically loads platform config layers:
+#   unix -> mise.unix.toml (unix-family only), {os} -> mise.{linux,macos,windows}.toml.
+auto_env = true

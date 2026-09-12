@@ -5,7 +5,7 @@ PLIST=/Library/LaunchDaemons/com.tailscale.tailscaled.plist
 LABEL=com.tailscale.tailscaled
 # Resolve to a root-readable executable. ~/.nix-profile lives under the
 # FileVault-encrypted user home, and the Nix entrypoint is a shell wrapper.
-TAILSCALED=$(readlink -f "$(command -v tailscaled)")
+TAILSCALED=$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$(command -v tailscaled)")
 TAILSCALED_DIR=${TAILSCALED%/*}
 if [ -x "$TAILSCALED_DIR/.tailscaled-wrapped" ]; then
     TAILSCALED="$TAILSCALED_DIR/.tailscaled-wrapped"

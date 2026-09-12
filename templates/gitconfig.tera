@@ -1,0 +1,39 @@
+{% set_global qbs = "\\" -%}
+[include]
+	path = ~/.config/git/config.machine
+
+[core]
+	fsmonitor = false
+	autocrlf = input
+	quotePath = false
+	pager = hunk pager --mode split
+
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+
+[push]
+	followTags = true
+
+[fetch]
+	writeCommitGraph = true
+
+[credential "https://huggingface.co"]
+	provider = generic
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = false
+
+[interactive]
+	diffFilter = hunk pager --mode split
+
+[alias]
+	publish = "!git push --set-upstream origin \"$(git rev-parse --abbrev-ref HEAD)\""
+	tree = log --graph --pretty=format:'%x09%C(auto)%h %Cgreen%<(15)%ar%Creset by %C(cyan ul)@%an%Creset %C(auto)%s%d'{% if vars.git_safe_directories != "" %}{% for d in vars.git_safe_directories | split(pat=",") %}{% if d | trim != "" %}
+[safe]
+	directory = "{{ d | trim | replace(from=qbs, to=qbs ~ qbs) | replace(from='"', to=qbs ~ '"') }}"{% endif %}{% endfor %}{% endif %}

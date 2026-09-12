@@ -11,7 +11,7 @@
  */
 import { TextlintKernel } from "@textlint/kernel@15.8.0";
 import markdownPlugin from "@textlint/textlint-plugin-markdown@15.8.0";
-import rule from "../dot_claude/hooks/textlint-rules/textlint-rule-ja-ai-phrasing.js";
+import rule from "../dotfiles/.claude/hooks/textlint-rules/textlint-rule-ja-ai-phrasing.js";
 
 const kernel = new TextlintKernel();
 

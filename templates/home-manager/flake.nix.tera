@@ -1,0 +1,59 @@
+{% set_global nix_arch = arch() -%}
+{% if arch() == "x64" %}{% set_global nix_arch = "x86_64" %}{% elif arch() == "arm64" %}{% set_global nix_arch = "aarch64" %}{% endif -%}
+{% set_global nix_os = os() -%}
+{% if os() == "macos" %}{% set_global nix_os = "darwin" %}{% endif -%}
+{% set_global uname_r = exec(command="uname -r") | trim | lower -%}
+{% set_global is_wsl = os() == "linux" and "microsoft" in uname_r -%}
+{
+  description = "Home Manager configuration";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # Source of every AI CLI (claude-code, codex, herdr, hunk, ax, opencode,
+    # omp, rtk). Deliberately not following nixpkgs: the cache at
+    # cache.numtide.com is built against the pins in this flake, and its own
+    # nixpkgs still supports x86_64-darwin, which it evaluates for all systems.
+    llm-agents.url = "github:numtide/llm-agents.nix";
+    # Deliberately not following nixpkgs: the terraform builds cached at
+    # nixpkgs-terraform.cachix.org are made against the pins in this flake, so
+    # overriding nixpkgs changes the store path and forces a local Go build of
+    # an unfree package that cache.nixos.org will never carry.
+    nixpkgs-terraform.url = "github:stackbuilders/nixpkgs-terraform";
+{% if os() == "linux" %}    nixgl = {
+      url = "github:guibou/nixGL";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+{% endif %}  };
+
+  outputs = { nixpkgs, home-manager, llm-agents, nixpkgs-terraform{% if os() == "linux" %}, nixgl{% endif %}, ... }:
+    let
+      system = "{{ nix_arch }}-{{ nix_os }}";
+      username = "{{ exec(command="whoami") | trim }}";
+    in {
+      homeConfigurations.default = home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs.legacyPackages.${system};
+        modules = [
+          ./common.nix
+{% if os() == "linux" %}          ./linux-common.nix
+{% if is_wsl %}          ./wsl.nix
+{% endif %}{% if vars.linux_gui == "true" %}          ./linux-desktop.nix
+{% elif vars.linux_gui == "false" %}          ./linux-headless.nix
+{% elif is_wsl %}          ./linux-headless.nix
+{% else %}          ./linux-desktop.nix
+{% endif %}{% elif os() == "macos" %}          ./darwin.nix
+{% endif %}          ] ++ (if builtins.pathExists ./local.nix then [ ./local.nix ] else []);
+        extraSpecialArgs = {
+          inherit username;
+          llmAgents = llm-agents.packages.${system};
+          nixTerraform = nixpkgs-terraform.packages.${system}."terraform-1.14";
+{% if os() == "linux" %}          nixglPackages = nixgl.packages.${system};
+{% endif %}{% if is_wsl %}          isWsl = true;
+{% endif %}        };
+
+      };
+    };
+}

@@ -1,0 +1,36 @@
+# Windows layer (loaded with MISE_ENV="windows").
+
+[bootstrap.repos]
+"~/Documents/PowerShell/posh-abbr" = { url = "https://github.com/kot149/posh-abbr.git" }
+"~/Documents/AutoHotkey/lib/ImagePut" = { url = "https://github.com/iseahound/ImagePut.git" }
+"~/Documents/AutoHotkey/lib/IMEv2" = { url = "https://github.com/k-ayaki/IMEv2.ahk.git" }
+"~/Documents/AutoHotkey/lib/AHK-v2-libraries" = { url = "https://github.com/Descolada/AHK-v2-libraries.git" }
+
+[dotfiles]
+"~/winget.json" = { source = "dotfiles/winget.json" }
+"~/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json" = { source = "dotfiles/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json" }
+"~/AppData/Local/clink/clink_settings" = { source = "dotfiles/AppData/Local/clink/clink_settings" }
+"~/AppData/Local/clink/starship.lua" = { source = "dotfiles/AppData/Local/clink/starship.lua" }
+"~/AppData/Local/lazygit/config.yml" = { source = "templates/lazygit/config.yml.tera", mode = "template" }
+"~/AppData/Local/lazygit/lazygit-diff.ps1" = { source = "dotfiles/AppData/Local/lazygit/lazygit-diff.ps1" }
+"~/AppData/Local/pnpm/config.yaml" = { source = "templates/pnpm/config.yaml" }
+"~/AppData/Local/superfile/toggleDotFile" = { source = "dotfiles/AppData/Local/superfile/toggleDotFile" }
+"~/AppData/Roaming/herdr/config.toml" = { source = "templates/herdr/config.toml.tera", mode = "template" }
+"~/AppData/Roaming/tuicr/config.toml" = { source = "templates/tuicr/config.toml" }
+"~/Documents/AutoHotkey/debug/keyHistory.ahk" = { source = "dotfiles/Documents/AutoHotkey/debug/keyHistory.ahk" }
+"~/Documents/AutoHotkey/discord.ahk" = { source = "dotfiles/Documents/AutoHotkey/discord.ahk" }
+"~/Documents/AutoHotkey/hotkeys.ahk" = { source = "dotfiles/Documents/AutoHotkey/hotkeys.ahk" }
+"~/Documents/AutoHotkey/hotstrings.ahk" = { source = "dotfiles/Documents/AutoHotkey/hotstrings.ahk" }
+"~/Documents/AutoHotkey/screenshot.ahk" = { source = "dotfiles/Documents/AutoHotkey/screenshot.ahk" }
+"~/Documents/AutoHotkey/slack.ahk" = { source = "dotfiles/Documents/AutoHotkey/slack.ahk" }
+"~/Documents/AutoHotkey/start.ahk" = { source = "dotfiles/Documents/AutoHotkey/start.ahk" }
+"~/Documents/PowerShell/Microsoft.PowerShell_profile.ps1" = { source = "dotfiles/Documents/PowerShell/Microsoft.PowerShell_profile.ps1" }
+"~/Documents/PowerShell/profile.ps1" = { source = "dotfiles/Documents/PowerShell/profile.ps1" }
+"~/.local/bin/hunk-pick.ps1" = { source = "dotfiles/.local/bin/hunk-pick.ps1" }
+"~/.local/bin/tcr-pick.ps1" = { source = "dotfiles/.local/bin/tcr-pick.ps1" }
+
+[tools]
+bun = "1"
+jq = "1"
+python = "3.13"
+uv = "0.12.13"

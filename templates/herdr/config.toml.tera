@@ -1,0 +1,80 @@
+onboarding = false
+
+[experimental]
+switch_ascii_input_source_in_prefix = true
+kitty_graphics = true
+
+[ui]
+agent_panel_sort = "spaces"
+
+[keys]
+prefix = "f4"
+
+focus_pane_left = "ctrl+alt+left"
+focus_pane_down = "ctrl+alt+down"
+focus_pane_up = "ctrl+alt+up"
+focus_pane_right = "ctrl+alt+right"
+
+previous_tab = "alt+left"
+next_tab = "alt+right"
+
+previous_workspace = "alt+up"
+next_workspace = "alt+down"
+
+split_vertical = "prefix+slash"
+
+[ui.toast]
+delivery = "herdr"
+
+[[keys.command]]
+key = "prefix+i"
+type = "shell"
+{% if os() == "windows" %}command = "pwsh -NoLogo -Command \"$env:HERDR_ENV='1'; hdr-init\""{% else %}command = "env HERDR_ENV=1 zsh -ic 'hdr-init'"{% endif %}
+description = "init herdr workspace template (main/lazygit/nvim)"
+
+{% if os() != "windows" %}[[keys.command]]
+key = "f20"
+type = "plugin_action"
+command = "local.next-agent.next"
+description = "Focus next blocked/done Agent"
+
+[[keys.command]]
+key = "prefix+b"
+type = "shell"
+command = "herdr plugin pane open --plugin official.browser --entrypoint browser --placement split --focus"
+description = "open herdr browser pane"
+
+{% endif %}[[keys.command]]
+key = "alt+g"
+type = "popup"
+command = "lazygit"
+description = "lazygit (popup)"
+width = "90%"
+height = "90%"
+
+[[keys.command]]
+key = "alt+t"
+type = "popup"
+{% if os() == "windows" %}command = "pwsh -NoLogo -NoProfile -File \"{{ get_env(name="HOME", default=get_env(name="USERPROFILE", default="")) | replace(from="\\", to="/") }}/.local/bin/tcr-pick.ps1\""{% else %}command = "tcr-pick"{% endif %}
+description = "tuicr (pick range)"
+width = "90%"
+height = "90%"
+
+[[keys.command]]
+key = "prefix+d"
+type = "popup"
+{% if os() == "windows" %}command = "pwsh -NoLogo -NoProfile -File \"{{ get_env(name="HOME", default=get_env(name="USERPROFILE", default="")) | replace(from="\\", to="/") }}/.local/bin/hunk-pick.ps1\""{% else %}command = "hunk-pick"{% endif %}
+description = "hunk diff (pick range)"
+width = "90%"
+height = "90%"
+
+{% if os() != "windows" %}[[keys.command]]
+key = "prefix+y"
+type = "plugin_action"
+command = "local.copy-output.pick"
+description = "Pick a command output to copy"
+{% endif -%}
+{% if os() == "windows" %}
+[terminal]
+default_shell = "pwsh"
+{% endif -%}

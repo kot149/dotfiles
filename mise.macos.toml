@@ -1,0 +1,10 @@
+# macOS layer (loaded with MISE_ENV="unix,macos").
+
+[dotfiles]
+"~/Library/Application Support/lazygit/config.yml" = { source = "templates/lazygit/config.yml.tera", mode = "template" }
+"~/Library/Preferences/pnpm/config.yaml" = { source = "templates/pnpm/config.yaml" }
+"~/Library/Application Support/superfile/toggleDotFile" = { source = "dotfiles/.local/share/superfile/toggleDotFile" }
+"~/.config/AutoRaise/config" = { source = "dotfiles/.config/AutoRaise/config" }
+"~/.config/karabiner.edn" = { source = "dotfiles/.config/karabiner.edn" }
+"~/.config/nix-darwin/flake.nix" = { source = "templates/nix-darwin/flake.nix.tera", mode = "template" }
+"~/.config/nix-darwin/darwin-configuration.nix" = { source = "templates/nix-darwin/darwin-configuration.nix.tera", mode = "template" }

@@ -1,0 +1,51 @@
+# Shared by macOS and Linux (loaded together with mise.macos.toml / mise.linux.toml
+# via MISE_ENV="unix,macos" or MISE_ENV="unix,linux").
+
+[dotfiles]
+# --- shells ---
+"~/.zshrc" = { source = "dotfiles/.zshrc" }
+"~/.zsh/completion/_gh" = { source = "dotfiles/.zsh/completion/_gh" }
+"~/.zsh/completion/_git" = { source = "dotfiles/.zsh/completion/_git" }
+"~/.zsh/completion/_mise" = { source = "dotfiles/.zsh/completion/_mise" }
+"~/.zsh/completion/_sheldon" = { source = "dotfiles/.zsh/completion/_sheldon" }
+"~/.zsh/completion/git-completion.bash" = { source = "dotfiles/.zsh/completion/git-completion.bash" }
+"~/.zsh/completion/git-completion.zsh" = { source = "dotfiles/.zsh/completion/git-completion.zsh" }
+"~/.config/sheldon/plugins.toml" = { source = "dotfiles/.config/sheldon/plugins.toml" }
+"~/.config/zsh-abbr/user-abbreviations" = { source = "dotfiles/.config/zsh-abbr/user-abbreviations" }
+"~/.config/ghostty/config" = { source = "dotfiles/.config/ghostty/config" }
+
+# --- tuicr / herdr (unix path) ---
+"~/.config/tuicr/config.toml" = { source = "templates/tuicr/config.toml" }
+"~/.config/herdr/config.toml" = { source = "templates/herdr/config.toml.tera", mode = "template" }
+"~/.config/herdr/plugins/config/local.copy-output/config.toml" = { source = "dotfiles/.config/herdr/plugins/config/local.copy-output/config.toml" }
+"~/.config/herdr/plugins/config/local.next-agent/config.toml" = { source = "dotfiles/.config/herdr/plugins/config/local.next-agent/config.toml" }
+"~/.local/share/herdr-plugins/copy-output-py/herdr-plugin.toml" = { source = "dotfiles/.local/share/herdr-plugins/copy-output-py/herdr-plugin.toml" }
+"~/.local/share/herdr-plugins/copy-output-py/copy_output.py" = { source = "dotfiles/.local/share/herdr-plugins/copy-output-py/copy_output.py" }
+"~/.local/share/herdr-plugins/next-agent-py/herdr-plugin.toml" = { source = "dotfiles/.local/share/herdr-plugins/next-agent-py/herdr-plugin.toml" }
+"~/.local/share/herdr-plugins/next-agent-py/next_agent.py" = { source = "dotfiles/.local/share/herdr-plugins/next-agent-py/next_agent.py" }
+
+# --- unix helper scripts ---
+"~/.local/bin/git-base-branch" = { source = "dotfiles/.local/bin/git-base-branch" }
+"~/.local/bin/hunk-pick" = { source = "dotfiles/.local/bin/hunk-pick" }
+"~/.local/bin/tcr-pick" = { source = "dotfiles/.local/bin/tcr-pick" }
+"~/.local/bin/pick-loop" = { source = "dotfiles/.local/bin/pick-loop" }
+"~/.local/bin/zjdev" = { source = "dotfiles/.local/bin/zjdev" }
+"~/.local/bin/zellij-dev-lazygit" = { source = "dotfiles/.local/bin/zellij-dev-lazygit" }
+"~/.local/bin/zellij-dev-new-workspace-tab" = { source = "dotfiles/.local/bin/zellij-dev-new-workspace-tab" }
+"~/.local/bin/zellij-dev-toggle-lazygit" = { source = "dotfiles/.local/bin/zellij-dev-toggle-lazygit" }
+"~/.local/bin/zellij-dev-yazi" = { source = "dotfiles/.local/bin/zellij-dev-yazi" }
+"~/.local/bin/zellij-dev-yazi-open" = { source = "dotfiles/.local/bin/zellij-dev-yazi-open" }
+
+# --- Home Manager flake ---
+"~/.config/home-manager/flake.nix" = { source = "templates/home-manager/flake.nix.tera", mode = "template" }
+"~/.config/home-manager/common.nix" = { source = "templates/home-manager/common.nix.tera", mode = "template" }
+"~/.config/home-manager/linux-common.nix" = { source = "dotfiles/.config/home-manager/linux-common.nix", mode = "copy" }
+"~/.config/home-manager/linux-desktop.nix" = { source = "dotfiles/.config/home-manager/linux-desktop.nix", mode = "copy" }
+"~/.config/home-manager/linux-headless.nix" = { source = "dotfiles/.config/home-manager/linux-headless.nix", mode = "copy" }
+"~/.config/home-manager/darwin.nix" = { source = "dotfiles/.config/home-manager/darwin.nix", mode = "copy" }
+"~/.config/home-manager/wsl.nix" = { source = "dotfiles/.config/home-manager/wsl.nix", mode = "copy" }
+"~/.config/home-manager/local.nix.example" = { source = "dotfiles/.config/home-manager/local.nix.example", mode = "copy" }
+"~/.config/home-manager/pkgs/cli-proxy-api.nix" = { source = "dotfiles/.config/home-manager/pkgs/cli-proxy-api.nix", mode = "copy" }
+"~/.config/home-manager/pkgs/terminal-browser.nix" = { source = "dotfiles/.config/home-manager/pkgs/terminal-browser.nix", mode = "copy" }
+"~/.config/home-manager/pkgs/tode-launcher.sh" = { source = "dotfiles/.config/home-manager/pkgs/tode-launcher.sh", mode = "copy" }
+"~/.config/home-manager/pkgs/tode.nix" = { source = "dotfiles/.config/home-manager/pkgs/tode.nix", mode = "copy" }

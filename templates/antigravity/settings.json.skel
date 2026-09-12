@@ -1,0 +1,6 @@
+{
+  "permissions": {
+    "allow": __ALLOW__,
+    "deny": __DENY__
+  }
+}

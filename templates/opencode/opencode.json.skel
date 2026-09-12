@@ -1,0 +1,8 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "bash": __BASHRULES__,
+    "edit": "allow",
+    "webfetch": "ask"
+  }
+}
