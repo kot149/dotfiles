@@ -97,7 +97,7 @@ Windows package list lives in `winget.json`: `winget export -o winget.json` / `w
 
 1. `.chezmoidata.toml` — repo-wide defaults (git identity, agent allow/deny lists, etc.)
 2. `~/.config/chezmoi/chezmoi.toml` — per-machine overrides (created by `.chezmoi.toml.tmpl` on `chezmoi init`); `[data]` here wins
-3. `private_dot_config/git/config.machine.tmpl` → `~/.config/git/config.machine` — included by the shared `dot_gitconfig.tmpl` for per-host git settings (signing key paths, work email, `safe.directory`, etc.)
+3. `private_dot_config/git/create_config.machine.tmpl` → `~/.config/git/config.machine`, created only when absent and included by the shared `dot_gitconfig.tmpl` for per-host git settings (signing key paths, work email, `safe.directory`, etc.)
 
 When adding new tunable values, prefer threading them through `.chezmoidata.toml` + chezmoi template prompts rather than hardcoding.
 
