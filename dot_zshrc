@@ -327,11 +327,11 @@ _claude_gpt() {
       "$@"
 }
 
-luna() {
+claude-luna() {
   _claude_gpt gpt-5.6-luna xhigh "$@"
 }
 
-sol() {
+claude-sol() {
   _claude_gpt gpt-5.6-sol medium gpt-5.6-luna xhigh "$@"
 }
 
