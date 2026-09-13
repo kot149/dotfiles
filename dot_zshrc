@@ -335,6 +335,10 @@ claude-sol() {
   _claude_gpt gpt-5.6-sol medium gpt-5.6-luna xhigh "$@"
 }
 
+claude-astra() {
+  _claude_gpt gpt-6-astra low gpt-5.6-luna xhigh "$@"
+}
+
 # .git/info/exclude にローカル限定の無視パターンを追加する
 local-ignore() {
   if [ $# -eq 0 ]; then

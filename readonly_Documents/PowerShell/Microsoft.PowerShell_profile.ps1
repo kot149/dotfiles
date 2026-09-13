@@ -419,6 +419,7 @@ function Invoke-ClaudeGpt {
 
 function claude-luna { Invoke-ClaudeGpt -Model gpt-5.6-luna -Effort xhigh -ClaudeArgs $args }
 function claude-sol { Invoke-ClaudeGpt -Model gpt-5.6-sol -Effort medium -SubagentModel gpt-5.6-luna -SubagentEffort xhigh -ClaudeArgs $args }
+function claude-astra { Invoke-ClaudeGpt -Model gpt-6-astra -Effort low -SubagentModel gpt-5.6-luna -SubagentEffort xhigh -ClaudeArgs $args }
 
 function git-logout {
 	cmdkey /delete:git:https://github.com
