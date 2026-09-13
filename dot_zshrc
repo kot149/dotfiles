@@ -342,6 +342,77 @@ claudex() {
   esac
 }
 
+_claude_zen() {
+  local alias="$1"
+  shift
+  local port=8318
+  local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/cli-proxy-api"
+  local base_config="${XDG_CONFIG_HOME:-$HOME/.config}/cli-proxy-api/config.yaml"
+  local merged_config="$cache_dir/zen-config.yaml"
+
+  local zen_key="${OPENCODE_API_KEY:-}"
+  if [[ -z "$zen_key" ]]; then
+    local auth_file="${XDG_DATA_HOME:-$HOME/.local/share}/opencode/auth.json"
+    if [[ -f "$auth_file" ]] && command -v jq >/dev/null 2>&1; then
+      zen_key=$(jq -r '.opencode.key // empty' "$auth_file")
+    fi
+  fi
+  if [[ -z "$zen_key" ]]; then
+    echo "claudezen: no Zen API key (set OPENCODE_API_KEY or run opencode /connect for OpenCode Zen)" >&2
+    return 1
+  fi
+
+  local stanza
+  stanza=$(printf 'disable-image-generation: true\ncodex-api-key:\n  - api-key: "%s"\n    base-url: "https://opencode.ai/zen/v1"\n    models:\n      - name: "muse-spark-1.3-contributor-free"\n        alias: "%s"\n        display-name: "Muse Spark 1.3 (Contributor Free)"' "$zen_key" "$alias")
+  local base_text
+  if [[ -f "$base_config" ]]; then
+    base_text="$(sed 's/^port:[[:space:]]*.*/port: 8318/' "$base_config")"
+  else
+    base_text="$(printf 'host: "127.0.0.1"\nport: 8318\napi-keys:\n  - "sk-local-cliproxy"')"
+  fi
+  local merged_new
+  merged_new="$(printf '%s\n%s\n' "$base_text" "$stanza")"
+  mkdir -p "$cache_dir"
+  if [[ ! -f "$merged_config" ]] || [[ "$merged_new" != "$(cat "$merged_config")" ]]; then
+    printf '%s' "$merged_new" >"$merged_config"
+  fi
+
+  if ! curl --silent --fail --max-time 1 "http://127.0.0.1:$port/v1/models" \
+      -H 'Authorization: Bearer sk-local-cliproxy' >/dev/null 2>&1; then
+    local proxy_bin
+    proxy_bin=$(command -v cli-proxy-api 2>/dev/null || command -v server 2>/dev/null) || {
+      echo "CLIProxyAPI is not installed" >&2
+      return 1
+    }
+    "$proxy_bin" -config "$merged_config" \
+      >"$cache_dir/zen-server.log" 2>&1 &!
+    sleep 1
+  fi
+
+  ANTHROPIC_BASE_URL="http://127.0.0.1:$port" \
+  ANTHROPIC_AUTH_TOKEN=sk-local-cliproxy \
+  ANTHROPIC_DEFAULT_HAIKU_MODEL="$alias" \
+  ANTHROPIC_DEFAULT_OPUS_MODEL="$alias" \
+  ANTHROPIC_DEFAULT_SONNET_MODEL="$alias" \
+  CLAUDE_CODE_SUBAGENT_MODEL="$alias" \
+  CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY=3 \
+  CLAUDE_CODE_MAX_CONTEXT_TOKENS=1000000 \
+  ENABLE_TOOL_SEARCH=false \
+    claude --model "$alias" "$@"
+}
+
+claudezen() {
+  local variant="muse"
+  if (( $# > 0 )) && [[ "$1" != -* ]]; then
+    variant="$1"
+    shift
+  fi
+  case "$variant" in
+    muse) _claude_zen muse-spark-1.3-contributor-free "$@" ;;
+    *) echo "claudezen: unknown variant '$variant' (expected muse)" >&2; return 1 ;;
+  esac
+}
+
 # .git/info/exclude にローカル限定の無視パターンを追加する
 local-ignore() {
   if [ $# -eq 0 ]; then

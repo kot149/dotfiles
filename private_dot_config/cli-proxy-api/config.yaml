@@ -1,3 +1,6 @@
+# NOTE: claudezen appends a codex-api-key stanza for OpenCode Zen at runtime
+# into $XDG_CACHE_HOME/cli-proxy-api/zen-config.yaml (port 8318).
+# Do not add codex-api-key here; it would break that merge.
 host: "127.0.0.1"
 port: 8317
 auth-dir: "~/.cli-proxy-api"
