@@ -202,7 +202,7 @@ git commit -m "<コミットメッセージ>"
   ```
   hunk ヘッダ (`@@ -a,b +c,d @@`) の行数は残した hunk の実体と一致させる。手計算が面倒なら `git apply --cached --recount` で再計算させる。適用後は必ず `git diff --cached` で staged 内容を確認し、ずれていたら `git reset` してやり直す
 - 移動リファクタのコミットは、移動後に `git show -M --stat` で rename として認識されることを確認する。認識されない場合は移動と編集が混ざっている
-- コミットメッセージはリポジトリの既存スタイル (`git log --oneline -20`) に合わせる。[[commit-message]] スキルの規約に従い、`Co-Authored-By` は付けない
+- コミットメッセージはリポジトリの既存スタイル (`git log --oneline -20`) に合わせる。[[commit]] スキルの規約に従い、`Co-Authored-By` は付けない
 - 各コミット後に `git status --short` で残差を確認する
 
 全ての変更をコミットし終えたら、`git status --short` がクリーンであることを確認する。**残った変更を勝手に握りつぶさない。** 想定外の残差があればユーザーに報告する。

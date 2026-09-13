@@ -200,7 +200,7 @@ If tests fail, investigate and fix before continuing to the next item. Do not co
 
 ## Step 6: Commit each fix
 
-After each fixed finding passes tests, commit it as a separate commit using the `commit-message` skill logic:
+After each fixed finding passes tests, commit it as a separate commit using the `commit` skill logic:
 
 - Determine commit type: almost always `refactor:`
 - Subject: describe what was extracted (e.g. `refactor: extract shared upload handler from handleXmlUpload and handleYamlUpload`)
