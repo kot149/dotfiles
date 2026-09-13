@@ -1,6 +1,6 @@
 ---
 name: release-notes
-description: Write the body of a GitHub release. Targets the current draft release by default; if none is found, ask the user which release to target. Compares against the previous release to summarize changes, follows the existing release-notes format in the repository, and respects any pre-existing body content in the target release. Always preserves the draft state — never publishes a draft. Invoke for requests like "リリースノート書いて", "draftのリリース本文書いて", "write release notes", or similar in any language.
+description: Write the body of a GitHub release. Targets the current draft release by default; if none is found, ask the user which release to target. Compares against the previous release to summarize changes, follows the existing release-notes format in the repository, and respects any pre-existing body content in the target release. Always preserves the draft state — never publishes a draft. Invoke for requests like "リリースノート書いて", "draftのリリース本文書いて", "write release notes", "write the draft release body", or similar in English or Japanese.
 ---
 
 # GitHub Release Notes Writer
@@ -15,8 +15,23 @@ Where this document says "ask the user to choose", present the options and wait 
 
 1. **Locate the target release** using `gh release list --limit 20 --json name,tagName,isDraft,isPrerelease,publishedAt,createdAt`:
    - If exactly one release is in draft state (`isDraft: true`): that is the target.
-   - If multiple drafts exist: list them and ask the user which one to use.
-   - If no draft exists: ask the user which release/tag to write notes for (offer the most recent releases as options), or whether to create a new draft. Do NOT create a release without confirmation.
+   - If multiple drafts exist: list them and present the following to the user in Japanese to have them choose:
+
+     ```
+     対象のリリースが複数見つかりました。どれを対象にしますか?
+     - <候補1: タグ / タイトル>
+     - <候補2: タグ / タイトル>
+     - ...
+     ```
+
+   - If no draft exists: present the following to the user in Japanese (offer the most recent releases as options), asking which release/tag to write notes for, or whether to create a new draft. Do NOT create a release without confirmation:
+
+     ```
+     下書きのリリースがありません。どれを対象にしますか?
+     - <候補1: タグ / タイトル>
+     - <候補2: タグ / タイトル>
+     - 新規に下書きを作成する
+     ```
 
 2. **Fetch the target release's current state**:
    `gh release view <tag> --json name,tagName,body,isDraft,targetCommitish`
@@ -39,9 +54,9 @@ Where this document says "ask the user to choose", present the options and wait 
 5. **Study the repo's existing release-notes format** to match it exactly:
    - `gh release view <prev-tag> --json body --jq .body` for the immediate predecessor.
    - If the predecessor's body looks auto-generated or sparse, also inspect 1–2 earlier non-draft releases.
-   - Identify:
-     - Language (English / Japanese / mixed).
-     - Section headings (e.g. `## Features`, `### 🚀 新機能`, `What's Changed`, Conventional-Commit grouping, etc.).
+    - Identify:
+     - Language (match the prior releases; default to English).
+     - Section headings (e.g. `## Features`, `### 🚀 新機能` / `### 🚀 New Features`, `What's Changed`, Conventional-Commit grouping, etc.).
      - Whether entries link PRs (`#123`), commit SHAs, or contributor handles.
      - Whether a "Full Changelog" compare link is appended (`**Full Changelog**: https://github.com/OWNER/REPO/compare/<prev>...<target>`).
      - Bullet style, emoji usage, ordering.
@@ -52,17 +67,35 @@ Where this document says "ask the user to choose", present the options and wait 
    - Skip noise: pure CI tweaks, lockfile bumps, and merge commits unless the prior releases include them.
    - Call out breaking changes prominently if any commit/PR body contains `BREAKING CHANGE:` or `!:` Conventional-Commit markers.
    - Append the Full Changelog compare link if the previous releases do.
-   - Write in the same language as the prior releases (default to Japanese if the repo's commit history and prior notes are Japanese, English otherwise).
+   - Write in the same language as the prior releases (default to English).
 
 7. **Show the draft to the user** before applying:
-   - Print the full proposed body in a fenced block.
-   - Note the target release tag, whether it is currently draft, and the previous release used for the diff.
-   - Ask the user whether to (a) apply as-is, (b) edit and apply, or (c) cancel. Recommend (a) by listing it first with `(Recommended)`.
+   - Print the full proposed body in a fenced block (the release body itself follows the repo-language rules in step 5/6, default English — do not translate it into Japanese for display).
+   - Note the target release tag, whether it is currently draft, and the previous release used for the diff, presenting the following to the user in Japanese:
+
+     ```
+     対象リリース: <tag> (下書き: <はい/いいえ>)
+     比較元: <prev-tag>
+     リリース本文の案は以上です (本文はリポジトリの言語ルールに従い、既定では英語です)。
+     ```
+
+   - Ask the user whether to (a) apply as-is, (b) edit and apply, or (c) cancel. Recommend (a) by listing it first with `(Recommended)`. Present the choice to the user in Japanese:
+
+     ```
+     どうしますか?
+     1. このまま適用する (推奨)
+     2. 修正して適用する
+     3. 中止する
+     ```
 
 8. **Apply the update**, preserving draft state:
    - Write the body to a temp file in the scratchpad to avoid shell-escaping issues with multi-line content.
    - Run `gh release edit <tag> --notes-file <path>`.
-   - **CRITICAL**: If the release was in draft state, do NOT pass `--draft=false` and do NOT pass any flag that would publish it. `gh release edit` preserves draft status by default — verify with `gh release view <tag> --json isDraft` after the edit and report the result to the user.
+   - **CRITICAL**: If the release was in draft state, do NOT pass `--draft=false` and do NOT pass any flag that would publish it. `gh release edit` preserves draft status by default — verify with `gh release view <tag> --json isDraft` after the edit and present the following to the user in Japanese:
+
+     ```
+     更新しました: <tag> (下書きのまま: <はい/いいえ>)。公開はしていません。
+     ```
    - If the release was already published, edit it in place the same way (still no draft-state changes).
 
 ## Notes
@@ -70,4 +103,8 @@ Where this document says "ask the user to choose", present the options and wait 
 - Never run `gh release create` or `gh release delete` as part of this skill unless the user explicitly asks to create a new release.
 - Never publish a draft. If the user wants to publish, that is a separate manual step.
 - If `$ARGUMENTS` is provided, treat it as a hint (e.g. a specific tag name, a theme to emphasize, or extra context to weave in).
-- If the repo has no prior releases AND no body on the draft, ask the user for a preferred format (Conventional Commits grouping is the safe default) before drafting.
+- If the repo has no prior releases AND no body on the draft, present the following to the user in Japanese and ask for a preferred format (Conventional Commits grouping is the safe default) before drafting:
+
+  ```
+  参考にできる既存のリリースノートがありません。どの形式で書きますか? (既定のおすすめ: Conventional Commits ごとのグルーピング)
+  ```

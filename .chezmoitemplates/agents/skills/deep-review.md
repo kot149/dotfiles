@@ -1,678 +1,676 @@
 ---
 name: deep-review
-description: 複数の観点別レビュワーサブエージェントを並列実行し、judgeサブエージェントが各指摘を実コードで検証してから、妥当な指摘を修正して再レビューするループ型の深掘りコードレビュー。security/quality/naming/comment/perf/a11y/test/arch/meta/spec の10視点を独立コンテキストでレビューし、PR本文からJira/Confluence等の仕様ドキュメントも取得して仕様整合性まで見る。ユーザーが「deep review」「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」などと依頼した場合、またはPR番号・差分範囲を指定してレビューを求めた場合に使用する。指摘をPRのpendingレビューコメントとして投稿することもできる。引数 `--fix` で対応方針の選択提示を省略して自動修正し、`--post` で同様にpendingレビューコメント投稿（PR対象時のみ有効）に進める。
+description: Loop-style in-depth code review that runs multiple perspective-specific reviewer subagents in parallel, has judge subagents verify each finding against the real code, then fixes the valid findings and re-reviews. Reviews in 10 independent perspectives (security/quality/naming/comment/perf/a11y/test/arch/meta/spec), also fetching spec documents such as Jira/Confluence from the PR body to check spec consistency. Use when the user asks for "deep review", "review this PR", "review the diff from multiple angles", "review and fix", 「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」, or requests a review with a PR number or diff range in English or Japanese. Findings can also be posted as pending PR review comments. The `--fix` flag skips the approach selection prompt and auto-fixes, and `--post` similarly proceeds to pending review comment posting (only valid for PR targets).
 argument-hint: "[--fast|--full] [--fix|--post]"
 ---
 
 # Deep Review
 
-複数のレビュワーサブエージェントに異なる視点からコードレビューを並列実行させ、judgeサブエージェントが妥当性を評価し、妥当な指摘を修正してから再レビューするループを最大5回繰り返す。
+Run multiple reviewer subagents in parallel from different perspectives, have judge subagents evaluate validity, fix the valid findings, then repeat the review-fix loop up to 5 times.
 
 ## Target
 
 $ARGUMENTS
 
-引数には対象（PR番号・URL・ブランチ差分・ファイルパス）のほか、次のフラグを指定できる。
+Arguments may specify the target (PR number/URL, branch diff, file paths) plus the following flags.
 
-| フラグ | 効果 |
+| Flag | Effect |
 |---|---|
-| `--fast` | 軽量モードに固定。規模に関わらず視点を絞る |
-| `--full` | 重量モードに固定。規模に関わらず全視点＋厚い検証 |
-| `--fix` | Phase 3b-2の対応方針の選択提示を省略し、選択A（全VALID指摘を自動修正）で進める |
-| `--post` | Phase 3b-2の対応方針の選択提示を省略し、選択E（pendingレビューコメント投稿）で進める。レビュー対象がPRでない場合は不正な引数として警告し、無視する（通常どおり選択提示に進む） |
+| `--fast` | Pin to light mode. Narrow the perspectives regardless of size |
+| `--full` | Pin to heavy mode. All perspectives plus thorough verification regardless of size |
+| `--fix` | Skip the approach selection prompt in Phase 3b-2 and proceed with option A (auto-fix all VALID findings) |
+| `--post` | Skip the approach selection prompt in Phase 3b-2 and proceed with option E (post pending review comments). If the review target is not a PR, warn that this is an invalid argument, ignore it, and proceed to the normal selection prompt |
 
-`--fix` と `--post` を両方指定した場合は、選択Eの説明にある「投稿と修正を両方行う」ことをユーザーが明示したものとして扱い、Phase 4b（投稿）→ Phase 4（修正）の順で両方実行する。
+If both `--fix` and `--post` are given, treat it as the user explicitly requesting "do both posting and fixing" as described for option E, and run both in the order Phase 4b (post) then Phase 4 (fix).
 
-いずれのフラグも、meta/specの指摘に対する追加選択（M1-M3 / S1-S4）までは代替しない。該当する指摘が残っている場合はその選択提示のみ通常どおり行う。
+Neither flag substitutes for the additional selections on meta/spec findings (M1-M3 / S1-S4). If such findings remain, prompt for those selections normally.
 
-## 設計の前提
+## Design Premises
 
-- レビュワーとjudgeは **サブエージェント**（独立したコンテキストを持つ子エージェント）に委譲する
-- 各サブエージェントは最終応答テキストを返却する。オーケストレーター（自分）はその文字列を直接パースする
-- レビュワーもjudgeもコードを読むだけなので、**読み取り専用**のサブエージェントを使う
-- 修正は必ずオーケストレーター自身が行う（サブエージェントに書き換えさせない）
+- Reviewers and judges are delegated to **subagents** (child agents with independent contexts)
+- Each subagent returns a final response text. The orchestrator (you) parses that string directly
+- Reviewers and judges only read code, so use **read-only** subagents
+- Fixes are always made by the orchestrator itself (never let subagents rewrite files)
 
-### サブエージェントの起動方法
+### How to Launch Subagents
 
-実行中の agent が持つ手段に読み替える。
+Translate into whatever means the running agent has.
 
-- Claude Code: `Agent` ツール。読み取り専用の役には `subagent_type: "Explore"` を使い、複数の `Agent` 呼び出しを1メッセージにまとめて並列実行する
-- Codex CLI: `spawn_agent` を必要数発行してから `wait` する（`features.multi_agent` が必要。ロールは `config.toml` の `[agents]` から読み取り専用のものを選ぶ）
+- Claude Code: the `Agent` tool. Use `subagent_type: "Explore"` for read-only roles, and batch multiple `Agent` calls in one message to run them in parallel
+- Codex CLI: issue as many `spawn_agent` calls as needed, then `wait` (`features.multi_agent` required. Pick read-only roles from `[agents]` in `config.toml`)
 
-どの agent でも次を満たすこと:
+On any agent, satisfy all of the following:
 
-- サブエージェントは会話履歴を継承しない。共有すべき前提はすべて prompt に明示的に含める
-- **会話の文脈（実装中の「こういう意図でこう書いた」という語り）は渡さない**。渡すと、それを指摘しない理由として再利用してしまう。渡してよいのは一次情報（PR本文・チケット・規約文書・コード内コメント）だけ
-- サブエージェントにファイルを書き換えさせない。読み取り専用に制限できない agent では prompt にその禁止を明記する
-- 「並列で起動する」と書かれた箇所は agent の並列実行手段でまとめて起動する。並列手段が無い agent では逐次実行に落とし、その旨を報告に書き添える。並列数の上限は一度に起動するサブエージェント数で制御する
+- Subagents do not inherit conversation history. Include every shared premise explicitly in the prompt
+- **Do not pass conversation context (narratives like "I wrote it this way with such intent" from the ongoing work)**. Passing it lets them reuse it as a reason not to flag things. The only things you may pass are primary sources (PR body, tickets, convention documents, in-code comments)
+- Do not let subagents rewrite files. On agents that cannot restrict to read-only, state the prohibition explicitly in the prompt
+- Sections marked "launch in parallel" must be launched together with the agent's parallel execution means. On agents with no parallel means, fall back to sequential execution and note that in the report in Japanese (e.g. `注: 並列実行手段がないため逐次実行にフォールバックしました`). Control the parallelism cap by the number of subagents launched at once
 
-## ユーザーへの選択提示
+## Selection Prompts to the User
 
-このドキュメントで「選択提示」と書いてある箇所は、選択肢を提示してユーザーに選ばせることを指す。選択UIツール（`AskUserQuestion` など）が使える agent ではそれを使い、無い agent では同じ選択肢を番号付きリストのプレーンテキストで提示し、番号または自由記述で答えてもらう。どちらの場合も回答を得るまで次へ進まない。
+Every place in this document that says "selection prompt" means presenting options and letting the user choose. On agents with a selection UI tool (such as `AskUserQuestion`) use it; on agents without one, present the same options as a numbered plain-text list and have them answer by number or free text. In either case, do not proceed until you get an answer.
 
-## Reviewers (10視点)
+## Reviewers (10 Perspectives)
 
-| ラベル | 視点 | チェック項目 |
+| Label | Perspective | Checklist |
 |---|---|---|
-| security | セキュリティ | インジェクション, 認証・認可, 機密情報露出, 入力バリデーション, XSS/CSRF, 安全でない暗号化 |
-| quality | コード品質 | 可読性, 関数の責務分離, エラーハンドリング, DRY, 不変性, ネストの深さ, マジックナンバー, **無音の劣化と観測可能性**（想定外の状態が無音で既定値に落ちていないか。fail-open・値の握り潰し・catch後の続行が記録に残るか）, **回復性**（途中で落ちたときデータが中途半端に残る経路がないか） |
-| naming | 命名 | 名前から内容・役割が推測できるか, 誤解を招く名前, 既存の他機能・役割との名前被り・紛らわしさ, 同一概念の表記ゆれ, スコープに対する情報量の過不足, **対称物との命名の食い違い**。※casing規約 (camelCase/snake_case等) の違反はチェック対象外 |
-| comment | コメント品質 | 冗長・自明なコメント/docstring, 重複, 編集経緯を語るメタコメント, 逆に必要なWhy・制約・落とし穴の欠落。判断基準は [[trim-comments]] に従う。加えて **記述と実態の一致**（docstring・README・PR本文・設計文書が主張する事実が、現在のコードで成り立つか） |
-| perf | パフォーマンス | N+1, 不要な再レンダリング, メモリリーク, 計算量, キャッシュ漏れ, バンドルサイズ, 不要なループ |
-| a11y | アクセシビリティ | WCAG 2.2, aria属性, キーボード操作, スクリーンリーダー, コントラスト, フォーカス管理 |
-| test | テスト品質 | カバレッジの漏れ, 境界値, 実装依存の脆さ, モック過多, AAAパターン, テスト名の明瞭さ, **変異検証**（条件を反転・集合演算を逆・unionから1メンバー削除して既存テストが失敗するか）, 価値のないテスト（自明な結果だけを検証, モックの設定値をそのまま検証するトートロジー, 他のテストと同じ経路しか通らない重複）は削除を提案する |
-| arch | アーキテクチャ | レイヤー違反, 依存方向, 循環依存, 責務肥大, インターフェース設計, モジュール凝集度, **後方互換性**（契約を変えたことで既存の呼び出し元が壊れるか。呼び出し元は検索して件数を示す）, **対称物の非対称**（read/write等で片方にしかない不変条件・型の締め・アクセサ） |
-| meta | アプローチ妥当性 | YAGNI違反, より単純な代替, スコープ, 段階的アプローチ, 既存資産, 技術選択 |
-| spec | 仕様整合性 | PR本文にリンクされたJira/Confluence/PRD/設計資料等との整合性, 実装が仕様要件を満たすか, 仕様で言及されたエッジケース/受け入れ条件の網羅, 仕様自体の妥当性（矛盾・抜け漏れ・前提誤り） |
+| security | Security | Injection, authentication/authorization, secret exposure, input validation, XSS/CSRF, unsafe cryptography |
+| quality | Code quality | Readability, function responsibility separation, error handling, DRY, immutability, nesting depth, magic numbers, **silent degradation and observability** (whether unexpected states silently fall back to defaults; whether fail-open, swallowed values, and continue-after-catch leave a trace in logs), **recoverability** (whether any path leaves data half-written when it crashes midway) |
+| naming | Naming | Whether the name reveals content/role, misleading names, collisions or confusion with other existing features/roles, inconsistent wording for the same concept, too much or too little information for the scope, **mismatches with symmetric counterparts**. Note: casing convention (camelCase/snake_case etc.) violations are out of scope |
+| comment | Comment quality | Redundant/obvious comments/docstrings, duplication, meta-comments narrating edit history, or conversely missing Why/constraints/pitfalls. Follow [[trim-comments]] as the criterion. Additionally **statement-vs-reality consistency** (whether facts claimed by docstrings, READMEs, PR bodies, and design docs hold in the current code) |
+| perf | Performance | N+1, unnecessary re-renders, memory leaks, complexity, cache misses, bundle size, unnecessary loops |
+| a11y | Accessibility | WCAG 2.2, aria attributes, keyboard operation, screen readers, contrast, focus management |
+| test | Test quality | Coverage gaps, boundary values, brittle implementation-dependent tests, excessive mocking, AAA pattern, clear test names, **mutation checks** (whether existing tests fail when a condition is inverted, a set operation is flipped, or one member is removed from a union), proposing deletion of valueless tests (only asserting trivial results, tautologies asserting mock setup values verbatim, duplicates covering only the same path as other tests) |
+| arch | Architecture | Layer violations, dependency direction, circular dependencies, bloated responsibilities, interface design, module cohesion, **backward compatibility** (whether contract changes break existing callers; search for callers and report counts), **asymmetry of counterparts** (invariants, type strictness, or accessors present on only one side of pairs like read/write) |
+| meta | Approach validity | YAGNI violations, simpler alternatives, scope, incremental approach, existing assets, technology choice |
+| spec | Spec consistency | Consistency with Jira/Confluence/PRD/design docs linked from the PR body, whether the implementation satisfies spec requirements, coverage of edge cases/acceptance criteria mentioned in the spec, validity of the spec itself (contradictions, gaps, wrong premises) |
 
 ## Phase 0: Preparation
 
-### 0.1 レビュー対象の特定
+### 0.1 Identify the Review Target
 
-`$ARGUMENTS`の内容に応じて対象を決め、**diffは一時ファイルに保存してパスをサブエージェントに渡す**（プロンプトへインライン展開しない。要約による情報欠落を避ける）。
+Decide the target from the contents of `$ARGUMENTS`, and **save the diff to a temp file and pass the path to subagents** (do not inline it into prompts; summarization loses information).
 
-- PR番号/URL指定: `gh pr diff <number> > /tmp/deep-review-<対象名>.diff`。同じ呼び出しで `gh pr view <number> --json title,body,url,additions,deletions,changedFiles,headRefName,baseRefName,state,isDraft,author,headRefOid,files` も取る
-- ブランチ差分指定: `git diff <base>...<head>` を一時ファイルへ。`git log --oneline <base>..<head>` と `git diff --stat` も同時に取る
-- ファイルパス指定: そのパスを対象一覧とする（diffは無い）
-- 未指定: `git diff HEAD` をファイルへ。差分がなければ `git diff HEAD~1`
+- PR number/URL given: `gh pr diff <number> > /tmp/deep-review-<target>.diff`. In the same call also take `gh pr view <number> --json title,body,url,additions,deletions,changedFiles,headRefName,baseRefName,state,isDraft,author,headRefOid,files`
+- Branch diff given: write `git diff <base>...<head>` to a temp file. Also take `git log --oneline <base>..<head>` and `git diff --stat` at the same time
+- File paths given: use those paths as the target list (no diff)
+- Unspecified: write `git diff HEAD` to a file. If the diff is empty, use `git diff HEAD~1`
 
-保持する変数: diffファイルパスを `$DIFF_PATH`、変更ファイル一覧を `$FILES`、変更の意図を `$PURPOSE`、完全な40桁commit SHAを `$SHA`。
+Variables to keep: diff file path as `$DIFF_PATH`, changed file list as `$FILES`, change intent as `$PURPOSE`, full 40-char commit SHA as `$SHA`.
 
-100行未満の差分に限りプロンプトへ直接埋め込んでよい。それ以外は必ずパス渡しにし、「対象ファイルを直接読んでレビューすること」と指示する。
+Only diffs under 100 lines may be embedded directly into prompts. Anything larger must be passed by path, with an instruction to "read the target files directly for the review".
 
-### 0.2 受理判定
+### 0.2 Acceptance Check
 
-レビューを断るための門ではない。**判定結果を1行伝えて続行するのが既定**。
+This is not a gate for refusing reviews. The default is to **state the verdict in one line in Japanese and continue**.
 
-| 状態 | 扱い |
+| State | Handling |
 |---|---|
-| 既にマージ / クローズ済み | 「マージ済みのPRです。事後レビューとして進めます」と添えて続行 |
-| 依存更新bot等の自動生成PR | 軽量モードに固定 |
-| 変更が生成物・ロックファイル・整形のみ | 軽量モードに固定し、生成物を指摘対象から外す旨を明記 |
-| `isDraft` | 続行するが「Draftのため未完成箇所がある前提」と明記 |
-| 差分が0行 | レビューせずその旨を報告して終了 |
+| Already merged / closed | Continue with a note in Japanese: `注: このPRは既にマージ済みのため、事後レビューとして続行します` |
+| Auto-generated PR from a dependency bot etc. | Pin to light mode |
+| Changes are only generated artifacts, lockfiles, or formatting | Pin to light mode and state in Japanese that generated artifacts are excluded from findings (e.g. `注: 生成物は指摘対象外とします`) |
+| `isDraft` | Continue but note in Japanese (e.g. `注: ドラフトのため未完成部分を前提とします`) |
+| 0-line diff | Do not review; report in Japanese (e.g. `差分が0件のためレビューを終了します`) and finish |
 
-### 0.3 モード判定
+### 0.3 Mode Decision
 
-規模からモードを決める。`--fast` / `--full` の指定があればそれが優先する。
+Decide the mode from size. An explicit `--fast` / `--full` takes precedence.
 
-| モード | 条件（目安） | レビュワー | judge分割 |
+| Mode | Condition (guideline) | Reviewers | Judge split |
 |---|---|---|---|
-| 軽量 | 変更300行未満 かつ 8ファイル以下 | security / quality / naming / comment / test / spec の6視点（UI変更があれば a11y を足す） | 最大4並列 |
-| 標準 | 上記より大きく、1500行 / 30ファイル以内 | 10視点すべて | 後述の分割戦略に従う |
-| 重量 | 1500行超 または 30ファイル超 | 10視点すべて | 指摘数分割を優先し、最大8並列 |
+| Light | Under 300 changed lines and 8 or fewer files | 6 perspectives: security / quality / naming / comment / test / spec (add a11y if there are UI changes) | Max 4 parallel |
+| Standard | Larger than above, within 1500 lines / 30 files | All 10 perspectives | Follow the split strategy below |
+| Heavy | Over 1500 lines or over 30 files | All 10 perspectives | Prefer finding-count splitting, max 8 parallel |
 
-**規模がモードの境界付近にあるときは軽いほうのモードを選ぶ。** 厚く見たいときだけ `--full` を使う。決めたモードは1行でログ出力する。
+**When the size is near a mode boundary, pick the lighter mode.** Use `--full` only when you want a thorough look. Log the chosen mode in one line in Japanese (e.g. `モード: Light（変更XXX行 / Xファイルのため）`).
 
-### 0.4 規約文書のパス当て（中身は読まない）
+### 0.4 Locate Convention Documents (Do Not Read the Contents)
 
-確定させるのはパスだけ。中身を読むのはサブエージェントの仕事。
+Only resolve paths. Reading the contents is the subagents' job.
 
-- コーディング規約・指示ファイル: リポジトリ直下の `CLAUDE.md` / `AGENTS.md`、変更されたファイルのディレクトリにある `CLAUDE.md`、`.claude/rules/*.md`
-- 命名規約・アーキテクチャ規約・設計決定の記録: `docs/architecture/`、`docs/adr/`・`adr/`、`docs/**/naming*`、および層構成が読めるディレクトリ構成そのもの（`src/` 直下の第1階層）
-- レビューコメントのラベル規約: `CONTRIBUTING.md`、`.github/`、`docs/**/code_review*`
+- Coding conventions / instruction files: repo-root `CLAUDE.md` / `AGENTS.md`, `CLAUDE.md` in the directory of changed files, `.claude/rules/*.md`
+- Naming conventions, architecture conventions, design decision records: `docs/architecture/`, `docs/adr/` / `adr/`, `docs/**/naming*`, and the directory layout itself that reveals layer structure (first level under `src/`)
+- Review comment label conventions: `CONTRIBUTING.md`, `.github/`, `docs/**/code_review*`
 
-**見つかったパスと、見つからなかった事実の両方を渡す。** 規約が無いなら、後述の根拠は「既存コードの多数派パターンの実測」だけになる。これを伝えないとレビュワーが一般論を書き始める。
+**Pass both the paths found and the fact that some were not found.** If there are no conventions, the only basis later is "measured majority patterns in existing code". Without telling reviewers this, they start writing generic advice.
 
-### 0.5 既存レビューコメントの取得（PR対象のとき省略不可）
+### 0.5 Fetch Existing Review Comments (Mandatory for PR Targets)
 
 ```sh
 gh api "repos/<owner>/<repo>/pulls/<PR>/comments?per_page=100" \
   --jq '.[] | "\(.user.login) \(.path):\(.line // .original_line)\n\(.body[0:300])\n"'
 ```
 
-要約して `$EXISTING_COMMENTS` として全レビュワーに渡す。目的は3つ。
+Summarize and pass to all reviewers as `$EXISTING_COMMENTS`. Three purposes:
 
-1. **重複を避ける** — 既に指摘済みのものを繰り返さない
-2. **観点を較正する** — そのチームが何を問題と見なすか、指摘の粒度と根拠の示し方が読める
-3. **修正済みかを見極める** — 現在のHEADは既存レビューを反映した後の姿かもしれない。知らずに読むと「よくできている」と誤読する
+1. **Avoid duplicates** — do not repeat what is already flagged
+2. **Calibrate perspective** — see what the team treats as a problem, and the granularity and evidence style of findings
+3. **Judge whether already fixed** — the current HEAD may already reflect existing reviews. Reading it blind misreads it as "well done"
 
-解決済みの論点は蒸し返さない。指摘されたが対応が中途半端なものは残件として拾ってよい。
+Do not resurrect resolved threads. Points that were flagged but only half-addressed may be picked up as remaining issues.
 
-### 0.6 対称物の特定
+### 0.6 Identify Symmetric Counterparts
 
-変更対象に**対になる実装**があるかを調べ、あればパスを `$SYMMETRY` として naming / arch レビュワーに渡す。
+Check whether the change target has a **counterpart implementation**, and if so pass its path as `$SYMMETRY` to the naming / arch reviewers.
 
-| 対称の型 | 探し方 |
+| Symmetry type | How to find |
 |---|---|
-| read / write、get / set | ファイル名の `_read_` ↔ `_write_` を検索 |
-| 作成 / 更新 / 削除 | 同じ接頭辞のハンドラ・モデル |
-| 同じ基底を継ぐ型 | 基底クラス名で検索 |
-| 同じ役割の別feature | ディレクトリ構成の同じ位置にあるファイル |
+| read / write, get / set | Search for `_read_` <-> `_write_` filename pairs |
+| create / update / delete | Handlers/models with the same prefix |
+| Types sharing a base | Search by base class name |
+| Same role in a different feature | Files at the same position in the directory layout |
 
-**対称物が無い場合も「無い」と記録する**（比較を省いた理由になる）。
+**Record "none" when there is no counterpart** (it becomes the reason the comparison was skipped).
 
-### 0.7 リンクされた仕様ドキュメントの取得
+### 0.7 Fetch Linked Spec Documents
 
-PR本文（`$PURPOSE`）から以下のリンクを抽出し、本文を取得して `$SPEC_DOCS` として保持する。
+Extract the following links from the PR body (`$PURPOSE`), fetch their contents, and keep them as `$SPEC_DOCS`.
 
-- 取得手段は接続済みのMCPサーバーのツールを使う。ツール名は agent ごとに異なり、遅延ロード方式の agent では先にツール定義をロードする
-- Jira issue (`*.atlassian.net/browse/XXX-###`, `ABC-123` 形式のキー): Atlassian MCPのissue取得ツールで本文+コメントを取得
-- Confluenceページ (`*.atlassian.net/wiki/...`): Atlassian MCPのページ取得ツールで本文を取得
-- Google Docs/Drive (`docs.google.com`, `drive.google.com`): Google Drive MCPのファイル内容取得ツールで取得（権限があれば）
-- Notion (`notion.so/...`): Notion MCPで取得
-- その他PRD/設計資料/Figma/Slack/Lucid等のリンク: 可能な範囲で対応するMCPツールで取得。対応ツールが無い / 取得不能なら「リンクのみ確認、本文未取得」として記録
-- 取得した各ドキュメントは `title`, `url`, `body`（重要部分の抜粋でも可）の形でまとめる
-- 仕様ドキュメントが**1つも見つからない**場合は `$SPEC_DOCS = "(no linked spec documents)"` とし、specレビュワーには「仕様リンクなし。実装の意図が自明か、PR本文の説明だけで十分かを評価せよ」と指示する
+- Use the tools of a connected MCP server. Tool names differ per agent; on agents with lazy loading, load the tool definitions first
+- Jira issues (`*.atlassian.net/browse/XXX-###`, keys in `ABC-123` form): fetch body + comments with the Atlassian MCP issue-fetch tool
+- Confluence pages (`*.atlassian.net/wiki/...`): fetch the body with the Atlassian MCP page-fetch tool
+- Google Docs/Drive (`docs.google.com`, `drive.google.com`): fetch with the Google Drive MCP file-content tool (if permitted)
+- Notion (`notion.so/...`): fetch with the Notion MCP
+- Other PRD/design/Figma/Slack/Lucid links: fetch with the corresponding MCP tool where possible. If there is no matching tool or fetching fails, record "link confirmed only, body not fetched"
+- Summarize each fetched document as `title`, `url`, `body` (an excerpt of the key parts is fine)
+- If **no spec documents are found at all**, set `$SPEC_DOCS = "(no linked spec documents)"` and instruct the spec reviewer to "evaluate whether the intent is self-evident from the implementation, or whether the PR body alone suffices"
 
-### 0.8 パーマリンクの型
+### 0.8 Permalink Format
 
-`file:line` だけでは裏を取るのに手間がかかる。型を組み立てて全サブエージェントに渡す。
+`file:line` alone takes effort to verify. Assemble the format and pass it to all subagents.
 
 ```
-https://github.com/<owner>/<repo>/blob/<完全な40桁SHA>/<path>#L<start>-L<end>
+https://github.com/<owner>/<repo>/blob/<full 40-char SHA>/<path>#L<start>-L<end>
 ```
 
-- **SHAは完全な40桁**を使う。短縮SHA・ブランチ名・`$(git rev-parse HEAD)` のようなコマンド置換は展開されずリンクが壊れる
-- 行範囲は前後1行の文脈を含める（3行目を指摘するなら `#L2-L4`）
-- ローカル差分・ファイル指定でSHAが特定できない場合はパーマリンクを省き、`file:line` のままにする
+- **Use the full 40-char SHA.** Short SHAs, branch names, and unexpanded command substitutions like `$(git rev-parse HEAD)` produce broken links
+- Include one line of context on each side of the range (to flag line 3, use `#L2-L4`)
+- For local diffs / file-specified targets where no SHA can be determined, omit permalinks and keep `file:line`
 
-### 0.9 ループカウンタ初期化
+### 0.9 Initialize Loop Counter
 
 `ROUND=1`, `MAX_ROUNDS=5`
 
-## 全レビュワー共通の規則
+## Rules Common to All Reviewers
 
-各レビュワーのプロンプトに、視点別のチェック項目とあわせて必ず次を含める。
+Include all of the following in each reviewer's prompt along with the perspective-specific checklist.
 
-### 根拠を必須にする
+### Require Evidence
 
-**規約文書の該当箇所を引用できるか、既存コードの多数派パターンを実測（検索の件数と代表ファイル）で示せる指摘だけを出す。** どちらも示せないものは出さない。設計・命名・アーキテクチャの観点は、根拠を課さないといくらでも一般論の「べき論」が書けてしまう。
+**Only raise findings you can support by quoting the applicable convention document, or by measuring the majority pattern in existing code (search counts plus representative files).** Do not raise what you cannot support either way. Without an evidence requirement, design/naming/architecture perspectives can produce endless generic "should" arguments.
 
-- 数えたら内訳を書く。「5箇所」ではなく「5箇所（`foo.ts` の4箇所と `bar.ts:52`）」。内訳を書こうとすると数え間違いに気づく
-- 「〜だと思われる」「一般に〜」を根拠にしない
-- 「今のままだと何が起きるか」を書く。「保守性が下がる」で終えない。「同じ判定を2か所直す必要があり、片方を忘れると金額がずれる」まで書く
+- When you count, write the breakdown. Not "5 places" but "5 places (4 in `foo.ts` and `bar.ts:52`)". Trying to write the breakdown exposes miscounts
+- Do not use "seems like ..." or "in general ..." as evidence
+- Write "what breaks if left as is". Do not stop at "maintainability decreases". Write it all the way to "the same check must be fixed in two places, and forgetting one skews the amounts"
 
-### 誤検出カタログ（この線に当たるものは出さない、または最低severityに落とす）
+### False-Positive Catalog (Do Not Raise, or Drop to Lowest Severity, Anything on These Lines)
 
-1. **既存の問題**（この変更で入ったのではない）→ LOW に落とし「本PR起因ではない」と明記
-2. **変更していない行の問題** → 同上
-3. **linter / 型チェッカー / コンパイラ / CIが捕まえる類**（import漏れ、型エラー、整形、テスト失敗）→ 出さない。ビルド・型チェック・テストを自分で走らせない
-4. **CIが機械的に強制している規則** → 出さない。`pyproject.toml` / `.pre-commit-config.yaml` / CI定義に、import の向き・命名・型・整形の契約が書かれていないか先に確認する。強制済みならそこは人手で指摘しても意味がない
-5. **根拠のない好み**（コメントの文体、行の分け方、語感だけを理由にした改名案）→ 出さない
-6. **意図的と読める変更**、広い変更の一部として自然に伴う変更 → ただし「意図的に見える」だけでは落とさない。意図が明文化されており、かつ既存パターンと整合していることまで確かめる
-7. **一般論としてのテスト不足・ドキュメント不足**（「テストを増やすべき」だけ）→ LOW。ただし「この変更を壊してもテストが通ったままで、退行を検出できない」を具体的な変異で示せるなら一般論ではない。MEDIUM以上にできる
-8. **移行途上と読める設計のばらつき**（同じディレクトリに新旧の方式が混在し、本PRがその途中である場合）→ 指摘ではなく情報提供として LOW
-9. **`fixup!` / `squash!` コミットの残存** → 一切扱わない。マージ時に潰される作業用コミットで、レビューの論点ではない
-10. **既存レビューコメントで既に指摘済み・解決済みの論点** → 出さない（`$EXISTING_COMMENTS` と突き合わせる）
+1. **Pre-existing issues** (not introduced by this change) -> drop to LOW and note "not caused by this PR"
+2. **Issues on unchanged lines** -> same as above
+3. **Things a linter / type checker / compiler / CI would catch** (missing imports, type errors, formatting, test failures) -> do not raise. Do not run builds, type checks, or tests yourself
+4. **Rules already enforced mechanically by CI** -> do not raise. First check `pyproject.toml` / `.pre-commit-config.yaml` / CI definitions for contracts on import order, naming, types, and formatting. Manually flagging enforced areas is pointless
+5. **Unfounded taste** (comment style, line breaks, rename proposals based only on feel) -> do not raise
+6. **Changes that read as intentional**, or changes naturally accompanying a broader change -> but do not drop them on "looks intentional" alone. Verify the intent is documented and consistent with existing patterns
+7. **Generic test-coverage / documentation complaints** ("should add more tests" alone) -> LOW. But if you can show a concrete mutation where "breaking this change still passes the tests, so the regression is undetectable", that is not generic and may be MEDIUM or higher
+8. **Design variance that reads as mid-migration** (old and new approaches coexisting in the same directory, with this PR mid-transition) -> report as LOW information, not a finding
+9. **Leftover `fixup!` / `squash!` commits** -> ignore entirely. They are working commits squashed at merge time, not review topics
+10. **Points already flagged or resolved in existing review comments** -> do not raise (cross-check against `$EXISTING_COMMENTS`)
 
-### 棚卸し表を必ず返させる（指摘0件でも省略不可）
+### Always Return an Inventory Table (Mandatory Even with Zero Findings)
 
-**「確かめた」と宣言するだけでは、見ていないのか見て問題なしなのかを検査できない。** カタログを適用しすぎて過少報告になっていないかは、この表でしか分からない。
+**Merely declaring "I checked" cannot distinguish "looked and found nothing" from "never looked".** Over-suppression of the catalog is only visible through this table.
 
-各レビュワーは、指摘が何件あろうと応答の末尾に次の表を付ける。
+Every reviewer appends the following table at the end of the response, however many findings there are.
 
 ```
 CHECKLIST
-| チェック項目 | 見た対象 | 結果 |
+| Checklist item | What was examined | Result |
 |---|---|---|
-| <自分の視点のチェック項目を1行ずつ、全部> | <検索した語と件数、読んだファイル> | 指摘N件 / 問題なし / 対象なし（理由） |
+| <each of your perspective's checklist items, one per row, all of them> | <searched terms and counts, files read> | N findings / no issues / not applicable (reason) |
 ```
 
-- **全項目を埋める。** 空欄を許さない。見ていない項目は「見ていない」と書く（黙って落とさない）
-- **「対象なし」には理由を書く**（「永続化を伴う処理が無い」「公開契約に触れる変更が無い」など）。理由が書けないなら、それは「まだ見ていない」
-- 軽量モードで対象外にした視点は、オーケストレーター側で「軽量モードのため対象外」と記録する
+- **Fill every row.** No blanks. Items you did not look at must say "not examined" (do not silently drop them)
+- **"Not applicable" needs a reason** (e.g. "no persistence involved", "no change touching public contracts"). If you cannot write a reason, it is "not examined yet"
+- Perspectives excluded by light mode are recorded orchestrator-side as "out of scope due to light mode"
 
-指摘が0件のときは `CHECKLIST` に加えて単独行で「LGTM」と返す。**表だけを返して指摘の有無を書かないのは不可**。
+With zero findings, return a lone `LGTM` line plus the `CHECKLIST`. **Returning only the table without stating whether there are findings is not allowed**.
 
 ## Phase 1: Parallel Detail Review
 
-モードで決めた視点のレビュワーサブエージェントを **並列で起動** する（標準・重量モードでは meta を含めて10体、軽量モードでは6〜7体）。`meta` と `spec` は専用プロンプトを使うが、起動は同じ1メッセージにまとめる。
+Launch reviewer subagents for the mode-selected perspectives **in parallel** (10 including meta in standard/heavy mode, 6-7 in light mode). `meta` and `spec` use dedicated prompts but launch in the same single message.
 
-各サブエージェントは `<視点名> review round $ROUND` として起動し、次のpromptを渡す:
+Start each subagent as `<perspective> review round $ROUND` with this prompt:
 
 ```
-あなたは<視点名>専門のコードレビュワーです。以下の変更を<視点名>の観点のみからレビューしてください。
-他視点（例: <視点名>以外のセキュリティ・品質・パフォーマンス等）の指摘は出さないでください。
+You are a code reviewer specializing in <perspective>. Review the following change from the <perspective> perspective only.
+Do not raise findings belonging to other perspectives (e.g. anything outside <perspective> such as security, quality, or performance).
 
-チェック項目: <上のReviewers表のチェック項目>
+Checklist: <checklist from the Reviewers table above>
 
-<「全レビュワー共通の規則」の3節（根拠を必須にする / 誤検出カタログ / 棚卸し表）をここに全文貼る>
+<Paste here the full text of the 3 sections under "Rules Common to All Reviewers" (require evidence / false-positive catalog / inventory table)>
 
-指摘がある場合、以下の形式で1件ごとに区切って返してください:
+If there are findings, return each one separated as follows:
 ---
-FINDING: <指摘タイトル>
+FINDING: <finding title>
 SEVERITY: CRITICAL|HIGH|MEDIUM|LOW
-FILE: <ファイルパス>
-LINE: <行番号(わかれば)>
-EVIDENCE: <規約文書の引用（ファイル名と該当行を明記）、または既存コードの実測（検索語・件数・代表ファイル）>
-DESCRIPTION: <問題の説明。今のままだと何がどうなるかを具体的に>
-SUGGESTION: <具体的な修正案>
+FILE: <file path>
+LINE: <line number (if known)>
+EVIDENCE: <quote from the convention document (with file name and applicable lines), or measured existing-code evidence (search terms, counts, representative files)>
+DESCRIPTION: <problem description, concretely what breaks and how if left as is>
+SUGGESTION: <concrete fix proposal>
 ---
 
-指摘の有無に関わらず、応答の末尾に CHECKLIST 表を必ず付けてください。
-指摘がない場合は CHECKLIST に加えて単独行で「LGTM」と返してください。
+Whether or not there are findings, always append the CHECKLIST table at the end of your response.
+If there are no findings, return a lone "LGTM" line plus the CHECKLIST.
 
-変更の意図: $PURPOSE
-変更ファイル: $FILES
-対象diff: $DIFF_PATH （このファイルを自分で読むこと。必要に応じて対象ファイル本体も読む）
-規約文書のパス: <0.4 で見つかったパス一覧。見つからなかった場合はその事実>
-既存のレビューコメント: $EXISTING_COMMENTS
-パーマリンクの型: <0.8 の型>
+Change intent: $PURPOSE
+Changed files: $FILES
+Target diff: $DIFF_PATH (read this file yourself; also read the target file bodies as needed)
+Convention document paths: <path list found in 0.4, or the fact that none was found>
+Existing review comments: $EXISTING_COMMENTS
+Permalink format: <format from 0.8>
 ```
 
-並列起動の注意:
+Parallel launch notes:
 
-- 対象視点を **まとめて並列起動** する。1件ずつ順に起動するのは避ける（直列化されて遅くなる）
-- 各サブエージェントは独立コンテキストなので、共有の前提知識は明示的にpromptに含める
-- `naming` のpromptには追加で次を含める: 「既存の他機能・役割との名前被りや紛らわしさは、コードベース内の類似名を実際に検索して確認すること」「camelCase/snake_case等のcasing規約違反は指摘しないこと」「対称物 $SYMMETRY と命名を1メンバーずつ突き合わせること」
-- `arch` のpromptには追加で後述の「対称物の突き合わせ」を含める
-- `comment` のpromptには追加で後述の「comment レビュワーの判断基準」を含める
-- `test` のpromptには追加で後述の「変異検証の作法」を含める
+- Launch all target perspectives **together in parallel**. Avoid launching them one by one in sequence (it serializes and slows down)
+- Each subagent has an independent context, so include shared premises explicitly in the prompt
+- Additionally include in the `naming` prompt: "actually search the codebase for similar names to confirm collisions or confusion with other existing features/roles", "do not flag camelCase/snake_case-style casing convention violations", and "cross-check naming against the counterpart $SYMMETRY member by member"
+- Additionally include in the `arch` prompt the "counterpart cross-check" below
+- Additionally include in the `comment` prompt the "comment reviewer criteria" below
+- Additionally include in the `test` prompt the "mutation check procedure" below
 
-### 対称物の突き合わせ（naming / arch、対称物があるときのみ）
+### Counterpart Cross-Check (naming / arch, only when a counterpart exists)
 
 ```
-対称物: $SYMMETRY
+Counterpart: $SYMMETRY
 
-対になる実装がある変更では、対称物を並べて1メンバーずつ比較してください。
-「対称だから良い」で止めると、非対称そのものを見落とします。次の5軸を表にして埋めること。
+For changes with a counterpart implementation, place them side by side and compare member by member.
+Do not stop at "good because symmetric"; that is exactly how you miss the asymmetry itself. Fill a table over these 5 axes.
 
-| 軸 | 見るもの |
+| Axis | What to look at |
 |---|---|
-| クラス名・属性名 | 同じ役割に同じ名詞を使っているか（Issue と Violation が混在していないか） |
-| 型の締め方 | 片方が Literal / Enum で、もう片方が素の string になっていないか |
-| 不変条件 | 片方にある frozen / validator が、もう片方に無いのはなぜか |
-| アクセサ | 片方が内部表現を隠すプロパティを持ち、もう片方が直接触っていないか |
-| docstring の自己申告 | 片方が明記している性質を、もう片方が黙っていないか |
+| Class/attribute names | Whether the same role uses the same nouns (e.g. Issue vs Violation mixed) |
+| Type strictness | Whether one side uses Literal / Enum while the other is a bare string |
+| Invariants | Why one side has frozen / validators the other side lacks |
+| Accessors | Whether one side hides internals behind a property while the other touches them directly |
+| Docstring self-claims | Whether a property one side explicitly claims is silently missing on the other |
 
-差が見つかったら、それが意図的かを一次情報（コード内コメント・設計文書・チケット）で確かめてください。
-説明が無い差だけが指摘候補です。
+When you find a difference, check primary sources (in-code comments, design docs, tickets) for whether it is intentional.
+Only unexplained differences are finding candidates.
 ```
 
-### comment レビュワーの判断基準
+### Comment Reviewer Criteria
 
-判断基準は [[trim-comments]] スキルに委譲する。共通テンプレートに加えて次をpromptに含める:
-
-```
-コメント・docstring・README・PR本文の記述のみを評価対象とし、ロジック・識別子名・シグネチャへの指摘は出さないでください。
-
-判断基準は trim-comments スキル（自分と同じスキルストア内の `../trim-comments/SKILL.md`）を読み、その「2. コメントを収集して分類する」（残す / 削る / 短くする / 移動・一本化する）と「3. 触ってはいけないもの」に従ってください。読めなかった場合のみ「コードを読めば分かることは書かない。コードから読み取れないことだけを書く」を原則に自分で判断してください。
-
-このレビューでの追加ルール:
-- ファイルは編集せず、指摘のみを返す
-- 「残す」に該当する情報（Why・制約・外部要因・落とし穴）が必要なのに書かれていない箇所も指摘してよい
-- 編集の経緯を語るメタコメント（「〜を追加」「〜に変更」「旧実装では」「リクエストに従い」等）は削る対象として指摘する
-- 今回のdiffで触れていない既存コメントへの指摘は LOW 止まりにする
-- SUGGESTION には置き換え後のコメント文を書く（削除すべきなら「削除」と書く）
-
-【記述と実態の一致】
-散文が主張する事実が、現在のコードで成り立つかを確かめてください。リネームや削除の後に散文だけが古いまま残るのが典型です。
-- docstring が「両者はdriftしない」と書いているが実装はdriftする
-- モジュール冒頭が「read modelのテスト」と言うが read のテストが1本もない
-- PR本文のエラーコード名・フィールド名が実装と違う
-主張と反証の両方を引用して示すこと。引用は原文と一字一句照合する（要約は引用ではない）。
-誤解しても壊れる先がないもの（陳腐化した行番号参照など）は LOW に落とす。
-```
-
-### 変異検証の作法（test レビュワー）
+Delegate the criteria to the [[trim-comments]] skill. In addition to the shared template, include the following in the prompt:
 
 ```
-「テストを増やすべき」だけの一般論は出さないでください。代わりに壊れ方から逆算します。
+Only evaluate comment/docstring/README/PR-body prose; do not raise findings about logic, identifier names, or signatures.
 
-変更された各ロジックについて具体的な変異を考え、既存テストが失敗するかを確かめてください。
-- この行の条件を反転したら
-- この集合演算を逆にしたら
-- この union / enum からメンバーを1つ落としたら
-- この既定値を別の値にしたら
+Follow the [[trim-comments]] skill (the `SKILL.md` in the same skill store as yourself), its "2. Collect and classify comments" (keep / cut / shorten / move-and-consolidate) and "3. Things not to touch". Only if you could not read it, judge yourself by the principle "do not write what the code already shows; write only what cannot be read from the code".
 
-テストが通ったままなら、それは具体的な変異を示せる指摘です（MEDIUM以上にできる）。
-指摘には必ず「どの変異を入れると、どのテストが失敗せずに通ってしまうか」を書いてください。
-変異でテストが失敗するなら、その旨を CHECKLIST の「問題なし」の根拠に書いてください。
+Additional rules for this review:
+- Do not edit files; return findings only
+- You may also flag places missing information that belongs in "keep" (Why, constraints, external factors, pitfalls)
+- Flag meta-comments narrating edit history ("added ...", "changed to ...", "in the old implementation ...", "per request ...") as cut candidates
+- Cap findings on existing comments untouched by this diff at LOW
+- In SUGGESTION, write the replacement comment text (write "delete" if it should be removed)
+
+[Statement-vs-reality consistency]
+Verify whether facts claimed by prose hold in the current code. Stale prose left after renames or deletions is the classic case.
+- A docstring claims "the two never drift" but the implementation drifts
+- A module header says "read model tests" but there is not a single read test
+- Error-code or field names in the PR body differ from the implementation
+Show both the claim and the counter-evidence with quotes. Match quotes against the original character for character (a summary is not a quote).
+Demote to LOW things where a misunderstanding breaks nothing (e.g. stale line-number references).
 ```
 
-### spec レビュワー専用プロンプト
-
-`spec` は共通テンプレートではなく、`spec review round $ROUND` として起動し以下の専用プロンプトを使う:
+### Mutation Check Procedure (test reviewer)
 
 ```
-あなたは仕様整合性レビュワーです。PR本文にリンクされた仕様ドキュメント（Jira/Confluence/PRD/設計資料等）と実装の整合性を評価し、さらに仕様自体の妥当性も評価してください。
+Do not raise generic "should add more tests" findings. Instead, work backward from how it breaks.
 
-評価軸:
-A. 仕様↔実装の整合性
-   1. 仕様で求められている機能・要件をすべて実装しているか（抜けはないか）
-   2. 仕様にない機能を勝手に追加していないか（スコープ逸脱）
-   3. 仕様で定義された受け入れ条件 (Acceptance Criteria)・エッジケース・エラー仕様を満たすか
-   4. データモデル・APIシグネチャ・画面要素・命名等が仕様と一致するか
-   5. 仕様で定義された非機能要件（性能・セキュリティ・互換性等）に反していないか
+For each changed logic unit, consider concrete mutations and check whether existing tests would fail:
+- If this line's condition were inverted
+- If this set operation were flipped
+- If one member were dropped from this union / enum
+- If this default value were changed to another value
 
-B. 仕様自体の妥当性（仕様が間違っている可能性も指摘してよい）
-   1. 仕様内に矛盾・曖昧さ・抜け漏れがないか
-   2. 仕様の前提が現状のシステム/コードベース/運用と矛盾していないか
-   3. ユーザー体験・業務フロー上の論理的破綻はないか
-   4. セキュリティ・プライバシー・コンプライアンス観点で仕様自体に問題はないか
-   5. 仕様で選択された方針が、より良い代替案と比べて劣っていないか
+If tests still pass, that is a finding with a concrete mutation shown (may be MEDIUM or higher).
+Findings must always state "which mutation lets which tests pass without failing".
+If the mutation fails tests, write that in the CHECKLIST as the basis for "no issues".
+```
 
-仕様の引用は原文と一字一句照合すること（要約は引用ではない）。
+### spec Reviewer Dedicated Prompt
 
-<「全レビュワー共通の規則」の3節をここに全文貼る>
+`spec` does not use the shared template. Launch it as `spec review round $ROUND` with the following dedicated prompt:
 
-指摘がある場合、以下の形式で1件ごとに区切って返してください:
+```
+You are a spec-consistency reviewer. Evaluate consistency between the implementation and the spec documents linked from the PR body (Jira/Confluence/PRD/design docs etc.), and also evaluate the validity of the specs themselves.
+
+Evaluation axes:
+A. Spec <-> implementation consistency
+   1. Is every feature/requirement demanded by the spec implemented (nothing missing)
+   2. Was any unrequested feature added on your own (scope creep)
+   3. Are the acceptance criteria, edge cases, and error specs defined in the spec satisfied
+   4. Do data models, API signatures, screen elements, naming, etc. match the spec
+   5. Is there any conflict with non-functional requirements defined in the spec (performance, security, compatibility, etc.)
+
+B. Validity of the spec itself (you may also flag that the spec may be wrong)
+   1. Any contradictions, ambiguities, or gaps within the spec
+   2. Any conflict between spec premises and the current system/codebase/operations
+   3. Any logical breakage in UX / business flow
+   4. Any security/privacy/compliance problems in the spec itself
+   5. Whether the approach chosen in the spec is inferior to a better alternative
+
+Match spec quotes against the original character for character (a summary is not a quote).
+
+<Paste here the full text of the 3 sections under "Rules Common to All Reviewers">
+
+If there are findings, return each one separated as follows:
 ---
-FINDING: <指摘タイトル>
+FINDING: <finding title>
 SEVERITY: CRITICAL|HIGH|MEDIUM|LOW
 CATEGORY: SPEC_MISMATCH|SPEC_MISSING_IMPL|SPEC_SCOPE_CREEP|SPEC_FLAW|SPEC_AMBIGUOUS|SPEC_OUTDATED
-SPEC_REF: <該当する仕様ドキュメントのtitle/URL/該当箇所の原文引用>
-FILE: <ファイルパス(仕様自体への指摘なら空可)>
-LINE: <行番号(あれば)>
-DESCRIPTION: <問題の説明。仕様と実装どちらの問題かを明示>
-SUGGESTION: <修正案。仕様側を直すべきか実装側を直すべきかを明示>
+SPEC_REF: <applicable spec document's title/URL/verbatim quote of the relevant passage>
+FILE: <file path (may be empty for findings against the spec itself)>
+LINE: <line number (if any)>
+DESCRIPTION: <problem description, stating explicitly whether the spec or the implementation is at fault>
+SUGGESTION: <fix proposal, stating explicitly whether the spec or the implementation should be fixed>
 ---
 
-仕様ドキュメントが取得できなかった場合は、PR本文の説明だけで実装意図が自明か評価し、不明瞭ならその旨をMEDIUMで指摘してください。
-指摘の有無に関わらず、応答の末尾に CHECKLIST 表を必ず付けてください。
-問題がなければ CHECKLIST に加えて単独行で「LGTM 仕様と実装は整合しています」と返してください。
+If no spec document could be fetched, evaluate whether the PR body alone makes the implementation intent self-evident, and flag as MEDIUM if it is unclear.
+Whether or not there are findings, always append the CHECKLIST table at the end of your response.
+If there are no issues, return a lone "LGTM Spec and implementation are consistent" line plus the CHECKLIST.
 
-変更の意図 (PR本文より): $PURPOSE
-変更ファイル: $FILES
-リンクされた仕様ドキュメント: $SPEC_DOCS
-対象diff: $DIFF_PATH
+Change intent (from PR body): $PURPOSE
+Changed files: $FILES
+Linked spec documents: $SPEC_DOCS
+Target diff: $DIFF_PATH
 ```
 
-### meta レビュワー専用プロンプト
+### meta Reviewer Dedicated Prompt
 
-`meta` も他と並列で良いが、promptが異なる。`meta review round $ROUND` として起動する。
+`meta` may also run in parallel with the others, but its prompt differs. Launch it as `meta review round $ROUND`.
 
 ```
-あなたはアプローチそのものを評価するメタレビュワーです。コードの細部ではなく「このアプローチが適切か」を問います。
+You are a meta-reviewer evaluating the approach itself. Do not review code details; ask "whether this approach is appropriate".
 
-変更の意図・目的: $PURPOSE
+Change intent/purpose: $PURPOSE
 
-以下6観点で評価してください:
-1. 過剰設計 (YAGNI違反) — 現時点で不要な抽象化・将来のためだけの設計
-2. より単純な代替手段 — ライブラリ活用・既存機能流用・パターン簡略化で同目的を達成できるか
-3. スコープの妥当性 — 別PR/タスクに分割すべき変更が混在していないか
-4. 段階的アプローチ — 一度に全実装するのではなく分割リリースできる点はないか
-5. 既存資産の見落とし — プロジェクト内に同等機能が既存していないか（コードベースを検索して確認すること）
-6. 技術選択の妥当性 — 規模・用途に対してライブラリ/フレームワーク/パターンが適切か
+Evaluate along these 6 axes:
+1. Over-engineering (YAGNI violations) — abstractions not needed now, designs only for the future
+2. Simpler alternatives — whether the same goal is achievable via libraries, existing features, or simplified patterns
+3. Scope validity — whether changes belonging in a separate PR/task are mixed in
+4. Incremental approach — whether anything could ship in split releases instead of one full implementation
+5. Overlooked existing assets — whether equivalent functionality already exists in the project (verify by searching the codebase)
+6. Technology choice validity — whether the library/framework/pattern fits the scale and use case
 
-<「全レビュワー共通の規則」の3節をここに全文貼る>
+<Paste here the full text of the 3 sections under "Rules Common to All Reviewers">
 
-指摘がある場合、以下の形式で返してください:
+If there are findings, return as follows:
 ---
-FINDING: <指摘タイトル>
+FINDING: <finding title>
 SEVERITY: CRITICAL|HIGH|MEDIUM|LOW
 CATEGORY: YAGNI|SIMPLER_ALTERNATIVE|SCOPE_CREEP|INCREMENTAL|REINVENTION|TECH_CHOICE
-EVIDENCE: <既存資産・既存パターンの実測、または規約文書の引用>
-DESCRIPTION: <問題の説明>
-SUGGESTION: <代替アプローチの提案>
+EVIDENCE: <measured existing assets/patterns, or quotes from convention documents>
+DESCRIPTION: <problem description>
+SUGGESTION: <alternative approach proposal>
 ---
 
-指摘の有無に関わらず、応答の末尾に CHECKLIST 表を必ず付けてください。
-問題がなければ CHECKLIST に加えて「LGTM アプローチは妥当です」と返してください。
+Whether or not there are findings, always append the CHECKLIST table at the end of your response.
+If there are no issues, return "LGTM Approach is sound" plus the CHECKLIST.
 
-変更ファイル: $FILES
-対象diff: $DIFF_PATH
+Changed files: $FILES
+Target diff: $DIFF_PATH
 ```
 
 ## Phase 2: Collect & Aggregate
 
-**重要**: 起動したサブエージェント **全て** が完了するまで次のPhaseに進んではならない。1つでも未完了のレビュワーがある状態でPhase 3以降に進むことを禁止する。全結果が揃うまでオーケストレーターは判断を保留する。
+**Critical**: do not proceed to the next phase until **all** launched subagents are done. Advancing to Phase 3 or later while any reviewer is still outstanding is prohibited. The orchestrator withholds judgment until all results are in.
 
-全結果が揃ったら:
+Once all results are in:
 
-1. 各レビュワーの返答をパースし、`FINDING`ブロックと `CHECKLIST` 表を抽出
-2. **棚卸し表を統合する** — 全レビュワーのCHECKLIST行を1つの表にまとめて保持する。Phase 3b-1でユーザーに提示する
-3. 全員が「LGTM」なら、統合した棚卸し表を添えてその旨をユーザーに報告して終了。**表を省いて「問題ありません」だけを返さない**（何を見て問題なしと判断したかが承認の材料になる）
-4. それ以外はfindingsを集約。各findingに `reviewer: <ラベル>` を付与してリスト化
+1. Parse each reviewer's reply, extracting `FINDING` blocks and the `CHECKLIST` table
+2. **Merge the inventory tables** — combine all reviewers' CHECKLIST rows into one table and keep it. Present it to the user in Phase 3b-1
+3. If everyone said "LGTM", report that to the user in Japanese (e.g. `全観点LGTMでした`) with the merged inventory table and finish. **Do not return bare "no issues" without the table** (approvers need to see what was and was not examined)
+4. Otherwise aggregate the findings. Tag each finding with `reviewer: <label>` and list them
 
-### 過少報告のガード
+### Under-Reporting Guard
 
-誤検出カタログは誤検出を減らすためのもので、指摘を減らすためのものではない。次に当たったら抑制が効きすぎていないか疑う。
+The false-positive catalog exists to reduce false positives, not to reduce findings. Suspect over-suppression when any of the following hits.
 
-- **CRITICAL / HIGH が0件で終わりそうなとき** — 統合した棚卸し表に「見ていない」と書かれた項目が残っていないか確認する。残っていればその視点だけ再起動する
-- **CHECKLIST の「対象なし」に理由が書かれていない行があるとき** — その視点を再起動する
-- **対称物が実在するのに naming / arch の表に比較の記録が無いとき** — 非対称の見落としが確実にある。再起動する
+- **About to finish with 0 CRITICAL / HIGH findings** — check the merged inventory table for rows still marked "not examined". If any remain, relaunch just those perspectives
+- **A CHECKLIST "not applicable" row has no reason written** — relaunch that perspective
+- **A counterpart really exists but the naming / arch table shows no comparison record** — an asymmetry miss is certain. Relaunch
 
-再起動は1視点あたり1回まで。
+Relaunch at most once per perspective.
 
-### severityの較正（オーケストレーターの仕事）
+### Severity Calibration (Orchestrator's Job)
 
-レビュワーが申告したseverityをそのまま使わない。全視点の指摘を並べて見比べ、次のルーブリックで付け直す。**視点をまたいだ較正は1人が全部を見比べないとできない。**
+Do not use reviewer-declared severities as-is. Compare all findings across perspectives and reassign using the following rubric. **Cross-perspective calibration can only be done by one party seeing everything.**
 
-| 指摘の内容 | severity |
+| Finding content | severity |
 |---|---|
-| 到達しうる経路でのクラッシュ / データ損失・破損 / セキュリティ脆弱性 / 致命的な誤動作 | CRITICAL |
-| 正確性の問題だが影響が限定的 | HIGH |
-| 規約文書に明記された規則への違反（引用できる） | HIGH |
-| 層の越境・ドメインの分散で、片方だけ直して食い違う事故が具体的に描ける | HIGH |
-| 名前と実態の食い違い（取得と読める名前で更新している等、読み手が誤解して壊す） | HIGH |
-| 公開契約が約束したものを実装が満たせない（到達可能な経路がある） | HIGH |
-| 具体的な変異を示して「壊しても既存テストが通ったまま通過する」と言える | HIGH |
-| 想定外の状態が無音で既定値に落ち、運用で気づく手段が無い | HIGH |
-| 既存の呼び出し元が実在し、契約変更で壊れる（件数を示せる） | HIGH |
-| 同じ食い違いだが、その経路にまだ到達しない（未実装・501等） | LOW（「配線時に必要」と明記） |
-| 規約は無いが既存コードの多数派から外れている（多数派を実測で示せる） | MEDIUM |
-| 記録はあるが粒度・集約方針が同種の処理と揃っていない | MEDIUM |
-| 説明が古いだけで、誤解しても壊れる先がない（陳腐化した行番号参照など） | LOW |
-| 本PR起因でないもの、変更していない行の問題 | LOW |
+| Crash on a reachable path / data loss or corruption / security vulnerability / fatal misbehavior | CRITICAL |
+| Correctness issue but with limited impact | HIGH |
+| Violation of a rule stated in a convention document (quotable) | HIGH |
+| Layer crossing / dispersed domain where fixing only one side causes a concrete divergence accident | HIGH |
+| Name-vs-reality mismatch (a getter-sounding name that mutates, misleading readers into breaking things) | HIGH |
+| Public contract promises something the implementation cannot deliver (on a reachable path) | HIGH |
+| Concrete mutation shown where "breaking it still passes existing tests" | HIGH |
+| Unexpected state silently falling back to a default with no operational means to notice | HIGH |
+| Existing callers that really exist and break under the contract change (count shown) | HIGH |
+| Same mismatch but on a not-yet-reachable path (unimplemented, 501, etc.) | LOW (note "needed at wiring time") |
+| No convention, but deviates from the measured majority of existing code (majority shown with measurements) | MEDIUM |
+| Logging exists but granularity/aggregation policy differs from similar processing | MEDIUM |
+| Stale prose where a misunderstanding breaks nothing (e.g. outdated line-number references) | LOW |
+| Not caused by this PR, or issues on unchanged lines | LOW |
 
-- **設計・命名・アーキテクチャ由来の指摘は CRITICAL にしない**（上限 HIGH）。到達しうる不具合になっているなら、それは設計の話ではなく正確性の話として security / quality から出ているはず
-- **2つのseverityで判断が割れたときは低いほうを選ぶ。** CRITICALが乱発されると優先順位そのものが意味を失う
+- **Findings rooted in design/naming/architecture must not be CRITICAL** (cap at HIGH). If it manifests as a reachable defect, it is not a design discussion; security / quality should have raised it as a correctness issue
+- **When torn between two severities, pick the lower.** Mass-produced CRITICALs destroy the priority order itself
 
-## Phase 3: Judge Findings (複数サブエージェント並列)
+## Phase 3: Judge Findings (Multiple Parallel Subagents)
 
-judgeは **必ず複数のサブエージェントに分割して並列実行** する。1つのサブエージェントに全件を渡すと、指摘1件あたりにコードを読む深さが浅くなり、誤判定（false positiveの見逃し / 真の問題のINVALID化）が増えるため。
+Always split judges into **multiple parallel subagents**. Passing all findings to a single subagent shallows how deeply it reads code per finding, increasing misjudgments (missed false positives / valid issues ruled INVALID).
 
-### 分割戦略
+### Split Strategy
 
-集約後のfindings総数 `N` に応じて分割方針を選ぶ。両方式とも **全judgeを並列起動** する。
+Pick the split policy from the aggregated finding count `N`. Launch **all judges in parallel** either way.
 
-1. **観点別分割 (デフォルト, N ≤ 24)** — レビュワーラベルごとにjudgeを分ける:
-   - `judge-security`, `judge-quality`, `judge-naming`, `judge-comment`, `judge-perf`, `judge-a11y`, `judge-test`, `judge-arch`, `judge-spec`, `judge-meta` の最大10並列（軽量モードは最大4並列に丸める）
-   - そのラベルでfindingsが0件のjudgeは起動しない
-   - 各judgeは自分の観点の指摘だけを精査するため、コードのどこを読めばよいか集中しやすい
+1. **Split by perspective (default, N <= 24)** — one judge per reviewer label:
+   - Up to 10 parallel: `judge-security`, `judge-quality`, `judge-naming`, `judge-comment`, `judge-perf`, `judge-a11y`, `judge-test`, `judge-arch`, `judge-spec`, `judge-meta` (round down to max 4 parallel in light mode)
+   - Do not launch judges whose label has 0 findings
+   - Each judge examines only its own perspective's findings, so it is easy to focus on which code to read
+2. **Split by finding count (N > 24, or 10+ findings concentrated on one perspective)** — chunk the findings:
+   - Aim for 5-8 findings per chunk (keep findings on the same file in the same chunk)
+   - Up to 8 parallel chunks. For N > 64, assign across 8 parallel judges with ceil(N/8) findings each
+   - Even when chunking, keep `spec` and `meta` in independent chunks, never mixed with other perspectives (different evaluation axes)
+3. **Cross-check (optional, for high-importance PRs)** — additionally pass all findings to one meta-judge and compare against the perspective judges. Findings where they disagree are shown separately at user-presentation time as "findings where judges disagreed"
 
-2. **指摘数分割 (N > 24, または1観点に10件以上集中)** — findingsをチャンク化:
-   - 1チャンク 5〜8件を目安に分割（同一ファイルへの指摘は同じチャンクへまとめる）
-   - チャンク数は最大8並列まで。N > 64 の場合は8並列で割り当て、各judgeが ceil(N/8) 件を担当
-   - チャンク化する場合でも `spec` と `meta` は他観点と混ぜず独立chunkにする（評価軸が違うため）
+Right after aggregating findings in Phase 2, the orchestrator computes N, picks a split policy from the above, and **logs which policy was adopted in Japanese** (e.g. `ジャッジ分割: 観点別（N=XX）` / `ジャッジ分割: 件数分割（N=XX、Xチャンク）`).
 
-3. **クロスチェック (オプション, 高重要度PR時)** — 上記に加えて全findingsを1人のmeta-judgeに渡し、観点別judgeの判定結果と突き合わせる。観点別judgeとmeta-judgeで判定が割れたものだけユーザー提示時に「judge間で意見が割れた指摘」として別枠で表示する
+### Judge Prompt Template
 
-オーケストレーターは Phase 2 でfindings集約直後に N を計算し、上記から分割方式を決定して **どの方式を採用したかをログ出力** する。
-
-### 各judgeのプロンプトテンプレート
-
-各judgeは `judge <観点 or chunk#> round $ROUND` として起動し、次のpromptを渡す。
+Launch each judge as `judge <perspective or chunk#> round $ROUND` with the following prompt.
 
 ```
-あなたはコードレビュー指摘を精査するjudgeです。担当する指摘群について、必ず以下の手順を踏んで判定してください。
+You are a judge scrutinizing code review findings. For your assigned group of findings, always follow these steps.
 
-【必須手順 — 省略禁止】
-1. 各指摘について、`FILE` と `LINE` で示された箇所を **必ず実ファイルを開いて確認** する。指摘文だけ読んで判定してはならない
-2. 周辺コード（前後30行程度、必要なら呼び出し元・型定義・関連モジュール）も読む。指摘の前提が現コードベースで成立しているかを確認する
-3. specの指摘の場合は、加えて提供された仕様ドキュメント本文の該当箇所も読み返し、本当に乖離があるかを検証する
-4. metaの指摘の場合は、コードベースを検索して「同等機能の既存実装」「過去の類似アプローチ」を確認した上で判定する
-5. コードを読まずに、または読んでも該当箇所が見つからずに判定した場合は、VERDICT行の直後に `EVIDENCE: UNVERIFIED` と必ず付記する
+[Mandatory steps — no skipping]
+1. For each finding, **always open the real file** at the `FILE` and `LINE` indicated. Never judge from the finding text alone
+2. Also read surrounding code (about 30 lines around, plus callers, type definitions, related modules as needed). Verify whether the finding's premise holds in the current codebase
+3. For spec findings, additionally re-read the applicable passage of the provided spec document body and verify the divergence is real
+4. For meta findings, search the codebase for "equivalent existing implementations" and "past similar approaches" before judging
+5. If you judged without reading code, or could not locate the referenced spot, always append `EVIDENCE: UNVERIFIED` right after the VERDICT line
 
-【主張の型ごとの検証方法 — VERIFIED を名乗るための最低条件】
-指摘の中の主張を型で分け、それぞれ次のとおり確かめる。「型・継承・見た目」だけで結論を出さないこと。
+[Verification per claim type — minimum bar for claiming VERIFIED]
+Split claims inside findings by type and verify each as follows. Never conclude from "types, inheritance, or looks" alone.
 
-| 主張の型 | 確かめ方 | 落とし穴 |
+| Claim type | How to verify | Pitfall |
 |---|---|---|
-| 数値（「N箇所」「Nファイル」「N本」） | 自分で数え直す。対象の定義を先に決める | 用途の違うものを混ぜて水増しする |
-| 引用（docstring・規約文の「」内） | 原文と一字一句照合する。要約は引用ではない | 記憶で言い換える |
-| 存在・不在（「〜が無い」「使っていない」） | 検索で全数確認する。層（domain / adapters 等）を分けて数える | 片方の層だけ見て「使っていない」と言う |
-| 到達可能性（「〜を返す」「この経路で壊れる」） | raise / 呼び出し箇所を追う。無ければ「まだ到達しない」と書く | 型の継承だけで「返る」と判断する |
-| 挙動（言語仕様・ライブラリの動き） | 読み取り専用の小さな実験で実際に走らせる（対象リポジトリのビルド・テストは走らせない） | 「たぶんこうなる」で書く |
+| Numbers ("N places", "N files", "N tests") | Count yourself. First define what counts | Padding the count with unrelated usages |
+| Quotes (quoted docstring/convention text) | Match against the original character for character. A summary is not a quote | Paraphrasing from memory |
+| Existence/absence ("no ...", "unused") | Confirm exhaustively by search. Count layers (domain / adapters etc.) separately | Looking at one layer and claiming "unused" |
+| Reachability ("returns ...", "breaks on this path") | Trace raise / call sites. If none, write "not yet reachable" | Judging "it returns" from type inheritance alone |
+| Behavior (language/library semantics) | Actually run a small read-only experiment (do not build or test the target repo) | Writing "probably behaves like ..." |
 
-数値を確認したら内訳も EVIDENCE_NOTES に書く。書こうとすると数え間違いに気づく。
+When you verify a number, also write its breakdown in EVIDENCE_NOTES. Trying to write it exposes miscounts.
 
-【誤検出カタログ — 次に当たる指摘は INVALID または最低severityに落とす】
-1. 既存の問題（この変更で入ったのではない）／変更していない行の問題 → severity を LOW に落とし「本PR起因ではない」と明記
-2. linter / 型チェッカー / コンパイラ / CI が捕まえる類（import漏れ、型エラー、整形、テスト失敗）→ INVALID
-3. CI が機械的に強制している規則（import の向き・命名・整形・型。設定ファイルとCI定義を確認すること）→ INVALID
-4. 根拠のない好み（コメントの文体、行の分け方、語感だけを理由にした改名案）→ INVALID
-5. 一般論としてのテスト不足・ドキュメント不足（具体的な変異を示せていないもの）→ LOW
-6. 移行途上と読める設計のばらつきで、本PRがその途中である場合 → LOW
-7. fixup! / squash! コミットの残存 → INVALID
-8. 既存レビューコメントで既に指摘済み・解決済みの論点 → INVALID
+[False-positive catalog — rule INVALID or drop to lowest severity on these lines]
+1. Pre-existing issues (not introduced by this change) / issues on unchanged lines -> drop severity to LOW and note "not caused by this PR"
+2. Things a linter / type checker / compiler / CI would catch (missing imports, type errors, formatting, test failures) -> INVALID
+3. Rules already enforced mechanically by CI (import order, naming, formatting, types — check config files and CI definitions) -> INVALID
+4. Unfounded taste (comment style, line breaks, rename proposals based only on feel) -> INVALID
+5. Generic test-coverage / documentation complaints (without a concrete mutation shown) -> LOW
+6. Design variance that reads as mid-migration, with this PR mid-transition -> LOW
+7. Leftover fixup! / squash! commits -> INVALID
+8. Points already flagged or resolved in existing review comments -> INVALID
 
-ただし **カタログを適用しすぎないこと**。「作者が説明している」だけを理由に落とさない。
-落としてよいのは、決定が明文化され、かつその理由が既存パターン・契約と矛盾しない場合に限る。
-理由が既存パターンと食い違うなら、説明が存在すること自体が指摘の根拠になる。
+But **do not over-apply the catalog**. Never drop something merely because "the author explained it".
+Dropping is allowed only when the decision is documented and its rationale does not contradict existing patterns or contracts.
+If the rationale conflicts with existing patterns, the explanation's existence itself supports the finding.
 
-【判定基準】
-- VALID: 実コードを読んで、指摘内容が実際に成立すると確認できたもの
-- INVALID: 実コードを読んだ結果、誤検知・前提誤り・既に対処済み・上のカタログ該当で成立しないと判断したもの
-- DUPLICATE: 他の指摘と実質同一（統合先のORIGINAL_FINDINGをDUPLICATE_OF行で示す）
+[Verdict criteria]
+- VALID: reading the real code confirmed the finding actually holds
+- INVALID: reading the real code showed a false positive, wrong premise, already addressed, or a catalog hit, so it does not hold
+- DUPLICATE: effectively identical to another finding (show the merge target in the DUPLICATE_OF line)
 
-【出力形式】各指摘について:
+[Output format] For each finding:
 ---
 VERDICT: VALID|INVALID|DUPLICATE
-ORIGINAL_FINDING: <元の指摘タイトル>
+ORIGINAL_FINDING: <original finding title>
 REVIEWER: <security|quality|naming|comment|perf|a11y|test|arch|spec|meta>
-FIX_TARGET: <CODE|SPEC|EITHER|N/A>  # specの指摘のみ
+FIX_TARGET: <CODE|SPEC|EITHER|N/A>  # spec findings only
 SEVERITY: CRITICAL|HIGH|MEDIUM|LOW
-FILE: <ファイルパス>
-LINE: <行番号>
-EVIDENCE: VERIFIED|UNVERIFIED  # 実コード/仕様文を読んで判定したかを必ず明示
-EVIDENCE_NOTES: <読んだファイル・行範囲・引用した実コードの要点を1〜3行で。数値の主張なら内訳も>
-REASON: <判定理由。実コードのどの構造から VALID/INVALID と言えるかを具体的に>
-SUGGESTION: <VALIDの場合の修正案>
-DUPLICATE_OF: <DUPLICATEのときのみ統合先のORIGINAL_FINDING>
+FILE: <file path>
+LINE: <line number>
+EVIDENCE: VERIFIED|UNVERIFIED  # always state explicitly whether you read real code/spec text to judge
+EVIDENCE_NOTES: <files and line ranges read, key quoted code points, in 1-3 lines. Breakdowns for numeric claims>
+REASON: <verdict reason, concretely which code structure makes it VALID/INVALID>
+SUGGESTION: <fix proposal for VALID findings>
+DUPLICATE_OF: <merge target ORIGINAL_FINDING, only for DUPLICATE>
 ---
 
-担当指摘がすべてINVALIDなら単独行で「ALL_CLEAR」と返してください。
+If all assigned findings are INVALID, return a lone "ALL_CLEAR" line.
 
-担当指摘:
-<該当チャンクのfindingsをここに貼る>
+Assigned findings:
+<Paste the chunk's findings here>
 
-参考情報:
-- 変更ファイル一覧: $FILES
-- 変更の意図: $PURPOSE
-- 対象diff: $DIFF_PATH
-- 規約文書のパス: <0.4 で見つかったパス一覧>
-- 既存のレビューコメント: $EXISTING_COMMENTS
-- リンクされた仕様ドキュメント (spec担当のみ): $SPEC_DOCS
+Reference info:
+- Changed file list: $FILES
+- Change intent: $PURPOSE
+- Target diff: $DIFF_PATH
+- Convention document paths: <path list found in 0.4>
+- Existing review comments: $EXISTING_COMMENTS
+- Linked spec documents (spec judges only): $SPEC_DOCS
 ```
 
-### 結果の集約
+### Aggregating Results
 
-- 全judgeサブエージェントの結果が揃うまで Phase 3b に進まない
-- 各judgeの出力をパースして1つのリストに統合する
-- `EVIDENCE: UNVERIFIED` の指摘は **デフォルトでユーザー提示時に「未検証」マークを付ける**。CRITICAL/HIGH の場合は再判定のため該当指摘だけを別のサブエージェントに再投入して再判定する（最大1回）
-- DUPLICATE判定は `DUPLICATE_OF` を辿って統合先にマージ
-- クロスチェック方式採用時は、観点別judgeとmeta-judgeの判定差分を抽出し「意見が割れた指摘」リストを別途生成
+- Do not advance to Phase 3b until all judge subagents have returned
+- Parse each judge's output and merge into one list
+- Findings with `EVIDENCE: UNVERIFIED` get an **"unverified" mark by default at user-presentation time**. For CRITICAL/HIGH ones, re-submit just those findings to a different subagent for re-judgment (max once)
+- Merge DUPLICATE verdicts into the merge target by following `DUPLICATE_OF`
+- With the cross-check policy, diff the perspective judges against the meta-judge and separately list "findings with split opinions"
 
-## Phase 3b: User Confirmation (修正に進むかどうかの確認)
+## Phase 3b: User Confirmation (Whether to Proceed to Fixes)
 
-**修正に入る前に必ずユーザーへ確認する**。judgeの結果に関わらず、`ALL_CLEAR` でない限りこのフェーズは省略しない。
+**Always confirm with the user before fixing**. Unless `ALL_CLEAR`, never skip this phase regardless of judge results.
 
-### 🚨 絶対厳守ルール（Phase 3b全体）
+### Strict Rules (Entire Phase 3b)
 
-**レビュー結果をユーザーに提示する前に対応方針の選択提示を行うことを固く禁止する。** 過去に2回、同種の不具合が発生した:
+**Presenting the review results before the approach selection prompt is strictly mandatory.** Two bugs of the same kind happened in the past:
 
-- 不具合1: レビュー結果を出さずにいきなり対応方針を訊いた
-- 不具合2: 一覧テキストを出力した後、同一ターン内でダミーのツール呼び出し（`true` を実行するだけ等）を挟んでから選択提示した。ツール呼び出しの間に挟まれたテキストはユーザーに表示されないことがあるため、結果的に「一覧を見せずに選択提示した」のと同じ状態になった
+- Bug 1: asked for the approach without showing review results
+- Bug 2: output the list text, then inserted a dummy tool call (e.g. just running `true`) before the selection prompt. Text wedged between tool calls may not be shown to the user, so this equals "selection prompt without showing the list"
 
-以下の順序を必ず守ること:
+Always keep this order:
 
-1. まずPhase 3b-1として、VALIDな指摘の全件一覧を **通常の応答テキスト（Markdown）で出力し、そのテキストをターンの最終出力にしてターンを終了する**。一覧テキストの後に **いかなるツール呼び出しも行ってはならない**（選択提示はもちろん、ダミーのコマンド実行でメッセージを分割する回避策も禁止）
-2. ユーザーが一覧に反応した **次のターン以降** に、Phase 3b-2の選択提示を行う。ユーザーの応答が既に対応方針を明示している場合（例:「全部修正して」）は選択提示を省略してその指示に従ってよい
+1. First, as Phase 3b-1, output the full list of VALID findings as **normal response text (Markdown), and end the turn with that text as the final output**. After the list text, **make no tool calls of any kind** (neither the selection prompt nor dummy command runs as a message-splitting workaround)
+2. In **a later turn after the user reacts** to the list, run the Phase 3b-2 selection prompt. If the user's response already states the approach (e.g. "fix them all"), you may skip the selection prompt and follow that instruction
 
-**同一ターン内で「一覧提示 + 選択提示」を行うのは、間に何を挟んでも禁止**。ターンを完全に終了してユーザーに読む機会を渡すことでのみ、一覧提示が完了したとみなせる。
+**"List plus selection prompt in the same turn" is prohibited no matter what is wedged between.** A list presentation counts as complete only when the turn fully ends and hands the user a chance to read.
 
-例外: `--fix` / `--post` で主方針が既に指定されている場合、Phase 3b-2は選択提示ではなく確定済み方針の実行になるため、一覧提示と同一ターンで続けてよい（meta/specの追加選択が必要な場合を除く）。
+Exception: with `--fix` / `--post` the main approach is already fixed, so Phase 3b-2 is execution of a decided policy rather than a selection prompt, and may follow in the same turn as the list (except when meta/spec additional selections are needed).
 
-### Phase 3b-1: VALIDな指摘の一覧提示（無条件・必須・ターン終了）
+### Phase 3b-1: Present the VALID Finding List (Unconditional, Mandatory, End Turn)
 
-**選択提示を行う前に、必ずこのステップを実行し、一覧テキストでターンを終了する**。VALIDな指摘が0件であっても「VALIDな指摘は0件です」と明示的にユーザーへ提示する。このステップを省略して直接選択提示に進むことは禁止する。
+**Before any selection prompt, always run this step and end the turn with the list text.** Even with 0 VALID findings, explicitly tell the user in Japanese (e.g. `VALID指摘は0件です`). Skipping this step to jump to a selection prompt is prohibited.
 
-以下を通常テキスト（Markdown）で出力する:
+Output the following as normal text (Markdown). Write all user-visible headings and body in Japanese:
 
-1. judgeがVALIDと判定した指摘の **全件一覧**（reviewer / severity / file:line / title / description / suggestion をテーブル or 箇条書きで、1件も省略せずに列挙）
-   - `EVIDENCE: UNVERIFIED` のものは「未検証」マークを付けて明示
-   - severity順（CRITICAL → HIGH → MEDIUM → LOW）で並べる
-   - PR対象でSHAが取れている場合はパーマリンク（0.8の型）を添える
-2. INVALID/DUPLICATEとして除外された件数（参考情報として合計のみ）
-3. **調べて問題なしと確認した点** — Phase 2で統合した棚卸し表を「見た対象 / 結果」の形で載せる。指摘が多いときも省略しない。承認者は「何を見て何を見なかったか」を読める必要がある
-4. metaの指摘があれば、それを別セクションで明示（CATEGORYと提案を含める）
-5. specの指摘があれば、それも別セクションで明示（CATEGORY / SPEC_REF / FIX_TARGET を含める）。特に `FIX_TARGET=SPEC` のものは「仕様側の修正が必要」として目立たせる
-6. 軽量モードで実行した場合は、対象外にした視点を明記する
+1. The **complete list** of judge-VALIDated findings (reviewer / severity / file:line / title / description / suggestion in a table or bullets, omitting none) under the heading `## レビュー結果（VALID XX件）`
+   - Mark `EVIDENCE: UNVERIFIED` ones explicitly with an "unverified" mark in Japanese (e.g. `未検証`)
+   - Sort by severity (CRITICAL -> HIGH -> MEDIUM -> LOW)
+   - For PR targets with a SHA available, attach permalinks (format from 0.8)
+2. Counts only (for reference) of findings excluded as INVALID/DUPLICATE, under the heading `## 除外件数`
+3. **Points checked and found fine** — include the Phase 2 merged inventory table as "what was examined / result" under the heading `## 確認済み・問題なし`. Never omit it even with many findings. Approvers need to read "what was and was not examined"
+4. If there are meta findings, show them in a separate section under the heading `## アプローチ指摘（meta）` (with CATEGORY and proposal)
+5. If there are spec findings, also show them in a separate section under the heading `## 仕様整合性（spec）` (with CATEGORY / SPEC_REF / FIX_TARGET). Highlight `FIX_TARGET=SPEC` ones in particular in Japanese as `仕様側の修正が必要`
+6. When run in light mode, state the excluded perspectives in Japanese under the heading `## 対象外観点（Lightモード）`
 
-**経緯を書かない**: 各指摘には最終的な判定結果だけを書く。severityの引き上げ/引き下げ、judgeによる再判定、前ラウンドからの変化といった過程は一覧にも最終報告にも書かない（例: 「severityは当初のHIGHからLOWに下げています」のような記述は不要）。
+**No history**: write only the final verdict per finding. Do not write process details like severity raises/lowers, judge re-verdicts, or changes since previous rounds in the list or the final report (e.g. notes like "severity was lowered from HIGH to LOW" are unnecessary).
 
-一覧提示テキストの末尾では、対応方針の確認に進む旨を1行だけ添え（例: 「上記VALID指摘について対応方針を確認します。続行の合図をください」）、そこで **ターンを終了する**。
+End the list text with a single line in Japanese moving toward approach confirmation (e.g. `上記のVALID指摘への対応方針をお知らせください`), then **end the turn**.
 
-### Phase 3b-2: 対応方針の確認
+### Phase 3b-2: Confirm the Approach
 
-`--fix` / `--post` が指定されている場合、主方針（A/B/E）の選択提示は省略し、それぞれ選択A / 選択Eとして扱う。`--post` はレビュー対象がPRの場合のみ有効で、PR以外が対象の場合は「`--post` はPR以外のレビュー対象には無効な引数です」と警告した上で無視し、通常どおり選択提示を行う。フラグで主方針が決まっている場合でも、meta/specの追加選択（M1-M3 / S1-S4）が必要なときはその部分だけ通常どおり選択提示する。
+With `--fix` / `--post` given, skip the main-policy (A/B/E) selection prompt and treat them as option A / option E respectively. `--post` is only valid when the review target is a PR; for non-PR targets warn in Japanese (e.g. `` `--post`はPR以外の対象では無効です``), ignore it, and prompt normally. Even with a flag-fixed main policy, still prompt normally for meta/spec additional selections (M1-M3 / S1-S4) when needed.
 
-フラグ指定が無い場合、Phase 3b-1の一覧に対する **ユーザーの応答を受けた後のターン** で、以下の選択肢をユーザーに提示（ユーザーの応答が方針を既に明示していればこの選択提示は省略してよい）:
+Without flags, in the **turn after receiving the user's response** to the Phase 3b-1 list, present the following options in Japanese (you may skip this selection prompt if the user's response already states the policy):
 
 ```
-このラウンドで判定されたVALIDな指摘について、対応方針を選んでください:
+今回のVALID指摘への対応方針を選んでください：
 
-A. 全てのVALID指摘を自動修正する（CRITICAL/HIGHは必須、MEDIUMも可能なら修正、LOWは報告のみ）
-B. 指摘を選んで修正する（修正対象の番号を指定）
-E. VALIDな指摘をPRのレビューコメントとして投稿する（Phase 4b へ。pending状態のインラインコメント。レビュー対象がPRの場合のみ提示する）
+A. VALID指摘をすべて自動修正する（CRITICAL/HIGHは必須、MEDIUMは可能な範囲、LOWは報告のみ）
+B. 修正する指摘を選ぶ（番号を指定）
+E. VALID指摘をPRレビューコメントとして投稿する（Phase 4bへ。pending状態のインラインコメント。PR対象時のみ提示）
 
-metaの指摘がVALIDで残っている場合は追加で:
+VALID meta指摘が残っている場合、追加で：
   M1. アプローチ変更を受け入れて修正に含める
-  M2. アプローチは現状維持（metaの指摘はスキップ）
-  M3. アプローチ再検討のため中断（終了）
+  M2. アプローチを維持する（meta指摘はスキップ）
+  M3. アプローチ再検討のため中断する（終了）
 
-specの指摘がVALIDで残っている場合は追加で:
+VALID spec指摘が残っている場合、追加で：
   S1. 実装を仕様に合わせる（コード修正）
-  S2. 仕様を実装に合わせる（仕様ドキュメント側の更新が必要 — オーケストレーターは仕様の更新は行わず、「要仕様改訂」としてユーザーに伝える。ただしJira/Confluence編集権限があるなら別途ユーザーに確認の上で更新提案を行う）
-  S3. specの指摘はスキップ（実装も仕様も現状維持）
-  S4. 仕様自体の再検討が必要なため中断（終了）
+  S2. 仕様を実装に合わせる（仕様側の修正が必要 — オーケストレーターは仕様を更新せず、「仕様の改訂が必要」として報告する。Jira/Confluenceの編集権限がある場合、別途ユーザー確認の上で更新を提案する）
+  S3. spec指摘をスキップする（実装・仕様とも現状維持）
+  S4. 仕様自体の再検討が必要なため中断する（終了）
 ```
 
-選択提示で選択を受け付ける。複数の問い（修正方針 + meta方針）が必要な場合は、まとめて1度で訊く。
+Accept the user's selection. When multiple questions are needed (fix policy + meta policy), ask them together at once.
 
-ユーザー選択結果に応じて:
-- A / B / M1 / S1: Phase 4 (Fix) へ
-- E: Phase 4b (Post Pending PR Review) へ。投稿後は結果を報告して終了（修正は行わない。投稿と修正を両方行いたい場合はユーザーがその旨を明示したときのみ、投稿→修正の順で実行する）
-- M3 / S4: 中断理由を報告して終了
-- M2 / S3: 該当する指摘のみスキップして、他の指摘の修正方針（A/B/E）に従う
-- S2: 実装側は触らず、「仕様改訂が必要な指摘」としてユーザーへの最終報告に含める（仕様ドキュメント自動更新は行わない）
+Follow the user selection:
+- A / B / M1 / S1: to Phase 4 (Fix)
+- E: to Phase 4b (Post Pending PR Review). After posting, report the result in Japanese and finish (no fixes. Only when the user explicitly wants both posting and fixing, run post-then-fix in that order)
+- M3 / S4: report the abort reason in Japanese and finish
+- M2 / S3: skip only the applicable findings and follow the other findings' fix policy (A/B/E)
+- S2: do not touch the implementation; include in the final user report in Japanese under the heading `## 仕様の改訂が必要` (no automatic spec-doc updates)
 
 ## Phase 4: Fix Valid Findings
 
-Phase 3bでユーザーが修正を選んだ指摘のみ対象。
+Only findings the user chose to fix in Phase 3b.
 
-1. 修正粒度はユーザー選択に従う:
-   - 選択A（全自動）: CRITICAL/HIGH必須、MEDIUM可能なら修正、LOW報告のみ
-   - 選択B（個別選択）: ユーザーが指定した指摘番号のみ修正
-   - M1選択時はmetaの指摘も含める
-2. 修正はオーケストレーター（自分）が直接ファイルを編集して行う。サブエージェントに書き換えさせない
-3. 修正完了後、`ROUND++`
-4. `ROUND > MAX_ROUNDS` なら最大ラウンド到達として修正内容のサマリーを報告して終了
-5. それ以外なら `git diff HEAD` で `$DIFF_PATH` を更新し、Phase 1 へ戻る（次ラウンドのレビュー前にもPhase 3bでユーザー確認する）
+1. Fix granularity follows the user selection:
+   - Option A (all auto): CRITICAL/HIGH required, MEDIUM where possible, LOW report-only
+   - Option B (individual): only the finding numbers the user specified
+   - With M1 selected, include the meta findings
+2. The orchestrator (you) edits files directly to fix. Never let subagents rewrite
+3. After fixes, `ROUND++`
+4. If `ROUND > MAX_ROUNDS`, report a summary of the fixes in Japanese as max-rounds reached (e.g. `上限5ラウンドに到達したため終了します`) and finish
+5. Otherwise update `$DIFF_PATH` with `git diff HEAD` and return to Phase 1 (confirm with the user in Phase 3b again before the next round's review)
 
-**次ラウンドへ進むかどうかも確認する**: 修正完了後、再レビューを行うか終了するかを選択提示で確認する:
+**Also confirm whether to proceed to the next round**: after fixes, confirm via selection prompt in Japanese whether to re-review or finish:
 
 ```
-ラウンド$ROUNDの修正が完了しました。次の対応を選んでください:
+Round $ROUND の修正が完了しました。次の手順を選んでください：
 1. 再レビューする（次ラウンドへ）
 2. 終了する
 ```
 
 ## Phase 4b: Post Pending PR Review
 
-Phase 3bでユーザーが選択Eを選んだ場合のみ実行する。投稿手順は [[pending-review-comments]] スキルに委譲する。手順・pending維持のルール・エラー処理はそちらが持つ。
+Run only when the user picked option E in Phase 3b. Delegate the posting procedure to the [[pending-review-comments]] skill. That skill owns the procedure, pending-state rules, and error handling.
 
-deep-review側の前提として、スキルに渡す入力を次のとおり整える:
+As deep-review-side preconditions, prepare the inputs to the skill as follows:
 
-- **対象はVALIDと判定された指摘のみ**。INVALID/UNCERTAINは渡さない
-- 各指摘は `FILE` / `LINE` / タイトル / `DESCRIPTION` / `SUGGESTION` / `<reviewer>` / `<SEVERITY>` を揃えて渡す。コメント先頭のラベルは `[<reviewer> / <SEVERITY>]`（例: `[quality / LOW]`）
-- 根拠（規約文書の引用・実測の内訳）がある指摘は、それもコメント本文に含める
-- レビュー対象がPRでない場合（ローカルdiffやファイル指定）はそもそも選択Eを提示しない。`--post` が指定されていた場合も同様（Phase 3b-2参照）
+- **Only judge-VALIDated findings**. Never pass INVALID/UNCERTAIN ones
+- Pass each finding with `FILE` / `LINE` / title / `DESCRIPTION` / `SUGGESTION` / `<reviewer>` / `<SEVERITY>` aligned. Label each comment head as `[<reviewer> / <SEVERITY>]` (e.g. `[quality / LOW]`)
+- Include the evidence (convention-document quotes, measured breakdowns) in the comment body for findings that have it
+- For non-PR targets (local diffs or file-specified), do not offer option E in the first place. Same when `--post` was given (see Phase 3b-2)
 
-投稿後は結果を報告して終了する。修正は行わない（投稿と修正を両方行う場合はユーザーが明示したときのみ、投稿→修正の順）。
+After posting, report the result in Japanese (e.g. `pendingコメントを投稿しました`) and finish. No fixes (for both posting and fixing, only when the user explicitly says so, in post-then-fix order).
 
 ## Error Handling
 
-- **サブエージェント応答のパース失敗**: 該当レビュワーをそのラウンドだけスキップして続行。同じレビュワーが2ラウンド連続でパース不能なら以後そのラウンド以降は除外
-- **CHECKLIST が返ってこない**: そのレビュワーを1回だけ再起動する。2回目も返らなければ、統合表に「棚卸し表なし」と記録して続行する（黙って埋めない）
-- **a11y該当なし**: UI変更がない場合 a11y は LGTM を返す想定
-- **test該当なし**: テストファイル変更がない場合 test は「テスト追加推奨」程度の指摘に留まる想定
-- **judgeのタイムアウト/失敗**: 判定材料が取れないので指摘を捨てず、全findingsをVALIDとみなして修正に進む
-- **サブエージェントが指定フォーマットを守らない**: 返答内の `FINDING:` 行を緩くマッチして抽出。完全に取れなければそのレビュワーの結果は破棄
-- **既存レビューコメントの取得失敗**: 権限不足・API失敗なら「既存コメント未取得」と全レビュワーに明記して続行し、最終報告にもその事実を書く（重複指摘が混ざる可能性があるため）
-- **規約文書が1つも見つからない**: その事実をレビュワーに渡す。根拠は既存コードの多数派パターンの実測だけになる旨も併せて伝える
-- **仕様ドキュメントの取得失敗**: 権限不足/URL不正/MCP未接続でドキュメント取得に失敗した場合は、specレビュワーへのpromptに「リンク先取得失敗、URLのみ提供」と明記して続行。specの指摘はMEDIUM以下に格下げして扱う
-- **PR本文にリンクが一切ない**: specレビュワーは「仕様リンクなし。PR本文の説明だけで意図が伝わるかを評価」モードで動作。実装意図が不明瞭ならMEDIUMで指摘する
+- **Subagent response parse failure**: skip that reviewer for that round only and continue. If the same reviewer is unparsable for 2 consecutive rounds, exclude it from later rounds on
+- **No CHECKLIST returned**: restart that reviewer once. If still missing on the second try, record "no inventory table" in the merged table and continue (do not silently fill it in)
+- **No applicable a11y**: expect LGTM from a11y when there are no UI changes
+- **No applicable test**: expect at most "recommend adding tests"-level findings from test when no test files changed
+- **Judge timeout/failure**: no verdict material, so do not drop findings; treat all findings as VALID and proceed to fixes
+- **Subagent ignoring the specified format**: loosely match `FINDING:` lines in the reply to extract. If nothing is extractable, discard that reviewer's result
+- **Existing review comment fetch failure**: on permission/API failure, state "existing comments not fetched" to all reviewers and continue, and also write that fact in the final report in Japanese (e.g. `注: 既存レビューコメントを取得できませんでした（重複を含む可能性あり）`) (duplicate findings may be mixed in)
+- **No convention documents found**: pass that fact to reviewers. Also tell them the only evidence is measured majority patterns in existing code
+- **Spec document fetch failure**: on permission failure/bad URL/unconnected MCP, state "link fetch failed, URLs only" in the prompt to the spec reviewer and continue. Demote spec findings to MEDIUM or lower
+- **No links at all in the PR body**: the spec reviewer runs in "no spec links. Evaluate whether the PR body alone conveys the intent" mode. Flag as MEDIUM if the implementation intent is unclear

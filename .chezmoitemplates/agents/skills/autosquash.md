@@ -1,95 +1,118 @@
 ---
 name: autosquash
-description: 現在のブランチの fixup! / squash! コミットを `git rebase -i --autosquash` でまとめるスキル。ユーザーが「autosquashして」「fixupコミットをまとめて」「rebase --autosquashして」などと依頼した場合に使用する。マージ先ブランチは `origin/HEAD` と merge-base の距離からローカルで特定し、判断が割れる場合のみ PR 情報やユーザーへの確認で確定させる。
+description: Fold `fixup!` / `squash!` commits on the current branch into their target commits with `git rebase -i --autosquash`. Use when the user asks to "autosquash", "fold fixup commits", "run rebase --autosquash", or similar. Determine the merge-target branch locally from the distance between `origin/HEAD` and merge-base; only use PR info or ask the user to confirm when the evidence is ambiguous.
 ---
 
 # autosquash
 
-現在のブランチに積まれている `fixup!` / `squash!` コミットを、対応する元コミットへ `git rebase -i --autosquash` でまとめるスキル。
+A skill that folds `fixup!` / `squash!` commits stacked on the current branch into their corresponding base commits with `git rebase -i --autosquash`.
 
-## 前提
+## Prerequisites
 
-- 作業ディレクトリが Git リポジトリ配下であること。
-- `origin` リモートが設定されていること (base をローカルで特定するため)。
+- The working directory is inside a Git repository.
+- The `origin` remote is configured (so the base can be determined locally).
 
-## 手順
+## Asking the user to choose
 
-### 1. 状態を確認する
+Where this document says "selection prompt" or "ask the user for confirmation", present the options and have the user choose. In agents with a selection UI tool (such as `AskUserQuestion`), use it; in agents without one, present the same options as a numbered plain-text list and have the user answer by number or free text. In both cases, do not move to the next step until you have an answer.
 
-以下を並列で実行し、現状を把握する:
+## Procedure
 
-- `git status --short` — 未コミット変更がないか確認
-- `git rev-parse --abbrev-ref HEAD` — 現在のブランチ名
-- `git log --oneline -30` — 直近のコミット履歴 (fixup!/squash! が何個あるか)
+### 1. Check the current state
 
-未コミット変更がある場合は `git stash push -u` で退避してから進める。退避したことをユーザーに報告し、手順9で `git stash pop` して復元する。
+Run the following in parallel to understand the current state:
 
-### 2. マージ先ブランチ (base) と起点コミットを確定する
+- `git status --short` — check for uncommitted changes
+- `git rev-parse --abbrev-ref HEAD` — current branch name
+- `git log --oneline -30` — recent commit history (how many fixup!/squash! commits exist)
 
-rebase の起点にするため base ブランチと分岐点を決める。ローカルの情報だけで決まるので `gh` は必須にしない。**当てずっぽうで `main` を使わず、必ず下記の手順で根拠を持って決める。**
+If there are uncommitted changes, stash them with `git stash push -u` before proceeding. Present the following to the user in Japanese, and restore them with `git stash pop` in step 9.
+
+```
+未コミットの変更をスタッシュしました: <stash entry, e.g. stash@{0}>
+作業完了後に `git stash pop` で戻します。
+```
+
+### 2. Determine the merge-target branch (base) and the start commit
+
+Decide the base branch and the fork point to use as the rebase start. This is decided from local information alone, so `gh` is not required. **Never guess `main`; always determine it with evidence using the procedure below.**
 
 {{ includeTemplate "agents/skills/_shared/git-base.md" . }}
 
-### 3. fixup!/squash! コミットの有無を確認する
+### 3. Check whether fixup!/squash! commits exist
 
 ```bash
 git log --oneline <MB>..HEAD
 ```
 
-このリスト内に `fixup!` / `squash!` プレフィックスのコミットが存在するかを確認する。1件も無い場合は「autosquash 対象のコミットはありません」と報告して終了する。
+Check whether this list contains any commits with the `fixup!` / `squash!` prefix. If there are none, present the following to the user in Japanese and finish.
 
-### 4. rebase 内容をユーザーに提示して承認を得る
-
-autosquash によってどのコミットがどこにまとめられるかを、`git log` の結果から抜粋してユーザーに提示する。承認待ちで止まらず、提示後そのまま次の手順に進む (バックアップブランチを作ってから実行するので、想定と違えばそこから復旧できる)。
-
-提示例:
 ```
-以下のコミットを autosquash で以下のようにまとめます:
-- <sha> fixup! feat: add X → <sha> feat: add X に統合
-- <sha> squash! fix: Y → <sha> fix: Y に統合
-base: origin/<BASE> (起点: <MB> = ブランチ分岐時点のコミット)
+autosquash 対象のコミットはありません (fixup! / squash! コミットが見つかりませんでした)。
 ```
 
-### 5. バックアップブランチを作成する (必須)
+### 4. Present the rebase plan to the user (no approval gate)
 
-履歴に触る前に、**必ず**バックアップブランチを作成する。
+Show which commits autosquash will fold where, excerpted from the `git log` output. Do not block waiting for approval; proceed to the next steps right after presenting (a backup branch is created before execution, so recovery from the backup is possible if the result differs from expectations). Present the plan to the user in Japanese.
+
+Example (present the following to the user in Japanese):
+```
+以下のコミットを autosquash でまとめます:
+- <sha> fixup! feat: add X → <sha> feat: add X に結合
+- <sha> squash! fix: Y → <sha> fix: Y に結合
+ベース: origin/<BASE> (開始点: <MB> = ブランチの分岐点)
+実行前にバックアップブランチを作成するので、結果が想定と異なる場合はバックアップから復元できます。
+```
+
+### 5. Create a backup branch (mandatory)
+
+Before touching history, **always** create a backup branch.
 
 ```bash
 git branch "backup/$(git rev-parse --abbrev-ref HEAD)-autosquash-$(date +%Y%m%d-%H%M%S)"
 ```
 
-作成したブランチ名 (`<BACKUP_BRANCH>`) と現在の HEAD SHA を控え、`git branch --list "<BACKUP_BRANCH>"` で存在確認が取れてから次に進む。ブランチ名はユーザーにも提示する。
+Note the created branch name (`<BACKUP_BRANCH>`) and the current HEAD SHA, verify the branch exists with `git branch --list "<BACKUP_BRANCH>"` before moving on, and present the following to the user in Japanese.
 
-### 6. autosquash を実行する
+```
+バックアップブランチを作成しました: <BACKUP_BRANCH> (元の HEAD: <SHA>)
+```
 
-承認後、エディタを開かず非対話で autosquash する:
+### 6. Run autosquash
+
+After approval, run autosquash non-interactively without opening an editor:
 
 ```bash
 GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash "$MB"
 ```
 
-- `GIT_SEQUENCE_EDITOR=:` により todo リストは編集せずそのまま採用される (autosquash による並び替え・fixup 指定を活かす)。
-- 起点は 2-5 で求めた merge-base であること。`origin/<BASE>` を直接渡すと base 側の更新まで取り込まれてしまうので使わない。
-- コンフリクトが発生した場合は `git rebase --abort` して中断し、状況をユーザーに報告する。手動解決はユーザーから明示的な指示があった場合のみ行う。
+- `GIT_SEQUENCE_EDITOR=:` accepts the todo list as-is without editing (keeping the autosquash reordering and fixup directives).
+- The start point must be the merge-base found in 2-5. Do not pass `origin/<BASE>` directly, since that would also pull in updates on the base side.
+- On conflict, abort with `git rebase --abort` and present the following to the user in Japanese. Resolve manually only when the user has explicitly instructed so.
 
-### 7. 結果を確認する
+```
+コンフリクトが発生したため `git rebase --abort` で中断しました。ブランチの履歴は変更されていません。
+手動での解決を希望される場合はお知らせください。
+```
+
+### 7. Check the result
 
 ```bash
 git log --oneline <MB>..HEAD
 ```
 
-fixup!/squash! コミットが消えて、対応する元コミットにまとまっていることを確認する。
+Verify that the fixup!/squash! commits are gone and folded into their corresponding base commits.
 
-### 8. バックアップとの差分検証 (必須)
+### 8. Verify against the backup (mandatory)
 
-autosquash は fixup!/squash! の内容を元コミットへ折りたたむだけなので、**最終ツリーはバックアップと完全に一致する**のが期待値。一致しないなら履歴操作の途中で内容が変質している。
+Autosquash only folds the fixup!/squash! contents into their base commits, so the expectation is that **the final tree exactly matches the backup**. Any mismatch means the contents were altered during the history rewrite.
 
 ```bash
 git diff "<BACKUP_BRANCH>" HEAD
 git diff "<BACKUP_BRANCH>" HEAD --stat
 ```
 
-差分が空であることに加えて、tree SHA の一致も確認する:
+In addition to an empty diff, also verify that the tree SHAs match:
 
 ```bash
 BACKUP_TREE=$(git rev-parse "<BACKUP_BRANCH>^{tree}")
@@ -97,30 +120,66 @@ HEAD_TREE=$(git rev-parse HEAD^{tree})
 [ "${BACKUP_TREE}" = "${HEAD_TREE}" ] && echo "TREE_MATCH" || echo "TREE_MISMATCH"
 ```
 
-`TREE_MISMATCH` の場合、または `git diff` に差分が出た場合は **ユーザーに報告する**。自己判断で `git reset --hard "<BACKUP_BRANCH>"` などの破壊的な復旧は行わない。復旧に必要なバックアップブランチ名と元の HEAD SHA を添えて報告し、対応はユーザーの判断に委ねる。
+On `TREE_MISMATCH`, or if `git diff` shows any diff, present the following to the user in Japanese. Do not perform destructive recovery such as `git reset --hard "<BACKUP_BRANCH>"` on your own judgment. Include the backup branch name and the original HEAD SHA needed for recovery, and leave the decision to the user.
 
-コンフリクトを手動解決した場合は解決内容の分だけツリーが変わりうるので、その差分が解決意図と一致するかをユーザーに提示する。
+```
+検証結果: ツリー不一致 (TREE_MISMATCH) を検出しました。履歴の書き換え中に内容が変わっている可能性があります。
+バックアップブランチ: <BACKUP_BRANCH> (元の HEAD: <SHA>)
+復元方法の判断をお知らせください。こちらで勝手に復元は行いません。
+```
 
-### 9. force push はユーザーが行う
+On `TREE_MATCH` (empty diff and matching tree SHAs), present the following to the user in Japanese.
 
-autosquash 後はリモートと履歴が乖離するため force push が必要だが、**AI は絶対に force push を実行しない**。ユーザー自身が実行する。
+```
+検証結果: ツリー一致 (TREE_MATCH)。最終内容はバックアップ <BACKUP_BRANCH> と同一です。
+```
 
-autosquash 完了時にユーザーへ以下を伝えるだけに留める:
+If conflicts were resolved manually, the tree may legitimately differ by the resolution; present that diff to the user in Japanese. Present the following to the user in Japanese, followed by the diff, and check it matches the resolution intent.
 
-- autosquash が完了したこと
-- バックアップブランチ名と元の HEAD SHA (復旧用)。削除は後日ユーザー判断とし、勝手に削除しない
-- 手順8の検証結果 (ツリー一致の有無)
-- 手順1で stash した場合は復元済みであること
-- 必要に応じてユーザー自身で `git push --force-with-lease origin HEAD` を実行してほしいこと (`--force-with-lease` を推奨する旨だけ案内)
+```
+手動解決による差分は以下の通りです。解決内容と一致しているかご確認ください:
+```
 
-`git push` 系のコマンドはこのスキル内で実行しない。
+### 9. The user performs the force push
 
-## 注意事項
+After autosquash the history diverges from the remote, so a force push is needed, but **the AI must never run a force push**. The user runs it themselves.
 
-- **`main` / `master` などの保護ブランチ上では絶対に実行しない。** 現在ブランチがこれらの場合は中断し、理由をユーザーに報告する (PR の base ではなく、rebase 対象である HEAD 側のブランチをチェックする)。
-- **他人が作業している共有ブランチには実行しない。** rebase 対象は自ブランチのみ。
-- **履歴を破壊的に書き換えるので、実行前に必ずバックアップブランチを作る。** 作成前に rebase を始めない。
-- **実行後は必ずバックアップとの tree 一致を検証する。** 不一致は報告のみに留め、勝手に修正・復旧しない。
-- コンフリクト時に destructive な回復 (`--abort`, `reset --hard`) を勝手に実行しない。
-- `--no-verify` などフック無効化フラグは使わない。
-- **base の取り込み (base 側の新しいコミットを HEAD に載せること) はこのスキルでは行わない。** 起点は常に merge-base に固定し、fixup の折りたたみ以外の履歴変化を起こさない。
+When autosquash completes, first restore anything stashed in step 1 with `git stash pop`, then present the following to the user in Japanese, filling in the bracketed values:
+
+```
+autosquash が完了しました。
+バックアップブランチ: <BACKUP_BRANCH> (元の HEAD: <SHA>)
+バックアップは削除せずに残しています。不要になった場合はご自身の判断で削除してください。
+検証結果: <VERIFICATION_RESULT_FROM_STEP_8>
+<IF_STASHED_IN_STEP_1: スタッシュを `git stash pop` で戻しました。>
+必要であれば、ユーザー自身で `git push --force-with-lease origin HEAD` を実行してください (--force-with-lease を推奨します)。
+```
+
+The report must cover only the following points:
+
+- That autosquash is complete
+- The backup branch name and the original HEAD SHA (for recovery). Do not delete the backup on your own; leave deletion to the user's later judgment
+- The step 8 verification result (whether the trees match)
+- If anything was stashed in step 1, that it has been restored
+- Ask them to run `git push --force-with-lease origin HEAD` themselves if needed (only mention that `--force-with-lease` is recommended)
+
+Do not run any `git push` commands inside this skill.
+
+## Notes
+
+- **Never run on protected branches such as `main` / `master`.** If the current branch is one of these, stop and present the following to the user in Japanese (check the branch being rebased, i.e. the HEAD side, not the PR base).
+
+```
+現在のブランチ <BRANCH> は保護ブランチのため、このスキルでは実行できません。
+```
+
+- **Do not run on shared branches others are working on.** Only rebase your own branch. If the branch appears shared, stop and present the following to the user in Japanese.
+
+```
+このブランチは他の人も作業している共有ブランチの可能性があります。自分のブランチでのみ実行してください。
+```
+- **History is rewritten destructively, so always create a backup branch before executing.** Never start the rebase before creating one.
+- **After execution, always verify the tree matches the backup.** On mismatch, only report it; do not fix or recover on your own.
+- Do not run destructive recovery beyond the step 6 `git rebase --abort` on your own judgment (no `reset --hard`, no retry with different options).
+- Do not use hook-disabling flags such as `--no-verify`.
+- **Incorporating the base (putting new base-side commits onto HEAD) is out of scope for this skill.** Always pin the start to the merge-base, and cause no history changes other than folding the fixups.

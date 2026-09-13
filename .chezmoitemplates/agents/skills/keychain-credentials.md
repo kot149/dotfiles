@@ -1,75 +1,99 @@
 ---
 name: keychain-credentials
-description: macOS Keychain に保存した ID とパスワードを、値を画面に出さずにコマンドへ渡すスキル。DB クライアント (mongosh / mysql / psql) や API 呼び出し、スクリプトで資格情報が必要になったとき、また「パスワードを毎回聞かれるのが面倒」「Keychain のパスワードを使いたい」「認証情報を環境変数に置きたくない」といった依頼で使用する。項目が未登録なら登録手順を案内する。
+description: Skill for passing IDs and passwords stored in macOS Keychain to commands without displaying the values. Use when credentials are needed for DB clients (mongosh / mysql / psql), API calls, or scripts, or when asked things like "entering the password every time is annoying", "I want to use the Keychain password", "I don't want to put credentials in environment variables", 「パスワードを毎回聞かれるのが面倒」「Keychain のパスワードを使いたい」「認証情報を環境変数に置きたくない」, or any similar phrasing in English or Japanese. If the item is not registered, show the registration steps.
 ---
 
-# Keychain の資格情報を使う
+# Using Keychain Credentials
 
-macOS Keychain の generic password 項目から ID とパスワードを取り出し、値を stdout に出さずにコマンドへ渡す。
+Retrieve IDs and passwords from macOS Keychain generic password items and pass them to commands without printing the values to stdout.
 
-## 原則
+## Principles
 
-**パスワードの値を会話・ログ・シェル履歴・プロセス一覧に出さない。**
+**Never expose password values in conversation, logs, shell history, or process lists.**
 
-`scripts/keychain-cred.sh` は値を stdout に出す手段を意図的に持たない。`exec` で環境変数として渡すか、`stdin` で標準入力に流すかの二択にしてある。この境界を回避して値を読み出そうとしないこと。
+`scripts/keychain-cred.sh` deliberately has no stdout-print mode. You either pass values via `exec` as environment variables or stream them via `stdin`. Do not try to work around this boundary to read values out.
 
-## 使い方
+## Usage
 
-### 項目があるか調べる
+### Check whether an item exists
 
 ```shell
 keychain-cred.sh check <service>
 ```
 
-スクリプトはこのスキルのディレクトリ配下 (`<skills>/keychain-credentials/scripts/keychain-cred.sh`) にある。`<skills>` はこのスキルが置かれているスキルルート (`~/.claude/skills` / `~/.agents/skills`) で、以下の例では絶対パスを省略して書く。
+The script lives under this skill's directory (`<skills>/keychain-credentials/scripts/keychain-cred.sh`). `<skills>` is the skill root where this skill is installed (`~/.claude/skills` / `~/.agents/skills`); the examples below omit the absolute path.
 
-見つかれば `found: service=... account=...` を返す。無ければ登録手順を出して終了コード 4 になる。何かを実行する前にまずこれを叩く。
+If found, it returns `found: service=... account=...`. If missing, it prints the registration steps and exits with code 4. Always run this before doing anything else. Explain the check result to the user in Japanese:
 
-### 環境変数として渡す
+```
+確認結果: <found: service=... account=... / 未登録のため登録手順を表示しました>。
+```
 
-既定では `KEYCHAIN_PASSWORD`、アカウント名は常に `KEYCHAIN_ACCOUNT` に入る。
+### Pass as environment variables
+
+By default the password goes into `KEYCHAIN_PASSWORD`, and the account name always goes into `KEYCHAIN_ACCOUNT`.
 
 ```shell
 keychain-cred.sh exec myservice -- sh -c 'mongosh "$MONGO_URI" -u "$KEYCHAIN_ACCOUNT" -p "$KEYCHAIN_PASSWORD"'
 keychain-cred.sh exec myservice --var PGPASSWORD -- psql -h host -U user db
 ```
 
-`--var` で変数名を変えられる。`PGPASSWORD` や `MYSQL_PWD` のように、ツールが読む変数名に直接入れるのが最も安全で、コマンドラインに載らない。
+`--var` changes the variable name. Putting the value directly into the variable name the tool reads (`PGPASSWORD`, `MYSQL_PWD`, ...) is safest because it never appears on the command line.
 
-### 標準入力に流す
+### Stream to standard input
 
-パスワードを stdin から読むツール向け。
+For tools that read the password from stdin.
 
 ```shell
 keychain-cred.sh stdin myservice -- gh auth login --with-token
 ```
 
-### 登録手順だけ表示する
+### Show only the registration steps
 
 ```shell
 keychain-cred.sh setup <service> [account]
 ```
 
-## 登録
+## Registration
 
-登録は対話入力が必要なので、ユーザー自身に通常のターミナルで実行してもらう。agent 経由のコマンド実行には TTY が無いため代行できない。
+Registration requires interactive input, so ask the user to run it in their own regular terminal. It cannot be done through agent-run commands because there is no TTY. Present the following to the user in Japanese:
+
+```
+登録は対話入力が必要なため、お使いの通常のターミナルで以下のコマンドを実行してください。エージェント経由では TTY が無いため代行できません。
+```
 
 ```shell
 security add-generic-password -s '<service>' -a '<account>' -l '<service> (script)' -w
 ```
 
-`-w` に値を書かないこと。書くとシェル履歴とプロセス一覧に残る。値を書かない場合は「入力」と「確認」の 2 回聞かれる。
+Do not write the value after `-w`. It stays in shell history and the process list. If omitted, you are prompted twice (entry and confirmation). Present the following to the user in Japanese:
 
-登録後の初回読み出しでアクセス許可ダイアログが出る。**「常に許可」** を選んでもらう。「許可」だと毎回ダイアログが出て無人実行できない。
+```
+`-w` の後に値は書かないでください。書くとシェル履歴とプロセス一覧に残ります。省略した場合は「入力」と「確認」の2回聞かれます。
+```
 
-## 落とし穴
+On the first read after registration, an access permission dialog appears. Ask the user to choose **"Always Allow"**. With just "Allow", the dialog appears every time and unattended runs cannot proceed. Present the following to the user in Japanese:
 
-- **iCloud パスワードの項目は読めない**。パスワードアプリに保存された項目は同期対象フラグが付いており、`security` CLI からは原理的に見えない。Security フレームワークを直接叩いても entitlement が要るので自前の CLI からは通らない。スクリプト用にローカルの generic password 項目を別途作る
-- **`-U` による上書きはラベルが食い違うと失敗する**。`SecKeychainItemCreateFromContent: The specified item already exists` が出たら、`security delete-generic-password -s '<service>'` で消してから登録し直す
-- **登録直後は文字数を確認する**。ペーストに改行が混ざるとプロンプトが途中で確定し、短い値が入る。`check` を通したうえで、疑わしければ実際に認証を試す前にユーザーへ確認する
-- **zsh はダブルクォート内でも `!` を履歴展開する**。パスワードを一時的に環境変数へ入れる場合、`export PW="...!..."` は値が壊れる
-- **`--password <値>` の形はプロセス一覧に残る**。可能な限り環境変数か stdin を使う
+```
+初回読み出し時にアクセス許可ダイアログが表示されます。「常に許可」を選んでください。「許可」では毎回表示され、無人実行できません。
+```
 
-## 認証失敗を安売りしない
+## Pitfalls
 
-パスワードが正しいか怪しい状態で認証エンドポイントを叩かない。アカウントのロックアウトや WAF のレート制限を無駄に消費する。`check` で項目とアカウント名を確かめ、値が疑わしければユーザーに再登録を依頼してから試す。
+- **iCloud password items cannot be read**. Items saved in the Passwords app carry a sync flag and are fundamentally invisible from the `security` CLI. Even calling the Security framework directly requires an entitlement, so a self-built CLI cannot reach them either. Create a separate local generic password item for scripts
+- **`-U` overwrite fails when the label mismatches**. If you see `SecKeychainItemCreateFromContent: The specified item already exists`, run `security delete-generic-password -s '<service>'` and register again
+- **Verify the length right after registration**. A stray newline in a paste can confirm the prompt early and store a truncated value. Run `check` first, and if anything looks suspicious, present the following to the user in Japanese and confirm before attempting authentication:
+
+  ```
+  登録された値が短い可能性があります。`check` の結果は以下の通りです: <result>。再登録しますか? 認証を試す前にご確認ください。
+  ```
+- **zsh expands `!` even inside double quotes**. If you temporarily put a password in an environment variable, `export PW="...!..."` corrupts the value
+- **`--password <value>` stays in the process list**. Use environment variables or stdin whenever possible
+
+## Do not waste authentication attempts
+
+Do not hit an authentication endpoint while the password looks doubtful. It needlessly consumes account lockout budgets and WAF rate limits. Verify the item and account name with `check`, and if the value looks suspicious, present the following to the user in Japanese and ask them to re-register before trying:
+
+```
+値が正しいか疑わしいため、認証は試していません。`check` で項目とアカウント名を確認しました。再登録してからお知らせください。
+```

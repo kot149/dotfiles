@@ -19,7 +19,11 @@ Confirm we are in a git repository:
 git rev-parse --show-toplevel
 ```
 
-If not a git repo, stop with a clear error.
+If not a git repo, present the following to the user in Japanese and stop:
+
+```
+Git リポジトリ内ではないため、中止しました。
+```
 
 ## Step 1: Detect project languages
 
@@ -122,7 +126,7 @@ Format findings as a numbered list. For each finding show:
 - List of duplicate locations (file:line_range function_name)
 - A one-line description of what is duplicated
 
-Example output to user:
+Example output to user (present the following to the user in Japanese):
 
 ```
 重複コードの検出結果（優先度順）：
@@ -142,12 +146,16 @@ Example output to user:
 ...
 ```
 
-Then ask the user to choose which ones to fix, allowing multiple selections:
+Then ask the user to choose which ones to fix, allowing multiple selections (present the question and options to the user in Japanese):
 
 - question: `どの重複を修正しますか？（複数選択可）`
 - one option per finding: `#{rank}. {short description}`, annotated with `{similarity}% 類似, 推定{N}行削減`
 
-If the user selects nothing or cancels, stop gracefully.
+If the user selects nothing or cancels, present the following to the user in Japanese and stop gracefully:
+
+```
+何も選択されなかったため、中止しました。修正は行っていません。
+```
 
 ## Step 5: Fix each selected duplicate
 
@@ -179,7 +187,7 @@ For each selected finding, fix it in order. **Read all involved files in full be
 
 ### Apply edits
 
-Use the Edit tool to apply changes. Verify with a quick `grep` that all old function names at the old locations have been replaced.
+Apply edits with file edit tools. Verify with a quick `grep` that all old function names at the old locations have been replaced.
 
 After each finding is fixed, run the project's test command if one exists:
 
@@ -215,7 +223,20 @@ One commit per selected finding. Do NOT bundle multiple fixes into one commit.
 
 ## Step 7: Report
 
-After all selected fixes are committed, report:
+After all selected fixes are committed, present the following to the user in Japanese (fill in the numbers, hashes, and reasons):
+
+```
+重複の修正が完了しました。
+- 修正件数: <N>件
+- 削減行数（推定）: <N>行
+- 作成コミット:
+  - <sha> <subject>
+  - ...
+- スキップした項目:
+  - <finding> — <理由>
+```
+
+The report must cover only the following points:
 
 - How many duplicates were fixed
 - Total lines removed (estimate)
@@ -226,7 +247,16 @@ After all selected fixes are committed, report:
 
 ## Notes
 
-- If `nix` is not available, stop and tell the user to install Nix or add `nixpkgs#similarity` to their environment.
-- If a finding spans auto-generated files (e.g. `*.pb.go`, `*.generated.ts`), skip it automatically and note the skip.
-- If the duplicated code is in test fixtures or intentionally varied examples (e.g. `codefixes/` directory for a CTF), flag it for the user before fixing — it may be intentional.
+- If `nix` is not available, present the following to the user in Japanese and stop:
+
+  ```
+  `nix` が利用できないため、中止しました。Nix をインストールするか、`nixpkgs#similarity` を環境に追加してください。
+  ```
+
+- If a finding spans auto-generated files (e.g. `*.pb.go`, `*.generated.ts`), skip it automatically and note the skip in Japanese (e.g. `自動生成ファイルのためスキップしました: <path>`).
+- If the duplicated code is in test fixtures or intentionally varied examples (e.g. `codefixes/` directory for a CTF), present the following to the user in Japanese and confirm before fixing — it may be intentional:
+
+  ```
+  意図的な重複の可能性があります。修正してよいですか?: <finding> (<path>)
+  ```
 - If `$ARGUMENTS` is provided, treat it as a path to limit the scan scope (e.g. `src/`, `lib/`).

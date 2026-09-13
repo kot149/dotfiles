@@ -1,22 +1,22 @@
-#### 2-1. リモート追跡refを最新化する
+#### 2-1. Update the remote-tracking refs
 
 ```bash
 git fetch --prune origin
 ```
 
-#### 2-2. デフォルトブランチを取得する
+#### 2-2. Get the default branch
 
 ```bash
 git rev-parse --abbrev-ref origin/HEAD
 ```
 
-`origin/HEAD` が未設定で失敗する場合は `git remote set-head origin -a` を実行してから再取得する。
+If `origin/HEAD` is unset and this fails, run `git remote set-head origin -a` and fetch it again.
 
-#### 2-3. merge-base が最も近いリモートブランチを求める
+#### 2-3. Find the remote branch with the closest merge-base
 
-stacked ブランチ (base が `main` ではなく別の feature ブランチ) を拾うため、候補ごとに HEAD からの距離を測る。現在ブランチ自身の追跡ref は候補から除外する。
+To pick up stacked branches (where the base is another feature branch rather than `main`), measure the distance from HEAD for each candidate. Exclude the current branch's own tracking ref from the candidates.
 
-リモートブランチが数百本あるリポジトリでは全数を回すとgitプロセスの起動だけで数十秒かかるため、候補は更新日時の新しい順に絞る。
+In repositories with hundreds of remote branches, iterating over all of them can take tens of seconds in git process startup time alone, so narrow the candidates down by recency.
 
 ```bash
 CUR=$(git rev-parse --abbrev-ref HEAD)
@@ -31,30 +31,51 @@ for r in $(git for-each-ref --format='%(refname:short)' --sort=-committerdate --
 done | sort -n | head -5
 ```
 
-`--count=50` に base 候補が入らないことはまず無いが、2-2 のデフォルトブランチが結果に現れない場合は `--count` を外して回し直す。
+The base candidate almost always falls within `--count=50`, but if the default branch from 2-2 does not appear in the results, rerun without `--count`.
 
-先頭 (HEAD までの距離が最小) が base の最有力候補。
+The top entry (shortest distance to HEAD) is the leading base candidate.
 
-#### 2-4. base を確定させる
+#### 2-4. Settle on the base
 
-- ユーザーが base を明示している場合はそれを採用し、2-2 / 2-3 は検証にだけ使う
-- 2-2 と 2-3 の結果が一致すればそれを `<BASE>` として確定する
-- 食い違う場合、または 2-3 で同距離の候補が複数並ぶ場合のみ判断材料を増やす:
-  - `gh` が使えるなら `gh pr view --json baseRefName,headRefName,number,title,url` の `baseRefName` を優先する。PR の base は宣言された正解なので、ローカルのヒューリスティックより信頼できる
-  - `gh` が使えない / PR が無い場合は候補を選択提示してユーザーに選ばせる
-- どの経路で決めた場合も、確定した base と根拠 (デフォルトブランチ / merge-base 距離 / PR) をユーザーへの承認依頼・計画提示で明記する
+- If the user explicitly named a base, adopt it and use 2-2 / 2-3 only for verification
+- If the results of 2-2 and 2-3 agree, settle on it as `<BASE>`
+- If they disagree, or if 2-3 yields multiple candidates at the same distance, gather more evidence:
+  - If `gh` is available, prefer the `baseRefName` from `gh pr view --json baseRefName,headRefName,number,title,url`. The PR's base is the declared answer, so it is more trustworthy than the local heuristic
+  - If `gh` is unavailable or there is no PR, present the candidates as a selection prompt to the user in Japanese, e.g.:
 
-`git merge-base --fork-point` は reflog 依存で、clone し直した環境や別マシンでは空振りするため確定の根拠には使わない。
+```
+マージ先ブランチの候補が複数あります。どれをベースにしますか:
+1. origin/<CANDIDATE_1> (分岐点からの距離: <N> コミット)
+2. origin/<CANDIDATE_2> (分岐点からの距離: <N> コミット)
+番号でお知らせください。
+```
 
-#### 2-5. 起点は base の先端ではなく merge-base にする
+- Whichever path settled it, state the settled base and the evidence (default branch / merge-base distance / PR) in the approval request or plan. Present that rationale to the user in Japanese, e.g.:
 
-`origin/<BASE>` の先端を起点にすると、ブランチを切った後に進んだ base 側のコミットまで巻き込まれ、意図した履歴操作以外の変化が起きる。**起点はブランチが分岐した時点のコミット (merge-base) に固定する。**
+```
+ベースブランチ: origin/<BASE>
+根拠: <EVIDENCE>
+```
+
+Do not use `git merge-base --fork-point` as evidence for the decision, since it depends on the reflog and misses on freshly cloned environments or other machines.
+
+#### 2-5. Use the merge-base as the start point, not the tip of the base
+
+Starting from the tip of `origin/<BASE>` pulls in base-side commits made after the branch was cut, causing changes beyond the intended history rewrite. **Always pin the start point to the commit where the branch forked (the merge-base).**
 
 ```bash
 MB=$(git merge-base HEAD origin/<BASE>)
 echo "$MB"
 ```
 
-以降 `<MB>` を起点として使う。`<MB>` が `origin/<BASE>` の先端と一致しない場合 (base が先に進んでいる場合)、base の取り込みはこのスキルの担当外であり、必要ならユーザーが別途 rebase する旨を承認依頼で伝える。
+Use `<MB>` as the start point from here on. If `<MB>` does not match the tip of `origin/<BASE>` (i.e. the base has moved ahead), incorporating the base is out of scope for this skill; note it in the approval request with the following Japanese message.
 
-起点を誤ると base 側のコミットまで書き換えてしまうため、base の確定に自信が持てない場合は承認依頼でその旨を必ず伝える。
+```
+ベース側に新しいコミットがありますが、このスキルでは取り込みません。必要であれば別途リベースしてください。
+```
+
+Picking the wrong start point rewrites base-side commits as well, so if you are not confident about the base, always note it in the approval request with the following Japanese message.
+
+```
+ベースブランチの特定に確信がありません。候補: <CANDIDATES_AND_EVIDENCE>。実行前にご確認ください。
+```

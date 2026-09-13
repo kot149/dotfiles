@@ -1,103 +1,133 @@
 ---
 name: trim-comments
-description: コード中のコメント・docstring、およびMarkdown等のドキュメントを短くするスキル。読み取れない非自明な情報だけを残し、他から読み取れる内容は削除する。重複する説明は適切な場所に一本化する。ユーザーが「コメントを短くして」「コメントを整理して」「冗長なコメントを削って」「docstringをスリムにして」「ドキュメントを削って」「READMEを簡潔にして」「trim comments」などと依頼した場合に使用する。
+description: Skill for shortening comments and docstrings in code, plus documents such as Markdown docs. Keep only non-obvious information that cannot be read from elsewhere, and delete what can be read. Consolidate duplicated explanations in one appropriate place. Use when the user asks things like "shorten the comments", "clean up the comments", "cut the redundant comments", "slim down the docstrings", "trim the docs", "make the README concise", "trim comments", 「コメントを短くして」「コメントを整理して」「冗長なコメントを削って」「docstringをスリムにして」「ドキュメントを削って」「READMEを簡潔にして」, or any similar phrasing in English or Japanese.
 ---
 
 # trim-comments
 
-コード中のコメント・docstring、および README や設計ドキュメントなどの Markdown 文書を刈り込むスキル。原則は 1 つ: **他から読み取れることは書かない。他から読み取れないことだけを書く。**
+Skill for trimming comments and docstrings in code, plus Markdown documents such as READMEs and design docs. One principle: **do not write what can be read elsewhere. Write only what cannot.**
 
-コードを対象にする場合、コードそのもの (ロジック、識別子名、シグネチャ) は一切変更しない。変更するのはコメント・docstring のみ。ドキュメントを対象にする場合、見出し構成や図・コード例などの構造は変えず、本文の冗長な説明文のみを削る。
+For code targets, never change the code itself (logic, identifier names, signatures). Change only comments and docstrings. For document targets, keep the heading structure, figures, code examples, and other structure, and trim only redundant prose.
 
-## 手順
+## Steps
 
-### 1. 対象範囲を確定する
+### 1. Fix the scope
 
-優先順位:
+Priority:
 
-1. ユーザーがファイル・ディレクトリを指定していればそれに従う。
-2. 指定がなく Git リポジトリ内なら、未コミット変更のあるファイル (`git status --short`)。未コミット変更がなければ現在のブランチで base から変更されたファイル (`git diff --name-only origin/HEAD...HEAD`)。
-3. どちらも無い、または Git 外なら、対象をユーザーに確認する。リポジトリ全体を勝手に対象にしない。
+1. If the user named files or directories, follow that.
+2. With no scope and inside a Git repository, use files with uncommitted changes (`git status --short`). With no uncommitted changes, use files changed from the base on the current branch (`git diff --name-only origin/HEAD...HEAD`).
+3. With neither, or outside Git, present the following to the user in Japanese to confirm the target. Never target the whole repository on your own.
 
-対象ファイル数が多い (目安: 20 超) 場合は、ファイル一覧を提示して進めてよいか確認する。
+  ```
+  対象範囲を確認させてください。どのファイル・ディレクトリを対象にしますか? (リポジトリ全体は対象にしません)
+  ```
 
-コードファイルに加え、README や設計ドキュメントなど Markdown 文書も対象になりうる。対象範囲の確定は上記の優先順位に従い、コードと文書を区別しない。
+When many files match (rule of thumb: over 20), show the file list and present the following to the user in Japanese to confirm before proceeding:
 
-### 2. コメント・文書を収集して分類する
+```
+対象ファイルが<N>件あります:
+- <file1>
+- <file2>
+- ...
 
-対象がコードファイルの場合は各コメント・docstring を、対象が Markdown 文書の場合は各段落・箇条書き項目を、以下の 4 つに分類する。文書の場合、「コードから読み取れる」は「見出しや他の段落、図・コード例など文書の他の部分から読み取れる」に読み替える。
+この範囲で進めてよいですか?
+```
 
-#### 残す (非自明な情報)
+READMEs, design docs, and other Markdown documents can be targets alongside code files. Determine the scope by the priority above without distinguishing code from prose.
 
-- **Why**: その実装を選んだ理由、却下した代替案、直感に反する挙動の説明。意図的に仕様から外している場合は、何を犠牲にしているかまで残す (「このフォールバックは元実装が表示するラベルを 1 つ落とす」)
-- **制約・不変条件**: コードに現れない前提 (呼び出し順序、スレッド安全性、単位、範囲)
-- **sentinel の意味**: 返り値に `None`、空コレクション、`-1` などが含まれるとき、それが何を表すか。「失敗して返った `None`」と「それが正常な最終回答である `None`」では呼び出し側の分岐が変わる。`Args:` / `Returns:` 節ごと削るときに巻き添えで落とさない
-- **外部要因**: 外部システムの仕様・バグへの言及、issue/チケット/仕様書への参照、ワークアラウンドの理由
-- **落とし穴**: 一見正しそうな変更が壊れる理由 (「ここを X に変えると Y が壊れる」)
-- **TODO / FIXME / HACK** で具体的な内容があるもの。未検証の値や暫定のデフォルトが残っているなら、追跡できるようにチケットIDを添える (`TODO(ABC-123):`)
+### 2. Collect and classify comments and prose
 
-#### 削る (コードから読み取れる)
+For code files, classify each comment and docstring; for Markdown documents, each paragraph and bullet; into the following 4 buckets. For documents, read "readable from code" as "readable from other parts of the document (headings, other paragraphs, figures, code examples)".
 
-- コードの動作をなぞるだけの説明 (`// ユーザーを取得する` の直後に `getUser()`)
-- 識別子名やシグネチャの言い換え (`@param userId ユーザーのID`)
-- セクション見出し的な実況 (`// バリデーション`, `// メイン処理`)
-- 型情報の繰り返し (型注釈がある言語での `@return {string}` 相当)
-- 自明な docstring (getter/setter、名前が説明そのもののヘルパー)
-- 調査の経路や過程 (「N 経路で確認した」「移植元にも同じ処理は無かった」「どこを探して見つからなかったか」)。結論だけ残す
-- ドメイン用語の再定義。コード中で使われている語で足りる
+#### Keep (non-obvious information)
 
-#### 短くする
+- **Why**: the reason for the chosen implementation, rejected alternatives, counterintuitive behavior. When intentionally deviating from the spec, keep what is sacrificed too ("this fallback drops one label the original implementation shows")
+- **Constraints / invariants**: premises invisible in the code (call order, thread safety, units, ranges)
+- **Sentinel meaning**: when a return value can be `None`, an empty collection, `-1`, etc., what it represents. "A `None` from failure" and "a `None` that is the legitimate final answer" branch differently on the caller side. Do not drop these as collateral when cutting whole `Args:` / `Returns:` sections
+- **External factors**: references to external system specs or bugs, issues/tickets/spec links, reasons for workarounds
+- **Pitfalls**: why a seemingly correct change breaks things ("changing this to X breaks Y")
+- **TODO / FIXME / HACK** with concrete content. When unverified values or provisional defaults remain, attach a trackable ticket ID (`TODO(ABC-123):`)
 
-- 残すべき情報を含むが冗長なもの。非自明な部分だけを 1〜2 文に圧縮する。
-- 1 段落 = 1 主張。「主張 → 理由 → (補足)」の順に組み直す。1 段落が 5 行を超えたら主張が 2 つ以上混ざっていないか疑う (厳密な上限ではなく目安)。
-- docstring は「要約 1 行 + 非自明な注意点」まで削る。パラメータ列挙は、名前と型から分からない情報 (単位、null の意味、副作用など) を持つものだけ残す。
-- 出典は主張に添えるポインタ 1 個 (`entity_helper.py:73-152`、issue 番号) に留める。
+#### Cut (readable from code)
 
-#### 移動・一本化する (重複)
+- Explanations that only trace what the code does (`// get the user` right above `getUser()`)
+- Paraphrases of identifier names or signatures (`@param userId the user ID`)
+- Play-by-play section headers (`// validation`, `// main logic`)
+- Repeated type information (the equivalent of `@return {string}` in a language with type annotations)
+- Trivial docstrings (getters/setters, helpers whose name says it all)
+- The investigation path or process ("checked N sources", "the port origin had no such logic", "where I looked without finding it"). Keep only the conclusion
+- Redefinitions of domain terms already covered by the terms used in the code
 
-- 同じ説明が複数箇所にある場合、最も適切な 1 箇所に残して他を消す。適切な場所の判断基準:
-  - 実装の詳細 → 実装箇所のコメント
-  - 呼び出し側が知るべき契約 (引数の制約、副作用、例外) → 関数・メソッドの docstring
-  - モジュール横断の設計判断 → モジュール先頭コメント、または README/設計ドキュメント (既存のものがある場合のみ。新規ドキュメントは勝手に作らない)
-- 上の基準で判断が割れたら、その制約を実際に払う側 (該当する分岐・実装) に残し、上位 (モジュール先頭、クラス、親関数) から消す。
-- 呼び出し側コメントが呼び出し先の docstring と同じ内容なら、呼び出し側を消す。
-- 残す側に情報が欠けていれば、消す側から補ってから消す。
+#### Shorten
 
-#### よくある崩れ方
+- Items with keep-worthy information that are verbose. Compress the non-obvious part into 1-2 sentences.
+- One paragraph = one claim. Reorder into "claim, reason, (supplement)". When a paragraph exceeds 5 lines, suspect 2 or more claims are mixed (a guideline, not a strict limit).
+- Cut docstrings down to "one-line summary + non-obvious notes". From parameter lists, keep only what names and types do not tell you (units, null meaning, side effects, etc.).
+- Keep sources to one pointer per claim (`entity_helper.py:73-152`, an issue number).
 
-| 現れ方 | 直し方 |
+#### Move / consolidate (duplicates)
+
+- When the same explanation appears in several places, keep it in the single best place and delete the rest. Placement criteria:
+  - Implementation details go in the comment at the implementation
+  - Contracts the caller must know (argument constraints, side effects, exceptions) go in the function/method docstring
+  - Cross-module design decisions go in the module-top comment or the README/design doc (only when one already exists. Never create a new document on your own)
+- When the criteria above do not settle it, keep it on the side that actually pays the constraint (the relevant branch/implementation) and delete it from the upper levels (module top, class, parent function).
+- When a caller-side comment says the same thing as the callee docstring, delete the caller side.
+- When the keep side lacks information, supplement it from the delete side before deleting.
+
+#### Common collapse patterns
+
+| Pattern | Fix |
 |---|---|
-| 1 段落に主張が 2 つ以上 (「A。そして B は…」) | 段落を割る。片方が「残す」に該当しないなら消す |
-| 分岐を散文で追う (「〜の場合は…、それ以外は…」) | 消す。コードが持っている |
-| レビュー指摘ごとに 1 文ずつ追記されている | 追記の跡を消し、該当段落を書き直す |
-| 呼び出し規約が説明調で長い | 禁止形の 1 文にする (「合成ドキュメントを渡すな」) |
+| 2 or more claims in one paragraph ("A. And B...") | Split the paragraph. If one side is not a keeper, delete it |
+| Tracing branches in prose ("when X..., otherwise...") | Delete it. The code already has it |
+| One sentence appended per review comment | Remove the accretion marks and rewrite the paragraph |
+| Long explanatory call conventions | Make it one prohibitive sentence ("Never pass a composite document") |
 
-### 3. 触ってはいけないもの
+### 3. Things never to touch
 
-以下は内容を変えない (フォーマット調整もしない):
+Leave the following unchanged (not even formatting):
 
-- ライセンスヘッダ、著作権表示
-- ツールが解釈するディレクティブ: lint 抑制 (`eslint-disable`, `noqa`, `#[allow]`)、`type: ignore`、`pragma`、shebang、エンコーディング宣言、`@ts-expect-error` など
-- ドキュメント生成やテストが解釈するもの: doctest、公開 API ドキュメントとして抽出される docstring の必須構造 (プロジェクトの規約でフォーマットが決まっている場合はその構造を保つ)
-- 外部に公開される API 契約の本文になるコメント・docstring (OpenAPI スキーマなどに出力されるもの)。読み手はコードを読めない外部の利用者なので短縮対象外とし、観測可能な振る舞いの網羅を優先する
-- コメントアウトされたコード (削除はこのスキルの範囲外。気になれば報告のみ)
-- 判断に迷うもの (消してよいか自信が持てないコメントは残し、報告で言及する)
-- Markdown 文書の見出し構成、コード例、図表、フロントマター、履歴を残す目的のセクション (CHANGELOG、ADR、議事録など)
+- License headers, copyright notices
+- Tool-interpreted directives: lint suppressions (`eslint-disable`, `noqa`, `#[allow]`), `type: ignore`, `pragma`, shebangs, encoding declarations, `@ts-expect-error`, etc.
+- Anything docs generation or tests interpret: doctests, required structure of docstrings extracted as public API docs (keep the structure when project conventions fix the format)
+- Comments/docstrings that become an externally visible API contract (rendered into OpenAPI schemas, etc.). Their readers cannot read the code, so they are out of shortening scope; prioritize coverage of observable behavior
+- Commented-out code (deletion is out of scope for this skill. Report it only)
+- Anything uncertain (keep comments you are not confident about deleting, and mention them in the report)
+- Markdown heading structure, code examples, figures/tables, front matter, history-keeping sections (CHANGELOG, ADR, meeting notes, etc.)
 
-### 4. 適用する
+### 4. Apply
 
-- ファイル編集ツールでファイルごとに適用する。文章の言語 (日本語/英語) は元のまま維持する。
-- 英語の文章を短くする際、文字数削減のために関係代名詞 (`that`, `which` など) を省略しない。読みやすい文章を保つ。
-- 削除で不自然な空行が残ったら詰める。それ以外の空白・フォーマットは触らない。
-- 適用後、プロジェクトに手軽な構文チェック手段があれば実行する (例: `ruff check`、`tsc --noEmit`、ビルド)。無ければスキップしてよい。テストの実行までは必須にしない。
+- Apply per file with file edit tools. Preserve the original prose language.
+- When shortening English, never drop relative pronouns (`that`, `which`, etc.) to save characters. Keep sentences readable.
+- If a deletion leaves an unnatural blank line, collapse it. Do not touch other whitespace or formatting.
+- After applying, run a lightweight syntax check when the project has a handy one (e.g. `ruff check`, `tsc --noEmit`, a build). When none exists, skipping is fine (note the skip to the user in Japanese, e.g. `手軽な構文チェック手段が無いため、スキップしました。`). Running tests is not required.
 
-### 5. 報告する
+### 5. Report
 
-以下を簡潔にまとめる:
+Present the following to the user in Japanese (fill in the counts, paths, and observations):
 
-- 対象ファイル数と、削除/短縮/移動したコメントのおおよその件数
-- 移動・一本化したものは「どこから、どこへ」を明記
-- 削った内容のうち、コード外 (チケット、設計ドキュメント) に残す価値があると判断したもの
-- 迷って残したもの、コメントアウトされたコードなど、範囲外だが気づいた点
+```
+対象ファイル数: <N>件 (削除: 約<N>件 / 短縮: 約<N>件 / 移動: 約<N>件)
+- 移動・一本化: <from> から <to> へ
+- ...
 
-コミットはユーザーに依頼された場合のみ行う。
+削った内容のうち、コード外に残す価値があるもの:
+- <内容> → <チケット / 設計ドキュメントなどの置き場の提案>
+
+迷って残したもの・範囲外の気づき:
+- <ファイル>: <内容> (理由: <判断に迷った / コメントアウトされたコードなど>)
+- ...
+
+構文チェック: <実行したコマンドと結果 / スキップした旨>
+```
+
+The report must cover only the following points:
+
+- File count and approximate counts of deleted/shortened/moved comments
+- For moved/consolidated items, state "from where, to where"
+- Among the cut content, anything worth keeping outside the code (tickets, design docs)
+- Items kept while unsure, commented-out code, and other out-of-scope observations
+
+Commit only when the user asked for it.

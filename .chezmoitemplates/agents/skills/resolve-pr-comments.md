@@ -1,13 +1,16 @@
 ---
 name: resolve-pr-comments
-description: GitHub PRのレビューコメント（レビュースレッド）を確認し、対応済みのものをresolveするスキル。ユーザーが「レビューコメントをresolveして」「対応済みの指摘を解決済みにして」「resolve PR comments」などと依頼した場合に使用する。resolve/リアクション/返信の対象は自分が投稿したスレッドのみとし、他人のスレッドは参考情報として扱う。判断に迷うスレッドは絶対にresolveしない。
+description: Skill for checking GitHub PR review comments (review threads) and resolving the addressed ones. Use when the user asks things like "resolve the review comments", "mark the addressed findings as resolved", "resolve PR comments", 「レビューコメントをresolveして」「対応済みの指摘を解決済みにして」, or any similar phrasing in English or Japanese. Only resolve, react to, or reply to threads you started; treat threads started by others as reference-only. Never resolve a thread when in doubt.
 ---
 
 # Resolve PR Comments
 
 ## Goal
 
-指定されたPRのレビューコメント(review thread)を確認し、自分が投稿したスレッドのうち対応済みのものをresolveする。必要に応じて返信を残す。他人が投稿したスレッドは参考情報としてのみ扱い、resolve・リアクション・返信の対象にしない。最後に未resolveのコメントを報告する。
+Check the review comments (review threads) on the given PR and resolve the
+addressed ones among the threads you started. Leave a reply when needed. Treat
+threads started by others as reference-only: never resolve, react, or reply to
+them. Finally, report the still-unresolved comments.
 
 ## Target PR
 
@@ -15,9 +18,13 @@ $ARGUMENTS
 
 ## Steps (obey strictly)
 
-Step 1: **PRを特定する** — 引数からPR番号またはURLを取得する。引数が空の場合は、現在のブランチに紐づくPRを `gh pr view --json number,url` で取得する。リポジトリのowner/repoも特定する。あわせて `gh api user --jq .login` で自分のGitHubユーザー名を取得しておく。
+Step 1: **Identify the PR** — take the PR number or URL from the arguments. When
+the arguments are empty, get the PR tied to the current branch with
+`gh pr view --json number,url`. Also identify the repository owner/repo. In
+addition, get your own GitHub username with `gh api user --jq .login`.
 
-Step 2: **レビューコメントを取得する** — 以下のGraphQLクエリで未resolveのreview threadを全件取得する。ページネーションに対応し、全スレッドを取得すること。
+Step 2: **Fetch the review comments** — fetch all unresolved review threads
+with the GraphQL query below. Support pagination and fetch every thread.
 
 ```bash
 gh api graphql -f query='
@@ -51,7 +58,10 @@ query($owner: String!, $repo: String!, $pr: Int!, $cursor: String) {
 }' -f owner="OWNER" -f repo="REPO" -F pr=NUMBER
 ```
 
-Step 2b: **インライン以外のコメントも取得する** — レビュースレッドに紐づかない通常のコメント(PR会話欄のissue comment)と、レビュー本文(review body)も全件取得する。これらはresolveの対象にはならないが、各スレッドの指摘意図や、既に議論・撤回・対応済みかどうかを判断する材料として使う。
+Step 2b: **Also fetch non-inline comments** — also fetch all plain comments (PR
+conversation issue comments, not tied to a review thread) and review bodies.
+These are never resolve targets, but use them as material for judging each
+thread's intent and whether it was already discussed, withdrawn, or addressed.
 
 ```bash
 gh pr view NUMBER --json comments,reviews \
@@ -59,35 +69,57 @@ gh pr view NUMBER --json comments,reviews \
          reviews: [.reviews[] | select(.body != "") | {author: .author.login, state, submittedAt, body}]}'
 ```
 
-Step 3: **現在のコード差分を確認する** — PRの変更内容を把握するために `gh pr diff <NUMBER>` を実行する。各コメントが指摘しているファイルとコードの現在の状態もファイルを読んで確認する。
+Step 3: **Check the current code diff** — run `gh pr diff <NUMBER>` to grasp the
+PR's changes. Also read the files to check the current state of the code each
+comment points at.
 
-Step 4: **各スレッドを自分のものと他人のものに分ける** — 各review threadの最初のコメント(スレッドを開始したコメント)の `author.login` を、Step 1で取得した自分のGitHubユーザー名と比較する。
+Step 4: **Split each thread into yours and others'** — compare the
+`author.login` of each review thread's first comment (the comment that started
+the thread) against your own GitHub username from Step 1.
 
-- 一致する(自分が開始したスレッド) → 以降の対応対象(resolve/リアクション/返信の候補)とする
-- 一致しない(他人が開始したスレッド) → resolve・リアクション・返信は一切行わない。指摘内容の把握や自分のスレッドの判断材料として参照するのみ。Step 6で未resolve件数のみ報告する
+- Match (a thread you started) → candidate for the following steps
+  (resolve/reaction/reply)
+- No match (a thread someone else started) → never resolve, react, or reply.
+  Only reference it to understand findings and to judge your own threads. In
+  Step 6, report only the unresolved count
 
-Step 4b: **自分のスレッドを分析する** — 未resolveの自分のスレッドそれぞれについて、以下を判定する:
+Step 4b: **Analyze your own threads** — for each unresolved thread of yours,
+judge the following:
 
-- コメントが指摘している問題は何か
-- 現在のコードではその問題が修正済みかどうか
-- 返信が必要かどうか(修正方法の説明など)
+- What problem the comment points at
+- Whether the problem is already fixed in the current code
+- Whether a reply is needed (e.g. explaining the fix)
 
-判定基準:
-- **対応済み**: コメントが指摘したコードが実際に変更・削除されている、またはフィードバックが既にコードに反映されている（diffで確認できる事実に基づく）
-- **未対応**: 指摘された問題がまだコードに残っている
-- **提案(suggestion/nits)で未着手**: コード変更を伴う提案で、まだ変更されていないものは「未対応」として報告し、ユーザーに対応要否を委ねる。「今後対応する」という返信をして勝手にresolveしてはならない
-- **判断不能**: コンテキストが不足していて判断できない場合は未対応として扱う
+Criteria:
 
-Step 2bで取得した通常コメント・レビュー本文は、次のように判断へ反映する:
+- **Addressed**: the code the comment pointed at was actually changed or
+  removed, or the feedback is already reflected in the code (based on facts
+  verifiable in the diff)
+- **Unaddressed**: the pointed-out problem still remains in the code
+- **Untouched proposal (suggestion/nits)**: a proposal requiring a code change
+  that has not been made yet counts as "unaddressed"; report it and leave the
+  decision to the user. Never reply "will address it later" and resolve it
+  unilaterally
+- **Undecidable**: when context is insufficient, treat as unaddressed
 
-- 指摘がレビュワー自身によって撤回・取り下げられている、または「これは対応不要」と述べられている → 対応済みとして扱ってよい
-- スレッド外で対応方針の議論が続いている、宿題として残されている → 未対応として扱う
-- インラインコメントの指摘内容が通常コメント側で補足・限定されている場合は、その補足を含めて何が求められているかを判定する
-- 通常コメント自体に含まれる指摘(スレッドを持たないためresolveできない)は、対応状況をStep 6で報告する
+Reflect the plain comments and review bodies from Step 2b in your judgment as
+follows:
 
-Step 5: **対応済みスレッドをresolveする** — Step 4bで対応済みと判断した自分のスレッドそれぞれに対して(他人が開始したスレッドは対象外):
+- The finding was withdrawn by the reviewer, or stated as "no action needed" →
+  may be treated as addressed
+- Discussion on the approach continues outside the thread, or it remains as a
+  follow-up → treat as unaddressed
+- When an inline comment's finding is supplemented or scoped by a plain
+  comment, judge what is being asked including that supplement
+- Findings contained in plain comments themselves (which have no thread and
+  cannot be resolved) are only reported in Step 6 with their status
 
-5a. スレッドの最新のレビュワーコメント(自分以外が書いたコメントのうち最新のもの)に 👍 リアクションをつける。対象のコメントIDはStep 2のクエリ結果から取得する:
+Step 5: **Resolve the addressed threads** — for each of your own threads judged
+addressed in Step 4b (threads started by others are out of scope):
+
+5a. Add a 👍 reaction to the thread's latest reviewer comment (the latest
+comment written by someone other than you). Take the target comment ID from the
+Step 2 query result:
 
 ```bash
 gh api graphql -f query='
@@ -98,19 +130,19 @@ mutation($subjectId: ID!) {
 }' -f subjectId="COMMENT_ID"
 ```
 
-既に同じリアクションがついている場合はエラーになるので、その場合は無視して次に進む。
+Adding the same reaction twice errors, so ignore that error and move on.
 
-5b. 必要に応じて返信を残す(修正内容の簡潔な説明）:
+5b. Leave a reply when needed (a concise explanation of the fix):
 ```bash
 gh api graphql -f query='
 mutation($threadId: ID!, $body: String!) {
   addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $threadId, body: $body}) {
     comment { id }
   }
-}' -f threadId="THREAD_ID" -f body="対応内容の説明"
+}' -f threadId="THREAD_ID" -f body="DESCRIPTION_OF_FIX"
 ```
 
-5c. スレッドをresolveする:
+5c. Resolve the thread:
 ```bash
 gh api graphql -f query='
 mutation($threadId: ID!) {
@@ -120,41 +152,53 @@ mutation($threadId: ID!) {
 }' -f threadId="THREAD_ID"
 ```
 
-返信・リアクションのガイドライン:
-- **resolveするスレッドには必ず👍リアクションをつける** — 返信の有無に関わらず、対応済みであることの意思表示として付ける
-- **事実の報告のみ許可**: 返信には「何を変更したか」の事実だけを書く。「修正します」「対応します」など未実施の作業を約束する返信は禁止。
-- 単純な修正（typo、フォーマット等）で既にコードが修正済み: 返信なしでresolveのみ
-- コード変更を伴う修正で既にコードが修正済み: 何を変更したか1行で返信してからresolve
-- suggestion/nitsレベルで対応が任意のコメント: resolveせず、ユーザーに判断を委ねる
-- 議論が必要なコメント: resolveせず、ユーザーに判断を委ねる
-- **判断に迷うものはresolveしない** — 誤ってresolveするより、未resolveで報告するほうが安全
+Reply/reaction guidelines:
+- **Always add a 👍 reaction to every thread you resolve** — attach it
+  regardless of whether you reply, as a sign that it was addressed
+- **Only factual reports allowed**: replies state only "what was changed" as
+  fact. Replies promising unperformed work ("will fix", "will address") are
+  forbidden.
+- Trivial fix (typo, formatting, etc.) with code already fixed: resolve only,
+  no reply
+- Fix involving a code change with code already fixed: reply with a one-line
+  note on what changed, then resolve
+- Suggestion/nits-level comments where addressing is optional: do not resolve;
+  leave the decision to the user
+- Comments needing discussion: do not resolve; leave the decision to the user
+- **When in doubt, do not resolve** — reporting it unresolved is safer than
+  resolving it by mistake
 
-Step 6: **結果を報告する** — 以下の形式でユーザーに報告する:
+Step 6: **Report the results** — present the following to the user in Japanese:
 
 ```
 ## PR #<number> コメント対応結果
 
-### Resolveしたコメント (<N>件、自分のスレッドのみ)
-- `<file>:<line>` — <コメント要約> → <対応内容>
+### 解決済みコメント(<N>件、自分のスレッドのみ)
+- `<ファイル>:<行>` — <コメントの要約> → <対応内容>
 - ...
 
-### 未resolveのコメント - 自分のスレッド (<N>件)
-- `<file>:<line>` — <コメント要約> (理由: <未対応の理由>)
+### 未解決コメント - 自分のスレッド(<N>件)
+- `<ファイル>:<行>` — <コメントの要約>(理由: <未対応の理由>)
+  - 対応: <必要なアクション>
 - ...
 
-### 未resolveのコメント - 他人のスレッド (<N>件、参考情報・未resolveのまま)
-- `<file>:<line>` — <author> — <コメント要約>
+### 未解決コメント - 他者のスレッド(<N>件、参照のみ、未解決のまま)
+- `<ファイル>:<行>` — <作成者> — <コメントの要約>
 - ...
 
-### Outdatedなコメント (<N>件)
-- `<file>:<line>` — <コメント要約>
+### Outdatedなコメント(<N>件)
+- `<ファイル>:<行>` — <コメントの要約>
 ```
 
-インライン以外のコメント(通常コメント・レビュー本文)に指摘が含まれていた場合は、上記に加えて次の節も出す。これらはresolveできないため、対応状況の報告のみ行う。
+When plain comments (non-inline comments / review bodies) contain findings, add
+the following section to the report above, presented to the user in Japanese.
+These cannot be resolved, so only report their status.
 
 ```
-### インライン以外のコメント (<N>件)
-- <author> のコメント — <指摘要約> (状況: <対応済み / 未対応 / 判断不能>)
+### スレッド外コメント(<N>件)
+- <作成者>のコメント — <指摘の要約>(状態: <対応済み / 未対応 / 判断不可>)
+  - 対応: <必要なアクション>
 ```
 
-未resolveのコメントがある場合は、それぞれについて対応が必要かどうかの所見も添える。
+When unresolved comments remain, each entry carries its own action note on
+whether action is needed, as shown in the templates above.

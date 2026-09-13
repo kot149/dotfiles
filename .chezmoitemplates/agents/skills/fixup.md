@@ -1,330 +1,349 @@
 ---
 name: fixup
-description: 現在の未コミット変更を、既存の適切なコミットへ fixup するスキル。ユーザーが「fixupして」「fixupコミット作って」「既存のコミットに紛れ込ませて」「適切なコミットにfixup」などと依頼した場合に使用する。既定では `git commit --fixup=<sha>` (fixup コミットを積むだけ、方式A) を使い、ユーザーが明示した場合や引数 `--method=B` が渡された場合は `git history fixup <sha>` (git 2.55 以降、その場で履歴を書き換え、方式B) を使う。引数に `--autosquash` を渡された場合は方式 A で fixup コミットを積んだ後、続けて autosquash も実行する。変更の帰属先コミットは `git blame` / `git log -p` で機械的に特定し、計画をユーザーに提示した上で承認待ちせず実行する。
+description: Skill for folding current uncommitted changes into the appropriate existing commit. Use when the user asks to "fixup this", "fold into existing commit", "create a fixup commit", or similar. By default uses `git commit --fixup=<sha>` (just stacking a fixup commit, method A); when the user explicitly requests it or the `--method=B` argument is passed, uses `git history fixup <sha>` (rewriting history in place, method B, requires git 2.55+). When `--autosquash` is passed, stacks the fixup commit with method A and then continues to run autosquash. Determine the owning commit for each change mechanically with `git blame` / `git log -p`, present the plan to the user, and execute without waiting for approval.
 argument-hint: "[--method=A|B] [--autosquash]"
 ---
 
 # fixup
 
-未コミットの変更 (staged / unstaged) を解析し、それぞれの変更がどの既存コミットに属すべきかを特定して fixup するスキル。
+A skill that analyzes uncommitted changes (staged / unstaged), determines which existing commit each change belongs to, and fixups them.
 
-適用方式は 2 つあり、既定で方式 A を使う (詳細は「5. 適用方式を選ぶ」)。
+There are two methods, with method A as the default (see "5. Choose the method").
 
-| 方式 | コマンド | 履歴の書き換え |
+| Method | Command | History rewrite |
 | --- | --- | --- |
-| A: fixup コミット方式 | `git commit --fixup=<sha>` | しない (後で autosquash が必要) |
-| B: 履歴書き換え方式 | `git history fixup <sha>` | その場で行う (autosquash 不要) |
+| A: fixup-commit method | `git commit --fixup=<sha>` | No (autosquash needed later) |
+| B: history-rewrite method | `git history fixup <sha>` | Done in place (no autosquash needed) |
 
-方式 A では autosquash による履歴のまとめ直しは既定ではこのスキルの責務ではない。fixup コミットを積むところまでで終了し、ユーザーが続けて autosquash したい場合は [[autosquash]] スキルへ誘導する。ただし `--autosquash` 引数が渡された場合のみ、このスキルが続けて autosquash まで実行する (「引数」参照)。
+With method A, reordering history with autosquash is not this skill's responsibility by default. Stop after stacking the fixup commit; if the user wants to continue with autosquash, point them to the [[autosquash]] skill. Only when the `--autosquash` argument is passed does this skill continue through autosquash (see "Arguments").
 
-## 引数
+## Asking the user to choose
+
+Where this document says "selection prompt" or "ask the user for confirmation", present the options and have the user choose. In agents with a selection UI tool (such as `AskUserQuestion`), use it; in agents without one, present the same options as a numbered plain-text list and have the user answer by number or free text. In both cases, do not move to the next step until you have an answer.
+
+## Arguments
 
 `--method=A` / `--method=B`:
 
-- 手順 5 の方式選択より優先する。指定された方式をそのまま使い、ユーザーへの確認や推定は行わない
-- `--method=B` を指定する場合、前提 (git 2.55 以降) を満たさない、またはマージコミットを含む (`git log --merges <MB>..HEAD` にヒットする) 場合は方式 A にフォールバックせず、理由を添えて中断しユーザーに確認する
+- Takes precedence over the method selection in step 5. Use the specified method as-is, with no user confirmation or inference
+- When `--method=B` is specified, if the prerequisites are not met (older than git 2.55) or the history contains merge commits (`git log --merges <MB>..HEAD` returns hits), do not fall back to method A; stop with the reason and ask the user for confirmation. Present the following to the user in Japanese (fill in the reason): `"方法Bは使えません（理由: <REASON>）。方法Aに切り替えますか、それとも中止しますか？"`
 
-`--autosquash` (単独でも他の指示と併記でも可):
+`--autosquash` (alone or alongside other instructions):
 
-- 方式 A (既定、または `--method=A` 指定時) にのみ適用する。**`--method=B` と併記された場合は矛盾するので実行前に中断し、ユーザーに確認する** (方式 B は履歴書き換えと同時に完結するため autosquash の出番がない)
-- 手順 6 の計画提示では「fixup コミットを積んだ後、続けて autosquash も実行する」ことを明示して報告する (承認待ちはしない)
-- 手順 7-A で fixup コミットを積んだ後、手順 8 の確認を経て [[autosquash]] スキルを実行する (手順 10)
+- Applies only to method A (the default, or when `--method=A` is specified). **If combined with `--method=B`, the combination is contradictory, so stop before executing and ask the user for confirmation** (method B completes by rewriting history in place, so there is no role for autosquash). Present the following to the user in Japanese: `"--autosquash は方法A専用のため、--method=B とは併用できません。どちらで進めますか？（Aに切り替え / Bのままautosquashなし / 中止）"`
+- In the step 6 plan, explicitly state that "after stacking the fixup commit, autosquash will also run" (do not wait for approval). Present the following to the user in Japanese: `"fixupコミットを積んだ後、そのまま autosquash まで続けて実行します（承認待ちなし）。"`
+- After stacking the fixup commit in step 7-A, run the step 8 check and then execute the [[autosquash]] skill (step 10)
 
-引数がない場合は手順 6 の計画提示のみで、autosquash は実行しない (ユーザーが続けて autosquash したい場合は [[autosquash]] スキルへ誘導する)。
+With no arguments, only present the plan in step 6 and do not run autosquash (if the user wants to continue with autosquash, point them to the [[autosquash]] skill).
 
-## 前提
+## Prerequisites
 
-- 作業ディレクトリが Git リポジトリ配下であること
-- 現在ブランチが保護ブランチ (`main` / `master` / `develop` など) でないこと
-- 方式 B を選ぶ場合は git 2.55 以降であること (`git --version` で確認する)
+- The working directory is inside a Git repository
+- The current branch is not a protected branch (`main` / `master` / `develop`, etc.)
+- When choosing method B, git 2.55 or later is required (check with `git --version`)
 
-## 手順
+## Steps
 
-### 1. 状態を確認する
+### 1. Check the current state
 
-以下を並列で実行し、現状を把握する:
+Run the following in parallel to understand the current state:
 
-- `git status --short` — 未コミット変更のファイル一覧
-- `git rev-parse --abbrev-ref HEAD` — 現在のブランチ名
-- `git diff --stat` — unstaged の差分サマリ
-- `git diff --cached --stat` — staged の差分サマリ
-- `git --version` — 方式 B (`git history fixup`) が使えるかの判定用
+- `git status --short` — list of files with uncommitted changes
+- `git rev-parse --abbrev-ref HEAD` — current branch name
+- `git diff --stat` — summary of unstaged diffs
+- `git diff --cached --stat` — summary of staged diffs
+- `git --version` — used to decide whether method B (`git history fixup`) is available
 
-未コミット変更が何もない場合は「fixup 対象の変更がありません」と報告して終了する。
+If there are no uncommitted changes, present the following to the user in Japanese: `"fixup対象の変更がありません"` and stop.
 
-現在ブランチが `main` / `master` / `develop` などの保護ブランチである場合は中断し、理由をユーザーに報告する。
+If the current branch is a protected branch such as `main` / `master` / `develop`, stop and present the following to the user in Japanese (fill in the branch name): `"現在のブランチ <BRANCH> は保護ブランチのため、このスキルは実行できません。"`
 
-### 2. マージ先ブランチ (base) と起点コミットを確定する
+### 2. Determine the merge-target branch (base) and the fork point
 
-fixup 対象にできるコミット範囲を確定するため base ブランチと分岐点を決める。ローカルの情報だけで決まるので `gh` は必須にしない。
+Decide the base branch and fork point to pin down the range of commits eligible for fixup. This is decided from local information alone, so `gh` is not required.
 
 {{ includeTemplate "agents/skills/_shared/git-base.md" . }}
 
-fixup 対象の範囲は `<MB>..HEAD` (= `<MB>..HEAD`) とする。
+The fixup-eligible range is `<MB>..HEAD`, where `<MB>` is the merge-base from step 2.
 
-### 3. fixup 対象コミットの候補を取得する
+### 3. Collect candidate fixup-target commits
 
 ```bash
 git log --oneline <MB>..HEAD
 ```
 
-これがブランチ上で fixup 可能なコミット群。既に `fixup!` / `squash!` プレフィックスが付いたコミットは fixup 対象から除外する (それらはさらに元のコミットに紐づいているため)。
+These are the commits on the branch that can accept a fixup. Exclude commits already prefixed with `fixup!` / `squash!` from fixup targets (they are themselves tied to an original commit).
 
-候補コミットが 0 件の場合は「このブランチには fixup 可能なコミットがありません。通常の `git commit` を使ってください」と案内して終了する。
+If there are 0 candidate commits, stop and present the following to the user in Japanese: `"fixup可能なコミットがありません。通常の git commit を使ってください。"`
 
-### 4. 変更ごとに帰属先コミットを特定する
+### 4. Determine the owning commit for each change
 
-**staged / unstaged の両方を対象にする。** ただし混在していると解析しにくいので、事前に状態を整理する:
+**Target both staged and unstaged changes.** However, a mix is hard to analyze, so tidy up the state first:
 
-- staged と unstaged が両方ある場合は、両方をまとめて fixup 化の対象とする。unstaged 分は対象ファイルを明示指定して `git add <FILES...>` で staged 化してから解析を進める (`git add -A` / `git add .` は使わない)。staged 化したことをユーザーに報告する。
+- If both staged and unstaged changes exist, treat both together as fixup candidates. Stage the unstaged portion with an explicit `git add <FILES...>` on the target files before proceeding with analysis (do not use `git add -A` / `git add .`). Present the following to the user in Japanese (fill in the file list): `"未ステージの変更をステージしました: <FILES>"`
 
-対象範囲が決まったら、変更ごとに以下の方法で帰属先コミットを推定する:
+Once the target range is fixed, infer the owning commit for each change as follows:
 
-#### 4-1. ファイル単位の粗い推定
+#### 4-1. Coarse per-file inference
 
-各変更ファイルについて:
+For each changed file:
 
 ```bash
 git log --oneline <MB>..HEAD -- <FILE>
 ```
 
-このファイルを触っている候補コミットを列挙する。1件しか無ければ、そのコミットが第一候補。
+This lists the candidate commits touching the file. If there is exactly one, it is the first candidate.
 
-#### 4-2. 行単位の精密な推定 (推奨)
+#### 4-2. Precise per-line inference (recommended)
 
-変更行がどのコミットで導入されたかを `git blame` で辿る:
+Trace which commit introduced the changed lines with `git blame`:
 
 ```bash
 git diff [--cached] -U0 <FILE>
 ```
 
-の各 hunk について、変更対象行 (削除行 / 変更前の周辺行) の由来を:
+For each hunk, find the origin of the target lines (deleted lines / pre-change context lines) with:
 
 ```bash
 git blame -L <start>,<end> HEAD -- <FILE>
 ```
 
-で確認する。blame 結果のコミット SHA が `<MB>..HEAD` の範囲内なら、それが fixup 先の最有力候補。範囲外 (base より前のコミット) なら、そのファイルを触っている最新のブランチ内コミットへ fixup する提案に切り替える。
+If the blamed commit SHA is inside the `<MB>..HEAD` range, it is the strongest fixup candidate. If it is outside the range (a commit older than the base), switch to proposing a fixup into the newest in-branch commit that touches the file.
 
-**新規追加行のみの hunk** は blame で辿れないので、4-1 のファイル単位候補から選ぶ。
+**Hunks consisting only of newly added lines** cannot be traced with blame, so pick from the per-file candidates in 4-1.
 
-#### 4-3. 判断が割れる場合
+#### 4-3. When the evidence is split
 
-1つのファイル内で複数のコミットへ fixup すべき変更が混在している場合は、hunk ごとに fixup 先を分ける。この場合、staged 状態を hunk 単位で組み替える必要があるので、A-2 の分割手順に従う。
+If changes belonging to multiple commits are mixed within a single file, split the fixup targets per hunk. This requires rearranging the staged state per hunk, so follow the splitting procedure in A-2.
 
-#### 4-4. fixup コミットの粒度を決める (方式 A)
+#### 4-4. Decide fixup-commit granularity (method A)
 
-方式 A では、**帰属先コミットが同じであっても、変更の意味単位が違うなら `fixup!` コミットを分ける。** 帰属先ごとに1つの巨大な `fixup!` へまとめない。分けておくと autosquash 前に個別にレビュー・取り消しができる。
+With method A, **split `fixup!` commits by unit of meaning even when the owning commit is the same.** Do not combine them into one giant `fixup!` per owning commit. Keeping them split allows reviewing and reverting each one individually before autosquash.
 
-分ける単位の目安:
+Guidelines for splitting:
 
-- **レビュー指摘への対応は指摘ごとに1コミット。** 同じコミットに対する指摘が複数あっても、指摘の数だけ fixup コミットを作る
-- 種類が違う変更 (バグ修正 / リファクタリング / typo 修正など) は種類ごとに分ける
-- 独立してレビューでき、独立して巻き戻せる変更はそれぞれ分ける
+- **One commit per review comment.** Even for multiple comments on the same commit, create one fixup commit per comment
+- Split different kinds of changes (bug fix / refactoring / typo fix, etc.) by kind
+- Split changes that can be reviewed and reverted independently
 
-逆に、1つの意味単位の変更が複数ファイルに跨る場合は1コミットにまとめる (ファイル単位で機械的に分割しない)。
+Conversely, combine a single unit of meaning spanning multiple files into one commit (do not split mechanically per file).
 
-同じ帰属先へ `fixup!` が複数積まれても autosquash は順に適用されるので問題ない。作成手順は A-2 に従う。
+Stacking multiple `fixup!` commits on the same owning commit is fine, since autosquash applies them in order. Follow A-2 for the creation procedure.
 
-方式 B は対象コミットへ直接取り込むため中間コミットが残らず、この粒度分割の意味は薄い。ただし適用順序で結果が変わる変更は、方式 A と同様に段階を分けて適用する。
+Method B absorbs changes directly into the target commit, leaving no intermediate commits, so this granularity splitting matters little. However, apply changes whose result depends on order in stages, as with method A.
 
-### 5. 適用方式を選ぶ
+### 5. Choose the method
 
-優先順位は次のとおり:
+Priority order:
 
-1. **引数 `--method=A` / `--method=B` が渡されていればそれに従う** (前提を満たさない場合は「引数」の説明どおり中断する)
-2. ユーザーが方式を明示している場合 (「git history fixup で」「fixup コミットだけ積んで」など) はそれに従う
-3. どちらも無ければ **既定で方式 A (fixup コミットを積む) を選び、質問しない**。方式 A は履歴を書き換えないため安全に後戻りでき、内容をレビューしてから [[autosquash]] でまとめられる
+1. **If a `--method=A` / `--method=B` argument was passed, follow it** (if the prerequisites are not met, stop as described in "Arguments")
+2. If the user explicitly names a method ("with git history fixup", "just stack a fixup commit", etc.), follow it
+3. If neither applies, **choose method A (stack a fixup commit) by default without asking**. Method A does not rewrite history, so it is easy to undo, and the content can be reviewed before consolidating with [[autosquash]]
 
-`--autosquash` 引数が渡されている場合は方式 A で進める (「引数」参照)。
+When the `--autosquash` argument is passed, proceed with method A (see "Arguments").
 
-選んだ方式は実行前にユーザーへ一言報告する (承認待ちはしない)。
+Report the chosen method to the user in one line before executing (do not wait for approval). Present the following to the user in Japanese (pick one): `"fixup方法としてA（fixupコミットを積む）を使います。承認待ちなしで続行します。"` / `"fixup方法としてB（git history fixupで履歴を直接書き換え）を使います。承認待ちなしで続行します。"`
 
-### 6. ユーザーに fixup 計画を提示する
+### 6. Present the fixup plan to the user
 
-以下のような形式で、どの変更をどのコミットに fixup するかを一覧化して報告する。承認待ちで止まらず、提示後そのまま次の手順に進む。方式によって末尾の注意書きを変える:
-
-```
-以下の内容で fixup します (方式: A / fixup コミットを積む):
-
-[1] fixup → <sha1> feat: add user model  (指摘1: バリデーション追加)
-    - src/models/user.ts (全変更)
-    - src/models/user.test.ts (全変更)
-
-[2] fixup → <sha1> feat: add user model  (指摘2: 型名の変更)
-    - src/models/types.ts (全変更)
-
-[3] fixup → <sha2> fix: handle empty payload
-    - src/api/handler.ts の hunk @@ -42,7 +42,10 @@ のみ
-
-base: origin/<BASE> (起点: <MB> = ブランチ分岐時点のコミット)
-作成後、履歴を実際にまとめるには別途 autosquash が必要です。
-```
-
-`--autosquash` 指定時は末尾を次に差し替える:
+Report which change goes into which commit. Do not block for approval; proceed to the next step right after presenting. Change the trailing note by method. Present the following plan template to the user in Japanese (fill in SHAs, titles, and files):
 
 ```
-base: origin/<BASE> (起点: <MB> = ブランチ分岐時点のコミット)
-fixup コミットを積んだ後、続けて autosquash で履歴をまとめます (SHA が変わり force push が必要になります)。
+以下の内容で fixup します（方法: A / fixupコミットを積む）:
+
+[1] fixup -> <sha1> feat: add user model（コメント1: バリデーション追加）
+    - src/models/user.ts（すべての変更）
+    - src/models/user.test.ts（すべての変更）
+
+[2] fixup -> <sha1> feat: add user model（コメント2: 型名の修正）
+    - src/models/types.ts（すべての変更）
+
+[3] fixup -> <sha2> fix: handle empty payload
+    - src/api/handler.ts のハンク @@ -42,7 +42,10 @@ のみ
+
+base: origin/<BASE>（起点: <MB> = ブランチの分岐点コミット）
+履歴の統合には別途 autosquash の実行が必要です。
 ```
 
-方式 B の場合は末尾を次に差し替える:
+With `--autosquash`, present the following trailing lines to the user in Japanese instead:
 
 ```
-方式: B / git history fixup (履歴をその場で書き換えます)
-- 対象コミット以降の子孫コミットは SHA が変わります
-- 書き換え前に backup ブランチを作成します
-- 完了後は force push (--force-with-lease) が必要です
+base: origin/<BASE>（起点: <MB> = ブランチの分岐点コミット）
+fixupコミットを積んだ後、そのまま autosquash で履歴を統合します（SHAが変わるため force push が必要になります）。
 ```
 
-### 7-A. 方式 A: fixup コミットを作成する
+With method B, present the following trailing lines to the user in Japanese instead:
 
-#### A-1. 単一コミットに全変更を fixup する場合
+```
+方法: B / git history fixup（履歴を直接書き換え）
+- 対象コミットより後の子孫コミットはSHAが変わります
+- 書き換え前にバックアップブランチを作成します
+- 完了後は force push（--force-with-lease）が必要になります
+```
 
-対象変更が既に staged なら、そのまま:
+### 7-A. Method A: create the fixup commits
+
+#### A-1. Fixing up all changes into a single commit
+
+If the target changes are already staged, simply run:
 
 ```bash
 git commit --fixup=<TARGET_SHA>
 ```
 
-unstaged 分も含める場合、staged 化してから実行する:
+To include unstaged portions, stage them first and then run:
 
 ```bash
 git add <FILES...>
 git commit --fixup=<TARGET_SHA>
 ```
 
-`git add -A` / `git add .` は使わず、必要なファイルだけを明示的に指定する (無関係な untracked ファイルを巻き込まないため)。
+Do not use `git add -A` / `git add .`; specify only the needed files explicitly (to avoid sweeping in unrelated untracked files).
 
-#### A-2. 複数の fixup コミットに分けて作成する場合
+#### A-2. Creating multiple separate fixup commits
 
-帰属先コミットが複数ある場合と、4-4 に従って同じ帰属先へ複数の `fixup!` を分ける場合の両方がこれにあたる。fixup コミット1つごとに、以下を繰り返す:
+This covers both the case of multiple owning commits and the case of splitting multiple `fixup!` commits for the same owning commit per 4-4. Repeat the following for each fixup commit:
 
-1. 現在の index をいったんクリア: `git reset` (ワーキングツリーはそのまま)
-2. コミット [n] に含める変更だけを staged 化する
-   - ファイル全体なら: `git add <FILE>`
-   - hunk 単位なら: 対話式の `git add -p` は使えないので、patch を書き出して必要な hunk だけ残し、index へ適用する:
+1. Clear the current index once: `git reset` (working tree stays as-is)
+2. Stage only the changes included in commit [n]
+   - Whole file: `git add <FILE>`
+   - Per hunk: interactive `git add -p` is not available, so write out the patch, keep only the needed hunks, and apply it to the index:
      ```bash
      git diff -U3 <FILE> > <SCRATCH>/fixup-N.patch
-     # <SCRATCH>/fixup-N.patch を編集し、このコミットに含める hunk だけ残す
-     git apply --cached --check <SCRATCH>/fixup-N.patch   # 先に適用可否を確認
+     # Edit <SCRATCH>/fixup-N.patch, keeping only the hunks for this commit
+     git apply --cached --check <SCRATCH>/fixup-N.patch   # verify applicability first
      git apply --cached <SCRATCH>/fixup-N.patch
      ```
-     patch を編集する際は hunk ヘッダ (`@@ -a,b +c,d @@`) の行数を残した hunk の実体と一致させる。手計算が面倒な場合は `git apply --cached --recount` を使うと行数を再計算してくれる。
-     適用後は必ず `git diff --cached` で staged 内容が意図した hunk と一致していることを確認する。ずれていたら `git reset` してやり直す。
-3. `git commit --fixup=<TARGET_SHA_n>` を実行
-4. 次の fixup コミットへ
+     When editing the patch, match the hunk headers (`@@ -a,b +c,d @@`) to the actual kept hunks. If manual line counting is tedious, use `git apply --cached --recount` to recalculate the counts.
+     After applying, always verify with `git diff --cached` that the staged content matches the intended hunks. If it drifted, `git reset` and retry.
+3. Run `git commit --fixup=<TARGET_SHA_n>`
+4. Move on to the next fixup commit
 
-各ステップで `git status --short` を確認し、想定外のファイルが混入していないことを検証する。
+At each step, check `git status --short` and verify no unexpected files slipped in.
 
-### 7-B. 方式 B: `git history fixup` で履歴を書き換える
+### 7-B. Method B: rewrite history with `git history fixup`
 
-`git history fixup <commit>` は **index に staged された変更** を対象コミットへ直接取り込み、子孫コミットを replay する。コミットメッセージと author は保持される。
+`git history fixup <commit>` absorbs **changes staged in the index** directly into the target commit and replays descendant commits. Commit messages and authors are preserved.
 
-#### B-1. バックアップを取る
+#### B-1. Take a backup
 
-書き換え前に必ずバックアップブランチを作る。
+Always create a backup branch before rewriting.
 
 ```bash
 git rev-parse HEAD
 git branch backup/fixup-$(date +%Y%m%d-%H%M%S)
 ```
 
-作成したブランチ名と元の HEAD SHA をユーザーに伝える。
+Tell the user the created branch name and the original HEAD SHA. Present the following to the user in Japanese (fill in names): `"バックアップブランチ <BRANCH> を作成しました。元のHEADは <ORIGINAL_SHA> です。"`
 
-#### B-2. 適用順序を決める
+#### B-2. Decide the application order
 
-複数のコミットへ fixup する場合は **新しいコミットから順に (HEAD 側から base 側へ)** 処理する。子孫コミットは replay されて SHA が変わるが、祖先コミットの SHA は変わらないため、後続の対象 SHA が無効にならない。
+When fixing up into multiple commits, process them **from newest to oldest (from the HEAD side toward the base side)**. Descendant commits are replayed and change SHAs, but ancestor commit SHAs stay unchanged, so later target SHAs remain valid.
 
-#### B-3. 対象ごとに適用する
+#### B-3. Apply per target
 
-対象コミットごとに以下を繰り返す:
+Repeat the following for each target commit:
 
-1. index をクリアする: `git reset` (ワーキングツリーはそのまま)
-2. そのコミットに取り込む変更だけを staged 化する (方式 A の A-2 と同じ制約。`git add -A` / `git add .` は使わない。hunk 単位は patch を経由して `git apply --cached` する)
-3. `git status --short` で staged 内容を検証する
-4. dry-run で結果を確認する:
+1. Clear the index: `git reset` (working tree stays as-is)
+2. Stage only the changes to absorb into that commit (same constraints as method A step A-2. Do not use `git add -A` / `git add .`. For per-hunk staging, route the patch through `git apply --cached`)
+3. Verify the staged content with `git status --short`
+4. Check the result with a dry run:
    ```bash
    git history fixup --dry-run --empty=abort --update-refs=head <TARGET_SHA>
    ```
-   `--dry-run` は ref を更新せず、更新予定の ref を出力するだけ。エラーになる場合はここで止めて原因をユーザーに報告する。
-5. 本実行する:
+   `--dry-run` updates no refs and only prints the refs it would update. If it errors, stop here and present the following to the user in Japanese (fill in the cause): `"dry-runでエラーになりました（原因: <CAUSE>）。ここで中断します。"`
+5. Run it for real:
    ```bash
    git history fixup --empty=abort --update-refs=head <TARGET_SHA>
    ```
-6. 次の対象へ
+6. Move on to the next target
 
-#### B-4. オプションの扱い
+#### B-4. Handling the options
 
-- `--empty=abort` を既定で付ける。fixup によって対象コミットや子孫コミットが空になる場合に黙って消えるのを防ぐ。abort した場合は状況をユーザーに報告し、意図的に消したいなら `--empty=drop` (コマンドの既定値) を使うか確認する。
-- `--update-refs=head` を既定で付ける。既定値の `branches` だと、対象コミットの子孫を指す **ローカルブランチすべて** (B-1 で作ったバックアップブランチを含む) が書き換わってしまう。バックアップは書き換え前の SHA を指し続ける必要があるため、`branches` は使わず常に `head` を指定する。他のローカルブランチも書き換えたい意図が明確にある場合のみ、ユーザーに確認した上で `--update-refs=branches` を使う。
-- `--reedit-message` は使わない。メッセージを変えたい場合は `git history reword` を別途案内する。
+- Attach `--empty=abort` by default. It prevents a target or descendant commit that becomes empty after the fixup from silently disappearing. On abort, present the following to the user in Japanese and confirm whether to use `--empty=drop` (the command default) if dropping it is really intended: `"対象または子孫コミットが空になるため中断しました。本当に破棄する場合は --empty=drop を使いますか？"`
+- Attach `--update-refs=head` by default. The default `--update-refs=branches` would rewrite **all local branches** descending from the target commit (including the backup branch created in B-1). The backup must keep pointing at the pre-rewrite SHA, so never use `branches`; always specify `head`. Only use `--update-refs=branches` after confirming with the user when there is a clear intent to rewrite other local branches too.
+- Do not use `--reedit-message`. To change a message, separately suggest `git history reword`.
 
-#### B-5. 失敗時の対応
+#### B-5. On failure
 
-`git history fixup` はコンフリクトすると abort し、履歴は変更されない。この場合:
+When `git history fixup` hits a conflict it aborts and history is left unchanged. In that case:
 
-- 帰属先コミットの推定が間違っている可能性を検討し、候補を見直してユーザーに再提示する
-- どうしても取り込めない場合は方式 A (`git commit --fixup`) に切り替えるか、通常のコミットにする選択肢を提示する
-- **勝手に別のコミットへ fixup し直さない。** 候補を見直してユーザーに再提示する
+- Consider that the owning-commit inference may be wrong, re-examine the candidates, and re-present them to the user. Present the following to the user in Japanese (fill in candidates): `"fixup先の推定が間違っている可能性があります。候補を見直しました: <CANDIDATES>。"`
+- If the change simply cannot be absorbed, present the following to the user in Japanese to offer switching to method A (`git commit --fixup`) or making a regular commit: `"この変更は直接取り込めません。方法A（fixupコミットを積む）か通常のコミットに切り替えますか？"`
+- **Do not silently re-fixup into a different commit.** Re-examine the candidates and re-present them to the user. Present the following to the user in Japanese: `"別のコミットへの付け替えは独断で行いません。候補を確認してください。"`
 
-履歴が壊れたと判断した場合は自分で復旧を試みず、B-1 のバックアップブランチ名と元の HEAD SHA を提示して復旧方法 (`git reset --hard <元のSHA>`) を案内する。
+If you judge history to be broken, do not attempt recovery yourself; present the B-1 backup branch name and the original HEAD SHA and explain the recovery (`git reset --hard <ORIGINAL_SHA>`). Present the following to the user in Japanese (fill in names): `"履歴が壊れた可能性があります。自分では復旧せず、バックアップブランチ <BRANCH> と元のHEAD <ORIGINAL_SHA> から git reset --hard <ORIGINAL_SHA> で復旧できます。"`
 
-### 8. 結果を確認する
+### 8. Verify the result
 
 ```bash
 git log --oneline <MB>..HEAD
 git status --short
 ```
 
-方式 A の場合:
+For method A:
 
-- 期待した数の `fixup!` コミットが積まれていること
-- ワーキングツリーがクリーン (残余の未コミット変更がない) であること (残す場合は事前にユーザー合意済みのはず)
+- The expected number of `fixup!` commits is stacked
+- The working tree is clean (no leftover uncommitted changes) (leftovers should have been agreed with the user in advance)
 
-方式 B の場合:
+For method B:
 
-- `fixup!` コミットが積まれていないこと (履歴に取り込まれているはず)
-- コミット数がバックアップ時点と一致すること (`--empty=abort` を付けているので減っていないはず)
-- 意図した変更が対象コミットに入っていること: `git show --stat <新しいSHA>`
-- バックアップブランチとワーキングツリーの内容が一致すること:
+- No `fixup!` commits are stacked (they should be absorbed into history)
+- The commit count matches the backup point (it should not have shrunk, since `--empty=abort` is attached)
+- The intended changes are in the target commit: `git show --stat <new SHA>`
+- The backup branch and the working tree contents match:
   ```bash
   git diff <BACKUP_BRANCH> HEAD
   ```
-  fixup した変更分だけが差分として出るのが期待値。それ以外の差分があればユーザーに報告する (**勝手に修正しない**)。
+  The expectation is that only the fixuped changes show up as the diff. If there is any other diff, present the following to the user in Japanese (fill in the diff summary) and **do not fix it yourself**: `"想定外の差分があります: <DIFF>。こちらでは修正しませんので確認してください。"`
 
-### 9. 完了報告
+### 9. Completion report
 
-方式 A の場合:
+For method A, present the following report template to the user in Japanese (fill in commits):
 
-- 作成した fixup コミットの一覧 (`<sha> fixup! <元コミットのタイトル>`)
-- 履歴を実際にまとめるには `autosquash` スキルを使う旨 (`--autosquash` 指定時は手順 10 へ進むので不要)
-- force push はユーザー自身で行う必要がある旨 (このスキルでは行わない)
+```
+作成したfixupコミット:
+- <sha> fixup! <original commit title>
 
-方式 B の場合:
+履歴の統合には autosquash スキルが必要です（--autosquash 指定時はステップ10に続くため不要です）。
+pushはご自身でお願いします（このスキルではpushしません。autosquash後は force push が必要になります）。
+```
 
-- 書き換え後の `git log --oneline <MB>..HEAD`
-- バックアップブランチ名と元の HEAD SHA (復旧用)
-- SHA が変わったので push には `git push --force-with-lease` が必要な旨。**push はユーザーの責務であり、このスキルでは行わない**
-- 問題なければバックアップブランチはユーザー自身で削除してよい旨
+For method B, present the following report template to the user in Japanese (fill in log, branch, SHA):
 
-### 10. `--autosquash` 指定時: 続けて autosquash する
+```
+書き換え後の履歴（git log --oneline <MB>..HEAD）:
+<LOG>
 
-`--autosquash` が渡されていた場合のみ実行する。手順 8 の確認が通り、ワーキングツリーに想定外の残余がないことを確かめたうえで、[[autosquash]] スキルを起動して履歴をまとめる。手順 2 で確定した base を autosquash 側へ引き継ぎ、base の再確定をやり直させない。
+バックアップブランチ: <BRANCH>（元のHEAD: <ORIGINAL_SHA>）
+SHAが変わったため、pushには git push --force-with-lease が必要です。pushはご自身でお願いします（このスキルではpushしません）。
+問題なければバックアップブランチはご自身で削除できます。
+```
 
-autosquash が途中で失敗した場合 (コンフリクト等) は、autosquash スキル側の失敗時手順に従う。**fixup コミット自体は既に作成済みなので、勝手に取り消さない。**
+### 10. With `--autosquash`: continue with autosquash
 
-完了後は autosquash 後の `git log --oneline <MB>..HEAD` と、force push が必要な旨を報告する。**push はこのスキルでは行わない。**
+Run only when `--autosquash` was passed. After the step 8 check passes and the working tree has no unexpected leftovers, launch the [[autosquash]] skill to consolidate history. Hand over the base determined in step 2 to the autosquash side so it does not re-determine the base.
 
-## 注意事項
+If autosquash fails midway (conflicts, etc.), follow the failure procedure on the autosquash skill side. **The fixup commits are already created, so do not revert them on your own.** Present the following to the user in Japanese: `"autosquashで失敗しましたが、fixupコミットは作成済みのため戻しません。autosquash側の失敗手順に従ってください。"`
 
-- **保護ブランチ上では実行しない。** 現在ブランチが `main` / `master` / `develop` などの場合は中断する。
-- **base より前のコミットには fixup しない。** <MB>..HEAD の範囲外は他人の履歴なので触らない。範囲外にしか帰属先が無い変更は、通常のコミットにするようユーザーに提案する。
-- **既存の `fixup!` / `squash!` コミットには fixup しない。** それらはさらに元のコミットへ紐づいているため、二重 fixup は混乱の元。
-- **hunk 単位で分割したら staged 内容を必ず検証する。** patch 経由の分割は別の hunk を巻き込む余地があるので、`git diff --cached` で意図した hunk だけが載っていることを確認してから commit する。
-- **`git add -A` / `git add .` は使わない。** 常にファイルを明示指定する (`.env` などの誤コミット防止)。
-- **force push はしない。** autosquash 後 / 履歴書き換え後の push はユーザーの責務。
-- **方式 B は履歴を破壊的に書き換える。** 実行前に必ずバックアップブランチを作り、`--dry-run` で確認する。マージコミットを含む履歴では使えないので、`git log --merges <MB>..HEAD` にヒットする場合は方式 A に切り替える。
-- **方式 B では `--update-refs=head` を既定で使う。** 既定値の `--update-refs=branches` だと、B-1 で作成したバックアップブランチが対象コミットと同じ SHA を指しているため、バックアップごと書き換わってしまい復旧不能になる。バックアップを保護するため常に `--update-refs=head` を指定する。
-- **方式 A では帰属先が同じでも意味単位で fixup コミットを分ける。** レビュー指摘への対応なら指摘ごとに1コミット (4-4 参照)。
-- 帰属先が本当にわからない変更は「新規コミットにする」選択肢を必ず残す。無理に既存コミットへ紛れ込ませない。
+After completion, present the following report template to the user in Japanese (fill in log). **This skill does not push.**
+
+```
+autosquash後の履歴（git log --oneline <MB>..HEAD）:
+<LOG>
+
+SHAが変わったため force push が必要になります。pushはご自身でお願いします（このスキルではpushしません）。
+```
+
+## Notes
+
+- **Do not run on a protected branch.** Stop if the current branch is `main` / `master` / `develop` or similar.
+- **Do not fixup into commits older than the base.** The range outside <MB>..HEAD is other people's history, so leave it alone. For changes whose only owning commit is outside the range, suggest making a regular commit to the user.
+- **Do not fixup into existing `fixup!` / `squash!` commits.** They are themselves tied to an original commit, so double fixup only causes confusion.
+- **Always verify staged content after splitting per hunk.** Splitting via patch can sweep in the wrong hunk, so confirm with `git diff --cached` that only the intended hunks are staged before committing.
+- **Do not use `git add -A` / `git add .`.** Always specify files explicitly (prevents accidental commits of files like `.env`).
+- **Do not force-push.** Pushing after autosquash / history rewrite is the user's responsibility.
+- **Method B rewrites history destructively.** Always create a backup branch before running, and confirm with `--dry-run`. It cannot be used on history containing merge commits, so stop and ask the user whether to switch to method A when `git log --merges <MB>..HEAD` returns hits (see Arguments).
+- **Method B uses `--update-refs=head` by default.** With the default `--update-refs=branches`, the backup branch created in B-1 points at the same SHA as the target commit, so the backup itself would be rewritten and recovery would become impossible. Always specify `--update-refs=head` to protect the backup.
+- **With method A, split fixup commits by unit of meaning even for the same owning commit.** One commit per review comment (see 4-4).
+- For changes whose owner is genuinely unknown, always leave the "make a new commit" option open. Do not force them into an existing commit.

@@ -1,84 +1,131 @@
 ---
 name: pr-brief
 description: >-
-  対象PRの背景知識を整理するスキル。
-  PR本文・紐づくJiraチケット（親エピック・関連チケット含む）・リポジトリ内の設計資料を
-  並行して収集し、PRの位置づけ・機能全体像・用語集・既知の意図的な負債を整理して日本語で報告する。
-  「PR #NNN の背景を説明して」「このPRの前提知識を整理して」「PRの全体像を把握したい」
-  「pr brief」などの依頼で使用する。
-  コードのdiff自体の評価は行わない（それはコードレビュー系のスキルの担当）。
+  Skill for organizing background knowledge about a target PR.
+  Collects the PR body, linked Jira tickets (including parent epics and related
+  tickets), and design documents in the repository in parallel, then reports the
+  PR's positioning, feature big picture, glossary, and known intentional debt in Japanese.
+  Use when asked things like "explain the background of PR #NNN", "organize the
+  prerequisite knowledge for this PR", "get the big picture of the PR",
+  "pr brief".
+  Does not evaluate the diff itself (that belongs to code-review skills).
 ---
 
-# PRの背景整理
+# PR Background Brief
 
-対象PRの背景知識を収集し、diff を読み始める前に必要な文脈を1つの文書に整理する。
+Collect background knowledge about the target PR and organize everything needed
+before starting to read the diff into a single document.
 
-## サブエージェントの起動
+## Launching Subagents
 
-このドキュメントで「サブエージェント」と書いてある箇所は、独立したコンテキストを持つ子エージェントへ調査を委譲することを指す。実行中の agent が持つ手段に読み替える。
+Wherever this document says "subagent", it means delegating research to a child
+agent with an independent context. Map it to whatever mechanism the running
+agent provides.
 
-- Claude Code: `Agent` ツール。調査役は `general-purpose`、読み取り専用の探索役は `Explore` を使う。並列起動は複数の `Agent` 呼び出しを1メッセージにまとめる
-- Codex CLI: `spawn_agent` を必要数発行してから `wait` する (`features.multi_agent` が必要。ロールは `config.toml` の `[agents]` から選ぶ)
+- Claude Code: the `Agent` tool. Use `general-purpose` for research roles and
+  `Explore` for read-only exploration roles. Launch parallel agents by grouping
+  multiple `Agent` calls in one message
+- Codex CLI: issue the needed number of `spawn_agent` calls, then `wait`
+  (requires `features.multi_agent`. Pick roles from `[agents]` in `config.toml`)
 
-並列実行の手段が無い agent では逐次実行に落とし、その旨を書き添える。
+Agents with no parallel-execution mechanism fall back to sequential execution
+and note that in the output.
 
-## 入力の確定
+## Confirming Input
 
-1. PR番号（と必要ならリポジトリ）を特定する。番号だけ渡された場合、カレントディレクトリ（メタリポジトリなら該当サブリポジトリに `cd`）の `gh` で解決する。
-2. 曖昧なら `gh pr list --search` で候補を出してユーザーに確認する。
+1. Identify the PR number (and repository if needed). When only a number is
+   given, resolve it with `gh` in the current directory (`cd` into the relevant
+   sub-repository for meta-repos).
+2. If ambiguous, list candidates with `gh pr list --search` and present the
+   following to the user in Japanese. Use a selection UI tool (such as
+   `AskUserQuestion`) where available; otherwise present the same options as a
+   numbered plain-text list and wait for an answer:
 
-## Step 1: PR情報の取得（自分で実行）
+   ```
+   対象のPRが複数見つかりました。どれを対象にしますか?
+   - <候補1: 番号 / タイトル>
+   - <候補2: 番号 / タイトル>
+   ```
+
+## Step 1: Fetch PR Information (run yourself)
 
 ```bash
-gh pr view <番号> --json title,body,author,baseRefName,headRefName,files,additions,deletions,url,commits
+gh pr view <number> --json title,body,author,baseRefName,headRefName,files,additions,deletions,url,commits
 ```
 
-`jq` で整形して読む。本文から以下を抽出する:
+Format with `jq` and extract the following from the body:
 
-- 紐づくJiraチケットキー（`browse/XXX-NNN` 形式のURL）。本文中に複数出てくる関連チケットもすべて控える
-- マージ先ブランチ（develop直行か統合ブランチか）
-- 本番影響の有無、リリース種別
-- PR本文が参照する設計資料のパス（`docs/`、`specs/` など）
-- PR本文中の専門用語・略語（QD-x、スライス番号 S0〜S7 のような社内記法）
+- Linked Jira ticket keys (`browse/XXX-NNN` style URLs). Note every related
+  ticket mentioned in the body, not just the main one
+- Merge target branch (straight to develop vs. an integration branch)
+- Whether production is affected, and the release type
+- Paths of design documents referenced by the PR body (`docs/`, `specs/`, etc.)
+- Technical terms and abbreviations in the PR body (internal notations such as
+  QD-x or slice numbers S0-S7)
 
-## Step 2: 並行調査（サブエージェントに委譲）
+## Step 2: Parallel Research (delegate to subagents)
 
-**2つのサブエージェントを並列で起動する。**
+**Launch two subagents in parallel.**
 
-### 調査A: Jira調査（調査役）
+### Research A: Jira Research (research role)
 
-promptに含めること:
+Include in the prompt:
 
-- Jiraへのアクセスは Atlassian MCP のツール（チケット取得・JQL検索、必要ならアクセス可能リソースの取得）を使う、と明記する。ツール名は agent ごとに異なり、遅延ロード方式の agent では先にツール定義をロードする必要がある旨も伝える
-- 本体チケット: 本文と全コメントを取得
-- 親エピック・関連チケット: 本文または概要を取得（関連は1〜2行の位置づけで十分と指示）
-- チケット中の専門用語・略語の定義を抜き出すよう指示
-- 「取得できない場合はJQLで探す。推測で捏造しない」と明記する
+- State that Jira access uses the Atlassian MCP tools (ticket fetch / JQL
+  search, plus fetching accessible resources if needed). Note that tool names
+  differ per agent, and agents with lazy loading must load the tool definitions
+  first
+- Main ticket: fetch the body and all comments
+- Parent epic and related tickets: fetch the body or summary (note that 1-2
+  lines of positioning are enough for related tickets)
+- Instruct them to extract definitions of technical terms and abbreviations in
+  the tickets
+- State explicitly: "if it cannot be fetched, search with JQL. Never fabricate
+  by guessing"
 
-### 調査B: リポジトリ設計資料調査（読み取り専用の探索役）
+### Research B: Repository Design-Document Research (read-only exploration role)
 
-promptに含めること:
+Include in the prompt:
 
-- 対象リポジトリの絶対パスと、PRのhead/baseブランチ名
-- **ワークツリーのHEADは古い可能性があるため、`git show origin/<PRブランチ>:<path>` でPRブランチ上のファイルを読む**よう明記する（fetchが必要なら先に `git fetch origin <branch>`）
-- 調べる対象:
-  - サービス・モジュールの全体像（README、`docs/architecture/` 等）とレイヤ構成・依存ルール
-  - PR本文が参照する設計ドキュメント・仕様書
-  - PRが導入する型・関数の依存先となる既存の型定義や既存パターン（PR本文で「〜と同型」とされる既存コード）
-  - エラーハンドリングやルーティングなど、PRの変更が組み込まれる仕組み
-- 「ファイル全文の貼り付けは不要。概念と契約を説明できる粒度で、`path:line` 参照付きで整理する」と指示する
+- The absolute path of the target repository and the PR's head/base branch names
+- **Because the worktree HEAD may be stale, read files on the PR branch with
+  `git show origin/<branch>:<path>`** (run `git fetch origin <branch>` first if
+  a fetch is needed)
+- Research targets:
+  - The service/module big picture (README, `docs/architecture/`, etc.) plus
+    layer structure and dependency rules
+  - Design documents and specs referenced by the PR body
+  - Existing type definitions and established patterns the PR's new types and
+    functions depend on (existing code described in the PR body as "same shape
+    as ~")
+  - The mechanism the PR's changes plug into, such as error handling or routing
+- Instruct: "no need to paste full file contents. Explain at a granularity
+  that conveys concepts and contracts, with `path:line` references"
 
-## Step 3: 背景説明の作成
+## Step 3: Write the Background Brief
 
-両サブエージェントの結果とPR本文を突き合わせ、以下の構成で日本語の文書を書く:
+Cross-check both subagents' results against the PR body and present the
+following to the user in Japanese:
 
-1. **PRの位置づけ**: 何を追加するPRか、規模、作者、本番影響、マージ先、到達可能性（配線済みか未配線か）など、このPRの重みを決める前提
-2. **機能全体像**: 親チケットが目指す機能と、その中でこのPRが担うスライス・フェーズ
-3. **PRの構成要素**: ファイル→役割の対応表と、主要な設計判断・契約変更
-4. **用語集**: PR本文・チケット・コードに出てくる専門用語と社内略語。出典が見つからなかった略語は「見つからなかった」と明記する
-5. **既知の意図的な負債**: PR本文やコード内で自己申告済みの制限・切り出し先チケット
+```
+1. **PRの位置づけ**: このPRが追加する内容、規模、作成者、本番影響、
+   マージ先、配線状況(組み込み済みか未配線か)など、このPRの重みを決める前提
+2. **機能全体像**: 親チケットのゴールと、その中でこのPRが担うスライス/フェーズ
+3. **PRの構成要素**: ファイルと役割の対応、主要な設計判断、契約変更
+4. **用語集**: PR本文・チケット・コードに登場する技術用語や内部略語。
+   出典が見つからない略語は、見つからなかったことを明記する
+5. **既知の意図的な負債**: PR本文やコードで自己申告された制限と、
+   分割されたフォローアップチケット
+```
 
-## 注意
+## Notes
 
-- このスキルはdiffの評価自体はしない。提示後、次に何をするか（diffを読む、レビューする等）を一言添えて終える
-- サブエージェントの報告は鵜呑みにせず、明らかに矛盾する点は元データ（PR本文・チケット）と照合する
+- This skill does not evaluate the diff itself. After presenting the brief,
+  present the following to the user in Japanese as a one-line next step
+  (read the diff, review, etc.):
+
+  ```
+  次に差分を読みますか? レビューに進めますか?
+  ```
+- Do not take subagent reports at face value; cross-check anything clearly
+  contradictory against the source data (PR body, tickets)
