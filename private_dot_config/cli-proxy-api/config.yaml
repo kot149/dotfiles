@@ -1,6 +1,7 @@
-# NOTE: claudezen appends a codex-api-key stanza for OpenCode Zen at runtime
-# into $XDG_CACHE_HOME/cli-proxy-api/zen-config.yaml (port 8318).
-# Do not add codex-api-key here; it would break that merge.
+# NOTE: claudex builds a runtime-merged config at
+# $XDG_CACHE_HOME/cli-proxy-api/claude-config.yaml that only rewrites the
+# port (8319 on zsh, since 8317 is held outside WSL on this machine; 8317 on
+# PowerShell/Windows). Keep this file free of provider stanzas and secrets.
 host: "127.0.0.1"
 port: 8317
 auth-dir: "~/.cli-proxy-api"

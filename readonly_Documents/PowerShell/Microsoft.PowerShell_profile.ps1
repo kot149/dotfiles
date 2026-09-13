@@ -339,6 +339,69 @@ function sonnet { claude --model claude-sonnet-5 @args }
 function opus { claude --model 'claude-opus-5[1m]' @args }
 function fable { claude --model claude-fable-5 @args }
 
+# Shared cli-proxy-api setup for claudex: a single proxy on port 8317 serves
+# Codex OAuth models (luna/sol/astra). The runtime config only rewrites the
+# port, keeping the managed config.yaml secret-free.
+function Get-CliProxyMergedConfig {
+    $port = 8317
+    $cacheDir = Join-Path $HOME '.cache\cli-proxy-api'
+    $baseConfig = Join-Path $HOME '.config\cli-proxy-api\config.yaml'
+    $mergedConfig = Join-Path $cacheDir 'claude-config.yaml'
+    if (Test-Path $baseConfig) {
+        $mergedNew = (Get-Content $baseConfig -Raw) -replace '(?m)^port:.*$', "port: $port"
+    } else {
+        $mergedNew = @"
+host: "127.0.0.1"
+port: $port
+api-keys:
+  - "sk-local-cliproxy"
+"@
+    }
+    if (-not (Test-Path $cacheDir)) {
+        New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
+    }
+    $write = $true
+    if (Test-Path $mergedConfig) {
+        if ((Get-Content $mergedConfig -Raw) -eq $mergedNew) { $write = $false }
+    }
+    if ($write) {
+        Set-Content -Path $mergedConfig -Value $mergedNew -NoNewline
+    }
+    return $mergedConfig
+}
+
+function Invoke-CliProxyEnsure {
+    $mergedConfig = Get-CliProxyMergedConfig
+    $up = $false
+    try {
+        Invoke-RestMethod -Uri 'http://127.0.0.1:8317/v1/models' -Headers @{
+            Authorization = 'Bearer sk-local-cliproxy'
+        } -TimeoutSec 1 | Out-Null
+        $up = $true
+    } catch {
+        $up = $false
+    }
+    if (-not $up) {
+        $proxy = Get-Command cli-proxy-api, server -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if (-not $proxy) {
+            Write-Error 'CLIProxyAPI is not installed'
+            return $false
+        }
+        Start-Process -FilePath $proxy.Source -ArgumentList @('-config', $mergedConfig) -WindowStyle Hidden
+        Start-Sleep -Seconds 1
+        try {
+            Invoke-RestMethod -Uri 'http://127.0.0.1:8317/v1/models' -Headers @{
+                Authorization = 'Bearer sk-local-cliproxy'
+            } -TimeoutSec 2 | Out-Null
+        } catch {
+            Write-Error 'claude proxy failed to start on 127.0.0.1:8317 (see server.log)'
+            return $false
+        }
+    }
+    return $true
+}
+
 function Invoke-ClaudeGpt {
     param(
         [Parameter(Mandatory)][string]$Model,
@@ -355,21 +418,7 @@ function Invoke-ClaudeGpt {
         $SubagentEffort = $Effort
     }
 
-    try {
-        Invoke-RestMethod -Uri 'http://127.0.0.1:8317/v1/models' -Headers @{
-            Authorization = 'Bearer sk-local-cliproxy'
-        } -TimeoutSec 1 | Out-Null
-    } catch {
-        $proxy = Get-Command cli-proxy-api, server -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-        if (-not $proxy) {
-            Write-Error 'CLIProxyAPI is not installed'
-            return
-        }
-        $config = Join-Path $HOME '.config\cli-proxy-api\config.yaml'
-        Start-Process -FilePath $proxy.Source -ArgumentList @('-config', $config) -WindowStyle Hidden
-        Start-Sleep -Seconds 1
-    }
+    if (-not (Invoke-CliProxyEnsure)) { return }
 
     $names = @(
         'ANTHROPIC_BASE_URL',
@@ -378,6 +427,7 @@ function Invoke-ClaudeGpt {
         'ANTHROPIC_DEFAULT_OPUS_MODEL',
         'ANTHROPIC_DEFAULT_SONNET_MODEL',
         'CLAUDE_CODE_SUBAGENT_MODEL',
+        'CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY',
         'CLAUDE_CODE_ALWAYS_ENABLE_EFFORT',
         'CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY',
         'CLAUDE_CODE_MAX_CONTEXT_TOKENS',
@@ -403,6 +453,7 @@ function Invoke-ClaudeGpt {
         $env:ANTHROPIC_DEFAULT_OPUS_MODEL = "$SubagentModel($SubagentEffort)"
         $env:ANTHROPIC_DEFAULT_SONNET_MODEL = "$SubagentModel($SubagentEffort)"
         $env:CLAUDE_CODE_SUBAGENT_MODEL = "$SubagentModel($SubagentEffort)"
+        $env:CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY = '1'
         $env:CLAUDE_CODE_ALWAYS_ENABLE_EFFORT = '1'
         $env:CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY = '3'
         $env:CLAUDE_CODE_MAX_CONTEXT_TOKENS = '1050000'
@@ -418,149 +469,23 @@ function Invoke-ClaudeGpt {
 }
 
 function claudex {
-    if (-not $args -or $args.Count -eq 0) {
-        Write-Host 'Usage: claudex {luna|sol|astra} [...claude args]' -ForegroundColor Yellow
-        return
-    }
-    $variant = $args[0]
+    $variant = 'luna'
     $rest = @()
-    if ($args.Count -gt 1) {
-        $rest = $args[1..($args.Count - 1)]
+    if ($args -and $args.Count -gt 0) {
+        $variant = $args[0]
+        if ($args.Count -gt 1) {
+            $rest = $args[1..($args.Count - 1)]
+        }
+    }
+    if ($variant.StartsWith('-')) {
+        $rest = $args
+        $variant = 'luna'
     }
     switch ($variant) {
         'luna' { Invoke-ClaudeGpt -Model gpt-5.6-luna -Effort xhigh -ClaudeArgs $rest }
         'sol' { Invoke-ClaudeGpt -Model gpt-5.6-sol -Effort medium -SubagentModel gpt-5.6-luna -SubagentEffort xhigh -ClaudeArgs $rest }
         'astra' { Invoke-ClaudeGpt -Model gpt-6-astra -Effort low -SubagentModel gpt-5.6-luna -SubagentEffort xhigh -ClaudeArgs $rest }
         default { Write-Error "claudex: unknown variant '$variant' (expected luna|sol|astra)" }
-    }
-}
-
-function Invoke-ClaudeZen {
-    param(
-        [Parameter(Mandatory)][string]$Alias,
-        [Parameter(ValueFromRemainingArguments=$true)][string[]]$ClaudeArgs
-    )
-
-    $port = 8318
-    $cacheDir = Join-Path $HOME '.cache\cli-proxy-api'
-    $baseConfig = Join-Path $HOME '.config\cli-proxy-api\config.yaml'
-    $mergedConfig = Join-Path $cacheDir 'zen-config.yaml'
-
-    $zenKey = $env:OPENCODE_API_KEY
-    if ([string]::IsNullOrWhiteSpace($zenKey)) {
-        $authFile = Join-Path $HOME '.local\share\opencode\auth.json'
-        if (Test-Path $authFile) {
-            try {
-                $auth = Get-Content $authFile -Raw | ConvertFrom-Json
-                $zenKey = $auth.opencode.key
-            } catch {
-                $zenKey = $null
-            }
-        }
-    }
-    if ([string]::IsNullOrWhiteSpace($zenKey)) {
-        Write-Error 'claudezen: no Zen API key (set $env:OPENCODE_API_KEY or run opencode /connect for OpenCode Zen)'
-        return
-    }
-
-    $stanza = @"
-disable-image-generation: true
-codex-api-key:
-  - api-key: "$zenKey"
-    base-url: "https://opencode.ai/zen/v1"
-    models:
-      - name: "muse-spark-1.3-contributor-free"
-        alias: "$Alias"
-        display-name: "Muse Spark 1.3 (Contributor Free)"
-"@
-    $base = @"
-host: "127.0.0.1"
-port: 8318
-api-keys:
-  - "sk-local-cliproxy"
-"@
-    if (Test-Path $baseConfig) {
-        $base = (Get-Content $baseConfig -Raw) -replace '(?m)^port:.*$', 'port: 8318'
-    }
-    $mergedNew = $base + "`n" + $stanza + "`n"
-    if (-not (Test-Path $cacheDir)) {
-        New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
-    }
-    $write = $true
-    if (Test-Path $mergedConfig) {
-        $existing = Get-Content $mergedConfig -Raw
-        if ($existing -eq $mergedNew) { $write = $false }
-    }
-    if ($write) {
-        Set-Content -Path $mergedConfig -Value $mergedNew -NoNewline
-    }
-
-    try {
-        Invoke-RestMethod -Uri "http://127.0.0.1:$port/v1/models" -Headers @{
-            Authorization = 'Bearer sk-local-cliproxy'
-        } -TimeoutSec 1 | Out-Null
-    } catch {
-        $proxy = Get-Command cli-proxy-api, server -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-        if (-not $proxy) {
-            Write-Error 'CLIProxyAPI is not installed'
-            return
-        }
-        Start-Process -FilePath $proxy.Source -ArgumentList @('-config', $mergedConfig) -WindowStyle Hidden
-        Start-Sleep -Seconds 1
-    }
-
-    $names = @(
-        'ANTHROPIC_BASE_URL',
-        'ANTHROPIC_AUTH_TOKEN',
-        'ANTHROPIC_DEFAULT_HAIKU_MODEL',
-        'ANTHROPIC_DEFAULT_OPUS_MODEL',
-        'ANTHROPIC_DEFAULT_SONNET_MODEL',
-        'CLAUDE_CODE_SUBAGENT_MODEL',
-        'CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY',
-        'CLAUDE_CODE_MAX_CONTEXT_TOKENS',
-        'ENABLE_TOOL_SEARCH'
-    )
-    $previous = @{}
-    foreach ($name in $names) {
-        $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
-    }
-
-    try {
-        $env:ANTHROPIC_BASE_URL = "http://127.0.0.1:$port"
-        $env:ANTHROPIC_AUTH_TOKEN = 'sk-local-cliproxy'
-        $env:ANTHROPIC_DEFAULT_HAIKU_MODEL = $Alias
-        $env:ANTHROPIC_DEFAULT_OPUS_MODEL = $Alias
-        $env:ANTHROPIC_DEFAULT_SONNET_MODEL = $Alias
-        $env:CLAUDE_CODE_SUBAGENT_MODEL = $Alias
-        $env:CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY = '3'
-        $env:CLAUDE_CODE_MAX_CONTEXT_TOKENS = '1000000'
-        $env:ENABLE_TOOL_SEARCH = 'false'
-        claude --model $Alias @ClaudeArgs
-    } finally {
-        foreach ($name in $names) {
-            [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process')
-        }
-    }
-}
-
-function claudezen {
-    if (-not $args -or $args.Count -eq 0) {
-        Invoke-ClaudeZen -Alias 'muse-spark-1.3-contributor-free'
-        return
-    }
-    $variant = $args[0]
-    $rest = @()
-    if ($args.Count -gt 1) {
-        $rest = $args[1..($args.Count - 1)]
-    }
-    if ($variant.StartsWith('-')) {
-        Invoke-ClaudeZen -Alias 'muse-spark-1.3-contributor-free' -ClaudeArgs $args
-        return
-    }
-    switch ($variant) {
-        'muse' { Invoke-ClaudeZen -Alias 'muse-spark-1.3-contributor-free' -ClaudeArgs $rest }
-        default { Write-Error "claudezen: unknown variant '$variant' (expected muse)" }
     }
 }
 

@@ -278,6 +278,50 @@ alias opus-sonnet='CLAUDE_CODE_SUBAGENT_MODEL=claude-sonnet-5 claude --model cla
 alias fable-opus='CLAUDE_CODE_SUBAGENT_MODEL=claude-opus-5 claude --model claude-fable-5-1 --append-system-prompt "Delegate task and work execution to subagents with clear, appropriately-scoped instructions. You oversee the overall progress and planning. Exceptions based on your own judgment are allowed."'
 alias opus-opus='CLAUDE_CODE_SUBAGENT_MODEL=claude-opus-5 claude --model claude-opus-5 --append-system-prompt "Delegate task and work execution to subagents with clear, appropriately-scoped instructions. You oversee the overall progress and planning. Exceptions based on your own judgment are allowed."'
 
+# Shared cli-proxy-api setup for claudex: a single proxy serves Codex OAuth
+# models (luna/sol/astra). Port is 8319 on zsh (8317 is held outside WSL on
+# this machine; plain Linux/macOS work the same) and 8317 on PowerShell
+# (Windows). The runtime config only rewrites the port, keeping the managed
+# config.yaml secret-free.
+_cli_proxy_merged_config() {
+  local port=8319
+  local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/cli-proxy-api"
+  local base_config="${XDG_CONFIG_HOME:-$HOME/.config}/cli-proxy-api/config.yaml"
+  local merged_config="$cache_dir/claude-config.yaml"
+  local merged_new
+  if [[ -f "$base_config" ]]; then
+    merged_new="$(sed "s/^port:[[:space:]]*.*/port: $port/" "$base_config")"
+  else
+    merged_new="$(printf 'host: "127.0.0.1"\nport: %s\napi-keys:\n  - "sk-local-cliproxy"' "$port")"
+  fi
+  mkdir -p "$cache_dir"
+  if [[ ! -f "$merged_config" ]] || [[ "$merged_new" != "$(cat "$merged_config")" ]]; then
+    (umask 077; printf '%s\n' "$merged_new" >"$merged_config")
+  fi
+  printf '%s' "$merged_config"
+}
+
+_cli_proxy_ensure() {
+  local port=8319
+  local merged_config="$(_cli_proxy_merged_config)"
+  if ! curl --silent --fail --max-time 1 "http://127.0.0.1:$port/v1/models" \
+      -H 'Authorization: Bearer sk-local-cliproxy' >/dev/null 2>&1; then
+    local proxy_bin
+    proxy_bin=$(command -v cli-proxy-api 2>/dev/null || command -v server 2>/dev/null) || {
+      echo "CLIProxyAPI is not installed" >&2
+      return 1
+    }
+    "$proxy_bin" -config "$merged_config" \
+      >"${XDG_CACHE_HOME:-$HOME/.cache}/cli-proxy-api/server.log" 2>&1 &!
+    sleep 1
+    if ! curl --silent --fail --max-time 2 "http://127.0.0.1:$port/v1/models" \
+        -H 'Authorization: Bearer sk-local-cliproxy' >/dev/null 2>&1; then
+      echo "claude proxy failed to start on 127.0.0.1:$port (see server.log)" >&2
+      return 1
+    fi
+  fi
+}
+
 _claude_gpt() {
   local model="$1"
   local effort="$2"
@@ -298,25 +342,15 @@ _claude_gpt() {
   printf -v agents_json '{"luna":{"description":"General-purpose agent using the configured Luna model","prompt":"Complete the delegated task accurately and concisely.","model":"%s(%s)"}}' \
     "$subagent_model" "$subagent_effort"
 
-  if ! curl --silent --fail --max-time 1 http://127.0.0.1:8317/v1/models \
-      -H 'Authorization: Bearer sk-local-cliproxy' >/dev/null 2>&1; then
-    local proxy_bin
-    proxy_bin=$(command -v cli-proxy-api 2>/dev/null || command -v server 2>/dev/null) || {
-      echo "CLIProxyAPI is not installed" >&2
-      return 1
-    }
-    mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}/cli-proxy-api"
-    "$proxy_bin" -config "${XDG_CONFIG_HOME:-$HOME/.config}/cli-proxy-api/config.yaml" \
-      >"${XDG_CACHE_HOME:-$HOME/.cache}/cli-proxy-api/server.log" 2>&1 &!
-    sleep 1
-  fi
+  _cli_proxy_ensure || return 1
 
-  ANTHROPIC_BASE_URL=http://127.0.0.1:8317 \
+  ANTHROPIC_BASE_URL=http://127.0.0.1:8319 \
   ANTHROPIC_AUTH_TOKEN=sk-local-cliproxy \
   ANTHROPIC_DEFAULT_HAIKU_MODEL="${subagent_model}(${subagent_effort})" \
   ANTHROPIC_DEFAULT_OPUS_MODEL="${subagent_model}(${subagent_effort})" \
   ANTHROPIC_DEFAULT_SONNET_MODEL="${subagent_model}(${subagent_effort})" \
   CLAUDE_CODE_SUBAGENT_MODEL="${subagent_model}(${subagent_effort})" \
+  CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1 \
   CLAUDE_CODE_ALWAYS_ENABLE_EFFORT=1 \
   CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY=3 \
   CLAUDE_CODE_MAX_CONTEXT_TOKENS=1050000 \
@@ -328,88 +362,20 @@ _claude_gpt() {
 }
 
 claudex() {
-  if (( $# == 0 )); then
-    echo "Usage: claudex {luna|sol|astra} [...claude args]" >&2
-    return 1
+  local variant="luna"
+  if (( $# > 0 )); then
+    variant="$1"
+    shift
   fi
-  local variant="$1"
-  shift
+  if [[ "$variant" == -* ]]; then
+    set -- "$variant" "$@"
+    variant="luna"
+  fi
   case "$variant" in
     luna) _claude_gpt gpt-5.6-luna xhigh "$@" ;;
     sol) _claude_gpt gpt-5.6-sol medium gpt-5.6-luna xhigh "$@" ;;
     astra) _claude_gpt gpt-6-astra low gpt-5.6-luna xhigh "$@" ;;
     *) echo "claudex: unknown variant '$variant' (expected luna|sol|astra)" >&2; return 1 ;;
-  esac
-}
-
-_claude_zen() {
-  local alias="$1"
-  shift
-  local port=8318
-  local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/cli-proxy-api"
-  local base_config="${XDG_CONFIG_HOME:-$HOME/.config}/cli-proxy-api/config.yaml"
-  local merged_config="$cache_dir/zen-config.yaml"
-
-  local zen_key="${OPENCODE_API_KEY:-}"
-  if [[ -z "$zen_key" ]]; then
-    local auth_file="${XDG_DATA_HOME:-$HOME/.local/share}/opencode/auth.json"
-    if [[ -f "$auth_file" ]] && command -v jq >/dev/null 2>&1; then
-      zen_key=$(jq -r '.opencode.key // empty' "$auth_file")
-    fi
-  fi
-  if [[ -z "$zen_key" ]]; then
-    echo "claudezen: no Zen API key (set OPENCODE_API_KEY or run opencode /connect for OpenCode Zen)" >&2
-    return 1
-  fi
-
-  local stanza
-  stanza=$(printf 'disable-image-generation: true\ncodex-api-key:\n  - api-key: "%s"\n    base-url: "https://opencode.ai/zen/v1"\n    models:\n      - name: "muse-spark-1.3-contributor-free"\n        alias: "%s"\n        display-name: "Muse Spark 1.3 (Contributor Free)"' "$zen_key" "$alias")
-  local base_text
-  if [[ -f "$base_config" ]]; then
-    base_text="$(sed 's/^port:[[:space:]]*.*/port: 8318/' "$base_config")"
-  else
-    base_text="$(printf 'host: "127.0.0.1"\nport: 8318\napi-keys:\n  - "sk-local-cliproxy"')"
-  fi
-  local merged_new
-  merged_new="$(printf '%s\n%s\n' "$base_text" "$stanza")"
-  mkdir -p "$cache_dir"
-  if [[ ! -f "$merged_config" ]] || [[ "$merged_new" != "$(cat "$merged_config")" ]]; then
-    printf '%s' "$merged_new" >"$merged_config"
-  fi
-
-  if ! curl --silent --fail --max-time 1 "http://127.0.0.1:$port/v1/models" \
-      -H 'Authorization: Bearer sk-local-cliproxy' >/dev/null 2>&1; then
-    local proxy_bin
-    proxy_bin=$(command -v cli-proxy-api 2>/dev/null || command -v server 2>/dev/null) || {
-      echo "CLIProxyAPI is not installed" >&2
-      return 1
-    }
-    "$proxy_bin" -config "$merged_config" \
-      >"$cache_dir/zen-server.log" 2>&1 &!
-    sleep 1
-  fi
-
-  ANTHROPIC_BASE_URL="http://127.0.0.1:$port" \
-  ANTHROPIC_AUTH_TOKEN=sk-local-cliproxy \
-  ANTHROPIC_DEFAULT_HAIKU_MODEL="$alias" \
-  ANTHROPIC_DEFAULT_OPUS_MODEL="$alias" \
-  ANTHROPIC_DEFAULT_SONNET_MODEL="$alias" \
-  CLAUDE_CODE_SUBAGENT_MODEL="$alias" \
-  CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY=3 \
-  CLAUDE_CODE_MAX_CONTEXT_TOKENS=1000000 \
-  ENABLE_TOOL_SEARCH=false \
-    claude --model "$alias" "$@"
-}
-
-claudezen() {
-  local variant="muse"
-  if (( $# > 0 )) && [[ "$1" != -* ]]; then
-    variant="$1"
-    shift
-  fi
-  case "$variant" in
-    muse) _claude_zen muse-spark-1.3-contributor-free "$@" ;;
-    *) echo "claudezen: unknown variant '$variant' (expected muse)" >&2; return 1 ;;
   esac
 }
 
