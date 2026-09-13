@@ -417,9 +417,23 @@ function Invoke-ClaudeGpt {
     }
 }
 
-function claude-luna { Invoke-ClaudeGpt -Model gpt-5.6-luna -Effort xhigh -ClaudeArgs $args }
-function claude-sol { Invoke-ClaudeGpt -Model gpt-5.6-sol -Effort medium -SubagentModel gpt-5.6-luna -SubagentEffort xhigh -ClaudeArgs $args }
-function claude-astra { Invoke-ClaudeGpt -Model gpt-6-astra -Effort low -SubagentModel gpt-5.6-luna -SubagentEffort xhigh -ClaudeArgs $args }
+function claudex {
+    if (-not $args -or $args.Count -eq 0) {
+        Write-Host 'Usage: claudex {luna|sol|astra} [...claude args]' -ForegroundColor Yellow
+        return
+    }
+    $variant = $args[0]
+    $rest = @()
+    if ($args.Count -gt 1) {
+        $rest = $args[1..($args.Count - 1)]
+    }
+    switch ($variant) {
+        'luna' { Invoke-ClaudeGpt -Model gpt-5.6-luna -Effort xhigh -ClaudeArgs $rest }
+        'sol' { Invoke-ClaudeGpt -Model gpt-5.6-sol -Effort medium -SubagentModel gpt-5.6-luna -SubagentEffort xhigh -ClaudeArgs $rest }
+        'astra' { Invoke-ClaudeGpt -Model gpt-6-astra -Effort low -SubagentModel gpt-5.6-luna -SubagentEffort xhigh -ClaudeArgs $rest }
+        default { Write-Error "claudex: unknown variant '$variant' (expected luna|sol|astra)" }
+    }
+}
 
 function git-logout {
 	cmdkey /delete:git:https://github.com
