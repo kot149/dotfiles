@@ -108,6 +108,7 @@ keybind = ctrl+digit_8=unbind
 keybind = ctrl+8=unbind
 keybind = ctrl+9=unbind
 keybind = ctrl+enter=unbind
+keybind = cmd+enter=unbind
 keybind = ctrl+q=unbind
 keybind = ctrl+k=unbind
 keybind = ctrl+a=unbind
