@@ -1,7 +1,7 @@
 ---
 name: meta-review
-description: Verify review feedback (from human reviewers, AI reviews such as Codex/deep-review, GitHub PR comments, lint bots) instead of taking it at face value, by handing each finding to a fresh subagent that has no conversation context and must judge it from the real code. The point is to remove both the reviewer's assumptions and the author's hindsight bias. Use when the user asks "is this finding valid?", "verify these review comments", "should I really fix this?", "don't just accept the feedback, check it", or before acting on findings from Codex/deep-review/GitHub PR reviews. Judges validity only by default; pass `--fix` to also apply the findings that were judged valid.
-argument-hint: "[target: PR number/URL/text] [--fix]"
+description: Verify review feedback (from human reviewers, AI reviews such as Codex/deep-review, GitHub PR comments, lint bots) instead of taking it at face value, by handing each finding to a fresh subagent that has no conversation context and must judge it from the real code. The point is to remove both the reviewer's assumptions and the author's hindsight bias. Use when the user asks "is this finding valid?", "verify these review comments", "should I really fix this?", "don't just accept the feedback, check it", or before acting on findings from Codex/deep-review/GitHub PR reviews. Judges validity only by default; pass `--fix` to also apply the findings that were judged valid, or `--post` to post them as pending PR review comments instead.
+argument-hint: "[target: PR number/URL/text] [--fix|--post]"
 ---
 
 # meta-review
@@ -17,8 +17,9 @@ If `$ARGUMENTS` contains a PR number/URL, file path, or finding text, treat that
 ## Flags
 
 - `--fix`: after presenting the verdicts, apply the VALID / PARTIALLY_VALID findings (step 5). Without it, stop at the verdicts.
+- `--post`: after presenting the verdicts, post the VALID / PARTIALLY_VALID findings as pending PR review comments (step 4b) instead of fixing. Only valid when the target is a GitHub PR; for any other target, warn that `--post` is invalid, ignore it, and stop at the verdicts as usual.
 
-Strip the flag out of `$ARGUMENTS` before using the rest as the target. A plain-language equivalent in the request ("fix the valid ones", "verify and fix") counts as `--fix`.
+Strip the flag out of `$ARGUMENTS` before using the rest as the target. A plain-language equivalent in the request ("fix the valid ones", "verify and fix") counts as `--fix`; ("post them as PR comments", "post as pending review") counts as `--post`. If both `--fix` and `--post` are given (or the user asks for both), run step 4b (post) then step 5 (fix), in that order.
 
 ## Subagents
 
@@ -134,7 +135,20 @@ Present as plain Markdown text, grouped by VERDICT:
 3. STALE findings (noting they are already handled)
 4. UNVERIFIABLE findings (what could not be determined)
 
-Without `--fix`, **stop here and do not proceed to fixes**, leaving the decision to act to the user. With `--fix`, present this list first and then continue to step 5 in the same turn.
+Without `--fix` or `--post`, **stop here and do not proceed further**, leaving the decision to act to the user. With `--fix` and/or `--post`, present this list first and then continue to step 4b and/or step 5 in the same turn.
+
+### 4b. Post pending PR review comments (`--post` only)
+
+Only run this when `--post` was given and the target is a GitHub PR. Skip it entirely otherwise (including when `--post` was given for a non-PR target, per the Flags section above).
+
+Delegate the actual posting procedure to the [[pending-review-comments]] skill; that skill owns the pending-state rules, dedupe against existing comments, and error handling. Prepare its input as follows:
+
+- Scope: VALID findings, plus the parts of PARTIALLY_VALID findings that the judge said hold. Never pass INVALID, STALE, or UNVERIFIABLE findings
+- Pass each finding with `FILE` / `LINE` / `CLAIM` / `EVIDENCE` / `REASON` aligned to that skill's expected input (file path, line, and body at minimum)
+- Label each comment head as `[meta-review]` plus the verdict (e.g. `[meta-review / PARTIALLY_VALID]`)
+- Include the evidence quotes in the comment body where available
+
+After posting, report the result (posted / skipped / excluded as duplicates, per that skill's report format). If `--fix` was also given, continue to step 5 next in the same turn; otherwise finish here.
 
 ### 5. Apply the valid findings (`--fix` only)
 
