@@ -1,6 +1,7 @@
 ---
 name: meta-review
 description: Verify review feedback (from human reviewers, AI reviews such as Codex/deep-review, GitHub PR comments, lint bots) instead of taking it at face value, by handing each finding to a fresh subagent that has no conversation context and must judge it from the real code. The point is to remove both the reviewer's assumptions and the author's hindsight bias. Use when the user asks "is this finding valid?", "verify these review comments", "should I really fix this?", "don't just accept the feedback, check it", or before acting on findings from Codex/deep-review/GitHub PR reviews. Judges validity only by default; pass `--fix` to also apply the findings that were judged valid.
+argument-hint: "[target: PR number/URL/text] [--fix]"
 ---
 
 # meta-review
