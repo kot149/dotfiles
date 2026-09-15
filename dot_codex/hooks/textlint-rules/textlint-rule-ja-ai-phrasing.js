@@ -39,6 +39,7 @@ const VAGUE_SUBJECTS = new Set([
 ]);
 const FINANCIAL_FAILURE = new Set(["経営", "財政", "家計", "ローン", "国家", "生活", "資金", "事業"]);
 const LANDING_PLACES = new Set(["両足", "足", "滑走路", "地面", "床", "マット", "ジャンプ", "空中"]);
+const CONTESTS = new Set(["試合", "勝負", "対戦", "決勝", "ゲーム", "選挙", "裁判", "訴訟"]);
 
 const CANON_ADVICE =
   "「正本」「正典」→ 何を基準にするのかを具体的に書く" +
@@ -107,6 +108,13 @@ const NOUN_RULES = {
     advice:
       "「着地」→「完了」など実際の状態を書く" +
       " (例: 「今週中に着地させる」→「今週中に完了させる」)",
+  },
+  決着: {
+    // 試合や勝負の「決着」は字義どおり。
+    skip: (tokens, i) => precedingNouns(tokens, i, 4).some((n) => CONTESTS.has(n)),
+    advice:
+      "「決着」→ 何がどう決まったのかを具体的に書く" +
+      " (例: 「議論が決着した」→「A案を採用すると決まった」)",
   },
   正本: { advice: CANON_ADVICE },
   帰結: {
