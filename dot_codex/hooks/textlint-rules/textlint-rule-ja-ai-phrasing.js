@@ -36,6 +36,10 @@ const VAGUE_SUBJECTS = new Set([
   "バランス",
   "方針",
   "抽象",
+  "ここ",
+  "そこ",
+  "点",
+  "方向",
 ]);
 const FINANCIAL_FAILURE = new Set(["経営", "財政", "家計", "ローン", "国家", "生活", "資金", "事業"]);
 const LANDING_PLACES = new Set(["両足", "足", "滑走路", "地面", "床", "マット", "ジャンプ", "空中"]);
@@ -43,7 +47,7 @@ const CONTESTS = new Set(["試合", "勝負", "対戦", "決勝", "ゲーム", "
 
 const CANON_ADVICE =
   "「正本」「正典」→ 何を基準にするのかを具体的に書く" +
-  " (例: 「この定義が正本」→「この定義だけを手で書き、他はここから生成する」)";
+  " (例: 「どこが正本か読めない」→「同じ結論が3か所にあり、どれを直せばよいか決まらない」)";
 
 const VERB_RULES = {
   寄せる: {
@@ -79,18 +83,19 @@ const VERB_RULES = {
       " /「この方針で通す」→「新規ファイルでも同じ命名規則を使う」)",
   },
   壊れる: {
-    // 「ファイルが壊れる」「HDDが壊れる」は字義どおりなので、抽象的な係り元だけを拾う。
-    skip: (tokens, i) => !hasVagueSubject(tokens, i),
+    // 「ファイルが壊れる」「HDDが壊れる」は字義どおりなので、抽象的な係り元と、
+    // 対象を名指ししない「壊れるもの」「壊れるのは」の形だけを拾う。
+    skip: (tokens, i) => !hasVagueSubject(tokens, i) && !isNominalized(tokens, i),
     advice:
       "「壊れる」→ 何がどうなるのかを具体的に書く" +
-      " (例: 「仕様が壊れる」→「同じ日付が二通りに解釈される」)",
+      " (例: 「放置した場合に壊れるもの」→「放置した場合に起きること」)",
   },
   効く: {
     // 「キャッシュが効く」「薬が効く」は作用が具体的に決まっているので対象外。
     skip: (tokens, i) => !hasVagueSubject(tokens, i),
     advice:
       "「効く」→ 何にどう作用するのかを具体的に書く" +
-      " (例: 「判断に効く」→「この値を見れば採用するかどうかを決められる」)",
+      " (例: 「着手順を決めるならここが効く」→「着手順を決めるならこの点を先に見る」)",
   },
 };
 
@@ -100,21 +105,21 @@ const NOUN_RULES = {
     skip: (tokens, i) => precedingNouns(tokens, i, 2).some((n) => FINANCIAL_FAILURE.has(n)),
     advice:
       "「破綻」→ 何がどうなるのかを具体的に書く" +
-      " (例: 「整合性が破綻する」→「同じIDの行が二重に作られる」)",
+      " (例: 「3つ目の消費者が出た時点で破綻する」→「3つ目の消費者が出た時点で同じ定数を2か所で直すことになる」)",
   },
   着地: {
     // 体操や着陸の「着地」は字義どおりの動作。
     skip: (tokens, i) => precedingNouns(tokens, i, 3).some((n) => LANDING_PLACES.has(n)),
     advice:
-      "「着地」→「完了」など実際の状態を書く" +
-      " (例: 「今週中に着地させる」→「今週中に完了させる」)",
+      "「着地」→「完了」「マージ」など実際の状態を書く" +
+      " (例: 「このチケットが着地すると」→「このチケットがマージされると」)",
   },
   決着: {
     // 試合や勝負の「決着」は字義どおり。
     skip: (tokens, i) => precedingNouns(tokens, i, 4).some((n) => CONTESTS.has(n)),
     advice:
       "「決着」→ 何がどう決まったのかを具体的に書く" +
-      " (例: 「議論が決着した」→「A案を採用すると決まった」)",
+      " (例: 「既存レビューで決着済み」→「既存レビューで対応不要と決まっている」)",
   },
   整理: {
     // 「整理する」や片付けの意味ではなく、認識そのものを指す「という整理」「この整理」だけを拾う。
@@ -128,15 +133,15 @@ const NOUN_RULES = {
     },
     advice:
       "「〜という整理です」→ 認識の中身をそのまま言い切る" +
-      " (例: 「AとBは別物という整理です」→「AとBは別物として扱います」)",
+      " (例: 「このガードは保険という整理です」→「このガードは保険です」)",
   },
   正本: { advice: CANON_ADVICE },
   帰結: {
-    // 「帰結する」のような動詞用法ではなく、「〜の帰結」の形だけを指摘する。
-    skip: (tokens, i) => dictionaryForm(neighbor(tokens, i, -1)) !== "の",
+    // 「〜に帰結する」という動詞用法は対象外で、「〜の帰結」「この帰結」「必然的帰結」を拾う。
+    skip: (tokens, i) => dictionaryForm(neighbor(tokens, i, 1)) === "する",
     advice:
-      "「〜の帰結」→ 何が原因で何が起きるのかを書く" +
-      " (例: 「この設計の帰結」→「この設計を選んだ結果、参照が循環する」)",
+      "「帰結」→ 何が原因で何が起きるのかを書く" +
+      " (例: 「ヘッダ削除の帰結」→「ヘッダを削除したので、409は行内のerrorにだけ残る」)",
   },
 };
 
@@ -227,7 +232,7 @@ const QUIET_LITERAL = new Set([
 ]);
 const QUIET_ADVICE =
   "「静かに〜する」「黙って〜する」→ 何がどう起きるのかを具体的に書く" +
-  " (例: 「静かに壊れる」→「例外を投げずに空の結果を返す」)";
+  " (例: 「宣言外プロパティが黙って捨てられる」→「宣言外プロパティは検証で落ちず、応答から抜ける」)";
 
 // 「正典」だけは 正 (接頭詞) + 典 に分かれるので、トークンではなく文字列で拾う。
 const CANON_WORDS = /正典/g;
@@ -258,6 +263,12 @@ const precedingNouns = (tokens, i, span) =>
 /** 「〜が効く」「〜が壊れる」の係り元が、具体的に書き直すべき抽象語かどうか。 */
 const hasVagueSubject = (tokens, i) =>
   precedingNouns(tokens, i, 4).some((noun) => VAGUE_SUBJECTS.has(noun));
+
+/** 「壊れるもの」「壊れるのは」のように、形式名詞を受けて対象を名指ししない形。 */
+const isNominalized = (tokens, i) => {
+  const after = neighbor(tokens, i, 1);
+  return after.pos === "名詞" && after.pos_detail_1 === "非自立";
+};
 
 const dictionaryForm = (token) =>
   token.basic_form && token.basic_form !== "*" ? token.basic_form : token.surface_form;
