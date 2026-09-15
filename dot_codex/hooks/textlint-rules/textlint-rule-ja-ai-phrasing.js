@@ -7,6 +7,43 @@
  */
 import { tokenize } from "kuromojin@3.0.1";
 
+// 「効く」「壊れる」の係り元がこれらの抽象的な語のときだけ、比喩として指摘する。
+const VAGUE_SUBJECTS = new Set([
+  "判断",
+  "意思決定",
+  "決定",
+  "設計",
+  "仕様",
+  "議論",
+  "説明",
+  "理解",
+  "見通し",
+  "レビュー",
+  "品質",
+  "検討",
+  "評価",
+  "分析",
+  "前提",
+  "整合性",
+  "一貫性",
+  "意味",
+  "体験",
+  "信頼",
+  "モデル",
+  "構造",
+  "世界観",
+  "論理",
+  "バランス",
+  "方針",
+  "抽象",
+]);
+const FINANCIAL_FAILURE = new Set(["経営", "財政", "家計", "ローン", "国家", "生活", "資金", "事業"]);
+const LANDING_PLACES = new Set(["両足", "足", "滑走路", "地面", "床", "マット", "ジャンプ", "空中"]);
+
+const CANON_ADVICE =
+  "「正本」「正典」→ 何を基準にするのかを具体的に書く" +
+  " (例: 「この定義が正本」→「この定義だけを手で書き、他はここから生成する」)";
+
 const VERB_RULES = {
   寄せる: {
     advice:
@@ -40,6 +77,54 @@ const VERB_RULES = {
       " (例: 「db側のゲートもこの関数を通す」→「db側のゲートもこの関数を経由させる」" +
       " /「この方針で通す」→「新規ファイルでも同じ命名規則を使う」)",
   },
+  壊れる: {
+    // 「ファイルが壊れる」「HDDが壊れる」は字義どおりなので、抽象的な係り元だけを拾う。
+    skip: (tokens, i) => !hasVagueSubject(tokens, i),
+    advice:
+      "「壊れる」→ 何がどうなるのかを具体的に書く" +
+      " (例: 「仕様が壊れる」→「同じ日付が二通りに解釈される」)",
+  },
+  効く: {
+    // 「キャッシュが効く」「薬が効く」は作用が具体的に決まっているので対象外。
+    skip: (tokens, i) => !hasVagueSubject(tokens, i),
+    advice:
+      "「効く」→ 何にどう作用するのかを具体的に書く" +
+      " (例: 「判断に効く」→「この値を見れば採用するかどうかを決められる」)",
+  },
+};
+
+const NOUN_RULES = {
+  破綻: {
+    // 「経営破綻」「財政破綻」は確立した用語。
+    skip: (tokens, i) => precedingNouns(tokens, i, 2).some((n) => FINANCIAL_FAILURE.has(n)),
+    advice:
+      "「破綻」→ 何がどうなるのかを具体的に書く" +
+      " (例: 「整合性が破綻する」→「同じIDの行が二重に作られる」)",
+  },
+  着地: {
+    // 体操や着陸の「着地」は字義どおりの動作。
+    skip: (tokens, i) => precedingNouns(tokens, i, 3).some((n) => LANDING_PLACES.has(n)),
+    advice:
+      "「着地」→「完了」など実際の状態を書く" +
+      " (例: 「今週中に着地させる」→「今週中に完了させる」)",
+  },
+  正本: { advice: CANON_ADVICE },
+  帰結: {
+    // 「帰結する」のような動詞用法ではなく、「〜の帰結」の形だけを指摘する。
+    skip: (tokens, i) => dictionaryForm(neighbor(tokens, i, -1)) !== "の",
+    advice:
+      "「〜の帰結」→ 何が原因で何が起きるのかを書く" +
+      " (例: 「この設計の帰結」→「この設計を選んだ結果、参照が循環する」)",
+  },
+};
+
+// 五段動詞の可能形は kuromoji が別の基本形を立てる (採れる, 倒せる) ため、辞書引きの前に
+// 元の動詞へ戻す。一段動詞の可能形は「られる」が別トークンになるので、ここには要らない。
+const POTENTIAL_FORMS = {
+  採れる: "採る",
+  倒せる: "倒す",
+  通せる: "通す",
+  申し送れる: "申し送る",
 };
 
 // テストの成否の比喩でしか使わない語。単独で出ても指摘する。大文字小文字は問わない。
@@ -86,6 +171,45 @@ const LEANING_ADVICE =
   "「〜寄り」→ どちらに近いかではなく、実際の判断を言い切る" +
   " (例: 「「直さなくてよい」寄りです」→「今回は直さなくてよい」)";
 
+// 「静かに」「黙って」が人の動作を表す本来の意味で係る動詞。これらだけ対象外にする。
+const QUIET_LITERAL = new Set([
+  "話す",
+  "言う",
+  "聞く",
+  "聴く",
+  "待つ",
+  "見る",
+  "読む",
+  "座る",
+  "立つ",
+  "歩く",
+  "眠る",
+  "寝る",
+  "笑う",
+  "頷く",
+  "うなずく",
+  "過ごす",
+  "過ぎる",
+  "暮らす",
+  "食べる",
+  "する",
+  "従う",
+  "受け取る",
+  "見送る",
+  "立ち去る",
+  "去る",
+  "帰る",
+  "引き下がる",
+  "祈る",
+  "考える",
+]);
+const QUIET_ADVICE =
+  "「静かに〜する」「黙って〜する」→ 何がどう起きるのかを具体的に書く" +
+  " (例: 「静かに壊れる」→「例外を投げずに空の結果を返す」)";
+
+// 「正典」だけは 正 (接頭詞) + 典 に分かれるので、トークンではなく文字列で拾う。
+const CANON_WORDS = /正典/g;
+
 const PIN_ADVICE =
   "「pinする/される」→「固定する/される」と書く" +
   " (例: 「テストが仕様をpinする」→「テストが仕様を固定し、変わったら落ちるようにする」)";
@@ -101,6 +225,17 @@ const LEAD_LABEL_ADVICE =
   " (例: 「結論: この方式を採用する」→「この方式を採用する」/「結論としては、この方式を採用する」)";
 
 const URL = /\b(?:https?|git|ssh):\/\/\S+/g;
+
+/** 直前 span トークンに現れる名詞の基本形。係り元の判定に使う。 */
+const precedingNouns = (tokens, i, span) =>
+  tokens
+    .slice(Math.max(0, i - span), i)
+    .filter((token) => token.pos === "名詞")
+    .map((token) => dictionaryForm(token));
+
+/** 「〜が効く」「〜が壊れる」の係り元が、具体的に書き直すべき抽象語かどうか。 */
+const hasVagueSubject = (tokens, i) =>
+  precedingNouns(tokens, i, 4).some((noun) => VAGUE_SUBJECTS.has(noun));
 
 const dictionaryForm = (token) =>
   token.basic_form && token.basic_form !== "*" ? token.basic_form : token.surface_form;
@@ -163,6 +298,43 @@ const isLeaning = (tokens, i) => {
   return Boolean(base.pos) && base.pos !== "名詞";
 };
 
+/** 「静かに」「黙って」の形。それぞれ 静か + に、黙っ + て に分かれる。 */
+const isQuietAdverb = (tokens, i) => {
+  const form = dictionaryForm(tokens[i]);
+  const next = dictionaryForm(neighbor(tokens, i, 1));
+  if (tokens[i].pos === "名詞" && form === "静か") return next === "に";
+  if (tokens[i].pos === "動詞" && form === "黙る") return next === "て";
+  return false;
+};
+
+/**
+ * 「静かに」「黙って」が係る用言の基本形。名詞 + する は名詞側を返す。
+ * 目的語や読点を挟む形も拾えるよう、同じ文の中を前から探して最初の一つだけを見る。
+ */
+const quietTarget = (tokens, i) => {
+  const particle = neighborIndex(tokens, i, 1);
+  if (particle < 0) return "";
+  for (let j = particle + 1; j < tokens.length; j += 1) {
+    const token = tokens[j];
+    if (token.pos_detail_1 === "句点") return "";
+    // 補助動詞 (「〜ている」の いる) は係り先ではないので自立語だけを見る。
+    if (token.pos === "動詞" && token.pos_detail_1 === "自立") return dictionaryForm(token);
+    if (token.pos === "名詞" && dictionaryForm(neighbor(tokens, j, 1)) === "する") {
+      return dictionaryForm(token);
+    }
+  }
+  return "";
+};
+
+/** 指摘する「静かに」「黙って」の終端。該当しなければ -1。 */
+const quietEnd = (tokens, i) => {
+  if (!isQuietAdverb(tokens, i)) return -1;
+  const target = quietTarget(tokens, i);
+  if (!target || QUIET_LITERAL.has(target)) return -1;
+  const particle = tokens[neighborIndex(tokens, i, 1)];
+  return particle.word_position - 1 + particle.surface_form.length;
+};
+
 /** 動詞化した pin の動詞トークンの位置。「pin する」のように空白が挟まる形も拾う。 */
 const pinVerbIndex = (tokens, i) => {
   const j = neighborIndex(tokens, i, 1);
@@ -177,14 +349,20 @@ const pinVerbIndex = (tokens, i) => {
 /** Yield { index, length, advice, replacement } for every token that trips a rule. */
 function* findMatches(tokens) {
   for (const [i, token] of tokens.entries()) {
-    const form = dictionaryForm(token);
+    const dictionary = dictionaryForm(token);
+    const form = POTENTIAL_FORMS[dictionary] ?? dictionary;
     const surface = token.surface_form;
     const hit = { index: token.word_position - 1, length: surface.length };
+    const quiet = quietEnd(tokens, i);
 
     if (token.pos === "動詞" && VERB_RULES[form]) {
       const rule = VERB_RULES[form];
       if (rule.skip?.(tokens, i)) continue;
       yield { ...hit, advice: rule.advice, replacement: rule.fix?.[surface] };
+    } else if (token.pos === "名詞" && NOUN_RULES[form] && !NOUN_RULES[form].skip?.(tokens, i)) {
+      yield { ...hit, advice: NOUN_RULES[form].advice };
+    } else if (quiet >= 0) {
+      yield { ...hit, length: quiet - hit.index, advice: QUIET_ADVICE };
     } else if (isLeaning(tokens, i)) {
       yield { ...hit, advice: LEANING_ADVICE };
     } else if (isTestColor(tokens, i)) {
@@ -201,6 +379,13 @@ function* findMatches(tokens) {
         fixEnd: tokens[j].word_position - 1,
       };
     }
+  }
+}
+
+/** 形態素解析を経由せず、表記そのもので拾う語。 */
+function* findTextMatches(text) {
+  for (const match of text.matchAll(CANON_WORDS)) {
+    yield { index: match.index, length: match[0].length, advice: CANON_ADVICE };
   }
 }
 
@@ -225,8 +410,10 @@ function linter(context) {
     // A list item holds its own Paragraph, so this covers bulleted labels too.
     [Syntax.Paragraph]: checkLeadLabel,
     async [Syntax.Str](node) {
-      const tokens = await tokenize(maskUrls(getSource(node)));
-      for (const { index, length, advice, replacement, fixEnd } of findMatches(tokens)) {
+      const text = maskUrls(getSource(node));
+      const tokens = await tokenize(text);
+      const matches = [...findMatches(tokens), ...findTextMatches(text)];
+      for (const { index, length, advice, replacement, fixEnd } of matches) {
         const range = [index, index + length];
         // padding over index so the reported range covers the whole match.
         const options = { padding: locator.range(range) };
