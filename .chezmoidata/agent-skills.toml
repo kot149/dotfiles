@@ -55,7 +55,7 @@ agents = ["claude", "agents"]
 repo = "alibaba/open-code-review"
 rev = "494bf1c8d7a19196ab166960a06fef38d69a1d16"
 prefix = "skills"
-names = ["open-code-review", "open-code-review-delegate"]
+names = ["open-code-review-delegate"]
 agents = ["claude", "agents"]
 
 [[agent_skills]]
