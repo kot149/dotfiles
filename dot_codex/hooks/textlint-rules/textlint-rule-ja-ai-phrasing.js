@@ -116,6 +116,20 @@ const NOUN_RULES = {
       "「決着」→ 何がどう決まったのかを具体的に書く" +
       " (例: 「議論が決着した」→「A案を採用すると決まった」)",
   },
+  整理: {
+    // 「整理する」や片付けの意味ではなく、認識そのものを指す「という整理」「この整理」だけを拾う。
+    skip: (tokens, i) => {
+      const before = neighbor(tokens, i, -1);
+      const after = dictionaryForm(neighbor(tokens, i, 1));
+      if (["だ", "です"].includes(after)) return false;
+      const framed = dictionaryForm(before) === "という" || before.pos === "連体詞";
+      // 「この整理を進める」のように動作の対象になっている形は片付けの意味。
+      return !framed || ["を", "が"].includes(after);
+    },
+    advice:
+      "「〜という整理です」→ 認識の中身をそのまま言い切る" +
+      " (例: 「AとBは別物という整理です」→「AとBは別物として扱います」)",
+  },
   正本: { advice: CANON_ADVICE },
   帰結: {
     // 「帰結する」のような動詞用法ではなく、「〜の帰結」の形だけを指摘する。
