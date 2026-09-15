@@ -1,6 +1,6 @@
 /**
- * Flag Claude-flavored Japanese phrasing: vague verbs, test red/green metaphors
- * and English "pin" used as a Japanese verb.
+ * Flag Claude-flavored Japanese phrasing: vague verbs, test red/green metaphors,
+ * English "pin" used as a Japanese verb, and parenthetical notes tacked onto a heading.
  *
  * Matching is done on the part of speech and the dictionary form of each token,
  * so every conjugation is covered and same-kanji nouns (採用, 転倒) are not.
@@ -251,6 +251,12 @@ const LEAD_LABEL_ADVICE =
   "行頭の「結論:」のようなラベル → ラベルを外して本文をそのまま書くか、文に溶かす" +
   " (例: 「結論: この方式を採用する」→「この方式を採用する」/「結論としては、この方式を採用する」)";
 
+// 見出しに付けた括弧の補足。空の () は補足ではないので対象外で、丸括弧は半角と全角の両方を見る。
+const HEADING_PARENTHETICAL = /[(（][^)）\n]*[^\s()（）][^)）\n]*[)）]/g;
+const HEADING_PARENTHETICAL_ADVICE =
+  "見出しの補足 () → 括弧を外して見出しを短くし、補足は本文に書く" +
+  " (例: 「## 適用 (chezmoi apply が必要)」→「## 適用」と、本文に適用手順を書く)";
+
 const URL = /\b(?:https?|git|ssh):\/\/\S+/g;
 
 /** 直前 span トークンに現れる名詞の基本形。係り元の判定に使う。 */
@@ -439,9 +445,22 @@ function linter(context) {
     );
   };
 
+  /** Only the Str children are inspected, so a code span such as `useState()` is left alone. */
+  const checkHeading = (node) => {
+    for (const child of node.children ?? []) {
+      if (child.type !== Syntax.Str) continue;
+      for (const match of getSource(child).matchAll(HEADING_PARENTHETICAL)) {
+        const range = [match.index, match.index + match[0].length];
+        const options = { padding: locator.range(range) };
+        report(child, new RuleError(HEADING_PARENTHETICAL_ADVICE, options));
+      }
+    }
+  };
+
   return {
     // A list item holds its own Paragraph, so this covers bulleted labels too.
     [Syntax.Paragraph]: checkLeadLabel,
+    [Syntax.Header]: checkHeading,
     async [Syntax.Str](node) {
       const text = maskUrls(getSource(node));
       const tokens = await tokenize(text);

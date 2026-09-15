@@ -38,10 +38,10 @@ const check = (label, actual, expected) => {
   if (a !== e) failures.push(`${label}\n      expected: ${e}\n      actual:   ${a}`);
 };
 
-/** Every case flags exactly the given substring. */
+/** Every case flags exactly the given substrings. */
 const expectHit = async (group, cases) => {
-  for (const [text, hit] of cases) {
-    check(`${group}: ${text}`, await hits(text), [hit]);
+  for (const [text, ...hit] of cases) {
+    check(`${group}: ${text}`, await hits(text), hit);
   }
 };
 
@@ -206,6 +206,21 @@ await expectHit("行頭のラベル", [
 await expectClean("行頭でないラベル", [
   "議論の結果、結論: この方式を採用すると決めた。",
   "結論はまだ出ていない。",
+]);
+
+await expectHit("見出しの補足", [
+  ["# 適用 (chezmoi apply が必要)", "(chezmoi apply が必要)"],
+  ["## 設定（macOS のみ）", "（macOS のみ）"],
+  ["#### 前提 (1) と手順 (2)", "(1)", "(2)"],
+  ["適用 (必須)\n=====", "(必須)"],
+]);
+
+await expectClean("見出し以外の括弧と、見出しの中のコード / 空括弧", [
+  "本文に書いた補足 (これは対象外) はそのまま。",
+  "- リストの項目 (補足) も対象外。",
+  "## `useState()` の使い方",
+  "## `parse(input)` の挙動",
+  "## 引数なしの呼び出し ()",
 ]);
 
 await expectClean("URL の中身", ["https://example.com/pin/green を参照する。"]);
