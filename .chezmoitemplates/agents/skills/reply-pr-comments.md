@@ -46,6 +46,14 @@ branch's PR.
 - **Match the finding's language.** Reply in the same language as the finding
   (findings in English get English replies, findings in other languages get
   replies in that language)
+- **Batch independent commands into one message.** Commands that do not consume
+  each other's output must be issued as several tool calls in a **single**
+  message, never one call per message. Agents batch their approval prompt per
+  message, so issuing them one at a time forces the user through one prompt per
+  command. This applies to the fetches in step 1, the `git log` / `git show`
+  lookups in step 3, and above all to step 6, where every approved reply is
+  posted in one message. Split into a second message only when a command
+  genuinely needs an earlier one's output.
 
 ## Procedure
 
@@ -210,6 +218,9 @@ an answer.
 
 ### 6. Post
 
+Write every approved reply to its own file first, then post them all in one
+message as parallel tool calls. Do not post one thread per message.
+
 Reply to a review thread (`comment_id` is the `databaseId` of the first comment
 taken in step 1):
 
@@ -219,7 +230,7 @@ gh api repos/<owner>/<repo>/pulls/<number>/comments/<comment_id>/replies \
 ```
 
 Always pass the body via a file (prevents newlines and backquotes from breaking
-in the shell).
+in the shell). Give each thread its own file so the posts can run in parallel.
 
 Replying to a PR-level comment:
 
@@ -255,6 +266,8 @@ gh pr comment <number> --body-file reply.md
   mutation($id:ID!){ resolveReviewThread(input:{threadId:$id}){ thread{ isResolved } } }
   ' -F id=<thread_id>
   ```
+
+  Resolve every approved thread in one message as parallel tool calls.
 
   Do not resolve threads classified anything other than "fixed" (discussion may
   still continue)

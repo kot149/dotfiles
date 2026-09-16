@@ -18,6 +18,15 @@ $ARGUMENTS
 
 ## Steps (obey strictly)
 
+**Batch independent commands into one message.** Commands that do not consume
+each other's output must be issued as several tool calls in a **single**
+message, never one call per message. Agents batch their approval prompt per
+message, so issuing them one at a time forces the user through one prompt per
+command. This applies to Step 1 and Step 2/2b (all read-only fetches together)
+and to Step 5 (every reaction, reply, and resolve for every target thread
+together, after the judgment in Step 4b is finished). Split into a second
+message only when a command genuinely needs an earlier one's output.
+
 Step 1: **Identify the PR** — take the PR number or URL from the arguments. When
 the arguments are empty, get the PR tied to the current branch with
 `gh pr view --json number,url`. Also identify the repository owner/repo. In
@@ -115,7 +124,10 @@ follows:
   cannot be resolved) are only reported in Step 6 with their status
 
 Step 5: **Resolve the addressed threads** — for each of your own threads judged
-addressed in Step 4b (threads started by others are out of scope):
+addressed in Step 4b (threads started by others are out of scope). Decide 5a-5c
+for every target thread first, then issue all of those commands in one message
+as parallel tool calls; the reaction, the reply, and the resolve are independent
+API calls and none of them needs another's output.
 
 5a. Add a 👍 reaction to the thread's latest reviewer comment (the latest
 comment written by someone other than you). Take the target comment ID from the
