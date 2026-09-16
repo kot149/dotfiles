@@ -7,6 +7,16 @@ description: Generate a concise, meaningful commit message from staged or unstag
 
 Generate a concise, meaningful commit message based on the current staged changes.
 
+## User choice
+
+This skill ends by asking the user to choose one of several commit messages. That step is called **user choice** below. Resolve what it means once, here, before doing anything else:
+
+1. Check whether this agent has a selection UI tool, meaning a tool whose purpose is to present labelled options and receive the user's pick (Claude Code: `AskUserQuestion`; other harnesses have their own name, and some have none).
+2. **If such a tool exists, user choice means calling that tool. This is not optional and there is no discretion.** Printing the options as text instead is a failure of this skill, even when the choice feels obvious, even when only one candidate looks viable, and even when the candidates are already written into your reply.
+3. Only when the agent genuinely has no such tool does user choice mean the plain-text numbered list described at the end of this document.
+
+Never call the tool by name inline in the steps below; just do whatever user choice resolved to.
+
 ## Steps
 
 1. Determine the commit target:
@@ -46,7 +56,11 @@ Generate a concise, meaningful commit message based on the current staged change
 
 ## Output
 
-Generate **3 candidate commit messages** that vary in angle (e.g. different scope, emphasis on what vs. why, terse vs. descriptive) but all follow the repository's style. Then ask the user to choose via a selection UI tool (such as the `AskUserQuestion` tool):
+Generate **3 candidate commit messages** that vary in angle (e.g. different scope, emphasis on what vs. why, terse vs. descriptive) but all follow the repository's style. Then run user choice on them.
+
+Do not end your turn after writing the candidates: the turn that produces them is the same turn that runs user choice. Any prose the user needs to read (notes on the diff, files left out of the commit) goes in that same turn before the tool call, since the option fields are length-limited.
+
+With a selection UI tool, fill it in as:
 
 - `question`: `どのコミットメッセージを使いますか？`
 - `header`: `Commit msg` (short label)
@@ -68,7 +82,7 @@ Handling the user's answer:
   キャンセルしました。コミットは作成していません。
   ```
 
-On agents without a selection UI tool, present the same 3 candidates as a numbered list in plain text in Japanese, mark the recommended one, and let the user reply with a number or a message of their own. Do not commit before the user has chosen. Example (present the following to the user in Japanese):
+Fallback form of user choice, for an agent that has no selection UI tool at all: present the same 3 candidates as a numbered list in plain text in Japanese, mark the recommended one, and let the user reply with a number or a message of their own. Do not commit before the user has chosen. Example (present the following to the user in Japanese):
 
 ```
 コミットメッセージの候補は以下の通りです:
