@@ -41,12 +41,25 @@ for segment in re.split(r'(?:&&|\|\||[;|]|\n)', command):
         continue
 
     args = words[git_index + 1 :]
-    try:
-        push_index = args.index("push")
-    except ValueError:
+
+    # Skip git's own options to reach the subcommand; -C/-c and friends take a value.
+    value_options = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env"}
+    cursor = 0
+    while cursor < len(args):
+        arg = args[cursor]
+        if not arg.startswith("-"):
+            break
+        if arg in value_options:
+            cursor += 2
+        else:
+            cursor += 1
+    else:
         continue
 
-    push_args = args[push_index + 1 :]
+    if args[cursor] != "push":
+        continue
+
+    push_args = args[cursor + 1 :]
     force = any(
         arg == "-f"
         or (arg.startswith("-") and not arg.startswith("--") and "f" in arg[1:])
