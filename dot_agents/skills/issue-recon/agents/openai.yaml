@@ -1,0 +1,4 @@
+interface:
+  display_name: "Issue Recon"
+  short_description: "Gather everything needed to implement a ticket."
+  default_prompt: "Collect the information needed to implement this ticket."
