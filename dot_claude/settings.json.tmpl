@@ -125,7 +125,53 @@
           }
         ]
       }
-    ]
+    ]{{ if ne .chezmoi.os "windows" }},
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_PLUGIN_ROOT=\"$HOME/.agents/memsearch/claude-code\" bash \"$HOME/.agents/memsearch/claude-code/hooks/session-start.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_PLUGIN_ROOT=\"$HOME/.agents/memsearch/claude-code\" bash \"$HOME/.agents/memsearch/claude-code/hooks/user-prompt-submit.sh\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_PLUGIN_ROOT=\"$HOME/.agents/memsearch/claude-code\" bash \"$HOME/.agents/memsearch/claude-code/hooks/stop.sh\"",
+            "async": true,
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_PLUGIN_ROOT=\"$HOME/.agents/memsearch/claude-code\" bash \"$HOME/.agents/memsearch/claude-code/hooks/session-end.sh\"",
+            "async": true,
+            "timeout": 10
+          }
+        ]
+      }
+    ]{{ end }}
   },
   "statusLine": {
     "type": "command",

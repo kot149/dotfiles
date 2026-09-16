@@ -176,6 +176,26 @@ Two things not managed here:
 - **Claude Code plugins** supply their own skills. The enabled `cloudflare@cloudflare` marketplace covers the whole `cloudflare/skills` set for Claude, so those are the one exception to listing both stores: they are declared for `agents = ["agents"]` only, which keeps them from showing up twice for Claude Code (once as `cloudflare:<name>` from the plugin, once as `<name>` from the store). Codex has its own plugin system (`codex plugin add/list`, `codex plugin marketplace`) but it does not consume Claude Code marketplaces, so Codex gets those skills through `[[agent_skills]]` instead.
 - The **`skills` CLI** (`npx skills add`, vercel-labs) installs into `~/.agents/skills` too, tracked in a per-machine `~/.agents/.skill-lock.json`, and symlinks the non-`.agents` agent directories (Claude Code) at it. Use it to *discover* skills, then transcribe the pick into `[[agent_skills]]`. Do not leave a skill installed that way: the copy is per-machine, invisible to `chezmoi status`, pinned by a separate lock file, and it writes to the same directory names this repo manages.
 
+## memsearch
+
+[memsearch](https://github.com/zilliztech/memsearch) gives Claude Code and Codex CLI a shared persistent memory. It records each turn as markdown under `<project>/.memsearch/memory/` and indexes it into a Milvus Lite database at `~/.memsearch/milvus.db`, one collection per project. Upstream ships it as a Claude Code plugin and a Codex `install.sh`; neither is used here, because both write outside chezmoi's control. The pieces are split by what they actually are:
+
+| Piece | Where it is declared | Lands at |
+|---|---|---|
+| Capture hooks (both agents) | `.chezmoiexternal.toml.tmpl`, pinned tarball | `~/.agents/memsearch/{claude-code,codex}/` |
+| Hook registration | `dot_claude/settings.json.tmpl`, `dot_codex/hooks.json.tmpl` | `~/.claude/settings.json`, `~/.codex/hooks.json` |
+| `memory-config`, `memory-to-skill` | `[[agent_skills]]` in `.chezmoidata/agent-skills.toml` | `~/.claude/skills/`, `~/.agents/skills/` |
+| `memory-recall` | `.chezmoitemplates/agents/skills/memory-recall.md` + per-store wrappers | `~/.claude/skills/`, `~/.agents/skills/` |
+| `memsearch` CLI | not managed; `uv tool install 'memsearch[onnx]@latest'` | `~/.local/bin/memsearch` |
+
+Notes:
+
+- `memory-recall` is re-authored rather than pulled from upstream: every shipped copy hardcodes a plugin-install path (`${CLAUDE_PLUGIN_ROOT}` or an `__INSTALL_DIR__` placeholder patched by `install.sh`) for `derive-collection.sh`. The rewrite ships that script inside the skill instead, from `.chezmoitemplates/agents/memsearch-derive-collection.sh`. It must stay byte-compatible with the hooks' copy, or skill and hooks address different collections.
+- The external rev and the `[[agent_skills]]` rev both point at the same commit. Bump them together.
+- The hooks call the `memsearch` CLI and fail loudly when it is too old (`--default-collection support is required`), so keep the CLI current.
+- The Claude Code `Stop` hook summarizes each turn with `claude -p --model haiku`, and the Codex one calls `codex exec`. Every turn costs tokens.
+- Editing `dot_codex/hooks.json.tmpl` invalidates Codex's hook trust hashes; re-trust in the TUI afterwards.
+
 ## User-level agent instructions
 
 Per-agent global instruction files live under each agent's config directory and are distinct from this repo-level `AGENTS.md`:

@@ -20,6 +20,22 @@ url = "https://github.com/Descolada/AHK-v2-libraries.git"
 refreshPeriod = "168h"
 {{- end }}
 
+{{/* memsearch capture hooks. The hooks are the only part of memsearch that cannot
+     be an agent skill: they run on session start / prompt submit / stop and write
+     the memory markdown the skills later search. Both agents' hook trees are
+     self-locating (they resolve scripts/ and prompts/ relative to the hook file),
+     so they work from this shared directory with no patching -- Claude Code's only
+     need CLAUDE_PLUGIN_ROOT set, which dot_claude/settings.json.tmpl does.
+     Pinned to the same rev as the memsearch [[agent_skills]] entry. */}}
+{{- if ne .chezmoi.os "windows" }}
+[".agents/memsearch"]
+type = "archive"
+url = "https://github.com/zilliztech/memsearch/archive/15ad962364c0dc5a552af78a7ef6bf1575487ec9.tar.gz"
+include = ["*/plugins/claude-code/**", "*/plugins/codex/**"]
+stripComponents = 2
+refreshPeriod = "168h"
+{{- end }}
+
 {{/* Third-party agent skills, declared in .chezmoidata.toml as [[agent_skills]].
      Each skill is extracted straight out of a pinned GitHub tarball, so the same
      definition works on macOS, Linux and Windows without symlinks or Nix.

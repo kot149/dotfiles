@@ -120,6 +120,20 @@ prefix = "skills"
 names = ["suiko"]
 agents = ["claude", "agents"]
 
+# memsearch ships one SKILL.md per host agent, but memory-config and
+# memory-to-skill are identical across them, so the platform-neutral copies under
+# plugins/_shared are what gets installed. memory-recall is not taken from here:
+# every shipped copy hardcodes a plugin-install path, so it is re-authored in
+# .chezmoitemplates/agents/skills/memory-recall.md instead. The capture hooks and
+# their scripts come from the .agents/memsearch external in
+# .chezmoiexternal.toml.tmpl -- keep both rev values in sync.
+[[agent_skills]]
+repo = "zilliztech/memsearch"
+rev = "15ad962364c0dc5a552af78a7ef6bf1575487ec9"
+prefix = "plugins/_shared/skills"
+names = ["memory-config", "memory-to-skill"]
+agents = ["claude", "agents"]
+
 # Claude Code gets these from the enabled cloudflare@cloudflare plugin, so only
 # the shared store (read by Codex, which has no Claude Code plugin mechanism)
 # needs them materialized.
