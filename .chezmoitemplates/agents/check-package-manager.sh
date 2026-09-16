@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Warn when using a package manager different from the one detected in the project.
+# Warn when using a package manager different from the one detected in the project,
+# or when running a bare python outside the project's runner (uv run など).
 # Block by default; set FORCE_PM=1 to allow.
 
 INPUT=$(cat)
@@ -53,6 +54,10 @@ for seg in segments:
         print('pdm'); sys.exit(0)
     elif bin_name == 'conda':
         print('conda'); sys.exit(0)
+    elif bin_name in ('python', 'python3') or re.match(r'^python3\.\d+$', bin_name):
+        # パス付き (./.venv/bin/python) は意図した解釈器なので対象外
+        if '/' not in words[idx] and '\\' not in words[idx]:
+            print('python'); sys.exit(0)
     elif bin_name in ('bun', 'bunx'):
         if bin_name == 'bunx' or next_word in ('install', 'add', 'remove', 'update', 'pm', 'x'):
             print('bun'); sys.exit(0)
@@ -71,7 +76,7 @@ find_project_pm() {
     local family=""
     case "$used" in
         npm|yarn|pnpm|bun) family="js" ;;
-        pip|poetry|pipenv|pdm|uv|conda) family="py" ;;
+        pip|poetry|pipenv|pdm|uv|conda|python) family="py" ;;
     esac
 
     while true; do
@@ -104,6 +109,13 @@ find_project_pm() {
 
 USED_PM=$(detect_used_pm "$COMMAND") || exit 0
 [[ -z "$USED_PM" ]] && exit 0
+
+# An already-activated virtualenv means a bare python is the project's python
+if [[ "$USED_PM" == "python" ]]; then
+    [[ -n "${VIRTUAL_ENV:-}" || -n "${CONDA_PREFIX:-}" ]] && exit 0
+    echo "$COMMAND" | grep -q 'activate' && exit 0
+fi
+
 PROJECT_PM=$(find_project_pm "$CWD" "$USED_PM") || exit 0
 [[ "$USED_PM" == "$PROJECT_PM" ]] && exit 0
 
@@ -114,7 +126,22 @@ if [[ "${FORCE_PM:-}" == "1" ]] || echo "$COMMAND" | grep -q 'FORCE_PM=1'; then
     exit 0
 fi
 
-REASON=$(cat <<EOF
+if [[ "$USED_PM" == "python" ]]; then
+    REASON=$(cat <<EOF
+[Python Outside Project Environment]
+
+  Detected:   bare python (global interpreter)
+  Project PM: $PROJECT_PM  (detected from lock file)
+  Project:    $CWD
+
+Please run it through the project environment: $PROJECT_PM run python ...
+To force execution, set FORCE_PM=1:
+
+  FORCE_PM=1 $COMMAND
+EOF
+)
+else
+    REASON=$(cat <<EOF
 [Package Manager Mismatch]
 
   Detected PM: $USED_PM
@@ -127,6 +154,7 @@ To force execution, set FORCE_PM=1:
   FORCE_PM=1 $COMMAND
 EOF
 )
+fi
 
 printf '%s\n' "$REASON" >&2
 

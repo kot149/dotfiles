@@ -1,5 +1,6 @@
 #!/usr/bin/env pwsh
-# Warn when using a package manager different from the one detected in the project.
+# Warn when using a package manager different from the one detected in the project,
+# or when running a bare python outside the project's runner (uv run など).
 # Block by default; set FORCE_PM=1 to allow.
 
 $ErrorActionPreference = "Stop"
@@ -28,6 +29,10 @@ function Get-UsedPackageManager {
             '^pipenv$'        { return "pipenv" }
             '^pdm$'           { return "pdm" }
             '^conda$'         { return "conda" }
+            '^python3?(\.\d+)?$' {
+                # パス付き (.venv\Scripts\python) は意図した解釈器なので対象外
+                if ($words[$idx] -notmatch '[\\/]') { return "python" }
+            }
             '^(bun|bunx)$' {
                 if ($bin -eq "bunx" -or $next -in @("install", "add", "remove", "update", "pm", "x")) { return "bun" }
             }
@@ -50,7 +55,7 @@ function Get-ProjectPackageManager {
             @(@("yarn.lock", "yarn"), @("pnpm-lock.yaml", "pnpm"), @("bun.lockb", "bun"), @("bun.lock", "bun"), @("package-lock.json", "npm"))
             break
         }
-        '^(pip|poetry|pipenv|pdm|uv|conda)$' {
+        '^(pip|poetry|pipenv|pdm|uv|conda|python)$' {
             @(@("uv.lock", "uv"), @("poetry.lock", "poetry"), @("Pipfile.lock", "pipenv"), @("pdm.lock", "pdm"))
             break
         }
@@ -89,6 +94,12 @@ if ([string]::IsNullOrWhiteSpace($cwd)) { $cwd = (Get-Location).Path }
 $usedPm = Get-UsedPackageManager -Command $command
 if ($usedPm -eq "") { exit 0 }
 
+# An already-activated virtualenv means a bare python is the project's python
+if ($usedPm -eq "python") {
+    if ($env:VIRTUAL_ENV -or $env:CONDA_PREFIX) { exit 0 }
+    if ($command -match 'activate') { exit 0 }
+}
+
 $projectPm = Get-ProjectPackageManager -Directory $cwd -Used $usedPm
 if ($projectPm -eq "" -or $projectPm -eq $usedPm) { exit 0 }
 
@@ -98,7 +109,21 @@ if ($env:FORCE_PM -eq "1" -or $command -match 'FORCE_PM=1') {
     exit 0
 }
 
-$reason = @"
+if ($usedPm -eq "python") {
+    $reason = @"
+[Python Outside Project Environment]
+
+  Detected:   bare python (global interpreter)
+  Project PM: $projectPm  (detected from lock file)
+  Project:    $cwd
+
+Please run it through the project environment: $projectPm run python ...
+To force execution, set FORCE_PM=1:
+
+  FORCE_PM=1 $command
+"@
+} else {
+    $reason = @"
 [Package Manager Mismatch]
 
   Detected PM: $usedPm
@@ -110,6 +135,7 @@ To force execution, set FORCE_PM=1:
 
   FORCE_PM=1 $command
 "@
+}
 
 [Console]::Error.WriteLine($reason)
 
