@@ -1,0 +1,4 @@
+interface:
+  display_name: "Issue Recon Loop"
+  short_description: "Repeat issue recon until no corrections or new findings appear."
+  default_prompt: "Investigate this ticket repeatedly until the findings converge."
