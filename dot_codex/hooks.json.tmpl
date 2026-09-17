@@ -20,8 +20,8 @@
           },
           {
             "type": "command",
-            "command": "bash '{{ $home }}/.codex/hooks/check-package-manager.sh'",
-            "commandWindows": "pwsh -NoProfile -File \"{{ $home }}/.codex/hooks/check-package-manager.ps1\"",
+            "command": "uv run --no-python-downloads --script '{{ $home }}/.codex/hooks/check-package-manager.py'",
+            "commandWindows": "uv run --no-python-downloads --script \"{{ $home }}/.codex/hooks/check-package-manager.py\"",
             "timeout": 15,
             "statusMessage": "Checking package manager"
           },

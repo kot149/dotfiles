@@ -111,16 +111,15 @@ Hook scripts shared by more than one agent live in `.chezmoitemplates/agents/` a
 
 - `check-force-push.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
 - `check-github-api-write.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-package-manager.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-package-manager.ps1` (pwsh port, Windows only) → `~/.codex/hooks/`
+- `check-package-manager.py` (standalone Python, run via `uv run --no-python-downloads --script` on every OS) → `~/.claude/hooks/` and `~/.codex/hooks/`
 - `check-commit-sha-links.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
 - `check-cargo-install.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
 - `check-writing-style.js` (Bun + textlint, imports `./textlint-rules/` next to it) → `~/.claude/hooks/` and `~/.codex/hooks/`
 
 Registration differs per agent:
 
-- Claude Code: `hooks.PreToolUse` in `dot_claude/settings.json.tmpl`, always the bash script. Tools are named `Bash`, `Write`, `Edit`, `mcp__*`.
-- Codex CLI: `dot_codex/hooks.json.tmpl` → `~/.codex/hooks.json`. A handler takes `command` (used on macOS/Linux) and `commandWindows` (used on Windows), so the bash and pwsh variants are registered side by side. `matcher` is a regex against the tool name; Codex's shell tool is also `Bash`, but its file edits arrive as a single `apply_patch` tool whose `tool_input.command` is the patch document — `check-writing-style.js` parses that patch format, and `textlint-rules/` must be materialized next to each copy.
+- Claude Code: `hooks.PreToolUse` in `dot_claude/settings.json.tmpl`. Tools are named `Bash`, `Write`, `Edit`, `mcp__*`.
+- Codex CLI: `dot_codex/hooks.json.tmpl` → `~/.codex/hooks.json`. A handler takes `command` (used on macOS/Linux) and `commandWindows` (used on Windows); they run the same script and differ only in quoting. `matcher` is a regex against the tool name; Codex's shell tool is also `Bash`, but its file edits arrive as a single `apply_patch` tool whose `tool_input.command` is the patch document — `check-writing-style.js` parses that patch format, and `textlint-rules/` must be materialized next to each copy.
 
 `tests/` holds tests for the hooks that carry enough logic to regress. They are plain Bun scripts rather than `bun test` files, because `bun test` cannot resolve the versioned import specifiers the hooks pin their dependencies with:
 
