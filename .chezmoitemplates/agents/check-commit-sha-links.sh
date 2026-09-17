@@ -12,7 +12,9 @@ CWD=$(echo "$INPUT" | jq -r '.cwd // ""')
 [[ -z "$COMMAND" ]] && exit 0
 [[ -z "$CWD" ]] && CWD=$(pwd)
 
-FINDINGS=$(python3 - "$COMMAND" "$CWD" <<'PYEOF'
+source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
+
+FINDINGS=$("${PYTHON[@]}" - "$COMMAND" "$CWD" <<'PYEOF'
 import os
 import re
 import shlex
@@ -198,7 +200,7 @@ EOF
 
 printf '%s\n' "$REASON" >&2
 
-python3 - "$REASON" <<'PYEOF'
+"${PYTHON[@]}" - "$REASON" <<'PYEOF'
 import json, sys
 
 print(json.dumps({

@@ -6,15 +6,9 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
 
 [[ -z "$COMMAND" ]] && exit 0
 
-if python3 -c 'import sys' >/dev/null 2>&1; then
-    PYTHON=python3
-elif python -c 'import sys' >/dev/null 2>&1; then
-    PYTHON=python
-else
-    exit 0
-fi
+source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
 
-TARGET=$("$PYTHON" - "$COMMAND" <<'PYEOF'
+TARGET=$("${PYTHON[@]}" - "$COMMAND" <<'PYEOF'
 import os
 import re
 import shlex
@@ -122,7 +116,7 @@ EOF
 
 printf '%s\n' "$REASON" >&2
 
-"$PYTHON" - "$REASON" <<'PYEOF'
+"${PYTHON[@]}" - "$REASON" <<'PYEOF'
 import json, sys
 
 print(json.dumps({

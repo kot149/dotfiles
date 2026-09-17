@@ -10,9 +10,11 @@ CWD=$(echo "$INPUT" | jq -r '.cwd // ""')
 [[ -z "$COMMAND" ]] && exit 0
 [[ -z "$CWD" ]] && CWD=$(pwd)
 
+source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
+
 detect_used_pm() {
     local cmd="$1"
-    python3 - "$cmd" <<'PYEOF'
+    "${PYTHON[@]}" - "$cmd" <<'PYEOF'
 import sys, re, os
 
 cmd = sys.argv[1]
@@ -159,7 +161,7 @@ fi
 printf '%s\n' "$REASON" >&2
 
 # Deny via hook JSON output; a non-zero exit status is not a block signal in Codex.
-python3 - "$REASON" <<'PYEOF'
+"${PYTHON[@]}" - "$REASON" <<'PYEOF'
 import json, sys
 
 print(json.dumps({

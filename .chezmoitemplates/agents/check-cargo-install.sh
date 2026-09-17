@@ -9,7 +9,9 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
 [[ -z "$COMMAND" ]] && exit 0
 command -v cargo-binstall >/dev/null 2>&1 || exit 0
 
-TARGET=$(python3 - "$COMMAND" <<'PYEOF'
+source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
+
+TARGET=$("${PYTHON[@]}" - "$COMMAND" <<'PYEOF'
 import os
 import re
 import sys
@@ -95,7 +97,7 @@ EOF
 
 printf '%s\n' "$REASON" >&2
 
-python3 - "$REASON" <<'PYEOF'
+"${PYTHON[@]}" - "$REASON" <<'PYEOF'
 import json, sys
 
 print(json.dumps({
