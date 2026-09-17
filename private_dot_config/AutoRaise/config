@@ -1,3 +1,12 @@
 #AutoRaise config file
 # Raise/focus as soon as the mouse enters a window instead of waiting for it to stop.
 requireMouseStop=false
+# Raise 100ms (2 * pollMillis) after entering a window, so windows merely passed over are not raised.
+delay=3
+# Ignore mouse movements below half a pixel per poll.
+mouseDelta=0.5
+# Warp the mouse to the center of the window activated via cmd-tab / cmd-grave.
+warpX=0.5
+warpY=0.5
+# Also warp for switches made by a third party switcher (DockDoor) instead of only the built in one.
+altTaskSwitcher=true
