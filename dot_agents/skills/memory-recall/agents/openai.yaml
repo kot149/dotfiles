@@ -1,4 +1,0 @@
-interface:
-  display_name: "Memory Recall"
-  short_description: "Search past sessions' memory with memsearch."
-  default_prompt: "Recall what we decided about this before."

@@ -50,45 +50,6 @@
           }
         ]
       }
-    ]{{ if ne .chezmoi.os "windows" }},
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash '{{ $home }}/.agents/memsearch/codex/hooks/session-start.sh'",
-            "timeout": 30,
-            "statusMessage": "Loading memsearch memory"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash '{{ $home }}/.agents/memsearch/codex/hooks/user-prompt-submit.sh'",
-            "timeout": 10,
-            "statusMessage": "Checking memsearch recall"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash '{{ $home }}/.agents/memsearch/codex/hooks/stop.sh'",
-            "timeout": 30,
-            "statusMessage": "Saving memsearch memory"
-          }
-        ]
-      }
-    ]{{ end }}
+    ]
   }
 }
