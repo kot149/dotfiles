@@ -337,7 +337,7 @@ function push {
 
 function sonnet { claude --model claude-sonnet-5 @args }
 function opus { claude --model 'claude-opus-5[1m]' @args }
-function fable { claude --model claude-fable-5 @args }
+function fable { claude --model claude-fable-5-1 @args }
 
 # Shared cli-proxy-api setup for claudex: a single proxy on port 8317 serves
 # Codex OAuth models (luna/sol/astra). The runtime config only rewrites the
