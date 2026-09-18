@@ -8,6 +8,12 @@ argument-hint: "[--fast|--full] [--fix|--post]"
 
 Run multiple reviewer subagents in parallel from different perspectives, have judge subagents evaluate validity, fix the valid findings, then repeat the review-fix loop up to 5 times.
 
+Detailed instructions for reviewers and judges live in files next to this SKILL.md. **Do not read them yourself**; pass their absolute paths to subagents, who read them directly. This keeps your own context small.
+
+- `common-rules.md` — rules shared by all reviewers (evidence requirement, false-positive catalog, output format, inventory table)
+- `perspectives/<label>.md` — one detailed checklist per perspective
+- `judge.md` — judge steps, verification bars, verdict criteria, output format
+
 ## Target
 
 $ARGUMENTS
@@ -52,20 +58,26 @@ Every place in this document that says "selection prompt" means presenting optio
 
 ## Reviewers (10 Perspectives)
 
-| Label | Perspective | Checklist |
-|---|---|---|
-| security | Security | Injection, authentication/authorization, secret exposure, input validation, XSS/CSRF, unsafe cryptography |
-| quality | Code quality | Readability, function responsibility separation, error handling, DRY, immutability, nesting depth, magic numbers, **silent degradation and observability** (whether unexpected states silently fall back to defaults; whether fail-open, swallowed values, and continue-after-catch leave a trace in logs), **recoverability** (whether any path leaves data half-written when it crashes midway) |
-| naming | Naming | Whether the name reveals content/role, misleading names, collisions or confusion with other existing features/roles, inconsistent wording for the same concept, too much or too little information for the scope, **mismatches with symmetric counterparts**. Note: casing convention (camelCase/snake_case etc.) violations are out of scope |
-| comment | Comment quality | Redundant/obvious comments/docstrings, duplication, meta-comments narrating edit history, or conversely missing Why/constraints/pitfalls. Follow [[trim-comments]] as the criterion. Additionally **statement-vs-reality consistency** (whether facts claimed by docstrings, READMEs, PR bodies, and design docs hold in the current code) |
-| perf | Performance | N+1, unnecessary re-renders, memory leaks, complexity, cache misses, bundle size, unnecessary loops |
-| a11y | Accessibility | WCAG 2.2, aria attributes, keyboard operation, screen readers, contrast, focus management |
-| test | Test quality | Coverage gaps, boundary values, brittle implementation-dependent tests, excessive mocking, AAA pattern, clear test names, **mutation checks** (whether existing tests fail when a condition is inverted, a set operation is flipped, or one member is removed from a union), proposing deletion of valueless tests (only asserting trivial results, tautologies asserting mock setup values verbatim, duplicates covering only the same path as other tests) |
-| arch | Architecture | Layer violations, dependency direction, circular dependencies, bloated responsibilities, interface design, module cohesion, **backward compatibility** (whether contract changes break existing callers; search for callers and report counts), **asymmetry of counterparts** (invariants, type strictness, or accessors present on only one side of pairs like read/write) |
-| meta | Approach validity | YAGNI violations, simpler alternatives, scope, incremental approach, existing assets, technology choice |
-| spec | Spec consistency | Consistency with Jira/Confluence/PRD/design docs linked from the PR body, whether the implementation satisfies spec requirements, coverage of edge cases/acceptance criteria mentioned in the spec, validity of the spec itself (contradictions, gaps, wrong premises) |
+Each label's detailed checklist is in `perspectives/<label>.md`. This table is only for mode selection and aggregation.
+
+| Label | Perspective |
+|---|---|
+| security | Injection, authn/authz, secret exposure, input validation, XSS/CSRF, crypto |
+| quality | Readability, error handling, silent degradation and observability, recoverability, DRY, immutability |
+| naming | Truthful names, collisions with existing code, consistent wording, scope-appropriate detail, counterpart symmetry |
+| comment | Redundant/missing comments per [[trim-comments]], meta-comments, statement-vs-reality consistency |
+| perf | N+1, complexity, memory, re-renders, bundle size, caching, blocking I/O |
+| a11y | WCAG 2.2 AA: semantics, ARIA, keyboard, focus, screen readers, contrast |
+| test | Mutation checks, boundary values, brittle tests, excessive mocking, valueless-test deletion |
+| arch | Layer violations, dependency direction, cycles, interface design, backward compatibility, counterpart asymmetry |
+| meta | YAGNI, simpler alternatives, scope, incremental shipping, existing assets, tech choice |
+| spec | Spec-vs-implementation consistency and validity of the spec itself (Jira/Confluence/PRD linked from the PR body) |
 
 ## Phase 0: Preparation
+
+### 0.0 Resolve the Skill Directory
+
+Set `$SKILL_DIR` to the absolute path of the directory containing this SKILL.md (the root of this skill in whichever skill store it was loaded from). All file references passed to subagents below use `$SKILL_DIR/...` absolute paths.
 
 ### 0.1 Identify the Review Target
 
@@ -153,7 +165,7 @@ Extract the following links from the PR body (`$PURPOSE`), fetch their contents,
 - Notion (`notion.so/...`): fetch with the Notion MCP
 - Other PRD/design/Figma/Slack/Lucid links: fetch with the corresponding MCP tool where possible. If there is no matching tool or fetching fails, record "link confirmed only, body not fetched"
 - Summarize each fetched document as `title`, `url`, `body` (an excerpt of the key parts is fine)
-- If **no spec documents are found at all**, set `$SPEC_DOCS = "(no linked spec documents)"` and instruct the spec reviewer to "evaluate whether the intent is self-evident from the implementation, or whether the PR body alone suffices"
+- If **no spec documents are found at all**, set `$SPEC_DOCS = "(no linked spec documents)"`
 
 ### 0.8 Permalink Format
 
@@ -171,239 +183,34 @@ https://github.com/<owner>/<repo>/blob/<full 40-char SHA>/<path>#L<start>-L<end>
 
 `ROUND=1`, `MAX_ROUNDS=5`
 
-## Rules Common to All Reviewers
-
-Include all of the following in each reviewer's prompt along with the perspective-specific checklist.
-
-### Require Evidence
-
-**Only raise findings you can support by quoting the applicable convention document, or by measuring the majority pattern in existing code (search counts plus representative files).** Do not raise what you cannot support either way. Without an evidence requirement, design/naming/architecture perspectives can produce endless generic "should" arguments.
-
-- When you count, write the breakdown. Not "5 places" but "5 places (4 in `foo.ts` and `bar.ts:52`)". Trying to write the breakdown exposes miscounts
-- Do not use "seems like ..." or "in general ..." as evidence
-- Write "what breaks if left as is". Do not stop at "maintainability decreases". Write it all the way to "the same check must be fixed in two places, and forgetting one skews the amounts"
-
-### False-Positive Catalog (Do Not Raise, or Drop to Lowest Severity, Anything on These Lines)
-
-1. **Pre-existing issues** (not introduced by this change) -> drop to LOW and note "not caused by this PR"
-2. **Issues on unchanged lines** -> same as above
-3. **Things a linter / type checker / compiler / CI would catch** (missing imports, type errors, formatting, test failures) -> do not raise. Do not run builds, type checks, or tests yourself
-4. **Rules already enforced mechanically by CI** -> do not raise. First check `pyproject.toml` / `.pre-commit-config.yaml` / CI definitions for contracts on import order, naming, types, and formatting. Manually flagging enforced areas is pointless
-5. **Unfounded taste** (comment style, line breaks, rename proposals based only on feel) -> do not raise
-6. **Changes that read as intentional**, or changes naturally accompanying a broader change -> but do not drop them on "looks intentional" alone. Verify the intent is documented and consistent with existing patterns
-7. **Generic test-coverage / documentation complaints** ("should add more tests" alone) -> LOW. But if you can show a concrete mutation where "breaking this change still passes the tests, so the regression is undetectable", that is not generic and may be MEDIUM or higher
-8. **Design variance that reads as mid-migration** (old and new approaches coexisting in the same directory, with this PR mid-transition) -> report as LOW information, not a finding
-9. **Leftover `fixup!` / `squash!` commits** -> ignore entirely. They are working commits squashed at merge time, not review topics
-10. **Points already flagged or resolved in existing review comments** -> do not raise (cross-check against `$EXISTING_COMMENTS`)
-
-### Always Return an Inventory Table (Mandatory Even with Zero Findings)
-
-**Merely declaring "I checked" cannot distinguish "looked and found nothing" from "never looked".** Over-suppression of the catalog is only visible through this table.
-
-Every reviewer appends the following table at the end of the response, however many findings there are.
-
-```
-CHECKLIST
-| Checklist item | What was examined | Result |
-|---|---|---|
-| <each of your perspective's checklist items, one per row, all of them> | <searched terms and counts, files read> | N findings / no issues / not applicable (reason) |
-```
-
-- **Fill every row.** No blanks. Items you did not look at must say "not examined" (do not silently drop them)
-- **"Not applicable" needs a reason** (e.g. "no persistence involved", "no change touching public contracts"). If you cannot write a reason, it is "not examined yet"
-- Perspectives excluded by light mode are recorded orchestrator-side as "out of scope due to light mode"
-
-With zero findings, return a lone `LGTM` line plus the `CHECKLIST`. **Returning only the table without stating whether there are findings is not allowed**.
-
 ## Phase 1: Parallel Detail Review
 
-Launch reviewer subagents for the mode-selected perspectives **in parallel** (10 including meta in standard/heavy mode, 6-7 in light mode). `meta` and `spec` use dedicated prompts but launch in the same single message.
+Launch reviewer subagents for the mode-selected perspectives **in parallel** (10 including meta in standard/heavy mode, 6-7 in light mode), all together in one batch. Avoid launching them one by one in sequence (it serializes and slows down). Each subagent has an independent context.
 
-Start each subagent as `<perspective> review round $ROUND` with this prompt:
+Start each subagent as `<perspective> review round $ROUND` with this prompt. Keep it this short; the detail lives in the files the subagent reads.
 
 ```
-You are a code reviewer specializing in <perspective>. Review the following change from the <perspective> perspective only.
-Do not raise findings belonging to other perspectives (e.g. anything outside <perspective> such as security, quality, or performance).
+You are the "<perspective>" reviewer in a multi-perspective code review.
 
-Checklist: <checklist from the Reviewers table above>
+First read these two files and follow both:
+1. $SKILL_DIR/common-rules.md — shared rules (evidence requirement, false-positive catalog, finding output format, mandatory CHECKLIST inventory table)
+2. $SKILL_DIR/perspectives/<perspective>.md — your detailed checklist and perspective-specific instructions
 
-<Paste here the full text of the 3 sections under "Rules Common to All Reviewers" (require evidence / false-positive catalog / inventory table)>
-
-If there are findings, return each one separated as follows:
----
-FINDING: <finding title>
-SEVERITY: CRITICAL|HIGH|MEDIUM|LOW
-FILE: <file path>
-LINE: <line number (if known)>
-EVIDENCE: <quote from the convention document (with file name and applicable lines), or measured existing-code evidence (search terms, counts, representative files)>
-DESCRIPTION: <problem description, concretely what breaks and how if left as is>
-SUGGESTION: <concrete fix proposal>
----
-
-Whether or not there are findings, always append the CHECKLIST table at the end of your response.
-If there are no findings, return a lone "LGTM" line plus the CHECKLIST.
+Then review the change. Read $DIFF_PATH yourself, and read the target file bodies as needed. Do not edit any files.
 
 Change intent: $PURPOSE
 Changed files: $FILES
-Target diff: $DIFF_PATH (read this file yourself; also read the target file bodies as needed)
+Target diff: $DIFF_PATH
 Convention document paths: <path list found in 0.4, or the fact that none was found>
 Existing review comments: $EXISTING_COMMENTS
 Permalink format: <format from 0.8>
 ```
 
-Parallel launch notes:
+Per-perspective additions to the prompt:
 
-- Launch all target perspectives **together in parallel**. Avoid launching them one by one in sequence (it serializes and slows down)
-- Each subagent has an independent context, so include shared premises explicitly in the prompt
-- Additionally include in the `naming` prompt: "actually search the codebase for similar names to confirm collisions or confusion with other existing features/roles", "do not flag camelCase/snake_case-style casing convention violations", and "cross-check naming against the counterpart $SYMMETRY member by member"
-- Additionally include in the `arch` prompt the "counterpart cross-check" below
-- Additionally include in the `comment` prompt the "comment reviewer criteria" below
-- Additionally include in the `test` prompt the "mutation check procedure" below
-
-### Counterpart Cross-Check (naming / arch, only when a counterpart exists)
-
-```
-Counterpart: $SYMMETRY
-
-For changes with a counterpart implementation, place them side by side and compare member by member.
-Do not stop at "good because symmetric"; that is exactly how you miss the asymmetry itself. Fill a table over these 5 axes.
-
-| Axis | What to look at |
-|---|---|
-| Class/attribute names | Whether the same role uses the same nouns (e.g. Issue vs Violation mixed) |
-| Type strictness | Whether one side uses Literal / Enum while the other is a bare string |
-| Invariants | Why one side has frozen / validators the other side lacks |
-| Accessors | Whether one side hides internals behind a property while the other touches them directly |
-| Docstring self-claims | Whether a property one side explicitly claims is silently missing on the other |
-
-When you find a difference, check primary sources (in-code comments, design docs, tickets) for whether it is intentional.
-Only unexplained differences are finding candidates.
-```
-
-### Comment Reviewer Criteria
-
-Delegate the criteria to the [[trim-comments]] skill. In addition to the shared template, include the following in the prompt:
-
-```
-Only evaluate comment/docstring/README/PR-body prose; do not raise findings about logic, identifier names, or signatures.
-
-Follow the [[trim-comments]] skill (the `SKILL.md` in the same skill store as yourself), its "2. Collect and classify comments" (keep / cut / shorten / move-and-consolidate) and "3. Things not to touch". Only if you could not read it, judge yourself by the principle "do not write what the code already shows; write only what cannot be read from the code".
-
-Additional rules for this review:
-- Do not edit files; return findings only
-- You may also flag places missing information that belongs in "keep" (Why, constraints, external factors, pitfalls)
-- Flag meta-comments narrating edit history ("added ...", "changed to ...", "in the old implementation ...", "per request ...") as cut candidates
-- Cap findings on existing comments untouched by this diff at LOW
-- In SUGGESTION, write the replacement comment text (write "delete" if it should be removed)
-
-[Statement-vs-reality consistency]
-Verify whether facts claimed by prose hold in the current code. Stale prose left after renames or deletions is the classic case.
-- A docstring claims "the two never drift" but the implementation drifts
-- A module header says "read model tests" but there is not a single read test
-- Error-code or field names in the PR body differ from the implementation
-Show both the claim and the counter-evidence with quotes. Match quotes against the original character for character (a summary is not a quote).
-Demote to LOW things where a misunderstanding breaks nothing (e.g. stale line-number references).
-```
-
-### Mutation Check Procedure (test reviewer)
-
-```
-Do not raise generic "should add more tests" findings. Instead, work backward from how it breaks.
-
-For each changed logic unit, consider concrete mutations and check whether existing tests would fail:
-- If this line's condition were inverted
-- If this set operation were flipped
-- If one member were dropped from this union / enum
-- If this default value were changed to another value
-
-If tests still pass, that is a finding with a concrete mutation shown (may be MEDIUM or higher).
-Findings must always state "which mutation lets which tests pass without failing".
-If the mutation fails tests, write that in the CHECKLIST as the basis for "no issues".
-```
-
-### spec Reviewer Dedicated Prompt
-
-`spec` does not use the shared template. Launch it as `spec review round $ROUND` with the following dedicated prompt:
-
-```
-You are a spec-consistency reviewer. Evaluate consistency between the implementation and the spec documents linked from the PR body (Jira/Confluence/PRD/design docs etc.), and also evaluate the validity of the specs themselves.
-
-Evaluation axes:
-A. Spec <-> implementation consistency
-   1. Is every feature/requirement demanded by the spec implemented (nothing missing)
-   2. Was any unrequested feature added on your own (scope creep)
-   3. Are the acceptance criteria, edge cases, and error specs defined in the spec satisfied
-   4. Do data models, API signatures, screen elements, naming, etc. match the spec
-   5. Is there any conflict with non-functional requirements defined in the spec (performance, security, compatibility, etc.)
-
-B. Validity of the spec itself (you may also flag that the spec may be wrong)
-   1. Any contradictions, ambiguities, or gaps within the spec
-   2. Any conflict between spec premises and the current system/codebase/operations
-   3. Any logical breakage in UX / business flow
-   4. Any security/privacy/compliance problems in the spec itself
-   5. Whether the approach chosen in the spec is inferior to a better alternative
-
-Match spec quotes against the original character for character (a summary is not a quote).
-
-<Paste here the full text of the 3 sections under "Rules Common to All Reviewers">
-
-If there are findings, return each one separated as follows:
----
-FINDING: <finding title>
-SEVERITY: CRITICAL|HIGH|MEDIUM|LOW
-CATEGORY: SPEC_MISMATCH|SPEC_MISSING_IMPL|SPEC_SCOPE_CREEP|SPEC_FLAW|SPEC_AMBIGUOUS|SPEC_OUTDATED
-SPEC_REF: <applicable spec document's title/URL/verbatim quote of the relevant passage>
-FILE: <file path (may be empty for findings against the spec itself)>
-LINE: <line number (if any)>
-DESCRIPTION: <problem description, stating explicitly whether the spec or the implementation is at fault>
-SUGGESTION: <fix proposal, stating explicitly whether the spec or the implementation should be fixed>
----
-
-If no spec document could be fetched, evaluate whether the PR body alone makes the implementation intent self-evident, and flag as MEDIUM if it is unclear.
-Whether or not there are findings, always append the CHECKLIST table at the end of your response.
-If there are no issues, return a lone "LGTM Spec and implementation are consistent" line plus the CHECKLIST.
-
-Change intent (from PR body): $PURPOSE
-Changed files: $FILES
-Linked spec documents: $SPEC_DOCS
-Target diff: $DIFF_PATH
-```
-
-### meta Reviewer Dedicated Prompt
-
-`meta` may also run in parallel with the others, but its prompt differs. Launch it as `meta review round $ROUND`.
-
-```
-You are a meta-reviewer evaluating the approach itself. Do not review code details; ask "whether this approach is appropriate".
-
-Change intent/purpose: $PURPOSE
-
-Evaluate along these 6 axes:
-1. Over-engineering (YAGNI violations) — abstractions not needed now, designs only for the future
-2. Simpler alternatives — whether the same goal is achievable via libraries, existing features, or simplified patterns
-3. Scope validity — whether changes belonging in a separate PR/task are mixed in
-4. Incremental approach — whether anything could ship in split releases instead of one full implementation
-5. Overlooked existing assets — whether equivalent functionality already exists in the project (verify by searching the codebase)
-6. Technology choice validity — whether the library/framework/pattern fits the scale and use case
-
-<Paste here the full text of the 3 sections under "Rules Common to All Reviewers">
-
-If there are findings, return as follows:
----
-FINDING: <finding title>
-SEVERITY: CRITICAL|HIGH|MEDIUM|LOW
-CATEGORY: YAGNI|SIMPLER_ALTERNATIVE|SCOPE_CREEP|INCREMENTAL|REINVENTION|TECH_CHOICE
-EVIDENCE: <measured existing assets/patterns, or quotes from convention documents>
-DESCRIPTION: <problem description>
-SUGGESTION: <alternative approach proposal>
----
-
-Whether or not there are findings, always append the CHECKLIST table at the end of your response.
-If there are no issues, return "LGTM Approach is sound" plus the CHECKLIST.
-
-Changed files: $FILES
-Target diff: $DIFF_PATH
-```
+- `naming` / `arch`: add `Counterpart: $SYMMETRY` (path, or "none")
+- `spec`: add `Linked spec documents: $SPEC_DOCS`
+- `meta` / `spec`: their perspective files define their own FINDING formats; no extra prompt text needed
 
 ## Phase 2: Collect & Aggregate
 
@@ -412,7 +219,7 @@ Target diff: $DIFF_PATH
 Once all results are in:
 
 1. Parse each reviewer's reply, extracting `FINDING` blocks and the `CHECKLIST` table
-2. **Merge the inventory tables** — combine all reviewers' CHECKLIST rows into one table and keep it. Present it to the user in Phase 3b-1
+2. **Merge the inventory tables** — combine all reviewers' CHECKLIST rows into one table and keep it. Present it to the user in Phase 3b-1. Perspectives excluded by light mode are recorded orchestrator-side as "out of scope due to light mode"
 3. If everyone said "LGTM", report that to the user in Japanese (e.g. `全観点LGTMでした`) with the merged inventory table and finish. **Do not return bare "no issues" without the table** (approvers need to see what was and was not examined)
 4. Otherwise aggregate the findings. Tag each finding with `reviewer: <label>` and list them
 
@@ -459,7 +266,7 @@ Always split judges into **multiple parallel subagents**. Passing all findings t
 Pick the split policy from the aggregated finding count `N`. Launch **all judges in parallel** either way.
 
 1. **Split by perspective (default, N <= 24)** — one judge per reviewer label:
-   - Up to 10 parallel: `judge-security`, `judge-quality`, `judge-naming`, `judge-comment`, `judge-perf`, `judge-a11y`, `judge-test`, `judge-arch`, `judge-spec`, `judge-meta` (round down to max 4 parallel in light mode)
+   - Up to 10 parallel: `judge-<label>` per perspective (round down to max 4 parallel in light mode)
    - Do not launch judges whose label has 0 findings
    - Each judge examines only its own perspective's findings, so it is easy to focus on which code to read
 2. **Split by finding count (N > 24, or 10+ findings concentrated on one perspective)** — chunk the findings:
@@ -470,69 +277,14 @@ Pick the split policy from the aggregated finding count `N`. Launch **all judges
 
 Right after aggregating findings in Phase 2, the orchestrator computes N, picks a split policy from the above, and **logs which policy was adopted in Japanese** (e.g. `ジャッジ分割: 観点別（N=XX）` / `ジャッジ分割: 件数分割（N=XX、Xチャンク）`).
 
-### Judge Prompt Template
+### Judge Prompt
 
 Launch each judge as `judge <perspective or chunk#> round $ROUND` with the following prompt.
 
 ```
-You are a judge scrutinizing code review findings. For your assigned group of findings, always follow these steps.
+You are a judge scrutinizing code review findings.
 
-[Mandatory steps — no skipping]
-1. For each finding, **always open the real file** at the `FILE` and `LINE` indicated. Never judge from the finding text alone
-2. Also read surrounding code (about 30 lines around, plus callers, type definitions, related modules as needed). Verify whether the finding's premise holds in the current codebase
-3. For spec findings, additionally re-read the applicable passage of the provided spec document body and verify the divergence is real
-4. For meta findings, search the codebase for "equivalent existing implementations" and "past similar approaches" before judging
-5. If you judged without reading code, or could not locate the referenced spot, always append `EVIDENCE: UNVERIFIED` right after the VERDICT line
-
-[Verification per claim type — minimum bar for claiming VERIFIED]
-Split claims inside findings by type and verify each as follows. Never conclude from "types, inheritance, or looks" alone.
-
-| Claim type | How to verify | Pitfall |
-|---|---|---|
-| Numbers ("N places", "N files", "N tests") | Count yourself. First define what counts | Padding the count with unrelated usages |
-| Quotes (quoted docstring/convention text) | Match against the original character for character. A summary is not a quote | Paraphrasing from memory |
-| Existence/absence ("no ...", "unused") | Confirm exhaustively by search. Count layers (domain / adapters etc.) separately | Looking at one layer and claiming "unused" |
-| Reachability ("returns ...", "breaks on this path") | Trace raise / call sites. If none, write "not yet reachable" | Judging "it returns" from type inheritance alone |
-| Behavior (language/library semantics) | Actually run a small read-only experiment (do not build or test the target repo) | Writing "probably behaves like ..." |
-
-When you verify a number, also write its breakdown in EVIDENCE_NOTES. Trying to write it exposes miscounts.
-
-[False-positive catalog — rule INVALID or drop to lowest severity on these lines]
-1. Pre-existing issues (not introduced by this change) / issues on unchanged lines -> drop severity to LOW and note "not caused by this PR"
-2. Things a linter / type checker / compiler / CI would catch (missing imports, type errors, formatting, test failures) -> INVALID
-3. Rules already enforced mechanically by CI (import order, naming, formatting, types — check config files and CI definitions) -> INVALID
-4. Unfounded taste (comment style, line breaks, rename proposals based only on feel) -> INVALID
-5. Generic test-coverage / documentation complaints (without a concrete mutation shown) -> LOW
-6. Design variance that reads as mid-migration, with this PR mid-transition -> LOW
-7. Leftover fixup! / squash! commits -> INVALID
-8. Points already flagged or resolved in existing review comments -> INVALID
-
-But **do not over-apply the catalog**. Never drop something merely because "the author explained it".
-Dropping is allowed only when the decision is documented and its rationale does not contradict existing patterns or contracts.
-If the rationale conflicts with existing patterns, the explanation's existence itself supports the finding.
-
-[Verdict criteria]
-- VALID: reading the real code confirmed the finding actually holds
-- INVALID: reading the real code showed a false positive, wrong premise, already addressed, or a catalog hit, so it does not hold
-- DUPLICATE: effectively identical to another finding (show the merge target in the DUPLICATE_OF line)
-
-[Output format] For each finding:
----
-VERDICT: VALID|INVALID|DUPLICATE
-ORIGINAL_FINDING: <original finding title>
-REVIEWER: <security|quality|naming|comment|perf|a11y|test|arch|spec|meta>
-FIX_TARGET: <CODE|SPEC|EITHER|N/A>  # spec findings only
-SEVERITY: CRITICAL|HIGH|MEDIUM|LOW
-FILE: <file path>
-LINE: <line number>
-EVIDENCE: VERIFIED|UNVERIFIED  # always state explicitly whether you read real code/spec text to judge
-EVIDENCE_NOTES: <files and line ranges read, key quoted code points, in 1-3 lines. Breakdowns for numeric claims>
-REASON: <verdict reason, concretely which code structure makes it VALID/INVALID>
-SUGGESTION: <fix proposal for VALID findings>
-DUPLICATE_OF: <merge target ORIGINAL_FINDING, only for DUPLICATE>
----
-
-If all assigned findings are INVALID, return a lone "ALL_CLEAR" line.
+First read $SKILL_DIR/judge.md and follow it exactly (mandatory steps, verification bars per claim type, false-positive catalog, verdict criteria, output format). Do not edit any files.
 
 Assigned findings:
 <Paste the chunk's findings here>
@@ -672,5 +424,5 @@ After posting, report the result in Japanese (e.g. `pendingコメントを投稿
 - **Subagent ignoring the specified format**: loosely match `FINDING:` lines in the reply to extract. If nothing is extractable, discard that reviewer's result
 - **Existing review comment fetch failure**: on permission/API failure, state "existing comments not fetched" to all reviewers and continue, and also write that fact in the final report in Japanese (e.g. `注: 既存レビューコメントを取得できませんでした（重複を含む可能性あり）`) (duplicate findings may be mixed in)
 - **No convention documents found**: pass that fact to reviewers. Also tell them the only evidence is measured majority patterns in existing code
-- **Spec document fetch failure**: on permission failure/bad URL/unconnected MCP, state "link fetch failed, URLs only" in the prompt to the spec reviewer and continue. Demote spec findings to MEDIUM or lower
-- **No links at all in the PR body**: the spec reviewer runs in "no spec links. Evaluate whether the PR body alone conveys the intent" mode. Flag as MEDIUM if the implementation intent is unclear
+- **Spec document fetch failure**: on permission failure/bad URL/unconnected MCP, set `$SPEC_DOCS = "(link fetch failed, URLs only: <urls>)"` and continue; the spec reviewer caps its findings at MEDIUM
+- **Subagent cannot read `$SKILL_DIR` files**: fall back to inlining the applicable file's content into that subagent's prompt (read it yourself only in this fallback case)
