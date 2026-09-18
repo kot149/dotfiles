@@ -46,6 +46,8 @@ def is_graphql_write(values):
     )
 
 
+targets = []
+
 for segment in re.split(r"(?:&&|\|\||[;|]|\n)", command := sys.argv[1]):
     try:
         words = shlex.split(segment)
@@ -94,22 +96,24 @@ for segment in re.split(r"(?:&&|\|\||[;|]|\n)", command := sys.argv[1]):
 
         if endpoint.rstrip("/").split("?", 1)[0].strip("/") == "graphql":
             if is_graphql_write(values):
-                print(f"gh api {method} {endpoint}")
-                sys.exit(0)
+                targets.append(f"gh api {method} {endpoint}")
         elif is_target_endpoint(endpoint):
-            print(f"gh api {method} {endpoint}")
-            sys.exit(0)
+            targets.append(f"gh api {method} {endpoint}")
+
+print("\n".join(dict.fromkeys(targets)))
 PYEOF
 ) || exit 0
 
 [[ -z "$TARGET" ]] && exit 0
 
+COMMANDS=$(printf '%s\n' "$TARGET" | sed 's/^/  /')
+
 REASON=$(cat <<EOF
 [GitHub API write requires confirmation]
 
-  Command: $TARGET
+$COMMANDS
 
-This command can create or modify a pull request or post a GitHub comment.
+These commands can create or modify a pull request or post GitHub comments.
 Confirm the operation explicitly if you intend to publish this change.
 EOF
 )

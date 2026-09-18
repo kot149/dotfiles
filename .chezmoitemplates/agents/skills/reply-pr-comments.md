@@ -50,10 +50,14 @@ branch's PR.
   each other's output must be issued as several tool calls in a **single**
   message, never one call per message. Agents batch their approval prompt per
   message, so issuing them one at a time forces the user through one prompt per
-  command. This applies to the fetches in step 1, the `git log` / `git show`
-  lookups in step 3, and above all to step 6, where every approved reply is
-  posted in one message. Split into a second message only when a command
-  genuinely needs an earlier one's output.
+  command. This applies to the fetches in step 1 and the `git log` / `git show`
+  lookups in step 3. Split into a second message only when a command genuinely
+  needs an earlier one's output.
+- **Posting and resolving run as one command, not one per thread.** Writes to
+  the GitHub API are approved per tool call, so N tool calls means N approval
+  prompts even inside one message. Post every approved reply with a **single**
+  command that loops over the threads (step 6), and likewise resolve with a
+  single command (step 7).
 
 ## Procedure
 
@@ -218,24 +222,31 @@ an answer.
 
 ### 6. Post
 
-Write every approved reply to its own file first, then post them all in one
-message as parallel tool calls. Do not post one thread per message.
+Write every approved reply to its own file first, then post them all with **one**
+command. Do not issue one tool call per thread: each GitHub API write is
+approved separately, so per-thread calls force the user through one approval
+prompt per reply.
 
-Reply to a review thread (`comment_id` is the `databaseId` of the first comment
+Reply to review threads (`comment_id` is the `databaseId` of the first comment
 taken in step 1):
 
 ```sh
-gh api repos/<owner>/<repo>/pulls/<number>/comments/<comment_id>/replies \
-  -f body="$(cat reply.md)"
+while IFS=$'\t' read -r comment_id file; do
+  gh api "repos/<owner>/<repo>/pulls/<number>/comments/$comment_id/replies" \
+    -F body=@"$file" >/dev/null || echo "FAILED $comment_id $file"
+done <<'EOF'
+<comment_id>	<path/to/reply-1.md>
+<comment_id>	<path/to/reply-2.md>
+EOF
 ```
 
 Always pass the body via a file (prevents newlines and backquotes from breaking
-in the shell). Give each thread its own file so the posts can run in parallel.
+in the shell). Give each thread its own file.
 
-Replying to a PR-level comment:
+PR-level comments go in the same command, after the loop:
 
 ```sh
-gh pr comment <number> --body-file reply.md
+gh pr comment <number> --body-file <path/to/reply-x.md>
 ```
 
 ### 7. Report Results and Resolve
@@ -262,12 +273,14 @@ gh pr comment <number> --body-file reply.md
   Only with approval:
 
   ```sh
-  gh api graphql -f query='
-  mutation($id:ID!){ resolveReviewThread(input:{threadId:$id}){ thread{ isResolved } } }
-  ' -F id=<thread_id>
+  for thread_id in <thread_id> <thread_id>; do
+    gh api graphql -f query='
+    mutation($id:ID!){ resolveReviewThread(input:{threadId:$id}){ thread{ isResolved } } }
+    ' -F id="$thread_id" >/dev/null || echo "FAILED $thread_id"
+  done
   ```
 
-  Resolve every approved thread in one message as parallel tool calls.
+  Resolve every approved thread with this one command, not one call per thread.
 
   Do not resolve threads classified anything other than "fixed" (discussion may
   still continue)
