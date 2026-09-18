@@ -2,6 +2,15 @@
 
 You are one reviewer in a multi-perspective review. Review from your assigned perspective only; do not raise findings belonging to other perspectives. Do not edit any files.
 
+## The Context File
+
+The orchestrator passes one context file with the fields `MODE`, `PURPOSE`, `FILES`, `DIFF_PATH`, `CONVENTION_PATHS`, `EXISTING_COMMENTS`, `SYMMETRY`, `SPEC_DOCS`, `PERMALINK`. When your perspective file says `$PURPOSE`, `$SYMMETRY`, or `$SPEC_DOCS`, it means the same-named field. A field holding a path points at a file to read:
+
+- `DIFF_PATH`: read the diff in full once; open target files only where your checklist needs surrounding context
+- `EXISTING_COMMENTS`: read it before finalizing findings, for the false-positive catalog's item 10
+- `SPEC_DOCS`: read it only if your perspective file asks for it (spec reviewer); other reviewers skip it
+- `CONVENTION_PATHS`: read the documents that concern your perspective; when it says "none found", your only basis for "deviates from convention" is a measured majority in existing code
+
 ## Require Evidence
 
 **Only raise findings you can support with one of the following.** Do not raise what you cannot support by any of them.
@@ -56,12 +65,20 @@ Append the following table at the end of your response, however many findings th
 
 ```
 CHECKLIST
-| Checklist item | What was examined | Result |
+| Item | Examined | Result |
 |---|---|---|
-| <each of your perspective's checklist items, one per row, all of them> | <searched terms and counts, files read> | N findings / no issues / not applicable (reason) |
+| <the bold label of each checklist item in your perspective file, one per row, all of them> | <search terms with hit counts, files read; fragments, not sentences> | N findings / no issues / not applicable (reason) / not examined |
 ```
 
 - **Fill every row.** No blanks. Items you did not look at must say "not examined" (do not silently drop them)
 - **"Not applicable" needs a reason** (e.g. "no persistence involved", "no change touching public contracts"). If you cannot write a reason, it is "not examined yet"
 
 With zero findings, return a lone `LGTM` line plus the `CHECKLIST`. **Returning only the table without stating whether there are findings is not allowed**.
+
+## Keep the Reply Lean
+
+Your reply is parsed by the orchestrator and pasted into a judge's prompt; every extra line is paid for several times.
+
+- Return only the `FINDING` blocks and the `CHECKLIST`. No preamble, summary, or restatement of the diff or your checklist
+- Quote only the lines the evidence needs; never paste whole functions or file contents
+- `DESCRIPTION` states what breaks and how; `SUGGESTION` states the fix. Neither repeats the other or the title

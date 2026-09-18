@@ -10,9 +10,18 @@ Run multiple reviewer subagents in parallel from different perspectives, have ju
 
 Detailed instructions for reviewers and judges live in files next to this SKILL.md. **Do not read them yourself**; pass their absolute paths to subagents, who read them directly. This keeps your own context small.
 
-- `common-rules.md` — rules shared by all reviewers (evidence requirement, false-positive catalog, output format, inventory table)
-- `perspectives/<label>.md` — one detailed checklist per perspective
-- `judge.md` — judge steps, verification bars, verdict criteria, output format
+- `common-rules.md`: rules shared by all reviewers (evidence requirement, false-positive catalog, output format, inventory table)
+- `perspectives/<label>.md`: one detailed checklist per perspective
+- `judge.md`: judge steps, verification bars, verdict criteria, output format
+
+## Token Discipline
+
+The run launches up to 20 subagents. Everything you paste into a prompt is emitted once per subagent, and everything a subagent returns lands in your context. Hold to these rules throughout:
+
+- **Shared premises go into one context file** (`$CTX_PATH`, written once in Phase 0.7). Prompts carry only paths and the per-subagent payload. Never paste the diff, PR body, existing comments, or spec documents into a prompt
+- **Bulky fetch results go straight to files** (`gh ... > file`, `--jq` truncation) instead of through your context
+- **Repository searches in Phase 0 are delegated** to one prep subagent so their raw output never enters your context
+- Subagents return only what you need to aggregate; their output formats are already minimal. Do not ask them for extra narrative
 
 ## Target
 
@@ -22,20 +31,18 @@ Arguments may specify the target (PR number/URL, branch diff, file paths) plus t
 
 | Flag | Effect |
 |---|---|
-| `--fast` | Pin to light mode. Narrow the perspectives regardless of size |
-| `--full` | Pin to heavy mode. All perspectives plus thorough verification regardless of size |
-| `--fix` | Skip the approach selection prompt in Phase 3b-2 and proceed with option A (auto-fix all VALID findings) |
-| `--post` | Skip the approach selection prompt in Phase 3b-2 and proceed with option E (post pending review comments). If the review target is not a PR, warn that this is an invalid argument, ignore it, and proceed to the normal selection prompt |
+| `--fast` | Pin to light mode regardless of size |
+| `--full` | Pin to heavy mode regardless of size |
+| `--fix` | Main policy fixed to option A (auto-fix all VALID findings); the Phase 3b-2 A/B/E prompt is skipped |
+| `--post` | Main policy fixed to option E (post pending review comments). PR targets only: otherwise warn in Japanese (`` `--post`はPR以外の対象では無効です``), ignore it, and prompt normally |
 
-If both `--fix` and `--post` are given, treat it as the user explicitly requesting "do both posting and fixing" as described for option E, and run both in the order Phase 4b (post) then Phase 4 (fix).
-
-Neither flag substitutes for the additional selections on meta/spec findings (M1-M3 / S1-S4). If such findings remain, prompt for those selections normally.
+Both `--fix` and `--post`: run Phase 4b (post) then Phase 4 (fix). A fixed main policy never replaces the meta/spec additional selections (M1-M3 / S1-S4); prompt for those normally when such findings remain.
 
 ## Design Premises
 
 - Reviewers and judges are delegated to **subagents** (child agents with independent contexts)
 - Each subagent returns a final response text. The orchestrator (you) parses that string directly
-- Reviewers and judges only read code, so use **read-only** subagents
+- Reviewers, judges, and the prep helper only read; use **read-only** subagents
 - Fixes are always made by the orchestrator itself (never let subagents rewrite files)
 
 ### How to Launch Subagents
@@ -47,7 +54,7 @@ Translate into whatever means the running agent has.
 
 On any agent, satisfy all of the following:
 
-- Subagents do not inherit conversation history. Include every shared premise explicitly in the prompt
+- Subagents do not inherit conversation history. Every shared premise lives in `$CTX_PATH`; make sure the prompt points at it
 - **Do not pass conversation context (narratives like "I wrote it this way with such intent" from the ongoing work)**. Passing it lets them reuse it as a reason not to flag things. The only things you may pass are primary sources (PR body, tickets, convention documents, in-code comments)
 - Do not let subagents rewrite files. On agents that cannot restrict to read-only, state the prohibition explicitly in the prompt
 - Sections marked "launch in parallel" must be launched together with the agent's parallel execution means. On agents with no parallel means, fall back to sequential execution and note that in the report in Japanese (e.g. `注: 並列実行手段がないため逐次実行にフォールバックしました`). Control the parallelism cap by the number of subagents launched at once
@@ -56,9 +63,9 @@ On any agent, satisfy all of the following:
 
 Every place in this document that says "selection prompt" means presenting options and letting the user choose. On agents with a selection UI tool (such as `AskUserQuestion`) use it; on agents without one, present the same options as a numbered plain-text list and have them answer by number or free text. In either case, do not proceed until you get an answer.
 
-## Reviewers (10 Perspectives)
+## Reviewers
 
-Each label's detailed checklist is in `perspectives/<label>.md`. This table is only for mode selection and aggregation.
+There are 10 perspectives. Each label's detailed checklist is in `perspectives/<label>.md`. This table is only for mode selection and aggregation.
 
 | Label | Perspective |
 |---|---|
@@ -75,24 +82,27 @@ Each label's detailed checklist is in `perspectives/<label>.md`. This table is o
 
 ## Phase 0: Preparation
 
-### 0.0 Resolve the Skill Directory
+### 0.0 Resolve Directories
 
-Set `$SKILL_DIR` to the absolute path of the directory containing this SKILL.md (the root of this skill in whichever skill store it was loaded from). All file references passed to subagents below use `$SKILL_DIR/...` absolute paths.
+- `$SKILL_DIR`: absolute path of the directory containing this SKILL.md (the root of this skill in whichever skill store it was loaded from). All file references passed to subagents use `$SKILL_DIR/...` absolute paths
+- `$CTX_DIR`: a fresh scratch directory for this run (`mktemp -d "${TMPDIR:-/tmp}/deep-review.XXXXXX"`). Remember the printed path; shell state does not persist between commands. Files created there:
+  - `diff.patch` (`$DIFF_PATH`)
+  - `existing-comments.txt`
+  - `spec-docs.md` (`$SPEC_PATH`)
+  - `context.md` (`$CTX_PATH`)
 
 ### 0.1 Identify the Review Target
 
-Decide the target from the contents of `$ARGUMENTS`, and **save the diff to a temp file and pass the path to subagents** (do not inline it into prompts; summarization loses information).
+Decide the target from the contents of `$ARGUMENTS`. **Always write the diff to `$DIFF_PATH` and pass the path**; never inline a diff into a prompt, however small.
 
-- PR number/URL given: `gh pr diff <number> > /tmp/deep-review-<target>.diff`. In the same call also take `gh pr view <number> --json title,body,url,additions,deletions,changedFiles,headRefName,baseRefName,state,isDraft,author,headRefOid,files`
-- Branch diff given: write `git diff <base>...<head>` to a temp file. Also take `git log --oneline <base>..<head>` and `git diff --stat` at the same time
+- PR number/URL given: `gh pr diff <number> > $DIFF_PATH`. In the same call also take `gh pr view <number> --json title,body,url,additions,deletions,changedFiles,headRefName,baseRefName,state,isDraft,author,headRefOid,files`
+- Branch diff given: write `git diff <base>...<head>` to `$DIFF_PATH`. Also take `git log --oneline <base>..<head>` and `git diff --stat` at the same time
 - File paths given: use those paths as the target list (no diff)
-- Unspecified: write `git diff HEAD` to a file. If the diff is empty, use `git diff HEAD~1`. Untracked files (`git status --porcelain` lines starting with `??`) do not appear in the diff; add them to `$FILES` and tell reviewers to read them whole
+- Unspecified: write `git diff HEAD` to `$DIFF_PATH`. If the diff is empty, use `git diff HEAD~1`. Untracked files (`git status --porcelain` lines starting with `??`) do not appear in the diff; add them to `$FILES` marked "(untracked: read whole)"
 
-Variables to keep: diff file path as `$DIFF_PATH`, changed file list as `$FILES`, change intent as `$PURPOSE`, full 40-char commit SHA as `$SHA`.
+Variables to keep: changed file list as `$FILES`, change intent (PR title + body, or commit log plus the stated intent) as `$PURPOSE`, full 40-char commit SHA as `$SHA`.
 
 For PR targets, also record whether the PR's `headRefName` is checked out locally (`git branch --show-current`). Fixing in Phase 4 requires it; if it is not, note that in Japanese at this point (e.g. `注: PRブランチが未チェックアウトのため、修正フェーズでは先にチェックアウトが必要です`) so the user is not surprised later.
-
-Only diffs under 100 lines may be embedded directly into prompts. Anything larger must be passed by path, with an instruction to "read the target files directly for the review".
 
 ### 0.2 Acceptance Check
 
@@ -118,19 +128,9 @@ Decide the mode from size. An explicit `--fast` / `--full` takes precedence.
 
 **When the size is near a mode boundary, pick the lighter mode.** Use `--full` only when you want a thorough look. Log the chosen mode in one line in Japanese (e.g. `モード: Light（変更XXX行 / Xファイルのため）`).
 
-### 0.4 Locate Convention Documents (Do Not Read the Contents)
+### 0.4 Fetch Existing Review Comments
 
-Only resolve paths. Reading the contents is the subagents' job.
-
-- Coding conventions / instruction files: repo-root `CLAUDE.md` / `AGENTS.md`, `CLAUDE.md` in the directory of changed files, `.claude/rules/*.md`
-- Naming conventions, architecture conventions, design decision records: `docs/architecture/`, `docs/adr/` / `adr/`, `docs/**/naming*`, and the directory layout itself that reveals layer structure (first level under `src/`)
-- Review comment label conventions: `CONTRIBUTING.md`, `.github/`, `docs/**/code_review*`
-
-**Pass both the paths found and the fact that some were not found.** If there are no conventions, the only basis later is "measured majority patterns in existing code". Without telling reviewers this, they start writing generic advice.
-
-### 0.5 Fetch Existing Review Comments (Mandatory for PR Targets)
-
-Use GraphQL rather than the REST comments endpoint: only review threads carry the resolved state, and the resolved state is what decides whether a point may be raised again.
+Mandatory for PR targets. Use GraphQL rather than the REST comments endpoint: only review threads carry the resolved state, and the resolved state is what decides whether a point may be raised again. **Write the result straight to `$CTX_DIR/existing-comments.txt`**; the `--jq` filter already truncates bodies, so you never hold the full comment bodies yourself. Read back only the line count.
 
 ```sh
 gh api graphql -F owner='<owner>' -F repo='<repo>' -F pr=<PR> -f query='
@@ -147,46 +147,58 @@ query($owner: String!, $repo: String!, $pr: Int!) {
       reviews(first: 50) { nodes { author { login } state body } }
     }
   }
-}' --jq '.data.repository.pullRequest'
+}' --jq '
+  def short: .[:300] | gsub("\\s+"; " ");
+  .data.repository.pullRequest |
+  (.reviewThreads.nodes[] |
+    "\(if .isResolved then "resolved" else "open" end) \(.path):\(.line // "-") " +
+    ([.comments.nodes[] | "\(.author.login): \(.body | short)"] | join(" | "))),
+  (.comments.nodes[] | "conversation \(.author.login): \(.body | short)"),
+  (.reviews.nodes[] | select(.body != "") | "review(\(.state)) \(.author.login): \(.body | short)")
+' > "$CTX_DIR/existing-comments.txt"
 ```
 
-Summarize per thread as `resolved|open` / `path:line` / author / first 300 chars of the body, and pass to all reviewers as `$EXISTING_COMMENTS`. Include conversation comments and review bodies too; they often carry the author's stated intent. Three purposes:
+The file serves three purposes for reviewers and judges:
 
-1. **Avoid duplicates** — do not repeat what is already flagged
-2. **Calibrate perspective** — see what the team treats as a problem, and the granularity and evidence style of findings
-3. **Judge whether already fixed** — the current HEAD may already reflect existing reviews. Reading it blind misreads it as "well done"
+1. **Avoid duplicates**: do not repeat what is already flagged
+2. **Calibrate perspective**: see what the team treats as a problem, and the granularity and evidence style of findings
+3. **Judge whether already fixed**: the current HEAD may already reflect existing reviews. Reading it blind misreads it as "well done"
 
-Do not resurrect resolved threads. Open threads whose point is only half-addressed in the current HEAD may be picked up as remaining issues.
+Resolved threads are never resurrected. Open threads whose point is only half-addressed in the current HEAD may be picked up as remaining issues.
 
-### 0.6 Identify Symmetric Counterparts
+### 0.5 Prep Subagent
 
-Check whether the change target has a **counterpart implementation**, and if so pass its path as `$SYMMETRY` to the naming / arch reviewers.
+Delegate the three lookups below (convention documents, symmetric counterparts, linked spec documents) to **one read-only subagent** (`prep`) so the search output stays out of your context. Launch it right after 0.1 and let it run while you do 0.2 to 0.4. Its prompt:
 
-| Symmetry type | How to find |
-|---|---|
-| read / write, get / set | Search for `_read_` <-> `_write_` filename pairs |
-| create / update / delete | Handlers/models with the same prefix |
-| Types sharing a base | Search by base class name |
-| Same role in a different feature | Files at the same position in the directory layout |
+```
+You are the "prep" helper for a multi-perspective code review. Read-only: do not edit any files. Return exactly the three sections below, tersely, and nothing else.
 
-**Record "none" when there is no counterpart** (it becomes the reason the comparison was skipped).
+Repository root: <absolute path>
+Changed files: $FILES
+Change description (contains links to spec documents, if any):
+<$PURPOSE>
 
-### 0.7 Fetch Linked Spec Documents
+## CONVENTION_PATHS
+List the paths that exist among: repo-root CLAUDE.md / AGENTS.md; CLAUDE.md in the directories of the changed files; .claude/rules/*.md; docs/architecture/, docs/adr/, adr/, docs/**/naming*; CONTRIBUTING.md, .github/ review guidelines, docs/**/code_review*. Also state the first-level directory layout under the main source root (it reveals layer structure). If none of the convention files exist, write "none found".
 
-Extract the following links from the PR body (`$PURPOSE`), fetch their contents, and keep them as `$SPEC_DOCS`.
+## SYMMETRY
+Check whether the changed code has a counterpart implementation: read/write or get/set filename pairs, create/update/delete handlers with the same prefix, types sharing a base class, or a file at the same position in another feature's directory. Report the counterpart path(s) with one line on how they pair, or "none".
 
-- Use the tools of a connected MCP server. Tool names differ per agent; on agents with lazy loading, load the tool definitions first
-- Jira issues (`*.atlassian.net/browse/XXX-###`, keys in `ABC-123` form): fetch body + comments with the Atlassian MCP issue-fetch tool
-- Confluence pages (`*.atlassian.net/wiki/...`): fetch the body with the Atlassian MCP page-fetch tool
-- Google Docs/Drive (`docs.google.com`, `drive.google.com`): fetch with the Google Drive MCP file-content tool (if permitted)
-- Notion (`notion.so/...`): fetch with the Notion MCP
-- Other PRD/design/Figma/Slack/Lucid links: fetch with the corresponding MCP tool where possible. If there is no matching tool or fetching fails, record "link confirmed only, body not fetched"
-- Summarize each fetched document as `title`, `url`, `body` (an excerpt of the key parts is fine)
-- If **no spec documents are found at all**, set `$SPEC_DOCS = "(no linked spec documents)"`
+## SPEC_DOCS
+Extract spec-document links from the change description: Jira issues (*.atlassian.net/browse/XXX-###, keys like ABC-123), Confluence (*.atlassian.net/wiki/...), Google Docs/Drive, Notion, and other PRD/design/Figma/Slack/Lucid links. Fetch each with the matching MCP server's read tool (Atlassian issue/page fetch, Google Drive file content, Notion page fetch; load tool definitions first if the agent loads them lazily). For Jira include the comments. For each document write:
+- title / url
+- verbatim quotes of the requirements, acceptance criteria, field/error names, and constraints that an implementation could be checked against (skip boilerplate, greetings, and unrelated comments)
+If a fetch fails or no tool matches, write "link confirmed only, body not fetched: <url>". If the description has no such links, write "(no linked spec documents)". If MCP tools are unavailable to you entirely, write "MCP unavailable" and list the URLs.
+```
 
-### 0.8 Permalink Format
+When the reply arrives:
 
-`file:line` alone takes effort to verify. Assemble the format and pass it to all subagents.
+- Write the `SPEC_DOCS` section to `$SPEC_PATH` as-is. If it says "MCP unavailable", fetch the listed URLs yourself with the MCP tools and write the same title / url / verbatim-quotes shape to `$SPEC_PATH`; on failure write `(link fetch failed, URLs only: <urls>)`
+- Keep `CONVENTION_PATHS` and `SYMMETRY` for the context file. **A "none found" / "none" is passed on as such**: without conventions the only basis later is measured majority patterns in existing code, and without a counterpart the naming / arch comparison is recorded as skipped for that reason. Omitting the fact makes reviewers write generic advice
+
+### 0.6 Permalink Format
+
+`file:line` alone takes effort to verify. Assemble the format for the context file.
 
 ```
 https://github.com/<owner>/<repo>/blob/<full 40-char SHA>/<path>#L<start>-L<end>
@@ -194,36 +206,38 @@ https://github.com/<owner>/<repo>/blob/<full 40-char SHA>/<path>#L<start>-L<end>
 
 - **Use the full 40-char SHA.** Short SHAs, branch names, and unexpanded command substitutions like `$(git rev-parse HEAD)` produce broken links
 - Include one line of context on each side of the range (to flag line 3, use `#L2-L4`)
-- For local diffs / file-specified targets where no SHA can be determined, omit permalinks and keep `file:line`
+- For local diffs / file-specified targets where no SHA can be determined, the format is `none (file:line only)`
+
+### 0.7 Write the Context File
+
+Write `$CTX_PATH` once, in this shape. Every reviewer and judge reads it; the field names are the ones the perspective files refer to as `$NAME`.
+
+```
+# deep-review context
+MODE: Light|Standard|Heavy
+PURPOSE: <PR title and body, or commit log plus stated intent, verbatim>
+FILES: <changed files, one per line; untracked ones marked "(untracked: read whole)">
+DIFF_PATH: <$DIFF_PATH, or "none (file targets)">
+CONVENTION_PATHS: <paths, one per line> | none found (only evidence: measured majority patterns in existing code)
+EXISTING_COMMENTS: <path to existing-comments.txt> | not a PR | not fetched: <reason> (duplicates possible)
+SYMMETRY: <counterpart path(s) and pairing> | none
+SPEC_DOCS: <$SPEC_PATH> | (no linked spec documents) | (link fetch failed, URLs only: <urls>)
+PERMALINK: <format from 0.6> | none (file:line only)
+```
 
 ## Phase 1: Parallel Detail Review
 
 Launch reviewer subagents for the mode-selected perspectives **in parallel** (10 including meta in standard/heavy mode, 6-7 in light mode), all together in one batch. Avoid launching them one by one in sequence (it serializes and slows down). Each subagent has an independent context.
 
-Start each subagent as `<perspective> review` with this prompt. Keep it this short; the detail lives in the files the subagent reads.
+Start each subagent as `<perspective> review` with this prompt, unchanged apart from the perspective name. No per-perspective additions: everything a perspective needs is in the context file.
 
 ```
-You are the "<perspective>" reviewer in a multi-perspective code review.
-
-First read these two files and follow both:
-1. $SKILL_DIR/common-rules.md — shared rules (evidence requirement, false-positive catalog, finding output format, mandatory CHECKLIST inventory table)
-2. $SKILL_DIR/perspectives/<perspective>.md — your detailed checklist and perspective-specific instructions
-
-Then review the change. Read $DIFF_PATH yourself, and read the target file bodies as needed. Do not edit any files.
-
-Change intent: $PURPOSE
-Changed files: $FILES
-Target diff: $DIFF_PATH
-Convention document paths: <path list found in 0.4, or the fact that none was found>
-Existing review comments: $EXISTING_COMMENTS
-Permalink format: <format from 0.8, or "none (file:line only)">
+You are the "<perspective>" reviewer in a multi-perspective code review. Read these three files in order and follow them:
+1. $SKILL_DIR/common-rules.md  (shared rules, output format, mandatory CHECKLIST)
+2. $SKILL_DIR/perspectives/<perspective>.md  (your checklist)
+3. $CTX_PATH  (change intent, file list, diff path, conventions, existing comments, permalink format)
+Then review the diff at the DIFF_PATH given there, reading target files as your checklist requires. Do not edit any files.
 ```
-
-Per-perspective additions to the prompt:
-
-- `naming` / `arch`: add `Counterpart: $SYMMETRY` (path, or "none")
-- `spec`: add `Linked spec documents: $SPEC_DOCS`
-- `meta` / `spec`: their perspective files define their own FINDING formats; no extra prompt text needed
 
 ## Phase 2: Collect & Aggregate
 
@@ -232,23 +246,23 @@ Per-perspective additions to the prompt:
 Once all results are in:
 
 1. Parse each reviewer's reply, extracting `FINDING` blocks and the `CHECKLIST` table
-2. **Merge the inventory tables** — combine all reviewers' CHECKLIST rows into one table and keep it. Present it to the user in Phase 3b-1. Perspectives excluded by light mode are recorded orchestrator-side as "out of scope due to light mode"
-3. If everyone said "LGTM", report that to the user in Japanese (e.g. `全観点LGTMでした`) with the merged inventory table and finish. **Do not return bare "no issues" without the table** (approvers need to see what was and was not examined)
-4. Otherwise aggregate the findings. Tag each finding with `reviewer: <label>` and number them `#1, #2, ...` in the order collected. These numbers stay fixed for the rest of the round: judges, the Phase 3b-1 list, and option B all refer to them
+2. **Merge the inventory tables**: combine all reviewers' CHECKLIST rows, keyed by perspective, and keep them. Present them to the user in Phase 3b-1. Perspectives excluded by light mode are recorded orchestrator-side as "out of scope due to light mode"
+3. If everyone said "LGTM", report that to the user in Japanese (e.g. `全観点LGTMでした`) with the merged inventory and finish. **Do not return bare "no issues" without the inventory** (approvers need to see what was and was not examined)
+4. Otherwise aggregate the findings. Tag each finding with `reviewer: <label>` and number them `#1, #2, ...` in the order collected. These numbers stay fixed for the rest of the run: judges, the Phase 3b-1 list, and option B all refer to them
 
 ### Under-Reporting Guard
 
 The false-positive catalog exists to reduce false positives, not to reduce findings. Suspect over-suppression when any of the following hits.
 
-- **About to finish with 0 CRITICAL / HIGH findings** — check the merged inventory table for rows still marked "not examined". If any remain, relaunch just those perspectives
-- **A CHECKLIST "not applicable" row has no reason written** — relaunch that perspective
-- **A counterpart really exists but the naming / arch table shows no comparison record** — an asymmetry miss is certain. Relaunch
+- **About to finish with 0 CRITICAL / HIGH findings**: check the merged inventory for rows still marked "not examined"
+- **A CHECKLIST "not applicable" row has no reason written**
+- **A counterpart really exists but the naming / arch table shows no comparison record**: an asymmetry miss is certain
 
-Relaunch at most once per perspective.
+In each case relaunch the affected perspective **narrowed to the missing rows**: add one line to its prompt, `Examine only these checklist items: <items>; other rows may be copied from your previous CHECKLIST as "not re-examined"`. Relaunch at most once per perspective.
 
 Reviewer-declared severities are provisional at this point. Do not calibrate yet; judges first verify which findings hold, and the orchestrator calibrates the VALID ones in Phase 3 (see "Severity Calibration").
 
-## Phase 3: Judge Findings (Multiple Parallel Subagents)
+## Phase 3: Judge Findings
 
 Always split judges into **multiple parallel subagents**. Passing all findings to a single subagent shallows how deeply it reads code per finding, increasing misjudgments (missed false positives / valid issues ruled INVALID).
 
@@ -256,45 +270,34 @@ Always split judges into **multiple parallel subagents**. Passing all findings t
 
 Pick the split policy from the aggregated finding count `N`. Launch **all judges in parallel** either way.
 
-1. **Split by perspective (default, N <= 24)** — one judge per reviewer label:
+1. **Split by perspective (default, N <= 24)**: one judge per reviewer label:
    - Up to 10 parallel: `judge-<label>` per perspective (round down to max 4 parallel in light mode)
    - Do not launch judges whose label has 0 findings
    - Each judge examines only its own perspective's findings, so it is easy to focus on which code to read
-2. **Split by finding count (N > 24, or 10+ findings concentrated on one perspective)** — chunk the findings:
+2. **Split by finding count (N > 24, or 10+ findings concentrated on one perspective)**: chunk the findings:
    - Aim for 5-8 findings per chunk (keep findings on the same file in the same chunk)
    - Up to 8 parallel chunks. For N > 64, assign across 8 parallel judges with ceil(N/8) findings each
    - Even when chunking, keep `spec` and `meta` in independent chunks, never mixed with other perspectives (different evaluation axes)
-3. **Cross-check (optional, for high-importance PRs)** — additionally pass all findings to one meta-judge and compare against the perspective judges. Findings where they disagree are shown separately at user-presentation time as "findings where judges disagreed"
+3. **Cross-check (optional, for high-importance PRs)**: additionally pass all findings to one meta-judge and compare against the perspective judges. Findings where they disagree are shown separately at user-presentation time as "findings where judges disagreed"
 
 Right after aggregating findings in Phase 2, the orchestrator computes N, picks a split policy from the above, and **logs which policy was adopted in Japanese** (e.g. `ジャッジ分割: 観点別（N=XX）` / `ジャッジ分割: 件数分割（N=XX、Xチャンク）`).
 
 ### Judge Prompt
 
-Launch each judge as `judge <perspective or chunk#>` with the following prompt.
+Launch each judge as `judge <perspective or chunk#>` with the following prompt. Paste each finding block verbatim as the reviewer returned it, with its `#N` prepended; do not reformat or summarize.
 
 ```
-You are a judge scrutinizing code review findings.
-
-First read $SKILL_DIR/judge.md and follow it exactly (mandatory steps, verification bars per claim type, false-positive catalog, verdict criteria, output format). Do not edit any files.
+You are a judge scrutinizing code review findings. Read $SKILL_DIR/judge.md and follow it exactly. Then read $CTX_PATH (change intent, file list, diff path, conventions, existing comments, counterpart, spec documents). Do not edit any files.
+Perspective file: $SKILL_DIR/perspectives/<label>.md   (perspective-split judges only; omit this line for mixed chunks)
 
 Assigned findings (keep their numbers in your output):
-<Paste the chunk's findings here>
-
-Reference info:
-- Changed file list: $FILES
-- Change intent: $PURPOSE
-- Target diff: $DIFF_PATH
-- Convention document paths: <path list found in 0.4>
-- Existing review comments: $EXISTING_COMMENTS
-- Perspective file (perspective-split judges only): $SKILL_DIR/perspectives/<label>.md
-- Counterpart (naming/arch judges only): $SYMMETRY
-- Linked spec documents (spec judges only): $SPEC_DOCS
+<findings>
 ```
 
 ### Aggregating Results
 
 - Do not advance to Phase 3b until all judge subagents have returned
-- Parse each judge's output and merge into one list
+- Parse each judge's output and merge it **by NUMBER onto the Phase 2 findings**. Judges return only the verdict fields; title, file, line, description, and suggestion stay as the reviewer wrote them unless the judge supplied a corrected `FILE`/`LINE` or a `SUGGESTION`, which then override
 - Findings with `EVIDENCE: UNVERIFIED` get an **"unverified" mark by default at user-presentation time**. For CRITICAL/HIGH ones, re-submit just those findings to a different subagent for re-judgment (max once)
 - Merge DUPLICATE verdicts into the merge target by following `DUPLICATE_OF`
 - With the cross-check policy, diff the perspective judges against the meta-judge and separately list "findings with split opinions"
@@ -324,39 +327,35 @@ The judge's SEVERITY is a per-finding recommendation made without seeing the oth
 - **When torn between two severities, pick the lower.** Mass-produced CRITICALs destroy the priority order itself
 - A judge's `EVIDENCE: UNVERIFIED` finding never goes above the reviewer's declared severity
 
-## Phase 3b: User Confirmation (Whether to Proceed to Fixes)
+## Phase 3b: User Confirmation
 
 **Always confirm with the user before fixing**. Unless `ALL_CLEAR`, never skip this phase regardless of judge results.
 
-### Strict Rules (Entire Phase 3b)
+### Strict Rules for Phase 3b
 
-**Presenting the review results before the approach selection prompt is strictly mandatory.** Two bugs of the same kind happened in the past:
+**The review results are presented before any approach selection prompt, and the presentation ends the turn.** Text wedged between tool calls may never be shown to the user, so a list followed in the same turn by a selection prompt (or by any dummy tool call as a separator) counts as "selection prompt without showing the list", which is prohibited.
 
-- Bug 1: asked for the approach without showing review results
-- Bug 2: output the list text, then inserted a dummy tool call (e.g. just running `true`) before the selection prompt. Text wedged between tool calls may not be shown to the user, so this equals "selection prompt without showing the list"
+1. Phase 3b-1: output the full list of VALID findings as **normal response text (Markdown) and end the turn with that text as the final output**. After the list text, **make no tool calls of any kind**
+2. Phase 3b-2 runs in **a later turn after the user reacts** to the list. If the user's response already states the approach (e.g. "fix them all"), skip the selection prompt and follow it
 
-Always keep this order:
+Exception: with `--fix` / `--post` the main policy is already decided, so Phase 3b-2 is execution rather than a selection prompt and may follow in the same turn as the list (except when meta/spec additional selections are needed).
 
-1. First, as Phase 3b-1, output the full list of VALID findings as **normal response text (Markdown), and end the turn with that text as the final output**. After the list text, **make no tool calls of any kind** (neither the selection prompt nor dummy command runs as a message-splitting workaround)
-2. In **a later turn after the user reacts** to the list, run the Phase 3b-2 selection prompt. If the user's response already states the approach (e.g. "fix them all"), you may skip the selection prompt and follow that instruction
+### Phase 3b-1: Present the VALID Finding List
 
-**"List plus selection prompt in the same turn" is prohibited no matter what is wedged between.** A list presentation counts as complete only when the turn fully ends and hands the user a chance to read.
-
-Exception: with `--fix` / `--post` the main approach is already fixed, so Phase 3b-2 is execution of a decided policy rather than a selection prompt, and may follow in the same turn as the list (except when meta/spec additional selections are needed).
-
-### Phase 3b-1: Present the VALID Finding List (Unconditional, Mandatory, End Turn)
-
-**Before any selection prompt, always run this step and end the turn with the list text.** Even with 0 VALID findings, explicitly tell the user in Japanese (e.g. `VALID指摘は0件です`). Skipping this step to jump to a selection prompt is prohibited.
-
-Output the following as normal text (Markdown). Write all user-visible headings and body in Japanese:
+This step is unconditional and ends the turn. Even with 0 VALID findings, explicitly tell the user in Japanese (e.g. `VALID指摘は0件です`). Write all user-visible headings and body in Japanese, as normal text (Markdown):
 
 1. The **complete list** of judge-VALIDated findings (number / reviewer / severity / file:line / title / description / suggestion in a table or bullets, omitting none) under the heading `## レビュー結果（VALID XX件）`
    - Keep the `#N` numbers assigned in Phase 2 so option B can refer to them; do not renumber after sorting
    - Mark `EVIDENCE: UNVERIFIED` ones explicitly with an "unverified" mark in Japanese (e.g. `未検証`)
    - Sort by severity (CRITICAL -> HIGH -> MEDIUM -> LOW)
-   - For PR targets with a SHA available, attach permalinks (format from 0.8)
+   - For PR targets with a SHA available, attach permalinks (format from 0.6)
 2. Counts only (for reference) of findings excluded as INVALID/DUPLICATE, under the heading `## 除外件数`
-3. **Points checked and found fine** — include the Phase 2 merged inventory table as "what was examined / result" under the heading `## 確認済み・問題なし`. Never omit it even with many findings. Approvers need to read "what was and was not examined"
+3. **Points checked and found fine** under the heading `## 確認済み・問題なし`. Never omit it even with many findings; approvers need to read "what was and was not examined". Present the merged inventory **compactly, one bullet per perspective**, grouping checklist items by result instead of one row per item:
+   ```
+   - security: 問題なし: Injection, Authn/authz, Secret exposure, Input validation, XSS/CSRF, Crypto, Sessions, Races ／ 該当なし: SSRF（外部URL取得なし）
+   - naming: 問題なし: ... ／ 該当なし: Counterpart（対応実装なし） ／ 未確認: <item>
+   ```
+   Only "not applicable" and "not examined" items carry their reason; the "what was examined" details stay with you and are shown on request
 4. If there are meta findings, show them in a separate section under the heading `## アプローチ指摘（meta）` (with CATEGORY and proposal)
 5. If there are spec findings, also show them in a separate section under the heading `## 仕様整合性（spec）` (with CATEGORY / SPEC_REF / FIX_TARGET). Highlight `FIX_TARGET=SPEC` ones in particular in Japanese as `仕様側の修正が必要`
 6. When run in light mode, state the excluded perspectives in Japanese under the heading `## 対象外観点（Lightモード）`
@@ -367,9 +366,7 @@ End the list text with a single line in Japanese moving toward approach confirma
 
 ### Phase 3b-2: Confirm the Approach
 
-With `--fix` / `--post` given, skip the main-policy (A/B/E) selection prompt and treat them as option A / option E respectively. `--post` is only valid when the review target is a PR; for non-PR targets warn in Japanese (e.g. `` `--post`はPR以外の対象では無効です``), ignore it, and prompt normally. Even with a flag-fixed main policy, still prompt normally for meta/spec additional selections (M1-M3 / S1-S4) when needed.
-
-Without flags, in the **turn after receiving the user's response** to the Phase 3b-1 list, present the following options in Japanese (you may skip this selection prompt if the user's response already states the policy):
+With `--fix` / `--post` the main policy (A/B/E) is fixed as described under Target; still prompt for the meta/spec additional selections when needed. Otherwise, in the **turn after receiving the user's response** to the Phase 3b-1 list, present the following options in Japanese (skip when the user's response already states the policy):
 
 ```
 今回のVALID指摘への対応方針を選んでください：
@@ -385,7 +382,7 @@ VALID meta指摘が残っている場合、追加で：
 
 VALID spec指摘が残っている場合、追加で：
   S1. 実装を仕様に合わせる（コード修正）
-  S2. 仕様を実装に合わせる（仕様側の修正が必要 — オーケストレーターは仕様を更新せず、「仕様の改訂が必要」として報告する。Jira/Confluenceの編集権限がある場合、別途ユーザー確認の上で更新を提案する）
+  S2. 仕様を実装に合わせる（仕様側の修正が必要。オーケストレーターは仕様を更新せず、「仕様の改訂が必要」として報告する。Jira/Confluenceの編集権限がある場合、別途ユーザー確認の上で更新を提案する）
   S3. spec指摘をスキップする（実装・仕様とも現状維持）
   S4. 仕様自体の再検討が必要なため中断する（終了）
 ```
@@ -394,7 +391,7 @@ Accept the user's selection. When multiple questions are needed (fix policy + me
 
 Follow the user selection:
 - A / B / M1 / S1: to Phase 4 (Fix)
-- E: to Phase 4b (Post Pending PR Review). After posting, report the result in Japanese and finish (no fixes. Only when the user explicitly wants both posting and fixing, run post-then-fix in that order)
+- E: to Phase 4b (Post Pending PR Review). After posting, report the result in Japanese and finish. Fix as well only when the user explicitly wants both, in post-then-fix order
 - M3 / S4: report the abort reason in Japanese and finish
 - M2 / S3: skip only the applicable findings and follow the other findings' fix policy (A/B/E)
 - S2: do not touch the implementation; include in the final user report in Japanese under the heading `## 仕様の改訂が必要` (no automatic spec-doc updates)
@@ -416,27 +413,26 @@ Precondition for PR targets: the PR's `headRefName` must be checked out. If it i
 
 ## Phase 4b: Post Pending PR Review
 
-Run only when the user picked option E in Phase 3b. Delegate the posting procedure to the [[pending-review-comments]] skill. That skill owns the procedure, pending-state rules, and error handling.
+Run only when option E applies (user choice or `--post`; PR targets only, so never offer E for local diffs or file-specified targets). Delegate the posting procedure to the [[pending-review-comments]] skill. That skill owns the procedure, pending-state rules, and error handling.
 
 As deep-review-side preconditions, prepare the inputs to the skill as follows:
 
 - **Only judge-VALIDated findings**. Never pass INVALID/UNCERTAIN ones
-- Pass each finding with `FILE` / `LINE` / title / `DESCRIPTION` / `SUGGESTION` / `<reviewer>` / `<SEVERITY>` aligned. Label each comment head as `[<reviewer> / <SEVERITY>]` (e.g. `[quality / LOW]`)
+- Pass each finding with `FILE` / `LINE` / title / `DESCRIPTION` / `SUGGESTION` / `<reviewer>` / `<SEVERITY>` aligned (judge-corrected file/line/suggestion where present). Label each comment head as `[<reviewer> / <SEVERITY>]` (e.g. `[quality / LOW]`)
 - Include the evidence (convention-document quotes, measured breakdowns) in the comment body for findings that have it
-- For non-PR targets (local diffs or file-specified), do not offer option E in the first place. Same when `--post` was given (see Phase 3b-2)
 
-After posting, report the result in Japanese (e.g. `pendingコメントを投稿しました`) and finish. No fixes (for both posting and fixing, only when the user explicitly says so, in post-then-fix order).
+After posting, report the result in Japanese (e.g. `pendingコメントを投稿しました`) and finish.
 
 ## Error Handling
 
 - **Subagent response parse failure**: skip that reviewer and continue, noting in the final report in Japanese which perspective was skipped
-- **No CHECKLIST returned**: restart that reviewer once. If still missing on the second try, record "no inventory table" in the merged table and continue (do not silently fill it in)
+- **No CHECKLIST returned**: restart that reviewer once. If still missing on the second try, record "no inventory table" in the merged inventory and continue (do not silently fill it in)
 - **No applicable a11y**: expect LGTM from a11y when there are no UI changes
 - **No applicable test**: expect at most "recommend adding tests"-level findings from test when no test files changed
 - **Judge timeout/failure**: relaunch that judge once. If it fails again, do not drop its findings; carry them into the Phase 3b-1 list as VALID with the `未検証` mark and the reviewer's severity, and note in Japanese that the judge did not return (e.g. `注: <label>のジャッジが応答しなかったため未検証のまま掲載しています`). Phase 3b confirmation still applies
 - **Subagent ignoring the specified format**: loosely match `FINDING:` lines in the reply to extract. If nothing is extractable, discard that reviewer's result
 - **Post-fix checks fail**: do not loop on fixing check failures silently. Report the failing output and ask via selection prompt in Japanese whether to fix the failures, revert the offending fix, or leave it to the user
-- **Existing review comment fetch failure**: on permission/API failure, state "existing comments not fetched" to all reviewers and continue, and also write that fact in the final report in Japanese (e.g. `注: 既存レビューコメントを取得できませんでした（重複を含む可能性あり）`) (duplicate findings may be mixed in)
-- **No convention documents found**: pass that fact to reviewers. Also tell them the only evidence is measured majority patterns in existing code
-- **Spec document fetch failure**: on permission failure/bad URL/unconnected MCP, set `$SPEC_DOCS = "(link fetch failed, URLs only: <urls>)"` and continue; the spec reviewer caps its findings at MEDIUM
-- **Subagent cannot read `$SKILL_DIR` files**: fall back to inlining the applicable file's content into that subagent's prompt (read it yourself only in this fallback case)
+- **Existing review comment fetch failure**: on permission/API failure, set `EXISTING_COMMENTS: not fetched: <reason> (duplicates possible)` in the context file and continue, and also write that fact in the final report in Japanese (e.g. `注: 既存レビューコメントを取得できませんでした（重複を含む可能性あり）`)
+- **Prep subagent failure or missing section**: do the missing lookups (0.5) yourself, keeping the same output shape
+- **Spec document fetch failure**: on permission failure/bad URL/unconnected MCP, set `SPEC_DOCS: (link fetch failed, URLs only: <urls>)` and continue; the spec reviewer caps its findings at MEDIUM
+- **Subagent cannot read `$SKILL_DIR` or `$CTX_DIR` files**: fall back to inlining the applicable file's content into that subagent's prompt (read it yourself only in this fallback case)
