@@ -1,0 +1,4 @@
+interface:
+  display_name: "Loop Until Settled"
+  short_description: "Repeat any skill or task until no corrections or new results appear."
+  default_prompt: "Repeat this until the results stop changing."
