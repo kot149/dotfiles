@@ -1,7 +1,7 @@
 ---
 name: deep-review
 description: Loop-style in-depth code review that runs multiple perspective-specific reviewer subagents in parallel, has judge subagents verify each finding against the real code, then fixes the valid findings and re-reviews. Reviews in 10 independent perspectives (security/quality/naming/comment/perf/a11y/test/arch/meta/spec), also fetching spec documents such as Jira/Confluence from the PR body to check spec consistency. Use when the user asks for "deep review", "review this PR", "review the diff from multiple angles", "review and fix", 「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」, or requests a review with a PR number or diff range in English or Japanese. Findings can also be posted as pending PR review comments. The `--fix` flag skips the approach selection prompt and auto-fixes, and `--post` similarly proceeds to pending review comment posting (only valid for PR targets).
-argument-hint: "[--fast|--full] [--fix|--post]"
+argument-hint: "[<PR number|PR URL|base...head|paths>] [--fast|--full] [--fix|--post]"
 ---
 
 # Deep Review
@@ -86,9 +86,11 @@ Decide the target from the contents of `$ARGUMENTS`, and **save the diff to a te
 - PR number/URL given: `gh pr diff <number> > /tmp/deep-review-<target>.diff`. In the same call also take `gh pr view <number> --json title,body,url,additions,deletions,changedFiles,headRefName,baseRefName,state,isDraft,author,headRefOid,files`
 - Branch diff given: write `git diff <base>...<head>` to a temp file. Also take `git log --oneline <base>..<head>` and `git diff --stat` at the same time
 - File paths given: use those paths as the target list (no diff)
-- Unspecified: write `git diff HEAD` to a file. If the diff is empty, use `git diff HEAD~1`
+- Unspecified: write `git diff HEAD` to a file. If the diff is empty, use `git diff HEAD~1`. Untracked files (`git status --porcelain` lines starting with `??`) do not appear in the diff; add them to `$FILES` and tell reviewers to read them whole
 
 Variables to keep: diff file path as `$DIFF_PATH`, changed file list as `$FILES`, change intent as `$PURPOSE`, full 40-char commit SHA as `$SHA`.
+
+For PR targets, also record whether the PR's `headRefName` is checked out locally (`git branch --show-current`). Fixing in Phase 4 requires it; if it is not, note that in Japanese at this point (e.g. `注: PRブランチが未チェックアウトのため、修正フェーズでは先にチェックアウトが必要です`) so the user is not surprised later.
 
 Only diffs under 100 lines may be embedded directly into prompts. Anything larger must be passed by path, with an instruction to "read the target files directly for the review".
 
@@ -128,18 +130,33 @@ Only resolve paths. Reading the contents is the subagents' job.
 
 ### 0.5 Fetch Existing Review Comments (Mandatory for PR Targets)
 
+Use GraphQL rather than the REST comments endpoint: only review threads carry the resolved state, and the resolved state is what decides whether a point may be raised again.
+
 ```sh
-gh api "repos/<owner>/<repo>/pulls/<PR>/comments?per_page=100" \
-  --jq '.[] | "\(.user.login) \(.path):\(.line // .original_line)\n\(.body[0:300])\n"'
+gh api graphql -F owner='<owner>' -F repo='<repo>' -F pr=<PR> -f query='
+query($owner: String!, $repo: String!, $pr: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $pr) {
+      reviewThreads(first: 100) {
+        nodes {
+          isResolved isOutdated path line
+          comments(first: 20) { nodes { author { login } body } }
+        }
+      }
+      comments(first: 100) { nodes { author { login } body } }
+      reviews(first: 50) { nodes { author { login } state body } }
+    }
+  }
+}' --jq '.data.repository.pullRequest'
 ```
 
-Summarize and pass to all reviewers as `$EXISTING_COMMENTS`. Three purposes:
+Summarize per thread as `resolved|open` / `path:line` / author / first 300 chars of the body, and pass to all reviewers as `$EXISTING_COMMENTS`. Include conversation comments and review bodies too; they often carry the author's stated intent. Three purposes:
 
 1. **Avoid duplicates** — do not repeat what is already flagged
 2. **Calibrate perspective** — see what the team treats as a problem, and the granularity and evidence style of findings
 3. **Judge whether already fixed** — the current HEAD may already reflect existing reviews. Reading it blind misreads it as "well done"
 
-Do not resurrect resolved threads. Points that were flagged but only half-addressed may be picked up as remaining issues.
+Do not resurrect resolved threads. Open threads whose point is only half-addressed in the current HEAD may be picked up as remaining issues.
 
 ### 0.6 Identify Symmetric Counterparts
 
@@ -178,6 +195,7 @@ https://github.com/<owner>/<repo>/blob/<full 40-char SHA>/<path>#L<start>-L<end>
 - **Use the full 40-char SHA.** Short SHAs, branch names, and unexpanded command substitutions like `$(git rev-parse HEAD)` produce broken links
 - Include one line of context on each side of the range (to flag line 3, use `#L2-L4`)
 - For local diffs / file-specified targets where no SHA can be determined, omit permalinks and keep `file:line`
+- From round 2 on, the reviewed diff is uncommitted, so no SHA matches it. Omit permalinks in those rounds even for PR targets
 
 ### 0.9 Initialize Loop Counter
 
@@ -198,12 +216,13 @@ First read these two files and follow both:
 
 Then review the change. Read $DIFF_PATH yourself, and read the target file bodies as needed. Do not edit any files.
 
+Round: $ROUND
 Change intent: $PURPOSE
 Changed files: $FILES
 Target diff: $DIFF_PATH
 Convention document paths: <path list found in 0.4, or the fact that none was found>
 Existing review comments: $EXISTING_COMMENTS
-Permalink format: <format from 0.8>
+Permalink format: <format from 0.8, or "none (file:line only)">
 ```
 
 Per-perspective additions to the prompt:
@@ -211,6 +230,7 @@ Per-perspective additions to the prompt:
 - `naming` / `arch`: add `Counterpart: $SYMMETRY` (path, or "none")
 - `spec`: add `Linked spec documents: $SPEC_DOCS`
 - `meta` / `spec`: their perspective files define their own FINDING formats; no extra prompt text needed
+- Round 2 and later: add `Previous round fixes:` followed by the findings fixed in Phase 4 (number, reviewer, title, file:line). The diff is then the fix diff only; common-rules.md tells reviewers how to treat it
 
 ## Phase 2: Collect & Aggregate
 
@@ -221,7 +241,7 @@ Once all results are in:
 1. Parse each reviewer's reply, extracting `FINDING` blocks and the `CHECKLIST` table
 2. **Merge the inventory tables** — combine all reviewers' CHECKLIST rows into one table and keep it. Present it to the user in Phase 3b-1. Perspectives excluded by light mode are recorded orchestrator-side as "out of scope due to light mode"
 3. If everyone said "LGTM", report that to the user in Japanese (e.g. `全観点LGTMでした`) with the merged inventory table and finish. **Do not return bare "no issues" without the table** (approvers need to see what was and was not examined)
-4. Otherwise aggregate the findings. Tag each finding with `reviewer: <label>` and list them
+4. Otherwise aggregate the findings. Tag each finding with `reviewer: <label>` and number them `#1, #2, ...` in the order collected. These numbers stay fixed for the rest of the round: judges, the Phase 3b-1 list, and option B all refer to them
 
 ### Under-Reporting Guard
 
@@ -233,29 +253,7 @@ The false-positive catalog exists to reduce false positives, not to reduce findi
 
 Relaunch at most once per perspective.
 
-### Severity Calibration (Orchestrator's Job)
-
-Do not use reviewer-declared severities as-is. Compare all findings across perspectives and reassign using the following rubric. **Cross-perspective calibration can only be done by one party seeing everything.**
-
-| Finding content | severity |
-|---|---|
-| Crash on a reachable path / data loss or corruption / security vulnerability / fatal misbehavior | CRITICAL |
-| Correctness issue but with limited impact | HIGH |
-| Violation of a rule stated in a convention document (quotable) | HIGH |
-| Layer crossing / dispersed domain where fixing only one side causes a concrete divergence accident | HIGH |
-| Name-vs-reality mismatch (a getter-sounding name that mutates, misleading readers into breaking things) | HIGH |
-| Public contract promises something the implementation cannot deliver (on a reachable path) | HIGH |
-| Concrete mutation shown where "breaking it still passes existing tests" | HIGH |
-| Unexpected state silently falling back to a default with no operational means to notice | HIGH |
-| Existing callers that really exist and break under the contract change (count shown) | HIGH |
-| Same mismatch but on a not-yet-reachable path (unimplemented, 501, etc.) | LOW (note "needed at wiring time") |
-| No convention, but deviates from the measured majority of existing code (majority shown with measurements) | MEDIUM |
-| Logging exists but granularity/aggregation policy differs from similar processing | MEDIUM |
-| Stale prose where a misunderstanding breaks nothing (e.g. outdated line-number references) | LOW |
-| Not caused by this PR, or issues on unchanged lines | LOW |
-
-- **Findings rooted in design/naming/architecture must not be CRITICAL** (cap at HIGH). If it manifests as a reachable defect, it is not a design discussion; security / quality should have raised it as a correctness issue
-- **When torn between two severities, pick the lower.** Mass-produced CRITICALs destroy the priority order itself
+Reviewer-declared severities are provisional at this point. Do not calibrate yet; judges first verify which findings hold, and the orchestrator calibrates the VALID ones in Phase 3 (see "Severity Calibration").
 
 ## Phase 3: Judge Findings (Multiple Parallel Subagents)
 
@@ -286,7 +284,7 @@ You are a judge scrutinizing code review findings.
 
 First read $SKILL_DIR/judge.md and follow it exactly (mandatory steps, verification bars per claim type, false-positive catalog, verdict criteria, output format). Do not edit any files.
 
-Assigned findings:
+Assigned findings (keep their numbers in your output):
 <Paste the chunk's findings here>
 
 Reference info:
@@ -295,6 +293,8 @@ Reference info:
 - Target diff: $DIFF_PATH
 - Convention document paths: <path list found in 0.4>
 - Existing review comments: $EXISTING_COMMENTS
+- Perspective file (perspective-split judges only): $SKILL_DIR/perspectives/<label>.md
+- Counterpart (naming/arch judges only): $SYMMETRY
 - Linked spec documents (spec judges only): $SPEC_DOCS
 ```
 
@@ -305,6 +305,31 @@ Reference info:
 - Findings with `EVIDENCE: UNVERIFIED` get an **"unverified" mark by default at user-presentation time**. For CRITICAL/HIGH ones, re-submit just those findings to a different subagent for re-judgment (max once)
 - Merge DUPLICATE verdicts into the merge target by following `DUPLICATE_OF`
 - With the cross-check policy, diff the perspective judges against the meta-judge and separately list "findings with split opinions"
+
+### Severity Calibration
+
+The judge's SEVERITY is a per-finding recommendation made without seeing the other perspectives. Compare all VALID findings across perspectives and assign the final severity using the following rubric. **Cross-perspective calibration can only be done by one party seeing everything.**
+
+| Finding content | severity |
+|---|---|
+| Crash on a reachable path / data loss or corruption / security vulnerability / fatal misbehavior | CRITICAL |
+| Correctness issue but with limited impact | HIGH |
+| Violation of a rule stated in a convention document (quotable) | HIGH |
+| Layer crossing / dispersed domain where fixing only one side causes a concrete divergence accident | HIGH |
+| Name-vs-reality mismatch (a getter-sounding name that mutates, misleading readers into breaking things) | HIGH |
+| Public contract promises something the implementation cannot deliver (on a reachable path) | HIGH |
+| Concrete mutation shown where "breaking it still passes existing tests" | HIGH |
+| Unexpected state silently falling back to a default with no operational means to notice | HIGH |
+| Existing callers that really exist and break under the contract change (count shown) | HIGH |
+| Same mismatch but on a not-yet-reachable path (unimplemented, 501, etc.) | LOW (note "needed at wiring time") |
+| No convention, but deviates from the measured majority of existing code (majority shown with measurements) | MEDIUM |
+| Logging exists but granularity/aggregation policy differs from similar processing | MEDIUM |
+| Stale prose where a misunderstanding breaks nothing (e.g. outdated line-number references) | LOW |
+| Not caused by this PR, or issues on unchanged lines | LOW |
+
+- **Findings rooted in design/naming/architecture must not be CRITICAL** (cap at HIGH). If it manifests as a reachable defect, it is not a design discussion; security / quality should have raised it as a correctness issue
+- **When torn between two severities, pick the lower.** Mass-produced CRITICALs destroy the priority order itself
+- A judge's `EVIDENCE: UNVERIFIED` finding never goes above the reviewer's declared severity
 
 ## Phase 3b: User Confirmation (Whether to Proceed to Fixes)
 
@@ -332,7 +357,8 @@ Exception: with `--fix` / `--post` the main approach is already fixed, so Phase 
 
 Output the following as normal text (Markdown). Write all user-visible headings and body in Japanese:
 
-1. The **complete list** of judge-VALIDated findings (reviewer / severity / file:line / title / description / suggestion in a table or bullets, omitting none) under the heading `## レビュー結果（VALID XX件）`
+1. The **complete list** of judge-VALIDated findings (number / reviewer / severity / file:line / title / description / suggestion in a table or bullets, omitting none) under the heading `## レビュー結果（VALID XX件）`
+   - Keep the `#N` numbers assigned in Phase 2 so option B can refer to them; do not renumber after sorting
    - Mark `EVIDENCE: UNVERIFIED` ones explicitly with an "unverified" mark in Japanese (e.g. `未検証`)
    - Sort by severity (CRITICAL -> HIGH -> MEDIUM -> LOW)
    - For PR targets with a SHA available, attach permalinks (format from 0.8)
@@ -384,16 +410,20 @@ Follow the user selection:
 
 Only findings the user chose to fix in Phase 3b.
 
+Precondition for PR targets: the PR's `headRefName` must be checked out. If it is not, stop before editing and ask the user via selection prompt in Japanese whether to check it out (`gh pr checkout <number>`) or finish with the list only. Never edit files on a different branch.
+
 1. Fix granularity follows the user selection:
    - Option A (all auto): CRITICAL/HIGH required, MEDIUM where possible, LOW report-only
    - Option B (individual): only the finding numbers the user specified
    - With M1 selected, include the meta findings
 2. The orchestrator (you) edits files directly to fix. Never let subagents rewrite
-3. After fixes, `ROUND++`
-4. If `ROUND > MAX_ROUNDS`, report a summary of the fixes in Japanese as max-rounds reached (e.g. `上限5ラウンドに到達したため終了します`) and finish
-5. Otherwise update `$DIFF_PATH` with `git diff HEAD` and return to Phase 1 (confirm with the user in Phase 3b again before the next round's review)
+3. Run the project's existing checks for the changed files: the linter, type checker, and the test files that exercise the changed modules, using the commands the repository already defines (package scripts, `Makefile`, `pyproject.toml`, CI definition). Do not add new tooling. Report failures verbatim in Japanese under `## 修正後チェック` and do not hide them; a check the repository does not define is reported as not run
+4. Leave the fixes uncommitted. Commit only when the user asks
+5. After fixes, `ROUND++`
+6. If `ROUND > MAX_ROUNDS`, report a summary of the fixes in Japanese as max-rounds reached (e.g. `上限5ラウンドに到達したため終了します`) and finish
+7. Otherwise write `git diff HEAD` to a new file as `$DIFF_PATH`, keep the list of fixed findings for the `Previous round fixes` prompt addition, and return to Phase 1 (confirm with the user in Phase 3b again before the next round's review). Permalinks are omitted from this round on (see 0.8)
 
-**Also confirm whether to proceed to the next round**: after fixes, confirm via selection prompt in Japanese whether to re-review or finish:
+**Also confirm whether to proceed to the next round**: after fixes and checks, confirm via selection prompt in Japanese whether to re-review or finish:
 
 ```
 Round $ROUND の修正が完了しました。次の手順を選んでください：
@@ -420,8 +450,9 @@ After posting, report the result in Japanese (e.g. `pendingコメントを投稿
 - **No CHECKLIST returned**: restart that reviewer once. If still missing on the second try, record "no inventory table" in the merged table and continue (do not silently fill it in)
 - **No applicable a11y**: expect LGTM from a11y when there are no UI changes
 - **No applicable test**: expect at most "recommend adding tests"-level findings from test when no test files changed
-- **Judge timeout/failure**: no verdict material, so do not drop findings; treat all findings as VALID and proceed to fixes
+- **Judge timeout/failure**: relaunch that judge once. If it fails again, do not drop its findings; carry them into the Phase 3b-1 list as VALID with the `未検証` mark and the reviewer's severity, and note in Japanese that the judge did not return (e.g. `注: <label>のジャッジが応答しなかったため未検証のまま掲載しています`). Phase 3b confirmation still applies
 - **Subagent ignoring the specified format**: loosely match `FINDING:` lines in the reply to extract. If nothing is extractable, discard that reviewer's result
+- **Post-fix checks fail**: do not loop on fixing check failures silently. Report the failing output and ask via selection prompt in Japanese whether to fix the failures, revert the offending fix, or leave it to the user
 - **Existing review comment fetch failure**: on permission/API failure, state "existing comments not fetched" to all reviewers and continue, and also write that fact in the final report in Japanese (e.g. `注: 既存レビューコメントを取得できませんでした（重複を含む可能性あり）`) (duplicate findings may be mixed in)
 - **No convention documents found**: pass that fact to reviewers. Also tell them the only evidence is measured majority patterns in existing code
 - **Spec document fetch failure**: on permission failure/bad URL/unconnected MCP, set `$SPEC_DOCS = "(link fetch failed, URLs only: <urls>)"` and continue; the spec reviewer caps its findings at MEDIUM

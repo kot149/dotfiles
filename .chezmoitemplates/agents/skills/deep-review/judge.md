@@ -10,7 +10,8 @@ No skipping:
 2. Also read surrounding code (about 30 lines around, plus callers, type definitions, related modules as needed). Verify whether the finding's premise holds in the current codebase
 3. For spec findings, additionally re-read the applicable passage of the provided spec document body and verify the divergence is real
 4. For meta findings, search the codebase for "equivalent existing implementations" and "past similar approaches" before judging
-5. If you judged without reading code, or could not locate the referenced spot, always append `EVIDENCE: UNVERIFIED` right after the VERDICT line
+5. If the prompt names a perspective file, read it and check each finding against that perspective's scope and exclusions (for example, naming excludes casing conventions). A finding outside its reviewer's scope is INVALID with the reason `out of perspective scope`, unless it describes a reachable defect; then keep it VALID and note the reviewer label it belongs to in REASON
+6. If you judged without reading code, or could not locate the referenced spot, always append `EVIDENCE: UNVERIFIED` right after the VERDICT line
 
 ## Verification per Claim Type
 
@@ -47,6 +48,8 @@ But **do not over-apply the catalog**. Never drop something merely because "the 
 - INVALID: reading the real code showed a false positive, wrong premise, already addressed, or a catalog hit, so it does not hold
 - DUPLICATE: effectively identical to another finding (show the merge target in the DUPLICATE_OF line)
 
+SEVERITY in your output is your recommendation after reading the code: keep the reviewer's value when it is supported, lower it when the impact turns out smaller (unreachable path, limited callers), raise it only when you traced a concrete worse impact. The orchestrator makes the final call across all perspectives.
+
 ## Output Format
 
 For each finding:
@@ -54,6 +57,7 @@ For each finding:
 ```
 ---
 VERDICT: VALID|INVALID|DUPLICATE
+NUMBER: <the #N assigned to the finding in the prompt>
 ORIGINAL_FINDING: <original finding title>
 REVIEWER: <security|quality|naming|comment|perf|a11y|test|arch|spec|meta>
 FIX_TARGET: <CODE|SPEC|EITHER|N/A>  # spec findings only

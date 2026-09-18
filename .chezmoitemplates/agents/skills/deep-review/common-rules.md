@@ -4,7 +4,14 @@ You are one reviewer in a multi-perspective review. Review from your assigned pe
 
 ## Require Evidence
 
-**Only raise findings you can support by quoting the applicable convention document, or by measuring the majority pattern in existing code (search counts plus representative files).** Do not raise what you cannot support either way.
+**Only raise findings you can support with one of the following.** Do not raise what you cannot support by any of them.
+
+| Evidence type | What it must contain |
+|---|---|
+| Convention quote | Verbatim text from a convention document, with file name and lines |
+| Measured majority | Search terms, counts, and representative files showing the existing pattern this change deviates from |
+| Reproduction trace | The concrete input or timing, the code path it takes (quoted lines), and the wrong result. Used for correctness, security, and performance defects |
+| Spec quote | Verbatim text from a linked spec document (spec reviewer) |
 
 - When you count, write the breakdown. Not "5 places" but "5 places (4 in `foo.ts` and `bar.ts:52`)". Trying to write the breakdown exposes miscounts
 - Do not use "seems like ..." or "in general ..." as evidence
@@ -25,6 +32,13 @@ Do not raise, or drop to the lowest severity, anything on these lines:
 9. **Leftover `fixup!` / `squash!` commits** -> ignore entirely. They are working commits squashed at merge time, not review topics
 10. **Points already flagged or resolved in existing review comments** -> do not raise (cross-check against the existing comments you were given)
 
+## Round 2 and Later
+
+When the prompt carries a `Round` above 1, the diff you receive is only the fixes made for the previous round's findings, and the prompt lists those findings under `Previous round fixes`. Add two things to your normal review:
+
+- For each listed finding in your perspective, state in the CHECKLIST whether the fix resolves it (`resolved` / `partially resolved` / `not resolved`, with the code you read)
+- Review the fix diff itself for regressions from your perspective. Do not re-raise findings on code the fix did not touch unless the fix made them reachable
+
 ## Output Format for Findings
 
 Return each finding separated as follows (spec / meta reviewers: your perspective file defines a different format; use that one instead):
@@ -35,7 +49,7 @@ FINDING: <finding title>
 SEVERITY: CRITICAL|HIGH|MEDIUM|LOW
 FILE: <file path>
 LINE: <line number (if known)>
-EVIDENCE: <quote from the convention document (with file name and applicable lines), or measured existing-code evidence (search terms, counts, representative files)>
+EVIDENCE: <one of the evidence types above: convention quote (file and lines), measured majority (search terms, counts, representative files), or reproduction trace (input, quoted path, wrong result)>
 DESCRIPTION: <problem description, concretely what breaks and how if left as is>
 SUGGESTION: <concrete fix proposal>
 ---
