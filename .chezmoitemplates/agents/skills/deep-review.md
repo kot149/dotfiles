@@ -1,12 +1,12 @@
 ---
 name: deep-review
-description: Loop-style in-depth code review that runs multiple perspective-specific reviewer subagents in parallel, has judge subagents verify each finding against the real code, then fixes the valid findings and re-reviews. Reviews in 10 independent perspectives (security/quality/naming/comment/perf/a11y/test/arch/meta/spec), also fetching spec documents such as Jira/Confluence from the PR body to check spec consistency. Use when the user asks for "deep review", "review this PR", "review the diff from multiple angles", "review and fix", 「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」, or requests a review with a PR number or diff range in English or Japanese. Findings can also be posted as pending PR review comments. The `--fix` flag skips the approach selection prompt and auto-fixes, and `--post` similarly proceeds to pending review comment posting (only valid for PR targets).
+description: In-depth code review that runs multiple perspective-specific reviewer subagents in parallel, has judge subagents verify each finding against the real code, then fixes the valid findings. Reviews in 10 independent perspectives (security/quality/naming/comment/perf/a11y/test/arch/meta/spec), also fetching spec documents such as Jira/Confluence from the PR body to check spec consistency. Use when the user asks for "deep review", "review this PR", "review the diff from multiple angles", "review and fix", 「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」, or requests a review with a PR number or diff range in English or Japanese. Findings can also be posted as pending PR review comments. The `--fix` flag skips the approach selection prompt and auto-fixes, and `--post` similarly proceeds to pending review comment posting (only valid for PR targets).
 argument-hint: "[<PR number|PR URL|base...head|paths>] [--fast|--full] [--fix|--post]"
 ---
 
 # Deep Review
 
-Run multiple reviewer subagents in parallel from different perspectives, have judge subagents evaluate validity, fix the valid findings, then repeat the review-fix loop up to 5 times.
+Run multiple reviewer subagents in parallel from different perspectives, have judge subagents evaluate validity, then fix the valid findings.
 
 Detailed instructions for reviewers and judges live in files next to this SKILL.md. **Do not read them yourself**; pass their absolute paths to subagents, who read them directly. This keeps your own context small.
 
@@ -195,17 +195,12 @@ https://github.com/<owner>/<repo>/blob/<full 40-char SHA>/<path>#L<start>-L<end>
 - **Use the full 40-char SHA.** Short SHAs, branch names, and unexpanded command substitutions like `$(git rev-parse HEAD)` produce broken links
 - Include one line of context on each side of the range (to flag line 3, use `#L2-L4`)
 - For local diffs / file-specified targets where no SHA can be determined, omit permalinks and keep `file:line`
-- From round 2 on, the reviewed diff is uncommitted, so no SHA matches it. Omit permalinks in those rounds even for PR targets
-
-### 0.9 Initialize Loop Counter
-
-`ROUND=1`, `MAX_ROUNDS=5`
 
 ## Phase 1: Parallel Detail Review
 
 Launch reviewer subagents for the mode-selected perspectives **in parallel** (10 including meta in standard/heavy mode, 6-7 in light mode), all together in one batch. Avoid launching them one by one in sequence (it serializes and slows down). Each subagent has an independent context.
 
-Start each subagent as `<perspective> review round $ROUND` with this prompt. Keep it this short; the detail lives in the files the subagent reads.
+Start each subagent as `<perspective> review` with this prompt. Keep it this short; the detail lives in the files the subagent reads.
 
 ```
 You are the "<perspective>" reviewer in a multi-perspective code review.
@@ -216,7 +211,6 @@ First read these two files and follow both:
 
 Then review the change. Read $DIFF_PATH yourself, and read the target file bodies as needed. Do not edit any files.
 
-Round: $ROUND
 Change intent: $PURPOSE
 Changed files: $FILES
 Target diff: $DIFF_PATH
@@ -230,7 +224,6 @@ Per-perspective additions to the prompt:
 - `naming` / `arch`: add `Counterpart: $SYMMETRY` (path, or "none")
 - `spec`: add `Linked spec documents: $SPEC_DOCS`
 - `meta` / `spec`: their perspective files define their own FINDING formats; no extra prompt text needed
-- Round 2 and later: add `Previous round fixes:` followed by the findings fixed in Phase 4 (number, reviewer, title, file:line). The diff is then the fix diff only; common-rules.md tells reviewers how to treat it
 
 ## Phase 2: Collect & Aggregate
 
@@ -277,7 +270,7 @@ Right after aggregating findings in Phase 2, the orchestrator computes N, picks 
 
 ### Judge Prompt
 
-Launch each judge as `judge <perspective or chunk#> round $ROUND` with the following prompt.
+Launch each judge as `judge <perspective or chunk#>` with the following prompt.
 
 ```
 You are a judge scrutinizing code review findings.
@@ -368,7 +361,7 @@ Output the following as normal text (Markdown). Write all user-visible headings 
 5. If there are spec findings, also show them in a separate section under the heading `## 仕様整合性（spec）` (with CATEGORY / SPEC_REF / FIX_TARGET). Highlight `FIX_TARGET=SPEC` ones in particular in Japanese as `仕様側の修正が必要`
 6. When run in light mode, state the excluded perspectives in Japanese under the heading `## 対象外観点（Lightモード）`
 
-**No history**: write only the final verdict per finding. Do not write process details like severity raises/lowers, judge re-verdicts, or changes since previous rounds in the list or the final report (e.g. notes like "severity was lowered from HIGH to LOW" are unnecessary).
+**No history**: write only the final verdict per finding. Do not write process details like severity raises/lowers or judge re-verdicts in the list or the final report (e.g. notes like "severity was lowered from HIGH to LOW" are unnecessary).
 
 End the list text with a single line in Japanese moving toward approach confirmation (e.g. `上記のVALID指摘への対応方針をお知らせください`), then **end the turn**.
 
@@ -419,17 +412,7 @@ Precondition for PR targets: the PR's `headRefName` must be checked out. If it i
 2. The orchestrator (you) edits files directly to fix. Never let subagents rewrite
 3. Run the project's existing checks for the changed files: the linter, type checker, and the test files that exercise the changed modules, using the commands the repository already defines (package scripts, `Makefile`, `pyproject.toml`, CI definition). Do not add new tooling. Report failures verbatim in Japanese under `## 修正後チェック` and do not hide them; a check the repository does not define is reported as not run
 4. Leave the fixes uncommitted. Commit only when the user asks
-5. After fixes, `ROUND++`
-6. If `ROUND > MAX_ROUNDS`, report a summary of the fixes in Japanese as max-rounds reached (e.g. `上限5ラウンドに到達したため終了します`) and finish
-7. Otherwise write `git diff HEAD` to a new file as `$DIFF_PATH`, keep the list of fixed findings for the `Previous round fixes` prompt addition, and return to Phase 1 (confirm with the user in Phase 3b again before the next round's review). Permalinks are omitted from this round on (see 0.8)
-
-**Also confirm whether to proceed to the next round**: after fixes and checks, confirm via selection prompt in Japanese whether to re-review or finish:
-
-```
-Round $ROUND の修正が完了しました。次の手順を選んでください：
-1. 再レビューする（次ラウンドへ）
-2. 終了する
-```
+5. Report a summary of the fixes in Japanese and finish
 
 ## Phase 4b: Post Pending PR Review
 
@@ -446,7 +429,7 @@ After posting, report the result in Japanese (e.g. `pendingコメントを投稿
 
 ## Error Handling
 
-- **Subagent response parse failure**: skip that reviewer for that round only and continue. If the same reviewer is unparsable for 2 consecutive rounds, exclude it from later rounds on
+- **Subagent response parse failure**: skip that reviewer and continue, noting in the final report in Japanese which perspective was skipped
 - **No CHECKLIST returned**: restart that reviewer once. If still missing on the second try, record "no inventory table" in the merged table and continue (do not silently fill it in)
 - **No applicable a11y**: expect LGTM from a11y when there are no UI changes
 - **No applicable test**: expect at most "recommend adding tests"-level findings from test when no test files changed

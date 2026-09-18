@@ -32,13 +32,6 @@ Do not raise, or drop to the lowest severity, anything on these lines:
 9. **Leftover `fixup!` / `squash!` commits** -> ignore entirely. They are working commits squashed at merge time, not review topics
 10. **Points already flagged or resolved in existing review comments** -> do not raise (cross-check against the existing comments you were given)
 
-## Round 2 and Later
-
-When the prompt carries a `Round` above 1, the diff you receive is only the fixes made for the previous round's findings, and the prompt lists those findings under `Previous round fixes`. Add two things to your normal review:
-
-- For each listed finding in your perspective, state in the CHECKLIST whether the fix resolves it (`resolved` / `partially resolved` / `not resolved`, with the code you read)
-- Review the fix diff itself for regressions from your perspective. Do not re-raise findings on code the fix did not touch unless the fix made them reachable
-
 ## Output Format for Findings
 
 Return each finding separated as follows (spec / meta reviewers: your perspective file defines a different format; use that one instead):
