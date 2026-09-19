@@ -40,6 +40,7 @@
 {{- end -}}
 {
   "$schema": "https://opencode.ai/config.json",
+  "autoupdate": false,
   "permission": {
     "bash": {{ $bashRules | toPrettyJson | indent 4 | trim }},
     "edit": "allow",
