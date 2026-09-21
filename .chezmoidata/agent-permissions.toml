@@ -103,6 +103,7 @@ agent_shell_allow = [
   "Get-Member *",
   "Get-Process*",
   "Get-Service*",
+  "Get-NetTCPConnection*",
   "Get-Alias*",
   "Get-Variable*",
   "Get-History*",
