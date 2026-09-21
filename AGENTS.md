@@ -105,6 +105,16 @@ When adding new tunable values, prefer threading them through `.chezmoidata.toml
 
 `.chezmoidata.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_no_rtk`, and `agent_shell_deny` arrays consumed by AI-agent settings templates (e.g. `dot_claude/settings.json.tmpl`, `dot_codex/...`). Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Entries in `agent_shell_allow` are emitted both bare and with an auto-generated `rtk <cmd>` variant — put commands that should be allowed **without** the `rtk` wrapper (e.g. `rtk` itself) in `agent_shell_allow_no_rtk`, which emits only the bare form.
 
+`agent_shell_allow_write` holds commands with side effects (`git add`, `git commit`, `herdr`) and is consumed by `private_dot_config/opencode/opencode.json.tmpl` only. Claude Code and Codex keep prompting for those.
+
+opencode's matcher differs from Claude Code's in ways the template depends on:
+
+- A compound command is parsed into its sub-commands (pipeline stages, `&&` / `;` segments) and **every** one must match an allow rule, or the whole call prompts. A bare `echo "---"` between two allowed commands is enough to trigger a prompt, which is why output cmdlets are in `agent_shell_allow`.
+- Rules are matched in **file order, last match wins**, so the template emits `"*": "ask"` first, then every allow, then every deny. Do not sort the object; Go's `toPrettyJson` reorders map keys and would mix denies back in among the allows.
+- A pattern ending in ` *` is rewritten to `( .*)?`, so `"git log *"` already matches bare `git log`. The template emits no bare variants.
+- `webfetch` and `websearch` accept only a plain `"allow"` / `"ask"` / `"deny"`, not per-pattern objects, so `agent_plain_allow`'s per-domain `WebFetch(domain:…)` entries have no opencode equivalent.
+- `external_directory` gates any path outside the project. Its allowed globs live in the template, not in `.chezmoidata`, because they are OS-specific.
+
 ## Agent hooks
 
 Hook scripts shared by more than one agent live in `.chezmoitemplates/agents/` and are pulled into each agent's config directory by a one-line `{{ include ... }}` wrapper, so there is a single implementation per script:
