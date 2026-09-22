@@ -429,6 +429,7 @@ function Invoke-ClaudeGpt {
         'CLAUDE_CODE_SUBAGENT_MODEL',
         'CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY',
         'CLAUDE_CODE_ALWAYS_ENABLE_EFFORT',
+        'CLAUDE_CODE_AUTO_MODE_SERVER',
         'CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY',
         'CLAUDE_CODE_MAX_CONTEXT_TOKENS',
         'ENABLE_TOOL_SEARCH'
@@ -446,6 +447,8 @@ function Invoke-ClaudeGpt {
         }
     } | ConvertTo-Json -Compress
 
+    # The auto mode classifier runs on the Sonnet alias, so it stays on the
+    # subagent model. The proxy cannot do Anthropic's server-side checks.
     try {
         $env:ANTHROPIC_BASE_URL = 'http://127.0.0.1:8317'
         $env:ANTHROPIC_AUTH_TOKEN = 'sk-local-cliproxy'
@@ -455,6 +458,7 @@ function Invoke-ClaudeGpt {
         $env:CLAUDE_CODE_SUBAGENT_MODEL = "$SubagentModel($SubagentEffort)"
         $env:CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY = '1'
         $env:CLAUDE_CODE_ALWAYS_ENABLE_EFFORT = '1'
+        $env:CLAUDE_CODE_AUTO_MODE_SERVER = '0'
         $env:CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY = '3'
         $env:CLAUDE_CODE_MAX_CONTEXT_TOKENS = '1050000'
         $env:ENABLE_TOOL_SEARCH = 'false'

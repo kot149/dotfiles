@@ -344,6 +344,8 @@ _claude_gpt() {
 
   _cli_proxy_ensure || return 1
 
+  # The auto mode classifier runs on the Sonnet alias, so it stays on the
+  # subagent model. The proxy cannot do Anthropic's server-side checks.
   ANTHROPIC_BASE_URL=http://127.0.0.1:8319 \
   ANTHROPIC_AUTH_TOKEN=sk-local-cliproxy \
   ANTHROPIC_DEFAULT_HAIKU_MODEL="${subagent_model}(${subagent_effort})" \
@@ -352,6 +354,7 @@ _claude_gpt() {
   CLAUDE_CODE_SUBAGENT_MODEL="${subagent_model}(${subagent_effort})" \
   CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1 \
   CLAUDE_CODE_ALWAYS_ENABLE_EFFORT=1 \
+  CLAUDE_CODE_AUTO_MODE_SERVER=0 \
   CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY=3 \
   CLAUDE_CODE_MAX_CONTEXT_TOKENS=1050000 \
   ENABLE_TOOL_SEARCH=false \
