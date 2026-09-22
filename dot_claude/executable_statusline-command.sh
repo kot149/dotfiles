@@ -46,7 +46,7 @@ case "${ANTHROPIC_BASE_URL:-}" in
     ;;
 esac
 case "$model_id $model" in
-  *gpt-5.6-sol*|*gpt-5.6-luna*|*gpt-6-astra*) _is_local_proxy="true" ;;
+  *gpt-6-sol*|*gpt-6-luna*|*gpt-6-astra*) _is_local_proxy="true" ;;
 esac
 
 if [ -n "$_use_vertex" ] && [ "$_use_vertex" != "0" ] && [ "$_use_vertex" != "false" ]; then
