@@ -336,7 +336,7 @@ function push {
 }
 
 function sonnet { claude --model claude-sonnet-5 @args }
-function opus { claude --model 'claude-opus-5[1m]' @args }
+function opus { claude --model 'claude-opus-5-5[1m]' @args }
 function fable { claude --model claude-fable-5-1 @args }
 
 # Shared cli-proxy-api setup for claudex: a single proxy on port 8317 serves
@@ -482,9 +482,9 @@ function claudex {
         $variant = 'luna'
     }
     switch ($variant) {
-        'luna' { Invoke-ClaudeGpt -Model gpt-5.6-luna -Effort xhigh -ClaudeArgs $rest }
-        'sol' { Invoke-ClaudeGpt -Model gpt-5.6-sol -Effort medium -SubagentModel gpt-5.6-luna -SubagentEffort xhigh -ClaudeArgs $rest }
-        'astra' { Invoke-ClaudeGpt -Model gpt-6-astra -Effort low -SubagentModel gpt-5.6-luna -SubagentEffort xhigh -ClaudeArgs $rest }
+        'luna' { Invoke-ClaudeGpt -Model gpt-6-luna -Effort xhigh -ClaudeArgs $rest }
+        'sol' { Invoke-ClaudeGpt -Model gpt-6-sol -Effort medium -SubagentModel gpt-6-luna -SubagentEffort xhigh -ClaudeArgs $rest }
+        'astra' { Invoke-ClaudeGpt -Model gpt-6-astra -Effort low -SubagentModel gpt-6-luna -SubagentEffort xhigh -ClaudeArgs $rest }
         default { Write-Error "claudex: unknown variant '$variant' (expected luna|sol|astra)" }
     }
 }
