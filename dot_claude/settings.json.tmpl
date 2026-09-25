@@ -126,6 +126,17 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Agent|Bash|Monitor|ScheduleWakeup|CronCreate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/remind-stop-background.sh"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
