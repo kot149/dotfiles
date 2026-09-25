@@ -105,6 +105,8 @@ When adding new tunable values, prefer threading them through `.chezmoidata.toml
 
 `.chezmoidata.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_no_rtk`, and `agent_shell_deny` arrays consumed by AI-agent settings templates (e.g. `dot_claude/settings.json.tmpl`, `dot_codex/...`). Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Entries in `agent_shell_allow` are emitted both bare and with an auto-generated `rtk <cmd>` variant — put commands that should be allowed **without** the `rtk` wrapper (e.g. `rtk` itself) in `agent_shell_allow_no_rtk`, which emits only the bare form.
 
+Do not add `git -C * <subcommand>` style entries: a mid-pattern `*` also matches options such as `-c` or `--exec-path` inserted after the path. Claude Code instead runs `dot_claude/hooks/executable_rewrite-git-c.sh` (registered in place of `rtk hook claude`, which it calls itself), which rewrites `git -C <path> <args>` to `(cd <path> && git <args>)` so the plain `git <args>` rules apply. Codex and opencode prompt for `git -C`.
+
 `agent_shell_allow_write` holds commands with side effects (`git add`, `git commit`, `herdr`) and is consumed by `private_dot_config/opencode/opencode.json.tmpl` only. Claude Code and Codex keep prompting for those.
 
 opencode's matcher differs from Claude Code's in ways the template depends on:
