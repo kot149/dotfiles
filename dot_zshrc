@@ -62,6 +62,7 @@ fi
 
 # プロンプトは starship が担当するため、oh-my-zsh のテーマは読み込まない。
 ZSH_THEME=""
+DISABLE_AUTO_UPDATE=true
 
 # _ と - を相互に補完可能にする
 HYPHEN_INSENSITIVE="true"
