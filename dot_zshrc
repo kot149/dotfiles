@@ -691,4 +691,15 @@ hdr-init() {
   herdr tab focus "$main_tab"
 }
 
+# herdr: 開いている popup をソケット API (popup.close) で閉じる。popup が固まったときは herdr 外から実行する
+hdr-popup-close() {
+  uv run --no-project python -c '
+import json, os, socket
+s = socket.socket(socket.AF_UNIX)
+s.connect(os.path.expanduser("~/.config/herdr/herdr.sock"))
+s.sendall((json.dumps({"id": "1", "method": "popup.close", "params": {}}) + "\n").encode())
+print(s.recv(4096).decode().strip())
+'
+}
+
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local

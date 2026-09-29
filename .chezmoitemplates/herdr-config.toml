@@ -51,6 +51,16 @@ description = "open herdr browser pane"
 
 {{ end -}}
 [[keys.command]]
+key = "prefix+shift+q"
+type = "shell"
+{{ if eq .chezmoi.os "windows" -}}
+command = "pwsh -NoLogo -Command \"hdr-popup-close\""
+{{ else -}}
+command = "zsh -ic 'hdr-popup-close'"
+{{ end -}}
+description = "close popup"
+
+[[keys.command]]
 key = "alt+g"
 type = "popup"
 command = "lazygit"

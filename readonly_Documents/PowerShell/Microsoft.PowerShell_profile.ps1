@@ -971,6 +971,33 @@ function hdr-init {
     }
 }
 
+# herdr: 開いている popup をソケット API (popup.close) で閉じる。popup が固まったときは herdr 外から実行する
+function hdr-popup-close {
+    $pipeName = $env:HERDR_SOCKET_PATH
+    if (-not $pipeName) {
+        # herdr 外では環境変数が無いので、サーバーの名前付きパイプを探す
+        $pipeName = [System.IO.Directory]::GetFiles("\\.\pipe\") |
+            ForEach-Object { $_.Substring("\\.\pipe\".Length) } |
+            Where-Object { $_ -like "*herdr.sock" } |
+            Select-Object -First 1
+    }
+    if (-not $pipeName) {
+        Write-Host "hdr-popup-close: herdr server pipe not found" -ForegroundColor Red
+        return
+    }
+
+    $pipe = [System.IO.Pipes.NamedPipeClientStream]::new(".", $pipeName, [System.IO.Pipes.PipeDirection]::InOut)
+    try {
+        $pipe.Connect(3000)
+        $writer = [System.IO.StreamWriter]::new($pipe)
+        $writer.AutoFlush = $true
+        $writer.Write('{"id":"1","method":"popup.close","params":{}}' + "`n")
+        [System.IO.StreamReader]::new($pipe).ReadLine()
+    } finally {
+        $pipe.Dispose()
+    }
+}
+
 function Remove-Nul {
     $targetPath = "."
     $files = Get-ChildItem $targetPath -Force
