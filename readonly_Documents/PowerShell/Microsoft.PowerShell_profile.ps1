@@ -335,7 +335,7 @@ function push {
     }
 }
 
-function sonnet { claude --model claude-sonnet-5 @args }
+function sonnet { claude --model claude-sonnet-5-5 @args }
 function opus { claude --model 'claude-opus-5-5[1m]' @args }
 function fable { claude --model claude-fable-5-1 @args }
 
