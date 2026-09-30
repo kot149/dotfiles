@@ -144,6 +144,22 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/check-japanese-reply.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/keep-cache-warm.sh",
+            "asyncRewake": true,
+            "timeout": 3600
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/keep-cache-warm.sh reset"
           }
         ]
       }
