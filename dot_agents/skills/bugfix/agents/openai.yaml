@@ -1,4 +1,4 @@
 interface:
   display_name: "Bug Fix"
   short_description: "Reproduce, fix, and verify reported bugs."
-  default_prompt: "Fix this bug:"
+  default_prompt: "Fix the bug I just described."
