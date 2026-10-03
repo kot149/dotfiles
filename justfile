@@ -3,7 +3,7 @@
 
 set windows-shell := ["pwsh", "-NoLogo", "-NoProfile", "-Command"]
 
-python := if os_family() == "windows" { "python" } else { "python3" }
+uv_script := "uv run --no-python-downloads --script"
 
 # List the tasks
 default:
@@ -47,12 +47,12 @@ status:
 # Report third-party agent skills whose pinned rev is behind upstream
 [group('skills')]
 skills-check:
-    {{ python }} scripts/update_agent_skills.py --check
+    {{ uv_script }} scripts/update_agent_skills.py --check
 
 # Review and bump third-party agent skill revs, then install them
 [group('skills')]
 skills-update *args:
-    {{ python }} scripts/update_agent_skills.py {{ args }}
+    {{ uv_script }} scripts/update_agent_skills.py {{ args }}
     chezmoi apply ~/.claude/skills ~/.agents/skills
 
 # Rebuild the Home Manager generation without updating flake inputs

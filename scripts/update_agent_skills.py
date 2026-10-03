@@ -1,3 +1,7 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """
 Bump the pinned revs in .chezmoidata/agent-skills.toml.
 
@@ -7,9 +11,9 @@ SHA), so commits that touch other parts of the repo are ignored.
 Requires the `gh` CLI.
 
 Usage:
-  python3 scripts/update_agent_skills.py           # review and apply interactively
-  python3 scripts/update_agent_skills.py --check   # report only; exit 1 if outdated
-  python3 scripts/update_agent_skills.py --yes     # apply every update without asking
+  uv run --script scripts/update_agent_skills.py           # review and apply interactively
+  uv run --script scripts/update_agent_skills.py --check   # report only; exit 1 if outdated
+  uv run --script scripts/update_agent_skills.py --yes     # apply every update without asking
 """
 import argparse
 import difflib
