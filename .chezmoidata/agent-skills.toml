@@ -148,3 +148,10 @@ names = [
   "wrangler",
 ]
 agents = ["agents"]
+
+[[agent_skills]]
+repo = "siviter-xyz/dot-agent"
+rev = "33762551d4dfa2e757fa1b43417c7dab528a215f"
+prefix = "skills"
+names = ["create-skill"]
+agents = ["claude", "agents"]

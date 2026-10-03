@@ -31,6 +31,10 @@ NAME_RE = re.compile(r"^name:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 YAML_COMMENT_RE = re.compile(r"^(name|description):[^\"'].* #")
 REV_RE = re.compile(r"^[0-9a-f]{40}$")
 VALID_AGENTS = {"claude", "agents"}
+# Directories in a store that this repo deliberately does not define.
+# "synced" is Claude Code's own first-party skill set, which it installs and
+# updates itself; the other two are machine-local skills kept out of the repo.
+UNMANAGED_OK = {"synced", "codex-review", "prompt-review"}
 
 
 def wrappers(store: Path) -> list[Path]:
@@ -181,7 +185,7 @@ def check_unmanaged(entries: list[dict]) -> list[str]:
         if not home_store.is_dir():
             print(f"SKIP: {home_store} does not exist", file=sys.stderr)
             continue
-        expected = {d.name for d in skill_dirs(STORES[agent])}
+        expected = {d.name for d in skill_dirs(STORES[agent])} | UNMANAGED_OK
         for entry in entries:
             if agent in entry.get("agents", []):
                 expected.update(entry.get("names", []))

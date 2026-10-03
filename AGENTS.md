@@ -192,6 +192,7 @@ Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.agents/skills`). The templa
 Two things not managed here:
 
 - **Claude Code plugins** supply their own skills. The enabled `cloudflare@cloudflare` marketplace covers the whole `cloudflare/skills` set for Claude, so those are the one exception to listing both stores: they are declared for `agents = ["agents"]` only, which keeps them from showing up twice for Claude Code (once as `cloudflare:<name>` from the plugin, once as `<name>` from the store). Codex has its own plugin system (`codex plugin add/list`, `codex plugin marketplace`) but it does not consume Claude Code marketplaces, so Codex gets those skills through `[[agent_skills]]` instead.
+- Three directories in `~/.claude/skills` are outside this repo on purpose, and `scripts/check_agent_skills.py` lists them in `UNMANAGED_OK`: `synced` is Claude Code's own first-party skill set, which it installs and updates itself, while `codex-review` and `prompt-review` are machine-local skills that were not checked in.
 - The **`skills` CLI** (`npx skills add`, vercel-labs) installs into `~/.agents/skills` too, tracked in a per-machine `~/.agents/.skill-lock.json`, and symlinks the non-`.agents` agent directories (Claude Code) at it. Use it to *discover* skills, then transcribe the pick into `[[agent_skills]]`. Do not leave a skill installed that way: the copy is per-machine, invisible to `chezmoi status`, pinned by a separate lock file, and it writes to the same directory names this repo manages.
 
 ## User-level agent instructions
