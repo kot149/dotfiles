@@ -26,6 +26,18 @@ Run the following in parallel to understand the current state:
 - `git rev-parse --abbrev-ref HEAD` — current branch name
 - `git log --oneline -30` — recent commit history (how many fixup!/squash! commits exist)
 
+**Never run on protected branches such as `main` / `master`.** If the current branch is one of these, stop and present the following to the user in Japanese (check the branch being rebased, i.e. the HEAD side, not the PR base).
+
+```
+現在のブランチ <BRANCH> は保護ブランチのため、このスキルでは実行できません。
+```
+
+**Do not run on shared branches others are working on.** Only rebase your own branch. If the branch appears shared, stop and present the following to the user in Japanese.
+
+```
+このブランチは他の人も作業している共有ブランチの可能性があります。自分のブランチでのみ実行してください。
+```
+
 If there are uncommitted changes, stash them with `git stash push -u` before proceeding. Present the following to the user in Japanese, and restore them with `git stash pop` in step 9.
 
 ```
@@ -80,18 +92,19 @@ Note the created branch name (`<BACKUP_BRANCH>`) and the current HEAD SHA, verif
 
 ### 6. Run autosquash
 
-After approval, run autosquash non-interactively without opening an editor:
+Run autosquash non-interactively without opening an editor:
 
 ```bash
-GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash "$MB"
+GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash <MB>
 ```
 
 - `GIT_SEQUENCE_EDITOR=:` accepts the todo list as-is without editing (keeping the autosquash reordering and fixup directives).
 - The start point must be the merge-base found in 2-5. Do not pass `origin/<BASE>` directly, since that would also pull in updates on the base side.
-- On conflict, abort with `git rebase --abort` and present the following to the user in Japanese. Resolve manually only when the user has explicitly instructed so.
+- On conflict, abort with `git rebase --abort`. The history is back to its original state, so restore anything stashed in step 1 with `git stash pop`. Then present the following to the user in Japanese. Resolve manually only when the user has explicitly instructed so.
 
 ```
 コンフリクトが発生したため `git rebase --abort` で中断しました。ブランチの履歴は変更されていません。
+<IF_STASHED_IN_STEP_1: スタッシュを `git stash pop` で戻しました。>
 手動での解決を希望される場合はお知らせください。
 ```
 
@@ -120,11 +133,12 @@ HEAD_TREE=$(git rev-parse HEAD^{tree})
 [ "${BACKUP_TREE}" = "${HEAD_TREE}" ] && echo "TREE_MATCH" || echo "TREE_MISMATCH"
 ```
 
-On `TREE_MISMATCH`, or if `git diff` shows any diff, present the following to the user in Japanese. Do not perform destructive recovery such as `git reset --hard "<BACKUP_BRANCH>"` on your own judgment. Include the backup branch name and the original HEAD SHA needed for recovery, and leave the decision to the user.
+On `TREE_MISMATCH`, or if `git diff` shows any diff, present the following to the user in Japanese. Do not perform destructive recovery such as `git reset --hard "<BACKUP_BRANCH>"` on your own judgment. Include the backup branch name and the original HEAD SHA needed for recovery, and leave the decision to the user. The history has already been rewritten here, so anything stashed in step 1 may conflict on `git stash pop`: leave it in the stash and report the entry name instead of popping it.
 
 ```
 検証結果: ツリー不一致 (TREE_MISMATCH) を検出しました。履歴の書き換え中に内容が変わっている可能性があります。
 バックアップブランチ: <BACKUP_BRANCH> (元の HEAD: <SHA>)
+<IF_STASHED_IN_STEP_1: スタッシュは <STASH_ENTRY> に残したままです。復元方法と併せてご判断ください。>
 復元方法の判断をお知らせください。こちらで勝手に復元は行いません。
 ```
 
@@ -167,19 +181,9 @@ Do not run any `git push` commands inside this skill.
 
 ## Notes
 
-- **Never run on protected branches such as `main` / `master`.** If the current branch is one of these, stop and present the following to the user in Japanese (check the branch being rebased, i.e. the HEAD side, not the PR base).
-
-```
-現在のブランチ <BRANCH> は保護ブランチのため、このスキルでは実行できません。
-```
-
-- **Do not run on shared branches others are working on.** Only rebase your own branch. If the branch appears shared, stop and present the following to the user in Japanese.
-
-```
-このブランチは他の人も作業している共有ブランチの可能性があります。自分のブランチでのみ実行してください。
-```
 - **History is rewritten destructively, so always create a backup branch before executing.** Never start the rebase before creating one.
 - **After execution, always verify the tree matches the backup.** On mismatch, only report it; do not fix or recover on your own.
+- **On any path that ends without completing the rebase, account for the stash from step 1.** On a clean abort, pop it. After the history was already rewritten, leave it and report the entry name.
 - Do not run destructive recovery beyond the step 6 `git rebase --abort` on your own judgment (no `reset --hard`, no retry with different options).
 - Do not use hook-disabling flags such as `--no-verify`.
 - **Incorporating the base (putting new base-side commits onto HEAD) is out of scope for this skill.** Always pin the start to the merge-base, and cause no history changes other than folding the fixups.

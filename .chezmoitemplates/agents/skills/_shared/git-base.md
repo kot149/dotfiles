@@ -64,11 +64,12 @@ Do not use `git merge-base --fork-point` as evidence for the decision, since it 
 Starting from the tip of `origin/<BASE>` pulls in base-side commits made after the branch was cut, causing changes beyond the intended history rewrite. **Always pin the start point to the commit where the branch forked (the merge-base).**
 
 ```bash
-MB=$(git merge-base HEAD origin/<BASE>)
-echo "$MB"
+git merge-base HEAD origin/<BASE>
 ```
 
-Use `<MB>` as the start point from here on. If `<MB>` does not match the tip of `origin/<BASE>` (i.e. the base has moved ahead), incorporating the base is out of scope for this skill; note it in the approval request with the following Japanese message.
+Record the printed 40-character SHA and substitute it literally for `<MB>` in every command from here on. Each command runs in its own shell, so a variable assigned in one command is empty in the next: a start point written as `"$MB"` expands to an empty string and the rewrite runs against an unintended ref.
+
+If `<MB>` does not match the tip of `origin/<BASE>` (i.e. the base has moved ahead), incorporating the base is out of scope for this skill; note it in the approval request with the following Japanese message.
 
 ```
 ベース側に新しいコミットがありますが、このスキルでは取り込みません。必要であれば別途リベースしてください。

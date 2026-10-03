@@ -74,7 +74,7 @@ Decide the base branch and fork point to fix the reorganization range. This is d
 
 {{ includeTemplate "agents/skills/_shared/git-base.md" . }}
 
-If `git rev-list --count "$MB"..HEAD` is 0, present the following to the user in Japanese and stop:
+If `git rev-list --count <MB>..HEAD` is 0, present the following to the user in Japanese and stop:
 
 ```
 整理対象のコミットはありません (`<MB>..HEAD` にコミットがありません)。
@@ -87,7 +87,7 @@ If `git rev-list --count "$MB"..HEAD` is 0, present the following to the user in
 ```bash
 git log --reverse --format='%h %s' <MB>..HEAD
 git log --stat --format='%h %s' <MB>..HEAD
-git diff "$MB" HEAD --stat
+git diff <MB> HEAD --stat
 ```
 
 When there are many commits or you need to see individual contents:
@@ -101,7 +101,7 @@ With `-M -C`, moves / renames render as renames, which tells you whether a move 
 List generated-artifact candidates (adjust patterns to the repository):
 
 ```bash
-git diff "$MB" HEAD --name-only
+git diff <MB> HEAD --name-only
 ```
 
 ### 4. Draft the reorganization plan and get user approval
@@ -150,7 +150,7 @@ Show the backup branch name to the user in Japanese (e.g. `バックアップブ
 ### 6-A. Method A: full rebuild
 
 ```bash
-git reset --soft "$MB"
+git reset --soft <MB>
 git reset
 ```
 
@@ -253,7 +253,7 @@ HEAD_TREE=$(git rev-parse "HEAD^{tree}")
   復元方法の判断をお知らせください。こちらで勝手に復元は行いません。
   ```
 
-This does not verify that each commit builds and tests cleanly. When needed, point the user to `git rebase --exec '<test command>' "$MB"`.
+This does not verify that each commit builds and tests cleanly. When needed, point the user to `git rebase --exec '<test command>' <MB>`.
 
 ### 9. Report the results
 
