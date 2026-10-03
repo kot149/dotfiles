@@ -12,17 +12,17 @@ default:
 # Pull the dotfiles repo, apply it, then update everything this machine uses
 [group('all')]
 [macos]
-update: pull skills-update hm-update darwin-update sheldon-update mise-upgrade gh-ext-upgrade
+update: pull skills-update hm-update darwin-update sheldon-update mise-upgrade pkgs-update gh-ext-upgrade
 
 # Pull the dotfiles repo, apply it, then update everything this machine uses
 [group('all')]
 [linux]
-update: pull skills-update hm-update sheldon-update mise-upgrade gh-ext-upgrade
+update: pull skills-update hm-update sheldon-update mise-upgrade pkgs-update gh-ext-upgrade
 
 # Pull the dotfiles repo, apply it, then update everything this machine uses
 [group('all')]
 [windows]
-update: pull skills-update gh-ext-upgrade
+update: pull skills-update pkgs-update gh-ext-upgrade
 
 # Apply the source state to $HOME (extra args go to chezmoi apply)
 [group('chezmoi')]
@@ -91,6 +91,16 @@ sheldon-update:
 [unix]
 mise-upgrade:
     mise upgrade
+
+# List globally installed bun / pnpm / uv / cargo / go packages
+[group('tools')]
+pkgs-list *managers:
+    {{ uv_script }} scripts/global_packages.py list {{ managers }}
+
+# Update globally installed bun / pnpm / uv / cargo / go packages
+[group('tools')]
+pkgs-update *managers:
+    {{ uv_script }} scripts/global_packages.py update {{ managers }}
 
 # Upgrade gh CLI extensions
 [group('tools')]
