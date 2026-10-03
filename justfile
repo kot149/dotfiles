@@ -55,6 +55,11 @@ skills-update *args:
     {{ uv_script }} scripts/update_agent_skills.py {{ args }}
     chezmoi apply ~/.claude/skills ~/.agents/skills
 
+# Check the agent-skill tree: wrappers, store parity, frontmatter, agent_skills
+[group('skills')]
+skills-lint:
+    {{ uv_script }} scripts/check_agent_skills.py
+
 # Rebuild the Home Manager generation without updating flake inputs
 [group('nix')]
 [unix]
@@ -118,7 +123,7 @@ gh-ext-upgrade:
 winget-upgrade:
     winget upgrade --all
 
-# Run the hook tests
+# Run the hook tests and the skill-tree check
 [group('dev')]
-test:
+test: skills-lint
     bun run tests/textlint-rule-ja-ai-phrasing.js

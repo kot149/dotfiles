@@ -34,6 +34,7 @@ refreshPeriod = "168h"
 {{- $flat := false }}
 {{- if hasKey $skill "flat" }}{{ $flat = $skill.flat }}{{ end }}
 {{- range $agent := $skill.agents }}
+{{- if not (has $agent (list "claude" "agents")) }}{{ fail (printf "unknown agent %q in agent_skills entry for %s" $agent $skill.repo) }}{{ end }}
 {{- range $name := $skill.names }}
 {{- $parts := list }}
 {{- if $skill.prefix }}{{ $parts = concat $parts (splitList "/" $skill.prefix) }}{{ end }}

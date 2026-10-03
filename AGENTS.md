@@ -184,6 +184,8 @@ For a repo that keeps `SKILL.md` directly under `prefix` (or at the repo root, w
 
 Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.agents/skills`). The template derives `include` and `stripComponents` from `prefix`, so each skill lands with `SKILL.md` at the root of its target directory. Updating a skill means bumping `rev`; `refreshPeriod = "168h"` only controls re-download of the pinned tarball, never which commit is used. `dots skills-update` (`uv run --script scripts/update_agent_skills.py`) finds entries whose skill directories changed upstream, shows the changed files (`d` prints the diff), and bumps `rev` for the ones you accept (`--check` only reports, `--yes` accepts all).
 
+`dots skills-update` covers third-party `rev` freshness only. `just skills-lint` (`scripts/check_agent_skills.py`, also a dependency of `just test`) checks the rest: wrapper shape and target, store parity, orphan templates, `name` against the directory name, `agents/openai.yaml` presence, the `agents` values and `rev` shape in `[[agent_skills]]`, and directories in either store that chezmoi does not manage.
+
 Two things not managed here:
 
 - **Claude Code plugins** supply their own skills. The enabled `cloudflare@cloudflare` marketplace covers the whole `cloudflare/skills` set for Claude, so those are the one exception to listing both stores: they are declared for `agents = ["agents"]` only, which keeps them from showing up twice for Claude Code (once as `cloudflare:<name>` from the plugin, once as `<name>` from the store). Codex has its own plugin system (`codex plugin add/list`, `codex plugin marketplace`) but it does not consume Claude Code marketplaces, so Codex gets those skills through `[[agent_skills]]` instead.
