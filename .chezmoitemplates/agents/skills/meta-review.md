@@ -23,16 +23,9 @@ Strip the flag out of `$ARGUMENTS` before using the rest as the target. A plain-
 
 ## Subagents
 
-This skill delegates judging to **subagents**: child agents with their own context that cannot see this conversation. Map them onto whatever the running agent provides:
+{{ includeTemplate "agents/skills/_shared/subagents.md" . }}
 
-- Claude Code: the `Agent` tool with `subagent_type: "Explore"` (read-only). Put several `Agent` calls in one message to run them in parallel.
-- Codex CLI: `spawn_agent` per batch, then `wait` on all of them (requires `features.multi_agent`; pick a read-only role from `[agents]` in `config.toml`).
-
-Whatever the mechanism, these requirements must hold:
-
-- The judging subagent starts from a **fresh context** and does not inherit this conversation.
-- It is **read-only**. If the agent cannot enforce that, state it in the prompt and make every edit yourself in step 5.
-- Where a step says to run batches in parallel, use the agent's parallel mechanism. If it has none, run them sequentially and say so in the final report.
+The judging subagent is a read-only role, so every edit is made by the orchestrator in step 5.
 
 ## Why an independent subagent is required
 

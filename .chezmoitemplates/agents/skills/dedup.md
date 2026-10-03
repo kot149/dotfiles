@@ -9,7 +9,7 @@ Scan the current project for duplicate code using `similarity` (NixOS), present 
 
 ## Asking the user to choose
 
-Where this document says "ask the user to choose", present the options and wait for a decision. On agents with a selection UI tool (`AskUserQuestion` and similar), use it; on agents without one, present the same options as a numbered plain-text list and let the user reply with numbers or free text. Either way, do not proceed until the user has answered.
+{{ includeTemplate "agents/skills/_shared/user-choice.md" . }}
 
 ## Step 0: Verify context
 

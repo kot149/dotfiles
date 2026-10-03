@@ -9,6 +9,10 @@ Reply to review finding comments on a GitHub PR.
 Write one reply per finding describing "how it was addressed", and **always
 include the commit hash for anything with a fix commit**.
 
+## Asking the user to choose
+
+{{ includeTemplate "agents/skills/_shared/user-choice.md" . }}
+
 ## Input
 
 $ARGUMENTS
@@ -216,9 +220,7 @@ post / edit the text / post only some / abort.
 4. 中止する
 ```
 
-In agents with a selection UI tool (such as `AskUserQuestion`), use it; where
-there is none, present the same options as a plain numbered list and wait for
-an answer.
+Take the choice with a selection prompt.
 
 ### 6. Post
 

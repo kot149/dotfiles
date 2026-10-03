@@ -16,20 +16,13 @@ description: >-
 Collect background knowledge about the target PR and organize everything needed
 before starting to read the diff into a single document.
 
-## Launching Subagents
+## Subagents
 
-Wherever this document says "subagent", it means delegating research to a child
-agent with an independent context. Map it to whatever mechanism the running
-agent provides.
+{{ includeTemplate "agents/skills/_shared/subagents.md" . }}
 
-- Claude Code: the `Agent` tool. Use `general-purpose` for research roles and
-  `Explore` for read-only exploration roles. Launch parallel agents by grouping
-  multiple `Agent` calls in one message
-- Codex CLI: issue the needed number of `spawn_agent` calls, then `wait`
-  (requires `features.multi_agent`. Pick roles from `[agents]` in `config.toml`)
+## Asking the user to choose
 
-Agents with no parallel-execution mechanism fall back to sequential execution
-and note that in the output.
+{{ includeTemplate "agents/skills/_shared/user-choice.md" . }}
 
 ## Confirming Input
 
@@ -37,9 +30,8 @@ and note that in the output.
    given, resolve it with `gh` in the current directory (`cd` into the relevant
    sub-repository for meta-repos).
 2. If ambiguous, list candidates with `gh pr list --search` and present the
-   following to the user in Japanese. Use a selection UI tool (such as
-   `AskUserQuestion`) where available; otherwise present the same options as a
-   numbered plain-text list and wait for an answer:
+   following to the user in Japanese and take the choice with a selection
+   prompt:
 
    ```
    対象のPRが複数見つかりました。どれを対象にしますか?

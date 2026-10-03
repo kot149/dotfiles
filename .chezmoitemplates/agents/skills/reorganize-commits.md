@@ -13,9 +13,9 @@ Skill for reorganizing the commit history in the `<MB>..HEAD` range into **easy-
 
 Because this rewrites history destructively, **always create a backup branch** before starting and **verify the final tree matches the backup** afterwards. Never change the code content itself.
 
-## Selection Prompt
+## Asking the user to choose
 
-Where this document says "selection prompt", present the options and have the user choose. In agents with a selection UI tool (such as `AskUserQuestion`), use it; in agents without one, present the same options as a numbered plain-text list and have the user answer by number or free text. In both cases, do not move to the next step until you have an answer.
+{{ includeTemplate "agents/skills/_shared/user-choice.md" . }}
 
 ## Prerequisites
 

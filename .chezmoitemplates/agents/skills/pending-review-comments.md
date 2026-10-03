@@ -8,6 +8,10 @@ description: Post review findings as inline comments on a GitHub PR in pending s
 Post review findings as inline comments on a GitHub PR as a **pending review** (draft).
 A pending review is visible only to its author and stays hidden from everyone else until the user submits it in the GitHub UI.
 
+## Asking the user to choose
+
+{{ includeTemplate "agents/skills/_shared/user-choice.md" . }}
+
 ## Input
 
 $ARGUMENTS
@@ -59,7 +63,7 @@ GitHub allows only one pending review per user per PR. If one already exists, do
 3. 今回の投稿を中止する
 ```
 
-Take the choice via a selection UI tool (such as `AskUserQuestion`, with the question and options in Japanese as above). On agents without that tool, present the same options as a plain-text list and wait for an answer.
+Take the choice with a selection prompt, with the question and options in Japanese as above.
 
 ### 3. Dedupe against existing comments
 

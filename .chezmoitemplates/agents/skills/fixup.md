@@ -19,7 +19,7 @@ With method A, reordering history with autosquash is not this skill's responsibi
 
 ## Asking the user to choose
 
-Where this document says "selection prompt" or "ask the user for confirmation", present the options and have the user choose. In agents with a selection UI tool (such as `AskUserQuestion`), use it; in agents without one, present the same options as a numbered plain-text list and have the user answer by number or free text. In both cases, do not move to the next step until you have an answer.
+{{ includeTemplate "agents/skills/_shared/user-choice.md" . }}
 
 ## Arguments
 

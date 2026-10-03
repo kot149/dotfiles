@@ -28,23 +28,19 @@ undecided".
 
 ## Capability Mapping
 
-**Subagent**: delegating research to a child agent with an independent context.
+### Subagents
 
-- Claude Code: the `Agent` tool. `Explore` for read-only exploration roles,
-  `general-purpose` for roles that need to run commands. Launch parallel agents
-  by grouping multiple `Agent` calls in one message
-- Codex CLI: issue the needed number of `spawn_agent` calls, then `wait`
-  (requires `features.multi_agent`. Pick roles from `[agents]` in `config.toml`)
+{{ includeTemplate "agents/skills/_shared/subagents.md" . }}
 
-Agents with no parallel mechanism fall back to sequential execution and note
-that in the output. Every research subagent is read-only and gets a fresh
-context: pass it the facts it needs rather than assuming it saw the ticket.
+Every research subagent in this skill is a read-only role.
 
-**Ask the user to choose**: use a selection UI tool (`AskUserQuestion` and
-similar) where the agent has one, otherwise present the same options as a
-numbered plain-text list and wait for an answer.
+### Asking the user to choose
 
-**Ticket access**: Jira goes through the Atlassian MCP server's issue-fetch and
+{{ includeTemplate "agents/skills/_shared/user-choice.md" . }}
+
+### Ticket access
+
+Jira goes through the Atlassian MCP server's issue-fetch and
 JQL-search tools, Linear through the Linear MCP server, GitHub Issues through
 `gh issue view`. Tool ids differ per agent, and agents that load tool schemas
 lazily must load the definitions before the first call.

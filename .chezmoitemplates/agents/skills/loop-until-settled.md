@@ -73,20 +73,13 @@ For a mutating target, additional rules apply:
 
 ## Capability Mapping
 
-**Subagent**: delegating work to a child agent with an independent context.
+### Subagents
 
-- Claude Code: the `Agent` tool. `Explore` for read-only exploration roles,
-  `general-purpose` for roles that need to run commands. Launch parallel agents
-  by grouping multiple `Agent` calls in one message
-- Codex CLI: issue the needed number of `spawn_agent` calls, then `wait`
-  (requires `features.multi_agent`. Pick roles from `[agents]` in `config.toml`)
+{{ includeTemplate "agents/skills/_shared/subagents.md" . }}
 
-Agents with no parallel mechanism fall back to sequential execution and note
-that in the output.
+### Asking the user to choose
 
-**Ask the user to choose**: use a selection UI tool (`AskUserQuestion` and
-similar) where the agent has one, otherwise present the same options as a
-numbered plain-text list and wait for an answer.
+{{ includeTemplate "agents/skills/_shared/user-choice.md" . }}
 
 ## The Ledger
 

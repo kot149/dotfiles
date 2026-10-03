@@ -42,26 +42,21 @@ Both `--fix` and `--post`: run Phase 4b (post) then Phase 4 (fix). A fixed main 
 
 - Reviewers and judges are delegated to **subagents** (child agents with independent contexts)
 - Each subagent returns a final response text. The orchestrator (you) parses that string directly
-- Reviewers, judges, and the prep helper only read; use **read-only** subagents
+- Every role in this skill (reviewers, judges, the prep helper) only reads
 - Fixes are always made by the orchestrator itself (never let subagents rewrite files)
 
 ### How to Launch Subagents
 
-Translate into whatever means the running agent has.
+{{ includeTemplate "agents/skills/_shared/subagents.md" . }}
 
-- Claude Code: the `Agent` tool. Use `subagent_type: "Explore"` for read-only roles, and batch multiple `Agent` calls in one message to run them in parallel
-- Codex CLI: issue as many `spawn_agent` calls as needed, then `wait` (`features.multi_agent` required. Pick read-only roles from `[agents]` in `config.toml`)
+Two things this skill adds on top:
 
-On any agent, satisfy all of the following:
+- Every shared premise lives in `$CTX_PATH`; make sure each prompt points at it
+- When falling back to sequential execution, note that in the report in Japanese (e.g. `注: 並列実行手段がないため逐次実行にフォールバックしました`). Control the parallelism cap by the number of subagents launched at once
 
-- Subagents do not inherit conversation history. Every shared premise lives in `$CTX_PATH`; make sure the prompt points at it
-- **Do not pass conversation context (narratives like "I wrote it this way with such intent" from the ongoing work)**. Passing it lets them reuse it as a reason not to flag things. The only things you may pass are primary sources (PR body, tickets, convention documents, in-code comments)
-- Do not let subagents rewrite files. On agents that cannot restrict to read-only, state the prohibition explicitly in the prompt
-- Sections marked "launch in parallel" must be launched together with the agent's parallel execution means. On agents with no parallel means, fall back to sequential execution and note that in the report in Japanese (e.g. `注: 並列実行手段がないため逐次実行にフォールバックしました`). Control the parallelism cap by the number of subagents launched at once
+## Asking the user to choose
 
-## Selection Prompts to the User
-
-Every place in this document that says "selection prompt" means presenting options and letting the user choose. On agents with a selection UI tool (such as `AskUserQuestion`) use it; on agents without one, present the same options as a numbered plain-text list and have them answer by number or free text. In either case, do not proceed until you get an answer.
+{{ includeTemplate "agents/skills/_shared/user-choice.md" . }}
 
 ## Reviewers
 
