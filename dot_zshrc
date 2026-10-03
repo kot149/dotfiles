@@ -307,7 +307,7 @@ _cli_proxy_ensure() {
   if ! curl --silent --fail --max-time 1 "http://127.0.0.1:$port/v1/models" \
       -H 'Authorization: Bearer sk-local-cliproxy' >/dev/null 2>&1; then
     local proxy_bin
-    proxy_bin=$(command -v cli-proxy-api 2>/dev/null || command -v server 2>/dev/null) || {
+    proxy_bin=$(command -v cli-proxy-api 2>/dev/null) || {
       echo "CLIProxyAPI is not installed" >&2
       return 1
     }

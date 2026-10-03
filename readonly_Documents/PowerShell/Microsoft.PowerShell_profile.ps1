@@ -385,8 +385,7 @@ function Invoke-CliProxyEnsure {
         $up = $false
     }
     if (-not $up) {
-        $proxy = Get-Command cli-proxy-api, server -ErrorAction SilentlyContinue |
-            Select-Object -First 1
+        $proxy = Get-Command cli-proxy-api -ErrorAction SilentlyContinue
         if (-not $proxy) {
             Write-Error 'CLIProxyAPI is not installed'
             return $false

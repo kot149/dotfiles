@@ -434,6 +434,9 @@
 				},
 				{
 					"PackageIdentifier" : "Microsoft.WindowsTerminal"
+				},
+				{
+					"PackageIdentifier" : "LuisPater.CLIProxyAPI"
 				}
 			],
 			"SourceDetails" : 
