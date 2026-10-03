@@ -26,9 +26,12 @@ Create a branch name that includes the issue number and follows the existing con
 Determine the type based on issue labels and content.
 
 ## Step 3: Create Branch
+
+Check the working tree with `git status --porcelain` first. If it is not empty, stop and ask the user whether to stash the changes, commit them first, or abort. Never switch branches over uncommitted work.
+
 ```bash
-git switch main
-git pull origin main
+git switch [default-branch]
+git pull origin [default-branch]
 git switch -c [branch-name]
 ```
 
@@ -46,8 +49,7 @@ git switch -c [branch-name]
 - Do not commit changes — leave that to the user
 - Ask for clarification if the issue is unclear
 - Discuss with the user before adding dependencies or making significant architectural changes
-- Use the TaskCreate tool to track progress
 
 ## Error Handling
 - Stop and inform the user if the issue number doesn't exist
-- Help resolve merge conflicts if they arise when pulling main
+- Help resolve merge conflicts if they arise when pulling the default branch

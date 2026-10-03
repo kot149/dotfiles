@@ -22,8 +22,8 @@ If on `main` or default branch, inform the user that they should create a featur
 ## Step 2: Analyze Changes
 Review all changes that will be included in the pull request:
 ```bash
-git diff main...HEAD
-git log main..HEAD --oneline
+git diff [default-branch]...HEAD
+git log [default-branch]..HEAD --oneline
 ```
 
 Understand:
@@ -32,11 +32,14 @@ Understand:
 - All commits that will be included in the PR
 
 ## Step 3: Ensure Branch is Up to Date
-Check if the current branch tracks a remote branch and push if needed:
+Check if the current branch tracks a remote branch:
 ```bash
 git remote -v
-git push -u origin $(git branch --show-current)
 ```
+
+If it has no remote counterpart, tell the user the exact command and the target (`git push -u origin $(git branch --show-current)` to that remote), and ask before running it. Pushing is the first thing in this workflow that other people can see.
+
+Then check whether a PR already exists for the branch, so a duplicate is not created.
 
 ## Step 4: Generate PR Title and Description
 Based on the commit history and changes:
@@ -76,5 +79,6 @@ After successful creation, provide the PR URL to the user so they can view and s
 ## Error Handling
 - If not on a feature branch, guide the user to create one first
 - If there are no changes to create a PR for, inform the user
-- If the remote branch doesn't exist, push it first with `-u` flag
+- If the remote branch doesn't exist, ask for approval and then push it with the `-u` flag
 - If `gh` is not authenticated, guide the user through authentication
+- If the user declines the push, stop and report that a PR cannot be created without a remote branch

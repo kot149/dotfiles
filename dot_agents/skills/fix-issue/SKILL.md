@@ -14,16 +14,18 @@ Use `gh` for GitHub operations. Treat the user-provided issue number or URL as t
 3. Understand expected behavior, constraints, and acceptance criteria.
 4. Inspect existing branches with `git branch -a` and infer branch naming conventions.
 5. Create a branch name that includes the issue number. If no convention exists, use `fix/issue-<number>-short-description` for bugs and `feature/issue-<number>-short-description` for features.
-6. Update the default branch, then create the work branch:
+6. Check the working tree with `git status --porcelain`. If it is not empty, stop and ask the user whether to stash the changes, commit them first, or abort. Never switch branches over uncommitted work.
+7. Update the default branch, then create the work branch:
    - `git switch <default-branch>`
    - `git pull origin <default-branch>`
    - `git switch -c <branch-name>`
-7. Implement the solution following project conventions. Keep changes scoped to the issue.
-8. Run relevant tests, linters, and type checks.
-9. Leave changes uncommitted unless the user explicitly asks to commit.
+8. Implement the solution following project conventions. Keep changes scoped to the issue.
+9. Run relevant tests, linters, and type checks.
+10. Leave changes uncommitted unless the user explicitly asks to commit.
 
 ## Guardrails
 
 - Ask for clarification if the issue is ambiguous.
 - Discuss before adding dependencies or making significant architectural changes.
 - Stop and report clearly if the issue does not exist, `gh` is unavailable, the default branch cannot be updated, or conflicts block progress.
+- Help the user resolve conflicts if the default-branch pull hits any.
