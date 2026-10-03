@@ -36,6 +36,21 @@ def capture(*cmd: str) -> str | None:
     return proc.stdout if proc.returncode == 0 else None
 
 
+def npm_global(action: str) -> None:
+    root = capture("npm", "root", "-g")
+    if root is None:
+        print("skip: npm not found")
+        return
+    # With Nix's nodejs the global prefix is a read-only store path that never holds packages.
+    if not Path(root.strip()).is_dir():
+        print(f"no global packages ({root.strip()} does not exist)")
+        return
+    if action == "list":
+        run("npm", "ls", "-g", "--depth=0")
+    else:
+        run("npm", "update", "-g")
+
+
 def cargo_crates() -> list[str] | None:
     """Crates from crates.io installed with cargo install (path and git installs excluded)."""
     out = capture("cargo", "install", "--list")
@@ -107,6 +122,7 @@ def go_update() -> None:
 
 MANAGERS = {
     "bun": (lambda: run("bun", "pm", "ls", "-g"), lambda: run("bun", "update", "-g")),
+    "npm": (lambda: npm_global("list"), lambda: npm_global("update")),
     "pnpm": (lambda: run("pnpm", "ls", "-g"), lambda: run("pnpm", "update", "-g")),
     "uv": (lambda: run("uv", "tool", "list"), lambda: run("uv", "tool", "upgrade", "--all")),
     "cargo": (cargo_list, cargo_update),

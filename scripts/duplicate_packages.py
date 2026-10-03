@@ -3,7 +3,7 @@
 # dependencies = []
 # ///
 """
-Find commands installed through a language package manager (bun, pnpm, uv,
+Find commands installed through a language package manager (bun, npm, pnpm, uv,
 cargo, go) that are also provided by another source on PATH, such as Nix,
 winget or Homebrew, and show the version each source provides.
 
@@ -62,20 +62,35 @@ def bun_packages() -> tuple[dict[str, str], list[Path]]:
     return bins, [root / "bin", root / "install/global"]
 
 
-def pnpm_packages() -> tuple[dict[str, str], list[Path]]:
-    out = capture("pnpm", "root", "-g")
-    if out is None:
-        return {}, []
-    node_modules = Path(out.strip())
+def top_level_packages(node_modules: Path) -> list[str]:
     packages = []
     for entry in node_modules.iterdir() if node_modules.is_dir() else []:
         if entry.name.startswith("@"):
             packages += [f"{entry.name}/{sub.name}" for sub in entry.iterdir()]
         elif not entry.name.startswith("."):
             packages.append(entry.name)
+    return packages
+
+
+def npm_packages() -> tuple[dict[str, str], list[Path]]:
+    prefix, root = capture("npm", "prefix", "-g"), capture("npm", "root", "-g")
+    if prefix is None or root is None:
+        return {}, []
+    node_modules = Path(root.strip())
+    # npm and corepack ship with Node.js itself rather than being installed by the user.
+    packages = [p for p in top_level_packages(node_modules) if p not in ("npm", "corepack")]
+    bin_dir = Path(prefix.strip()) if IS_WINDOWS else Path(prefix.strip()) / "bin"
+    return npm_bins(node_modules, packages), [bin_dir, node_modules]
+
+
+def pnpm_packages() -> tuple[dict[str, str], list[Path]]:
+    out = capture("pnpm", "root", "-g")
+    if out is None:
+        return {}, []
+    node_modules = Path(out.strip())
     bin_dir = capture("pnpm", "config", "get", "global-bin-dir")
     dirs = [node_modules.parent] + ([Path(bin_dir.strip())] if bin_dir and bin_dir.strip() != "undefined" else [])
-    return npm_bins(node_modules, packages), dirs
+    return npm_bins(node_modules, top_level_packages(node_modules)), dirs
 
 
 def uv_packages() -> tuple[dict[str, str], list[Path]]:
@@ -123,6 +138,7 @@ def go_packages() -> tuple[dict[str, str], list[Path]]:
 
 LANGUAGE_MANAGERS = {
     "bun": bun_packages,
+    "npm": npm_packages,
     "pnpm": pnpm_packages,
     "uv": uv_packages,
     "cargo": cargo_packages,

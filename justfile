@@ -92,17 +92,17 @@ sheldon-update:
 mise-upgrade:
     mise upgrade
 
-# List globally installed bun / pnpm / uv / cargo / go packages
+# List globally installed bun / npm / pnpm / uv / cargo / go packages
 [group('tools')]
 pkgs-list *managers:
     {{ uv_script }} scripts/global_packages.py list {{ managers }}
 
-# Update globally installed bun / pnpm / uv / cargo / go packages
+# Update globally installed bun / npm / pnpm / uv / cargo / go packages
 [group('tools')]
 pkgs-update *managers:
     {{ uv_script }} scripts/global_packages.py update {{ managers }}
 
-# Find commands installed by both bun / pnpm / uv / cargo / go and Nix / winget / others
+# Find commands installed by both bun / npm / pnpm / uv / cargo / go and Nix / winget / others
 [group('tools')]
 pkgs-dupes:
     {{ uv_script }} scripts/duplicate_packages.py
