@@ -26,6 +26,9 @@ HOME_STORES = {"agents": Path.home() / ".agents" / "skills",
 DATA_FILE = ROOT / ".chezmoidata" / "agent-skills.toml"
 WRAPPER_RE = re.compile(r'^\{\{ includeTemplate "(agents/skills/[^"]+)" \. -\}\}$')
 NAME_RE = re.compile(r"^name:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
+# An unquoted YAML scalar ends at " #": the rest of the description is parsed
+# as a comment and never reaches the agent.
+YAML_COMMENT_RE = re.compile(r"^(name|description):[^\"'].* #")
 REV_RE = re.compile(r"^[0-9a-f]{40}$")
 VALID_AGENTS = {"claude", "agents"}
 
@@ -108,8 +111,9 @@ def check_orphan_templates(targets: dict[Path, str]) -> list[str]:
     return problems
 
 
-def check_frontmatter_names(targets: dict[Path, str]) -> list[str]:
-    """Invariant 5: the body's `name:` matches the skill directory name."""
+def check_frontmatter(targets: dict[Path, str]) -> list[str]:
+    """Invariant 5: the body's `name:` matches the skill directory name, and
+    neither frontmatter line is silently truncated by a YAML comment."""
     problems = []
     for store in STORES.values():
         for directory in skill_dirs(store):
@@ -125,7 +129,14 @@ def check_frontmatter_names(targets: dict[Path, str]) -> list[str]:
             else:
                 problems.append(f"{rel(directory)}: has neither SKILL.md.tmpl nor SKILL.md")
                 continue
-            name = frontmatter_name(source.read_text(encoding="utf-8"))
+            text = source.read_text(encoding="utf-8")
+            for line in text.split("\n---", 1)[0].splitlines():
+                if YAML_COMMENT_RE.match(line):
+                    problems.append(
+                        f"{rel(source)}: `{line.split(':', 1)[0]}:` is cut short by a"
+                        " YAML comment; quote the value or drop the ` #`"
+                    )
+            name = frontmatter_name(text)
             if name is None:
                 problems.append(f"{rel(source)}: no `name:` in the frontmatter")
             elif name != directory.name:
@@ -189,7 +200,7 @@ def main() -> int:
         ("wrapper shape and target", wrapper_problems),
         ("store parity", check_store_parity()),
         ("orphan templates", check_orphan_templates(targets)),
-        ("frontmatter name", check_frontmatter_names(targets)),
+        ("frontmatter", check_frontmatter(targets)),
         ("agents/openai.yaml", check_openai_yaml()),
         ("agent_skills entries", check_agent_skills(entries)),
         ("unmanaged directories", check_unmanaged(entries)),

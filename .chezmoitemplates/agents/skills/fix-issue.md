@@ -1,6 +1,6 @@
 ---
 name: fix-issue
-description: Implement a solution for a GitHub issue using gh, branch conventions, focused code changes, and verification. Use when the user asks to fix issue #N, implement a GitHub issue, or start work from an issue number or URL.
+description: Implement a solution for a GitHub issue using gh, branch conventions, focused code changes, and verification. Use when the user asks to fix a numbered issue, implement a GitHub issue, or start work from an issue number or URL.
 ---
 
 # Fix Issue

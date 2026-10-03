@@ -1,0 +1,17 @@
+# Targets chezmoi once created and no longer manages. Without this list they
+# stay behind in $HOME as stale copies after the source file is deleted.
+#
+# Claude Code slash commands that became shared skills under
+# .chezmoitemplates/agents/skills/ and now install into ~/.claude/skills.
+.claude/commands/bugfix.md
+.claude/commands/commit-message.md
+.claude/commands/create-pr.md
+.claude/commands/explain-project.md
+.claude/commands/fix-issue.md
+.claude/commands/lint-fix.md
+.claude/commands/optimize.md
+.claude/commands/perf-audit.md
+.claude/commands/refactor.md
+.claude/commands/resolve-pr-comments.md
+.claude/commands/security-review.md
+.claude/commands/test-gen.md
