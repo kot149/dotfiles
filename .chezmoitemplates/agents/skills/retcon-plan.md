@@ -1,6 +1,6 @@
 ---
 name: retcon-plan
-description: Rewrite a plan (implementation plan or design document) end-to-end as if its final design had been the plan from the start. Produces a document a new reader with zero knowledge of the conversation history can follow, stripping out leftover deliberation debris like "we decided not to do X" or "originally we did X, but". Use when the user asks to rewrite a plan, clean up a plan, or remove the history from a plan.
+description: Rewrite a plan (implementation plan or design document) end-to-end as if its final design had been the plan from the start. Produces a document a new reader with zero knowledge of the conversation history can follow, stripping out leftover deliberation debris like "we decided not to do X" or "originally we did X, but". Use when the user asks to rewrite a plan, clean up a plan, remove the history from a plan, 「このプランを書き直して」「経緯を消して最終形だけにして」「プランを整理して」, or any similar phrasing in English or Japanese.
 ---
 
 # retcon-plan

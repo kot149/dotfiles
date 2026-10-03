@@ -1,6 +1,6 @@
 ---
 name: autosquash
-description: Fold `fixup!` / `squash!` commits on the current branch into their target commits with `git rebase -i --autosquash`. Use when the user asks to "autosquash", "fold fixup commits", "run rebase --autosquash", or similar. Determine the merge-target branch locally from the distance between `origin/HEAD` and merge-base; only use PR info or ask the user to confirm when the evidence is ambiguous.
+description: Fold `fixup!` / `squash!` commits on the current branch into their target commits with `git rebase -i --autosquash`. Use when the user asks to "autosquash", "fold fixup commits", "run rebase --autosquash", 「autosquashして」「fixupコミットをまとめて」「fixupを畳んで」, or any similar phrasing in English or Japanese. Determine the merge-target branch locally from the distance between `origin/HEAD` and merge-base; only use PR info or ask the user to confirm when the evidence is ambiguous.
 ---
 
 # autosquash

@@ -1,6 +1,6 @@
 ---
 name: dedup
-description: Detect duplicate/similar code using the `similarity` NixOS package, let the user select which duplicates to fix, then refactor and commit each one. Use when asked to find or fix duplicate code, reduce code duplication, or DRY up the codebase.
+description: Detect duplicate/similar code using the `similarity` NixOS package, let the user select which duplicates to fix, then refactor and commit each one. Use when asked to find or fix duplicate code, reduce code duplication, DRY up the codebase, 「重複コードを探して」「重複を直して」「DRYにして」, or any similar phrasing in English or Japanese.
 ---
 
 # Dedup — Detect and Fix Duplicate Code

@@ -1,6 +1,6 @@
 ---
 name: resolve-conflict
-description: Resolves the current Git conflict. Use when the user asks to "resolve the conflict", "resolve conflicts", "/resolve-conflict", or similar. Auto-detects whether a rebase or merge is in progress, or follows the explicit argument if given. Determines the base branch with evidence when none is specified.
+description: Resolves the current Git conflict. Use when the user asks to "resolve the conflict", "resolve conflicts", "/resolve-conflict", 「コンフリクトを解決して」「競合を直して」「リベースの衝突を解決して」, or any similar phrasing in English or Japanese. Auto-detects whether a rebase or merge is in progress, or follows the explicit argument if given. Determines the base branch with evidence when none is specified.
 argument-hint: "[--rebase|--merge] [--base <branch>]"
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: reorganize-commits
-description: Skill for reorganizing a branch's commit history into easy-to-review logical units. Splits oversized commits, combines fix-up iterations, and separates move refactors and generated artifacts. Use when the user asks things like "organize the commit history", "split this commit", "combine the commits", "make it review-friendly", "reorganize commits", or "split commit". Always create a backup branch before touching history and verify zero tree diff against the backup afterwards. If there is a diff, always report it to the user and never fix it on your own.
+description: Skill for reorganizing a branch's commit history into easy-to-review logical units. Splits oversized commits, combines fix-up iterations, and separates move refactors and generated artifacts. Use when the user asks things like "organize the commit history", "split this commit", "combine the commits", "make it review-friendly", "reorganize commits", "split commit", 「コミット履歴を整理して」「このコミットを分割して」「レビューしやすい単位にまとめて」, or any similar phrasing in English or Japanese. Always create a backup branch before touching history and verify zero tree diff against the backup afterwards. If there is a diff, always report it to the user and never fix it on your own.
 ---
 
 # reorganize-commits

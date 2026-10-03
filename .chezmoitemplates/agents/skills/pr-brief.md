@@ -7,7 +7,9 @@ description: >-
   PR's positioning, feature big picture, glossary, and known intentional debt in Japanese.
   Use when asked things like "explain the background of PR #NNN", "organize the
   prerequisite knowledge for this PR", "get the big picture of the PR",
-  "pr brief".
+  "pr brief", "review brief",
+  「PR #NNN のレビューを頼まれたので背景を説明して」「レビューの準備をして」
+  「このPRの前提知識をまとめて」, or any similar phrasing in English or Japanese.
   Does not evaluate the diff itself (that belongs to code-review skills).
 ---
 

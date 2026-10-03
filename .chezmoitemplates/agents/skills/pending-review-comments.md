@@ -1,6 +1,6 @@
 ---
 name: pending-review-comments
-description: Post review findings as inline comments on a GitHub PR in pending state (a draft review invisible to others until the user submits it). Use when the user asks things like "post the review comments as pending", "post the review findings as inline drafts on the PR", "post pending review comments", or "just add the comments without publishing yet", or when writing the results of other review work to a PR. Never submit (publish) the review; always leave that to the user by hand.
+description: Post review findings as inline comments on a GitHub PR in pending state (a draft review invisible to others until the user submits it). Use when the user asks things like "post the review comments as pending", "post the review findings as inline drafts on the PR", "post pending review comments", "just add the comments without publishing yet", 「pendingコメントで投稿して」「レビュー指摘をPRに下書きで入れて」「まだ公開せずコメントだけ付けて」, any similar phrasing in English or Japanese, or when writing the results of other review work to a PR. Never submit (publish) the review; always leave that to the user by hand.
 ---
 
 # Pending Review Comments
