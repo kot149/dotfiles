@@ -138,7 +138,7 @@ Delegate the actual posting procedure to the [[pending-review-comments]] skill; 
 
 - Scope: VALID findings, plus the parts of PARTIALLY_VALID findings that the judge said hold. Never pass INVALID, STALE, or UNVERIFIABLE findings
 - Pass each finding with `FILE` / `LINE` / `CLAIM` / `EVIDENCE` / `REASON` aligned to that skill's expected input (file path, line, and body at minimum)
-- Label each comment head as `[meta-review]` plus the verdict (e.g. `[meta-review / PARTIALLY_VALID]`)
+- For each finding, pass `<kind>` as the finding's own category or perspective where the source review supplied one, and `<grade>` as the verdict (`VALID` / `PARTIALLY_VALID`). Where the source review supplied no category, pass `<grade>` only and let the label line carry the verdict alone. Never pass the skill name as `<kind>`; the comment head format belongs to [[pending-review-comments]]
 - Include the evidence quotes in the comment body where available
 
 After posting, report the result (posted / skipped / excluded as duplicates, per that skill's report format). If `--fix` was also given, continue to step 5 next in the same turn; otherwise finish here.

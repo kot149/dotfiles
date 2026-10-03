@@ -127,15 +127,17 @@ Paths must be **relative to the repository root** and match what appears in the 
 One comment per finding. Never pack multiple findings into one comment.
 
 ```
-**[<category> / <severity>] <finding title>**
+**[<kind> / <grade>] <finding title>**
 
 <what is wrong (1-3 lines)>
 
 **Suggestion:** <how to fix it>
 ```
 
-- If the input has no category or severity, drop the label line and use just the title
-- Do not add generator-name labels like `[deep-review]` or `[Claude]`
+- `<kind>` is what sort of finding it is, as the caller classified it: a review perspective (`quality`, `security`), a finding category, or whatever taxonomy the caller uses. It is never the name of the skill or model that produced it
+- `<grade>` is how the caller ranked or judged it: a severity (`HIGH`), a verdict (`PARTIALLY_VALID`), or any single token of that kind
+- If the input has no `<kind>` or no `<grade>`, drop the label line and use just the title
+- Do not add generator-name labels like `[deep-review]`, `[meta-review]` or `[Claude]`. A reader of the PR cares what the finding is, not which tool wrote it
 - When showing fixed code, you may use a GitHub suggestion block:
 
   ````

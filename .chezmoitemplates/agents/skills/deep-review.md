@@ -413,7 +413,7 @@ Run only when option E applies (user choice or `--post`; PR targets only, so nev
 As deep-review-side preconditions, prepare the inputs to the skill as follows:
 
 - **Only judge-VALIDated findings**. Never pass INVALID/UNCERTAIN ones
-- Pass each finding with `FILE` / `LINE` / title / `DESCRIPTION` / `SUGGESTION` / `<reviewer>` / `<SEVERITY>` aligned (judge-corrected file/line/suggestion where present). Label each comment head as `[<reviewer> / <SEVERITY>]` (e.g. `[quality / LOW]`)
+- Pass each finding with `FILE` / `LINE` / title / `DESCRIPTION` / `SUGGESTION` / `<reviewer>` / `<SEVERITY>` aligned (judge-corrected file/line/suggestion where present). Pass `<reviewer>` as `<kind>` and `<SEVERITY>` as `<grade>`; the comment head format belongs to [[pending-review-comments]]
 - Include the evidence (convention-document quotes, measured breakdowns) in the comment body for findings that have it
 
 After posting, report the result in Japanese (e.g. `pendingコメントを投稿しました`) and finish.
