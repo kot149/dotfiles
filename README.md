@@ -82,7 +82,7 @@ Global Git is split so portable settings live in the repo and machine-specific v
 - Shared: [`dot_gitconfig.tmpl`](dot_gitconfig.tmpl) (includes `~/.config/git/config.machine`, hunk, LFS, optional `safe.directory` from `git_safe_directories` in data).
 - Bootstrap: [`private_dot_config/git/create_config.machine.tmpl`](private_dot_config/git/create_config.machine.tmpl) creates `~/.config/git/config.machine` only when the target is absent. Existing local files are preserved. The template defaults target the **kot149** GitHub profile; override the initial values in `~/.config/chezmoi/chezmoi.toml` on work PCs, etc.
 
-Defaults live in [`.chezmoidata.toml`](.chezmoidata.toml) (**kot149** + GitHub noreply email). If `git_signing_key` / `git_allowed_signers` are left empty, [`create_config.machine.tmpl`](private_dot_config/git/create_config.machine.tmpl) falls back to `$HOME/.ssh/id_ed25519_github_kot149.pub` and `$HOME/.ssh/allowed_signers`. **`~/.config/chezmoi/chezmoi.toml`** `[data]` overrides `.chezmoidata.toml`, so a work machine can point at different keys without editing the repo.
+Defaults live in [`.chezmoidata/git.toml`](.chezmoidata/git.toml) (**kot149** + GitHub noreply email). If `git_signing_key` / `git_allowed_signers` are left empty, [`create_config.machine.tmpl`](private_dot_config/git/create_config.machine.tmpl) falls back to `$HOME/.ssh/id_ed25519_github_kot149.pub` and `$HOME/.ssh/allowed_signers`. **`~/.config/chezmoi/chezmoi.toml`** `[data]` overrides `.chezmoidata/git.toml`, so a work machine can point at different keys without editing the repo.
 
 Example override for a work machine:
 

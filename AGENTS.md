@@ -19,7 +19,7 @@ Per-OS file selection is controlled by `.chezmoiignore.tmpl` (gates `Library/**`
 Files **not** managed by chezmoi (no `dot_`/`private_`/etc. prefix, listed in `.chezmoiignore.tmpl`, or sitting at the repo root as plain docs) live only inside this repository and are never copied to `$HOME`. Notable examples:
 
 - `./AGENTS.md` and `./CLAUDE.md` (this file and its stub) — repo-level agent guidance, read directly from the repo by tools like Codex CLI / Claude Code. Edits take effect immediately; **do not** run `chezmoi apply` for them (it will say "not managed").
-- `./README.md`, `./LICENSE`, `.chezmoiignore.tmpl`, `.chezmoidata.toml`, `.chezmoiscripts/`, `.chezmoitemplates/` — chezmoi metadata / repo docs, not targets.
+- `./README.md`, `./LICENSE`, `.chezmoiignore.tmpl`, `.chezmoidata/`, `.chezmoiscripts/`, `.chezmoitemplates/` — chezmoi metadata / repo docs, not targets.
 
 To check whether a given file is a chezmoi target, run `chezmoi target-path <source>` (prints the destination) or `chezmoi managed | grep <name>`.
 
@@ -97,15 +97,15 @@ Windows package list lives in `winget.json`: `winget export -o winget.json` / `w
 
 ## Configuration layering (important)
 
-1. `.chezmoidata.toml` — repo-wide defaults (git identity, agent allow/deny lists, etc.)
+1. `.chezmoidata/*.toml` — repo-wide defaults, split by topic (`git.toml` for the git identity, `agent-permissions.toml` for the agent allow/deny lists, `agent-skills.toml` for the third-party skill entries, `nix-binary-caches.toml`)
 2. `~/.config/chezmoi/chezmoi.toml` — per-machine overrides (created by `.chezmoi.toml.tmpl` on `chezmoi init`); `[data]` here wins
 3. `private_dot_config/git/create_config.machine.tmpl` → `~/.config/git/config.machine`, created only when absent and included by the shared `dot_gitconfig.tmpl` for per-host git settings (signing key paths, work email, `safe.directory`, etc.)
 
-When adding new tunable values, prefer threading them through `.chezmoidata.toml` + chezmoi template prompts rather than hardcoding.
+When adding new tunable values, prefer threading them through `.chezmoidata/` + chezmoi template prompts rather than hardcoding.
 
 ## Agent permission lists
 
-`.chezmoidata.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_no_rtk`, and `agent_shell_deny` arrays consumed by AI-agent settings templates (e.g. `dot_claude/settings.json.tmpl`, `dot_codex/...`). Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Entries in `agent_shell_allow` are emitted both bare and with an auto-generated `rtk <cmd>` variant — put commands that should be allowed **without** the `rtk` wrapper (e.g. `rtk` itself) in `agent_shell_allow_no_rtk`, which emits only the bare form.
+`.chezmoidata/agent-permissions.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_no_rtk`, and `agent_shell_deny` arrays consumed by AI-agent settings templates (e.g. `dot_claude/settings.json.tmpl`, `dot_codex/...`). Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Entries in `agent_shell_allow` are emitted both bare and with an auto-generated `rtk <cmd>` variant — put commands that should be allowed **without** the `rtk` wrapper (e.g. `rtk` itself) in `agent_shell_allow_no_rtk`, which emits only the bare form.
 
 Do not add `git -C * <subcommand>` style entries: a mid-pattern `*` also matches options such as `-c` or `--exec-path` inserted after the path. Claude Code instead runs `dot_claude/hooks/executable_rewrite-git-c.sh` (registered in place of `rtk hook claude`, which it calls itself), which rewrites `git -C <path> <args>` to `(cd <path> && git <args>)` so the plain `git <args>` rules apply. Codex and opencode prompt for `git -C`.
 
@@ -150,12 +150,14 @@ Two Codex-specific details:
 
 Skills live in two stores. `~/.agents/skills` is the shared store: Codex CLI reads it natively (alongside its own deprecated `~/.codex/skills`), as do opencode, Cursor, Gemini CLI and Amp. `~/.claude/skills` exists because Claude Code is the one agent with no `.agents/` awareness and no setting for extra skill roots, so anything Claude Code should see has to be materialized there as well. Nothing in this repo writes to `~/.codex/skills` any more.
 
-Both stores are generated, never hand-synced and never symlinked together: a skill is declared or written **once** and the same definition materializes into every store that needs it. For self-authored skills the single source is the body under `.chezmoitemplates/agents/skills/`; for third-party skills it is the `[[agent_skills]]` entry, whose `agents` list names the target stores.
+Both stores are generated, never hand-synced and never symlinked together: a skill is declared or written **once** and the same definition materializes into every store that needs it. For self-authored skills the single source is the body under `.chezmoitemplates/agents/skills/`; for third-party skills it is the `[[agent_skills]]` entry, whose `agents` list names the target stores. The eleven skills paired with a Claude Code slash command (case 1 below) are the exception: they are written twice, by hand.
 
 Skills come from three places, and which one a skill belongs to decides where you edit it:
 
-1. **Self-authored, single agent** — checked in under `dot_claude/skills/<name>/SKILL.md` (Claude Code) or `dot_agents/skills/<name>/SKILL.md` (shared store). Skills in the shared store additionally carry `agents/openai.yaml`, which supplies Codex's TUI interface metadata and is ignored by agents that do not know it. Scripts shipped with a skill need the `executable_` prefix. Every self-authored skill is currently shared (case 2), so this layout is only for a skill that genuinely cannot be made agent-neutral.
-2. **Self-authored, shared between agents** — body lives in `.chezmoitemplates/agents/skills/<name>.md` and each agent gets a one-line `{{ includeTemplate "agents/skills/<name>.md" . }}` wrapper named `SKILL.md.tmpl`, same pattern as the shared hooks. Scripts shipped with a shared skill follow the same pattern: body in `.chezmoitemplates/agents/<script>`, and each agent gets an `executable_<script>.tmpl` wrapper (e.g. `keychain-cred.sh`). This is the default for every self-authored skill in the repo.
+1. **Self-authored, single agent** — checked in under `dot_claude/skills/<name>/SKILL.md` (Claude Code) or `dot_agents/skills/<name>/SKILL.md` (shared store). Skills in the shared store should also carry `agents/openai.yaml`, which supplies Codex's TUI interface metadata and is ignored by agents that do not know it; `just skills-lint` reports a shared-store skill that lacks it. Scripts shipped with a skill need the `executable_` prefix.
+
+   Eleven skills sit here because Claude Code gets them as slash commands instead: `add-slash-command`, `bugfix`, `create-pr`, `explain-project`, `fix-issue`, `lint-fix`, `optimize`, `perf-audit`, `refactor`, `security-review`, `test-gen`. Each has a hand-maintained twin at `dot_claude/commands/<name>.md`, and the two copies have already diverged: the skill copy of `create-pr` resolves the default branch while the command copy hardcodes `main`, and the two copies of `explain-project` give opposite instructions about subagents. Edit both sides, or fold the pair into case 2.
+2. **Self-authored, shared between agents** — body lives in `.chezmoitemplates/agents/skills/<name>.md` and each agent gets a one-line `{{ includeTemplate "agents/skills/<name>.md" . }}` wrapper named `SKILL.md.tmpl`, same pattern as the shared hooks. Scripts shipped with a shared skill follow the same pattern: body in `.chezmoitemplates/agents/<script>`, and each agent gets an `executable_<script>.tmpl` wrapper (e.g. `keychain-cred.sh`). This is the default for a new self-authored skill.
 
    A procedure needed by more than one skill body (currently the base-branch / merge-base determination in `_shared/git-base.md`, used by `autosquash`, `fixup`, and `reorganize-commits`) lives under `.chezmoitemplates/agents/skills/_shared/` and is pulled in by the bodies with `{{ includeTemplate "agents/skills/_shared/<name>.md" . }}`. Every skill wrapper uses `includeTemplate`, with no exceptions. `include` inserts a file verbatim without rendering it, so a body that later grows a nested `_shared/` include would emit that directive as literal text into the installed `SKILL.md`. Using one spelling everywhere removes that failure mode. Snippets are numbered as sub-steps (`#### 2-1.` …), so each body supplies its own `### 2. ...` heading and intro before the include.
 
@@ -166,7 +168,7 @@ Skills come from three places, and which one a skill belongs to decides where yo
    - **MCP tools** — refer to the server and the kind of operation ("Atlassian MCP のissue取得ツール"), not the tool id, since names differ per agent and some agents load tool schemas lazily.
    - **File and search tools** — say "read the file" / "search the repository", not `Read`/`Grep`/`Glob`/`Edit`.
    - **Paths into the skill's own directory** — write them relative to the skill root of whichever store the copy lives in (`~/.claude/skills` vs `~/.agents/skills`), never hardcode one.
-3. **Third-party** — declared in `.chezmoidata.toml` as `[[agent_skills]]` and materialized by `.chezmoiexternal.toml.tmpl` as `type = "archive"` externals pulled from a pinned GitHub tarball. This is the cross-platform path: it works on Windows as-is (no symlinks, no Nix), unlike Home Manager, which is non-Windows only.
+3. **Third-party** — declared in `.chezmoidata/agent-skills.toml` as `[[agent_skills]]` and materialized by `.chezmoiexternal.toml.tmpl` as `type = "archive"` externals pulled from a pinned GitHub tarball. This is the cross-platform path: it works on Windows as-is (no symlinks, no Nix), unlike Home Manager, which is non-Windows only.
 
 Adding a third-party skill:
 
