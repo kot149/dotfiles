@@ -120,6 +120,13 @@ prefix = "skills"
 names = ["suiko"]
 agents = ["claude", "agents"]
 
+[[agent_skills]]
+repo = "nanaism/yomiyasu"
+rev = "8d5abeebe2dd20c2db005deaddcc50be43c59c0a"
+prefix = "skills"
+names = ["yomiyasu"]
+agents = ["claude", "agents"]
+
 # Claude Code gets these from the enabled cloudflare@cloudflare plugin, so only
 # the shared store (read by Codex, which has no Claude Code plugin mechanism)
 # needs them materialized.
