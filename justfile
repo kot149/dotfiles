@@ -102,6 +102,11 @@ pkgs-list *managers:
 pkgs-update *managers:
     {{ uv_script }} scripts/global_packages.py update {{ managers }}
 
+# Find commands installed by both bun / pnpm / uv / cargo / go and Nix / winget / others
+[group('tools')]
+pkgs-dupes:
+    {{ uv_script }} scripts/duplicate_packages.py
+
 # Upgrade gh CLI extensions
 [group('tools')]
 gh-ext-upgrade:

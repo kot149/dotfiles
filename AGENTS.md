@@ -58,7 +58,7 @@ herdr server reload-config
 
 ## Common commands
 
-Routine maintenance (chezmoi, skill revs, Home Manager, nix-darwin, Nix cleanup, plugin and tool upgrades, global bun / pnpm / uv / cargo / go packages, tests) is collected in the root `justfile`. The `dots` alias (zsh and PowerShell) runs it from anywhere: `dots` lists the tasks, `dots update` runs the full update for the current OS. OS-specific tasks use just's `[macos]` / `[linux]` / `[unix]` / `[windows]` attributes. The `justfile` is not a chezmoi target (it is in `.chezmoiignore.tmpl`).
+Routine maintenance (chezmoi, skill revs, Home Manager, nix-darwin, Nix cleanup, plugin and tool upgrades, global bun / pnpm / uv / cargo / go packages and their duplicates in Nix / winget, tests) is collected in the root `justfile`. The `dots` alias (zsh and PowerShell) runs it from anywhere: `dots` lists the tasks, `dots update` runs the full update for the current OS. OS-specific tasks use just's `[macos]` / `[linux]` / `[unix]` / `[windows]` attributes. The `justfile` is not a chezmoi target (it is in `.chezmoiignore.tmpl`).
 
 Apply / diff / status (from anywhere):
 
