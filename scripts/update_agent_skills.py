@@ -162,7 +162,7 @@ def apply_updates(text: str, updates: list[dict]) -> str:
     for update in updates:
         block = blocks[update["index"]]
         new_block, count = re.subn(
-            rf'^rev = "{update["old"]}"$', f'rev = "{update["new"]}"', block, count=1, flags=re.M
+            rf'^rev = "{update["old"]}"(?=\r?$)', f'rev = "{update["new"]}"', block, count=1, flags=re.M
         )
         if count != 1:
             sys.exit(f"Could not find the rev line for {update['label']}")
@@ -177,7 +177,10 @@ def main() -> None:
     mode.add_argument("--yes", action="store_true", help="apply every update without asking")
     args = parser.parse_args()
 
-    text = DATA_FILE.read_text()
+    # Upstream diffs can hold characters the Windows console code page lacks.
+    sys.stdout.reconfigure(errors="replace")
+    # Bytes I/O keeps UTF-8 and the checked-out line endings on Windows too.
+    text = DATA_FILE.read_bytes().decode("utf-8")
     entries = tomllib.loads(text)["agent_skills"]
     if text.count(BLOCK_HEADER) != len(entries):
         sys.exit(f"Expected one {BLOCK_HEADER} line per entry in {DATA_FILE}")
@@ -197,7 +200,7 @@ def main() -> None:
     if args.check:
         sys.exit(1)
     if selected:
-        DATA_FILE.write_text(apply_updates(text, selected))
+        DATA_FILE.write_bytes(apply_updates(text, selected).encode("utf-8"))
         print(f"\nUpdated {len(selected)} entr{'y' if len(selected) == 1 else 'ies'} in {DATA_FILE.name}.")
         print("Run `chezmoi apply` to install them.")
 
