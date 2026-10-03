@@ -180,7 +180,7 @@ agents = ["claude", "agents"]   # one entry per target store; "claude" ->
 
 For a repo that keeps `SKILL.md` directly under `prefix` (or at the repo root, with `prefix = ""`) instead of in a per-skill subdirectory, add `flat = true`; `names` then holds the single target directory name.
 
-Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.agents/skills`). The template derives `include` and `stripComponents` from `prefix`, so each skill lands with `SKILL.md` at the root of its target directory. Updating a skill means bumping `rev`; `refreshPeriod = "168h"` only controls re-download of the pinned tarball, never which commit is used.
+Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.agents/skills`). The template derives `include` and `stripComponents` from `prefix`, so each skill lands with `SKILL.md` at the root of its target directory. Updating a skill means bumping `rev`; `refreshPeriod = "168h"` only controls re-download of the pinned tarball, never which commit is used. `python3 scripts/update_agent_skills.py` finds entries whose skill directories changed upstream, shows the changed files (`d` prints the diff), and bumps `rev` for the ones you accept (`--check` only reports, `--yes` accepts all).
 
 Two things not managed here:
 

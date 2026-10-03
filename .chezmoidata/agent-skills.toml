@@ -2,7 +2,7 @@
 # externals (works on every OS, Windows included -- no symlinks, no Nix).
 #
 #   repo    GitHub owner/name
-#   rev     commit SHA to pin (bump manually; that is the whole update flow)
+#   rev     commit SHA to pin (bump with scripts/update_agent_skills.py)
 #   prefix  directory inside the repo that holds the skills
 #   names   skill directory names under prefix
 #   agents  which config dirs receive them (~/.<agent>/skills/<name>); one
@@ -23,7 +23,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "herdrdev/herdr"
-rev = "d76657f2c7fc18dcce3b9af43842c8afaba1646b"
+rev = "5da0a01e1eedda054db0c81dd3a780000c40d9f0"
 prefix = "skills"
 names = ["herdr"]
 agents = ["claude", "agents"]
@@ -44,7 +44,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "vercel-labs/agent-browser"
-rev = "548b159b30eef119ccf6846c8bc807d0eaa3f6f8"
+rev = "39a74c70d7759d5a6de7a22c04570bb626bbd081"
 prefix = "skills"
 names = ["agent-browser"]
 agents = ["claude", "agents"]
@@ -60,14 +60,14 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "humanlayer/skills"
-rev = "3c2629142c5d437428269b1b722b08c0b87f574d"
+rev = "ca7c8088db69e315a8b2deea43820270457f8f3c"
 prefix = "plugins/show-me/skills"
 names = ["show-me"]
 agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "DietrichGebert/ponytail"
-rev = "2ed6c52c9d7e5e56942508591085fd45dea277d3"
+rev = "b432558edbbcf08aa395222a3536650ddd133ca1"
 prefix = "skills"
 names = [
   "ponytail",
@@ -81,7 +81,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "mattpocock/skills"
-rev = "885e2ca4d842d139e9aef4e48d366c63cb1b8013"
+rev = "d81f3a183412e71a5b1e84ca21bc1a35eea03a60"
 prefix = "skills/productivity"
 names = ["grilling"]
 agents = ["claude", "agents"]
@@ -90,7 +90,7 @@ agents = ["claude", "agents"]
 # domain-modeling も併せて入れる。
 [[agent_skills]]
 repo = "mattpocock/skills"
-rev = "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76"
+rev = "d81f3a183412e71a5b1e84ca21bc1a35eea03a60"
 prefix = "skills/engineering"
 names = ["grill-with-docs", "domain-modeling"]
 agents = ["claude", "agents"]
@@ -98,7 +98,7 @@ agents = ["claude", "agents"]
 # SKILL.md sits at the repo root, so there is no per-skill subdirectory.
 [[agent_skills]]
 repo = "luchasarie/bro-skill"
-rev = "01e51f8092973be58eff3b7271282bd8488a02ae"
+rev = "3aa8c40b1241111f73ab5360e770f7512193a20e"
 prefix = ""
 names = ["bro"]
 agents = ["claude", "agents"]
@@ -106,7 +106,7 @@ flat = true
 
 [[agent_skills]]
 repo = "dmmulroy/anti-slop"
-rev = "6d538555cb151d4121ed51a27db81890eacf8ae9"
+rev = "c44ef22ca116d0ba62a3ff663a0bd13a3f3fa40b"
 prefix = "skills"
 names = ["install-anti-slop"]
 agents = ["claude", "agents"]
@@ -115,7 +115,7 @@ agents = ["claude", "agents"]
 # its bundled manual checklist.
 [[agent_skills]]
 repo = "nwiizo/suiko"
-rev = "3651215fee9409afe016de8d8347c442e1b5c88d"
+rev = "a8fafacf04dd404405a2fab218ed7dc9e8bf3fa2"
 prefix = "skills"
 names = ["suiko"]
 agents = ["claude", "agents"]
@@ -132,7 +132,7 @@ agents = ["claude", "agents"]
 # needs them materialized.
 [[agent_skills]]
 repo = "cloudflare/skills"
-rev = "f96bff754e428838818017f75817f0f9428acd48"
+rev = "41e0d19858946d18af9ee2c2feebbe2e11d829ff"
 prefix = "skills"
 names = [
   "agents-sdk",
