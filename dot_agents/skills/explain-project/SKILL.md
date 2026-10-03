@@ -7,7 +7,7 @@ description: Explain a repository's high-level architecture in Japanese. Use whe
 
 Read and inspect the repository. Do not run the project unless the user explicitly asks or inspection requires generated metadata.
 
-Use subagents only when the user explicitly asks for parallel agent analysis or current instructions allow it. Otherwise inspect locally.
+Decide on subagents by the size of the repository: read a large one through several subagents in parallel, one per area, and inspect a small one directly.
 
 ## Analysis
 
@@ -23,7 +23,7 @@ Capture:
 
 ## Output
 
-Write Markdown only, in Japanese, with these sections in this order:
+Write Markdown only, with no commentary outside the sections, in Japanese, with these sections in this order:
 
 1. **Project Name**: bold text
 2. **Overview**: concise paragraph, 160 words or less

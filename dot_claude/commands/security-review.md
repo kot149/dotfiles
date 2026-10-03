@@ -59,3 +59,9 @@ List all findings grouped by severity (Critical → Informational) with ID, cate
 ### Recommendations
 
 Prioritized list of actionable next steps beyond individual fixes (e.g., adopt a secrets manager, enable dependency scanning in CI, implement a WAF).
+
+## Guardrails
+
+- Do not include long code excerpts.
+- Distinguish confirmed vulnerabilities from hardening suggestions.
+- Do not modify code unless the user explicitly asks for fixes.

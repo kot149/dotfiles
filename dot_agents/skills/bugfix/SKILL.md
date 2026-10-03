@@ -16,7 +16,7 @@ Treat the user's prompt as the bug description. Preserve unrelated worktree chan
 1. Reproduce: Understand the report and set up the smallest reproduction. Confirm the bug is reproducible before changing code when feasible.
 2. Diagnose: Trace the relevant code path and identify the root cause. For UI or browser behavior, use the available browser automation skill or local browser tooling when applicable. Browse official or primary documentation when current framework behavior matters.
 3. Fix: Apply the smallest behavior-preserving change that addresses the root cause. Avoid unrelated refactors.
-4. Test: Run existing targeted tests. Add or update a focused regression test when the codebase has a clear test pattern.
+4. Test: Run existing targeted tests to confirm the fix works and nothing regressed. Where no test covers the bug, write one.
 5. Repeat: If verification surfaces a new failure, restart from reproduction for the new symptom.
 6. Report: Summarize the root cause, the fix, and verification results.
 

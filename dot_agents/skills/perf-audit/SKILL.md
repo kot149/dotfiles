@@ -1,11 +1,13 @@
 ---
 name: perf-audit
-description: Audit code performance and produce prioritized optimization recommendations without necessarily editing code. Use when the user asks for a performance audit, bottleneck analysis, bundle review, database performance review, API latency review, or memory/performance recommendations.
+description: Audit performance across a subsystem or the whole codebase and produce prioritized optimization recommendations. Report only, never edits. Use when the user asks for a performance audit, bottleneck analysis, bundle review, database performance review, API latency review, or memory/performance recommendations. To change one file or function directly, use optimize instead.
 ---
 
 # Performance Audit
 
 Analyze performance and identify optimization opportunities. If the user provides a target, focus on that file, function, directory, subsystem, or performance aspect.
+
+Example targets: the whole project, `src/api/`, database queries, bundle size.
 
 ## Audit Areas
 

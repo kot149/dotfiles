@@ -18,7 +18,7 @@ If the user provides a target, use it. If not, identify recently modified files 
 3. Create tests covering happy paths, edge cases, error handling, validation, and external dependency behavior.
 4. Use descriptive test names and the project’s preferred structure.
 5. Mock external dependencies consistently with existing tests.
-6. Run the relevant test command and fix test failures caused by the new tests.
+6. Run the relevant test command and confirm the new tests pass before finishing. Fix failures the new tests caused.
 7. Report created test files and verification results.
 
 ## Test Types

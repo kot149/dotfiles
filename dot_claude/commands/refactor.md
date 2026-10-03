@@ -44,3 +44,9 @@ Run the detected test command and report results. If no test command is found, n
 - Optimize data structures and algorithms where appropriate
 
 Always explain the refactoring changes made and why they improve the code.
+
+## Guardrails
+
+- Keep edits scoped.
+- Do not change a public API unless the user explicitly approves it.
+- Do not combine refactoring with feature changes.

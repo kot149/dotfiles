@@ -1,6 +1,8 @@
 # Explain project high-level architecture
 
-Use multiple subagents to analyze the repository. Do not run the project; only read and inspect it.
+Read and inspect the repository. Do not run the project unless the user explicitly asks or inspection requires generated metadata.
+
+Decide on subagents by the size of the repository: read a large one through several subagents in parallel, one per area, and inspect a small one directly.
 
 ## Goal
 
