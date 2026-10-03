@@ -1,0 +1,4 @@
+interface:
+  display_name: "Retcon Plan"
+  short_description: "Rewrite a plan as if its final design had been the plan from the start."
+  default_prompt: "Rewrite this plan without the deliberation history."

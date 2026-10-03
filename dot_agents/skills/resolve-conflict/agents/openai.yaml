@@ -1,0 +1,4 @@
+interface:
+  display_name: "Resolve Conflict"
+  short_description: "Resolve an in-progress rebase or merge conflict, or start one against a base branch."
+  default_prompt: "Resolve the current Git conflict."
