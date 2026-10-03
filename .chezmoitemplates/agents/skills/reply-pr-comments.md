@@ -15,9 +15,7 @@ include the commit hash for anything with a fix commit**.
 
 ## Input
 
-$ARGUMENTS
-
-A PR number / URL and narrowing conditions (specific file, specific reviewer,
+The request names a PR number / URL and narrowing conditions (specific file, specific reviewer,
 specific thread) may be passed.
 With no narrowing specified, target all unresolved threads on the current
 branch's PR.
@@ -72,7 +70,7 @@ gh repo view --json nameWithOwner --jq .nameWithOwner
 gh pr view --json number,state,headRefName,baseRefName --jq '{number,state,headRefName,baseRefName}'
 ```
 
-Prefer the PR number or URL from `$ARGUMENTS` when given. When the current
+Prefer the PR number or URL from the request when given. When the current
 branch has no PR and no number is given, present the following to the user in
 Japanese and stop:
 

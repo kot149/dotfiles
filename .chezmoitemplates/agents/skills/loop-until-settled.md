@@ -31,9 +31,7 @@ This is convergence-driven, not clock-driven. For "every N minutes" use the
 
 ## Target
 
-$ARGUMENTS
-
-The target is whatever remains after removing the flags below. It is one of:
+The target is whatever remains in the request after removing the flags below. It is one of:
 
 - **A skill invocation** — `/deep-review #123`, `issue-recon ABC-123`, with or
   without the leading slash. Load that skill and follow its body as the round's

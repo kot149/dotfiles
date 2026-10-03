@@ -10,16 +10,14 @@ Verify review findings with independent subagents dedicated to judging whether e
 
 ## Target
 
-$ARGUMENTS
-
-If `$ARGUMENTS` contains a PR number/URL, file path, or finding text, treat that as the verification target. If empty, identify the source per step 1.
+If the request contains a PR number/URL, file path, or finding text, treat that as the verification target. If empty, identify the source per step 1.
 
 ## Flags
 
 - `--fix`: after presenting the verdicts, apply the VALID / PARTIALLY_VALID findings (step 5). Without it, stop at the verdicts.
 - `--post`: after presenting the verdicts, post the VALID / PARTIALLY_VALID findings as pending PR review comments (step 4b) instead of fixing. Only valid when the target is a GitHub PR; for any other target, warn that `--post` is invalid, ignore it, and stop at the verdicts as usual.
 
-Strip the flag out of `$ARGUMENTS` before using the rest as the target. A plain-language equivalent in the request ("fix the valid ones", "verify and fix") counts as `--fix`; ("post them as PR comments", "post as pending review") counts as `--post`. If both `--fix` and `--post` are given (or the user asks for both), run step 4b (post) then step 5 (fix), in that order.
+Strip the flag out of the request before using the rest as the target. A plain-language equivalent in the request ("fix the valid ones", "verify and fix") counts as `--fix`; ("post them as PR comments", "post as pending review") counts as `--post`. If both `--fix` and `--post` are given (or the user asks for both), run step 4b (post) then step 5 (fix), in that order.
 
 ## Subagents
 

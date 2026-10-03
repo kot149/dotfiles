@@ -14,7 +14,7 @@ them. Finally, report the still-unresolved comments.
 
 ## Target PR
 
-$ARGUMENTS
+The PR named in the request, or the one for the current branch.
 
 ## Steps (obey strictly)
 

@@ -259,4 +259,4 @@ The report must cover only the following points:
   ```
   意図的な重複の可能性があります。修正してよいですか?: <finding> (<path>)
   ```
-- If `$ARGUMENTS` is provided, treat it as a path to limit the scan scope (e.g. `src/`, `lib/`).
+- If the request names a path, treat it as the limit on the scan scope (e.g. `src/`, `lib/`).

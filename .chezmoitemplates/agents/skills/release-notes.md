@@ -102,7 +102,7 @@ Write the body of a GitHub release for the current repository, following the rep
 
 - Never run `gh release create` or `gh release delete` as part of this skill unless the user explicitly asks to create a new release.
 - Never publish a draft. If the user wants to publish, that is a separate manual step.
-- If `$ARGUMENTS` is provided, treat it as a hint (e.g. a specific tag name, a theme to emphasize, or extra context to weave in).
+- If the request carries extra context, treat it as a hint (e.g. a specific tag name, a theme to emphasize, or extra context to weave in).
 - If the repo has no prior releases AND no body on the draft, present the following to the user in Japanese and ask for a preferred format (Conventional Commits grouping is the safe default) before drafting:
 
   ```

@@ -52,7 +52,7 @@ Never call the tool by name inline in the steps below; just do whatever user cho
      - `perf:` for performance improvements
 6. Keep the subject line under 72 characters
 7. Write in imperative mood ("Add feature" not "Added feature")
-8. If `$ARGUMENTS` is provided, treat it as additional context or a hint for the commit message
+8. If the request carries additional context, treat it as a hint for the commit message
 
 ## Output
 

@@ -1,7 +1,7 @@
 ---
 name: deep-review
 description: In-depth code review that runs multiple perspective-specific reviewer subagents in parallel, has judge subagents verify each finding against the real code, then fixes the valid findings. Reviews in 10 independent perspectives (security/quality/naming/comment/perf/a11y/test/arch/meta/spec), also fetching spec documents such as Jira/Confluence from the PR body to check spec consistency. Use when the user asks for "deep review", "review this PR", "review the diff from multiple angles", "review and fix", 「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」, or requests a review with a PR number or diff range in English or Japanese. Findings can also be posted as pending PR review comments. The `--fix` flag skips the approach selection prompt and auto-fixes, and `--post` similarly proceeds to pending review comment posting (only valid for PR targets).
-argument-hint: "[<PR number|PR URL|base...head|paths>] [--fast|--full] [--fix|--post]"
+argument-hint: "[<PR number|PR URL|base...head|paths>] [--fast|--full] [--fix] [--post]"
 ---
 
 # Deep Review
@@ -25,9 +25,7 @@ The run launches up to 20 subagents. Everything you paste into a prompt is emitt
 
 ## Target
 
-$ARGUMENTS
-
-Arguments may specify the target (PR number/URL, branch diff, file paths) plus the following flags.
+The request may specify the target (PR number/URL, branch diff, file paths) plus the following flags.
 
 | Flag | Effect |
 |---|---|
@@ -88,7 +86,7 @@ There are 10 perspectives. Each label's detailed checklist is in `perspectives/<
 
 ### 0.1 Identify the Review Target
 
-Decide the target from the contents of `$ARGUMENTS`. **Always write the diff to `$DIFF_PATH` and pass the path**; never inline a diff into a prompt, however small.
+Decide the target from the user's request. **Always write the diff to `$DIFF_PATH` and pass the path**; never inline a diff into a prompt, however small.
 
 - PR number/URL given: `gh pr diff <number> > $DIFF_PATH`. In the same call also take `gh pr view <number> --json title,body,url,additions,deletions,changedFiles,headRefName,baseRefName,state,isDraft,author,headRefOid,files`
 - Branch diff given: write `git diff <base>...<head>` to `$DIFF_PATH`. Also take `git log --oneline <base>..<head>` and `git diff --stat` at the same time

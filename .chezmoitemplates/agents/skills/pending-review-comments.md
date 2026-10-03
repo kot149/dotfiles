@@ -14,12 +14,10 @@ A pending review is visible only to its author and stays hidden from everyone el
 
 ## Input
 
-$ARGUMENTS
-
 The findings come from one of the following:
 
 - Review results earlier in the conversation (`/deep-review`, `/code-review`, a Codex review, your own review, etc.)
-- File paths or text passed via `$ARGUMENTS`
+- File paths or text named in the request
 - Findings the user listed in the message body
 
 Each finding needs at minimum a **file path, line, and body**. Do not post findings whose line cannot be determined; report them to the user as described below.
@@ -42,7 +40,7 @@ gh repo view --json nameWithOwner --jq .nameWithOwner
 gh pr view --json number,state,headRefName --jq '{number,state,headRefName}'
 ```
 
-If `$ARGUMENTS` contains a PR number or URL, prefer it. If the current branch has no PR and no number was given, present the following to the user in Japanese and stop (never create a PR on your own):
+If the request contains a PR number or URL, prefer it. If the current branch has no PR and no number was given, present the following to the user in Japanese and stop (never create a PR on your own):
 
 ```
 現在のブランチに対応するPRが見つかりませんでした。PR番号またはURLを指定してください。
