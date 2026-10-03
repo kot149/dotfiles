@@ -8,6 +8,8 @@ Bump the pinned revs in .chezmoidata/agent-skills.toml.
 An entry counts as outdated only when one of its skill directories differs
 between the pinned rev and the upstream default branch HEAD (compared by blob
 SHA), so commits that touch other parts of the repo are ignored.
+Entries that share a `repo` are bumped together, so one repository is never
+pinned at two revs.
 Requires the `gh` CLI.
 
 Usage:
@@ -107,6 +109,24 @@ def check_entry(index: int, entry: dict, head: str) -> tuple[str, dict | None]:
     return f"  outdated    {label}", {"index": index, "label": label, "repo": repo, "old": rev, "new": head, "changes": changes}
 
 
+def group_by_repo(updates: list[dict], entries: list[dict]) -> list[dict]:
+    """Merge the updates of one repo into a single update covering every entry
+    of that repo, so a repository is never left pinned at two revs."""
+    grouped: dict[str, dict] = {}
+    for update in updates:
+        group = grouped.get(update["repo"])
+        if group is None:
+            grouped[update["repo"]] = dict(update, labels=[update["label"]])
+            continue
+        group["labels"].append(update["label"])
+        group["changes"] += update["changes"]
+    for repo, group in grouped.items():
+        group["targets"] = [(i, e["rev"]) for i, e in enumerate(entries) if e["repo"] == repo]
+        names = ", ".join(sorted({n for e in entries if e["repo"] == repo for n in e["names"]}))
+        group["label"] = f"{repo} ({names})"
+    return list(grouped.values())
+
+
 def find_updates(entries: list[dict]) -> list[dict]:
     with ThreadPoolExecutor(max_workers=8) as pool:
         repos = sorted({e["repo"] for e in entries})
@@ -118,7 +138,7 @@ def find_updates(entries: list[dict]) -> list[dict]:
         print(line)
         if update:
             updates.append(update)
-    return updates
+    return group_by_repo(updates, entries)
 
 
 def print_patch(update: dict, status: str, path: str) -> None:
@@ -136,6 +156,8 @@ def show_update(update: dict, with_patch: bool) -> None:
     changes = update["changes"]
     print(f"\n== {update['label']}: {len(changes)} file(s) changed")
     print(f"   https://github.com/{update['repo']}/compare/{update['old']}...{update['new']}")
+    if len(update["targets"]) > 1:
+        print(f"   bumps all {len(update['targets'])} entries of this repo together")
     listed = changes if with_patch else changes[:MAX_LISTED_FILES]
     for status, path in listed:
         print(f"   {status:<9} {path}")
@@ -160,13 +182,13 @@ def apply_updates(text: str, updates: list[dict]) -> str:
     """Rewrite the rev line inside each target block, keeping the rest of the file as is."""
     head, *blocks = text.split(BLOCK_HEADER)
     for update in updates:
-        block = blocks[update["index"]]
-        new_block, count = re.subn(
-            rf'^rev = "{update["old"]}"(?=\r?$)', f'rev = "{update["new"]}"', block, count=1, flags=re.M
-        )
-        if count != 1:
-            sys.exit(f"Could not find the rev line for {update['label']}")
-        blocks[update["index"]] = new_block
+        for index, old in update["targets"]:
+            new_block, count = re.subn(
+                rf'^rev = "{old}"(?=\r?$)', f'rev = "{update["new"]}"', blocks[index], count=1, flags=re.M
+            )
+            if count != 1:
+                sys.exit(f"Could not find the rev line for {update['label']}")
+            blocks[index] = new_block
     return BLOCK_HEADER.join([head, *blocks])
 
 
