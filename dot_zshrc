@@ -18,9 +18,8 @@ fi
 
 # nix
 if [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then . ~/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
-alias home-manager-switch='nh home switch ~/.config/home-manager/ -c default'
-alias home-manager-update='nh home switch ~/.config/home-manager/ -c default -u'
-alias nix-cleanup=' nh clean all --keep-since 30d --keep-one'
+# Dotfiles maintenance tasks (justfile at the chezmoi source root)
+alias dots='just --justfile ~/.local/share/chezmoi/justfile'
 # Use zsh for nix shell
 export NIX_BUILD_SHELL=zsh
 export PAGER=moor

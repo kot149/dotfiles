@@ -335,6 +335,9 @@ function push {
     }
 }
 
+# Dotfiles maintenance tasks (justfile at the chezmoi source root)
+function dots { just --justfile "$HOME\.local\share\chezmoi\justfile" @args }
+
 function sonnet { claude --model claude-sonnet-5-5 @args }
 function opus { claude --model 'claude-opus-5-5[1m]' @args }
 function fable { claude --model claude-fable-5-1 @args }
