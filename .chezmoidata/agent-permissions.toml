@@ -200,6 +200,7 @@ agent_shell_allow = [
   "gh repo view *",
   "gh run list*",
   "gh run view *",
+  "gh run watch *",
   "gh workflow list*",
   "gh workflow view *",
   "gh release list*",
