@@ -1,0 +1,2 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- includeTemplate "vscode/modify-settings.json.tmpl" (dict "chezmoi" .chezmoi "app" "cursor") -}}

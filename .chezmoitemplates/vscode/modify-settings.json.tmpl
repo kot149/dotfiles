@@ -1,0 +1,22 @@
+{{- /* Body of the VS Code / Cursor settings.json modify templates. Expects .chezmoi and .app ("code" or "cursor"). */ -}}
+{{- /* Drops the keys listed under "managed" and writes the ones under "desired" from vscode/settings.json.tmpl; other keys are kept. */ -}}
+{{- $spec := include ".chezmoitemplates/vscode/settings.json.tmpl" | fromJson -}}
+{{- $groups := list "common" .chezmoi.os .app (printf "%s.%s" .chezmoi.os .app) -}}
+
+{{- $settings := dict -}}
+{{- if trim .chezmoi.stdin -}}
+{{-   $settings = .chezmoi.stdin | fromJsonc -}}
+{{- end -}}
+
+{{- range $group := $groups -}}
+{{-   range (get $spec.managed $group | default list) -}}
+{{-     $_ := unset $settings . -}}
+{{-   end -}}
+{{- end -}}
+{{- range $group := $groups -}}
+{{-   range $key, $value := (get $spec.desired $group | default dict) -}}
+{{-     $_ := set $settings $key $value -}}
+{{-   end -}}
+{{- end -}}
+
+{{- toPrettyJson $settings }}
