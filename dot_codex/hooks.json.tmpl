@@ -36,6 +36,12 @@
             "command": "bash '{{ $home }}/.codex/hooks/check-cargo-install.sh'",
             "timeout": 15,
             "statusMessage": "Checking cargo install"
+          },
+          {
+            "type": "command",
+            "command": "rtk hook claude",
+            "timeout": 15,
+            "statusMessage": "Rewriting command with rtk"
           }
         ]
       },

@@ -109,6 +109,8 @@ When adding new tunable values, prefer threading them through `.chezmoidata/` + 
 
 Do not add `git -C * <subcommand>` style entries: a mid-pattern `*` also matches options such as `-c` or `--exec-path` inserted after the path. Claude Code instead runs `dot_claude/hooks/executable_rewrite-git-c.sh` (registered in place of `rtk hook claude`, which it calls itself), which rewrites `git -C <path> <args>` to `(cd <path> && git <args>)` so the plain `git <args>` rules apply. Codex and opencode prompt for `git -C`.
 
+rtk rewrites shell commands to `rtk <cmd>` in all three agents: Claude Code through the hook above, Codex through `rtk hook claude` in `dot_codex/hooks.json.tmpl` (Codex accepts the same `updatedInput` output), and opencode through the plugin `private_dot_config/opencode/plugins/rtk.ts`, which calls `rtk rewrite`.
+
 `agent_shell_allow_write` holds commands with side effects (`git add`, `git commit`, `herdr`) and is consumed by `.chezmoitemplates/opencode/opencode.json.tmpl` only. Claude Code and Codex keep prompting for those.
 
 opencode's matcher differs from Claude Code's in ways the template depends on:
