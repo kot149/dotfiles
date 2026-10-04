@@ -1,0 +1,12 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Overwrites "permissions" with .chezmoitemplates/antigravity/settings.json.tmpl and keeps everything else. */ -}}
+{{- $managed := includeTemplate "antigravity/settings.json.tmpl" . | fromJson -}}
+
+{{- $settings := dict -}}
+{{- if trim .chezmoi.stdin -}}
+{{-   $settings = .chezmoi.stdin | fromJson -}}
+{{- end -}}
+
+{{- $_ := set $settings "permissions" $managed.permissions -}}
+
+{{- toPrettyJson $settings }}
