@@ -1,0 +1,40 @@
+{{- /* Body of the VS Code / Cursor keybindings.json modify templates. Expects .chezmoi. */ -}}
+{{- /* Drops the entries matching a rule under "managed" and appends the ones under "desired" from vscode/keybindings.json.tmpl. */ -}}
+{{- $spec := include ".chezmoitemplates/vscode/keybindings.json.tmpl" | fromJson -}}
+{{- $groups := list "common" .chezmoi.os -}}
+
+{{- $rules := list -}}
+{{- $desired := list -}}
+{{- range $group := $groups -}}
+{{-   $rules = concat $rules (get $spec.managed $group | default list) -}}
+{{-   $desired = concat $desired (get $spec.desired $group | default list) -}}
+{{- end -}}
+
+{{- $current := list -}}
+{{- if trim .chezmoi.stdin -}}
+{{-   $current = .chezmoi.stdin | fromJsonc -}}
+{{- end -}}
+
+{{- $kept := list -}}
+{{- range $item := $current -}}
+{{-   $drop := false -}}
+{{-   if kindIs "map" $item -}}
+{{-     $key := get $item "key" -}}
+{{-     $command := get $item "command" -}}
+{{-     $when := get $item "when" | toString -}}
+{{-     range $rule := $rules -}}
+{{-       $match := true -}}
+{{-       if and (hasKey $rule "key") (ne (toJson $key) (toJson $rule.key)) }}{{ $match = false }}{{ end -}}
+{{-       if and (hasKey $rule "keys") (not (has $key $rule.keys)) }}{{ $match = false }}{{ end -}}
+{{-       if and (hasKey $rule "command") (ne (toJson $command) (toJson $rule.command)) }}{{ $match = false }}{{ end -}}
+{{-       if and (hasKey $rule "commands") (not (has $command $rule.commands)) }}{{ $match = false }}{{ end -}}
+{{-       if and (hasKey $rule "args") (ne (get $item "args" | toJson) (toJson $rule.args)) }}{{ $match = false }}{{ end -}}
+{{-       range (get $rule "when_contains" | default list) }}{{ if not (contains . $when) }}{{ $match = false }}{{ end }}{{ end -}}
+{{-       range (get $rule "when_not_contains" | default list) }}{{ if contains . $when }}{{ $match = false }}{{ end }}{{ end -}}
+{{-       if $match }}{{ $drop = true }}{{ end -}}
+{{-     end -}}
+{{-   end -}}
+{{-   if not $drop }}{{ $kept = append $kept $item }}{{ end -}}
+{{- end -}}
+
+{{- toPrettyJson (concat $kept $desired) }}
