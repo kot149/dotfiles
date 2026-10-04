@@ -1,0 +1,25 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Writes .chezmoitemplates/opencode/opencode.json.tmpl as rendered, because opencode matches permission.bash in file order and a fromJson/toJson round trip would sort it. */ -}}
+{{- /* Top-level keys the template does not set are carried over from the current file. */ -}}
+{{- $managedText := includeTemplate "opencode/opencode.json.tmpl" . | trim -}}
+{{- $managed := $managedText | fromJson -}}
+
+{{- $current := dict -}}
+{{- if trim .chezmoi.stdin -}}
+{{-   $current = .chezmoi.stdin | fromJsonc -}}
+{{- end -}}
+
+{{- $extra := list -}}
+{{- range $key, $value := $current -}}
+{{-   if not (hasKey $managed $key) -}}
+{{-     $extra = append $extra (printf "%s: %s" (toJson $key) ($value | toPrettyJson | indent 2 | trim)) -}}
+{{-   end -}}
+{{- end -}}
+
+{{- if $extra -}}
+{{ $managedText | trimSuffix "}" | trim }},
+  {{ join ",\n  " $extra }}
+}
+{{ else -}}
+{{ $managedText }}
+{{ end -}}

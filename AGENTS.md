@@ -109,12 +109,12 @@ When adding new tunable values, prefer threading them through `.chezmoidata/` + 
 
 Do not add `git -C * <subcommand>` style entries: a mid-pattern `*` also matches options such as `-c` or `--exec-path` inserted after the path. Claude Code instead runs `dot_claude/hooks/executable_rewrite-git-c.sh` (registered in place of `rtk hook claude`, which it calls itself), which rewrites `git -C <path> <args>` to `(cd <path> && git <args>)` so the plain `git <args>` rules apply. Codex and opencode prompt for `git -C`.
 
-`agent_shell_allow_write` holds commands with side effects (`git add`, `git commit`, `herdr`) and is consumed by `private_dot_config/opencode/opencode.json.tmpl` only. Claude Code and Codex keep prompting for those.
+`agent_shell_allow_write` holds commands with side effects (`git add`, `git commit`, `herdr`) and is consumed by `.chezmoitemplates/opencode/opencode.json.tmpl` only. Claude Code and Codex keep prompting for those.
 
 opencode's matcher differs from Claude Code's in ways the template depends on:
 
 - A compound command is parsed into its sub-commands (pipeline stages, `&&` / `;` segments) and **every** one must match an allow rule, or the whole call prompts. A bare `echo "---"` between two allowed commands is enough to trigger a prompt, which is why output cmdlets are in `agent_shell_allow`.
-- Rules are matched in **file order, last match wins**, so the template emits `"*": "ask"` first, then every allow, then every deny. Do not sort the object; Go's `toPrettyJson` reorders map keys and would mix denies back in among the allows.
+- Rules are matched in **file order, last match wins**, so the template emits `"*": "ask"` first, then every allow, then every deny. Do not sort the object; Go's `toPrettyJson` reorders map keys and would mix denies back in among the allows. For the same reason `private_dot_config/opencode/modify_opencode.json` writes the rendered template text as is and only appends the top-level keys it does not set, instead of round-tripping the file through `fromJson`.
 - A pattern ending in ` *` is rewritten to `( .*)?`, so `"git log *"` already matches bare `git log`. The template emits no bare variants.
 - `webfetch` and `websearch` accept only a plain `"allow"` / `"ask"` / `"deny"`, not per-pattern objects, so `agent_plain_allow`'s per-domain `WebFetch(domain:…)` entries have no opencode equivalent.
 - `external_directory` gates any path outside the project. Its allowed globs live in the template, not in `.chezmoidata`, because they are OS-specific.
