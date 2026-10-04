@@ -1,0 +1,21 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Overwrites the managed keys in .chezmoitemplates/codex/config.toml.tmpl and keeps everything else Codex writes (projects, hook trust state, etc.). Tables are merged one level deep. */ -}}
+{{- $managed := include ".chezmoitemplates/codex/config.toml.tmpl" | fromToml -}}
+
+{{- $settings := dict -}}
+{{- if trim .chezmoi.stdin -}}
+{{-   $settings = .chezmoi.stdin | fromToml -}}
+{{- end -}}
+
+{{- range $key, $value := $managed -}}
+{{-   if and (kindIs "map" $value) (kindIs "map" (get $settings $key)) -}}
+{{-     $dest := get $settings $key -}}
+{{-     range $subKey, $subValue := $value -}}
+{{-       $_ := set $dest $subKey $subValue -}}
+{{-     end -}}
+{{-   else -}}
+{{-     $_ := set $settings $key $value -}}
+{{-   end -}}
+{{- end -}}
+
+{{- toToml $settings }}
