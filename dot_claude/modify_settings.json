@@ -1,0 +1,21 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Overwrites the managed keys in .chezmoitemplates/claude/settings.json.tmpl and keeps everything else Claude Code writes. Objects are merged one level deep. */ -}}
+{{- $managed := includeTemplate "claude/settings.json.tmpl" . | fromJson -}}
+
+{{- $settings := dict -}}
+{{- if trim .chezmoi.stdin -}}
+{{-   $settings = .chezmoi.stdin | fromJson -}}
+{{- end -}}
+
+{{- range $key, $value := $managed -}}
+{{-   if and (kindIs "map" $value) (kindIs "map" (get $settings $key)) -}}
+{{-     $dest := get $settings $key -}}
+{{-     range $subKey, $subValue := $value -}}
+{{-       $_ := set $dest $subKey $subValue -}}
+{{-     end -}}
+{{-   else -}}
+{{-     $_ := set $settings $key $value -}}
+{{-   end -}}
+{{- end -}}
+
+{{- toPrettyJson $settings }}

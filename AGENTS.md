@@ -105,7 +105,7 @@ When adding new tunable values, prefer threading them through `.chezmoidata/` + 
 
 ## Agent permission lists
 
-`.chezmoidata/agent-permissions.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_no_rtk`, and `agent_shell_deny` arrays consumed by AI-agent settings templates (e.g. `dot_claude/settings.json.tmpl`, `dot_codex/...`). Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Entries in `agent_shell_allow` are emitted both bare and with an auto-generated `rtk <cmd>` variant — put commands that should be allowed **without** the `rtk` wrapper (e.g. `rtk` itself) in `agent_shell_allow_no_rtk`, which emits only the bare form.
+`.chezmoidata/agent-permissions.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_no_rtk`, and `agent_shell_deny` arrays consumed by AI-agent settings templates (e.g. `.chezmoitemplates/claude/settings.json.tmpl`, `dot_codex/...`). Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Entries in `agent_shell_allow` are emitted both bare and with an auto-generated `rtk <cmd>` variant — put commands that should be allowed **without** the `rtk` wrapper (e.g. `rtk` itself) in `agent_shell_allow_no_rtk`, which emits only the bare form.
 
 Do not add `git -C * <subcommand>` style entries: a mid-pattern `*` also matches options such as `-c` or `--exec-path` inserted after the path. Claude Code instead runs `dot_claude/hooks/executable_rewrite-git-c.sh` (registered in place of `rtk hook claude`, which it calls itself), which rewrites `git -C <path> <args>` to `(cd <path> && git <args>)` so the plain `git <args>` rules apply. Codex and opencode prompt for `git -C`.
 
@@ -132,7 +132,7 @@ Hook scripts shared by more than one agent live in `.chezmoitemplates/agents/` a
 
 Registration differs per agent:
 
-- Claude Code: `hooks.PreToolUse` in `dot_claude/settings.json.tmpl`. Tools are named `Bash`, `Write`, `Edit`, `mcp__*`.
+- Claude Code: `hooks.PreToolUse` in `.chezmoitemplates/claude/settings.json.tmpl`. Tools are named `Bash`, `Write`, `Edit`, `mcp__*`.
 - Codex CLI: `dot_codex/hooks.json.tmpl` → `~/.codex/hooks.json`. A handler takes `command` (used on macOS/Linux) and `commandWindows` (used on Windows); they run the same script and differ only in quoting. `matcher` is a regex against the tool name; Codex's shell tool is also `Bash`, but its file edits arrive as a single `apply_patch` tool whose `tool_input.command` is the patch document — `check-writing-style.js` parses that patch format, and `textlint-rules/` must be materialized next to each copy.
 
 `tests/` holds tests for the hooks that carry enough logic to regress. They are plain Bun scripts rather than `bun test` files, because `bun test` cannot resolve the versioned import specifiers the hooks pin their dependencies with:
