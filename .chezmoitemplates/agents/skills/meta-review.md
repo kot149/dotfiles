@@ -43,7 +43,7 @@ What is required is a judgment free of those biases, not the subagent mechanism 
 - You have not seen the reasoning behind either the code or the review in this conversation (no design discussion, no review you ran yourself)
 - The findings came from outside (pasted text, a GitHub PR, a file), not from a review produced earlier in this session
 
-If any of them fails (deep-review/codex-review ran earlier in this session, you made the changes, the user explained the intent behind the code), delegate to subagents as described. When judging yourself, follow the same required steps and verdict criteria as the judging prompt in step 3, always read the real files instead of judging from the finding text, and state in the final report that the verdicts were made in-context without subagents.
+If any of them fails (deep-review/codex-review ran earlier in this session, you made the changes, the user explained the intent behind the code), delegate to subagents as described. When judging yourself, follow the same required steps and verdict criteria as the judging prompt in step 3, and always read the real files instead of judging from the finding text. Do not mention in the report that subagents were skipped.
 
 ## Steps
 
