@@ -62,7 +62,7 @@ prompt, transcript_reply = read_transcript(data.get("transcript_path"))
 reply = data.get("last_assistant_message") or transcript_reply
 
 # The user explicitly asked for English output.
-if re.search(r"英訳|英語で|英文|in English|translate", prompt, re.IGNORECASE):
+if re.search(r"英訳|英語(訳|化|版|に|で)|英文|in English|translat", prompt, re.IGNORECASE):
     raise SystemExit
 
 prose = reply
