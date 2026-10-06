@@ -49,7 +49,7 @@ status:
 skills-check:
     {{ uv_script }} scripts/update_agent_skills.py --check
 
-# Review and bump third-party agent skill revs, then install them
+# Review, bump and commit third-party agent skill revs, then install them
 [group('skills')]
 skills-update *args:
     {{ uv_script }} scripts/update_agent_skills.py {{ args }}

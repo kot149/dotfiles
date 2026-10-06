@@ -10,12 +10,14 @@ between the pinned rev and the upstream default branch HEAD (compared by blob
 SHA), so commits that touch other parts of the repo are ignored.
 Entries that share a `repo` are bumped together, so one repository is never
 pinned at two revs.
+Accepted bumps are committed as one commit touching only the data file.
 Requires the `gh` CLI.
 
 Usage:
-  uv run --script scripts/update_agent_skills.py           # review and apply interactively
-  uv run --script scripts/update_agent_skills.py --check   # report only; exit 1 if outdated
-  uv run --script scripts/update_agent_skills.py --yes     # apply every update without asking
+  uv run --script scripts/update_agent_skills.py               # review, apply and commit interactively
+  uv run --script scripts/update_agent_skills.py --check       # report only; exit 1 if outdated
+  uv run --script scripts/update_agent_skills.py --yes         # apply and commit every update without asking
+  uv run --script scripts/update_agent_skills.py --no-commit   # apply without committing
 """
 import argparse
 import difflib
@@ -192,11 +194,23 @@ def apply_updates(text: str, updates: list[dict]) -> str:
     return BLOCK_HEADER.join([head, *blocks])
 
 
+def git(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", "-C", str(DATA_FILE.parent), *args], capture_output=True, text=True)
+
+
+def commit_message(updates: list[dict]) -> str:
+    # Generic repo names like "mattpocock/skills" read better as the owner.
+    names = [owner if name == "skills" else name for owner, name in (u["repo"].split("/") for u in updates)]
+    joined = names[0] if len(names) == 1 else f"{', '.join(names[:-1])} and {names[-1]}"
+    return f"chore(agents): bump {joined} skill rev{'' if len(names) == 1 else 's'}"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true", help="report only; exit 1 if any entry is outdated")
     mode.add_argument("--yes", action="store_true", help="apply every update without asking")
+    parser.add_argument("--no-commit", action="store_true", help="leave the bumped revs uncommitted")
     args = parser.parse_args()
 
     # Upstream diffs can hold characters the Windows console code page lacks.
@@ -221,10 +235,22 @@ def main() -> None:
 
     if args.check:
         sys.exit(1)
-    if selected:
-        DATA_FILE.write_bytes(apply_updates(text, selected).encode("utf-8"))
-        print(f"\nUpdated {len(selected)} entr{'y' if len(selected) == 1 else 'ies'} in {DATA_FILE.name}.")
-        print("Run `chezmoi apply` to install them.")
+    if not selected:
+        return
+    # Committing a file that already had local edits would sweep them into the bump commit.
+    dirty = bool(git("status", "--porcelain", "--", DATA_FILE.name).stdout.strip())
+    DATA_FILE.write_bytes(apply_updates(text, selected).encode("utf-8"))
+    print(f"\nUpdated {len(selected)} entr{'y' if len(selected) == 1 else 'ies'} in {DATA_FILE.name}.")
+    if args.no_commit:
+        return
+    if dirty:
+        print(f"Not committing: {DATA_FILE.name} had uncommitted changes before the update.")
+        return
+    message = commit_message(selected)
+    proc = git("commit", "-m", message, "--", DATA_FILE.name)
+    if proc.returncode != 0:
+        sys.exit(f"git commit failed:\n{proc.stdout}{proc.stderr}")
+    print(f"Committed: {message}")
 
 
 if __name__ == "__main__":
