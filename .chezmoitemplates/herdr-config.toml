@@ -44,6 +44,18 @@ command = "local.next-agent.next"
 description = "Focus next blocked/done Agent"
 
 [[keys.command]]
+key = "alt+shift+down"
+type = "plugin_action"
+command = "local.next-agent.next"
+description = "Focus next blocked/done Agent"
+
+[[keys.command]]
+key = "alt+shift+up"
+type = "plugin_action"
+command = "local.next-agent.previous"
+description = "Focus previous blocked/done Agent"
+
+[[keys.command]]
 key = "prefix+b"
 type = "shell"
 command = "herdr plugin pane open --plugin official.browser --entrypoint browser --placement split --focus"
