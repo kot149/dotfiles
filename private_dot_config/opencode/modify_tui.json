@@ -1,0 +1,15 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Keys set here win; anything else in the current file (e.g. plugins added by other tools) is kept. */ -}}
+{{- $managed := `{
+  "$schema": "https://opencode.ai/tui.json",
+  "keybinds": {
+    "session_interrupt": "ctrl+c,escape"
+  }
+}` | fromJson -}}
+
+{{- $current := dict -}}
+{{- if trim .chezmoi.stdin -}}
+{{-   $current = .chezmoi.stdin | fromJsonc -}}
+{{- end -}}
+
+{{ mergeOverwrite $current $managed | toPrettyJson | trim }}
