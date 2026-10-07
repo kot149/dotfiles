@@ -1,7 +1,7 @@
 ---
 name: deep-review
 description: In-depth code review that runs multiple perspective-specific reviewer subagents in parallel, has judge subagents verify each finding against the real code, then fixes the valid findings. Reviews in 10 independent perspectives (security/quality/naming/comment/perf/a11y/test/arch/meta/spec), also fetching spec documents such as Jira/Confluence from the PR body to check spec consistency. Use when the user asks for "deep review", "review this PR", "review the diff from multiple angles", "review and fix", 「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」, or requests a review with a PR number or diff range in English or Japanese. Findings can also be posted as pending PR review comments. The `--fix` flag skips the approach selection prompt and auto-fixes, and `--post` similarly proceeds to pending review comment posting (only valid for PR targets).
-argument-hint: "[<PR number|PR URL|base...head|paths>] [--fast|--full] [--fix] [--post]"
+argument-hint: "[<PR number|PR URL|base...head|paths>] [--fix] [--post]"
 ---
 
 # Deep Review
@@ -18,7 +18,7 @@ Detailed instructions for reviewers and judges live in files next to this SKILL.
 
 The run launches up to 20 subagents. Everything you paste into a prompt is emitted once per subagent, and everything a subagent returns lands in your context. Hold to these rules throughout:
 
-- **Shared premises go into one context file** (`$CTX_PATH`, written once in Phase 0.7). Prompts carry only paths and the per-subagent payload. Never paste the diff, PR body, existing comments, or spec documents into a prompt
+- **Shared premises go into one context file** (`$CTX_PATH`, written once in Phase 0.6). Prompts carry only paths and the per-subagent payload. Never paste the diff, PR body, existing comments, or spec documents into a prompt
 - **Bulky fetch results go straight to files** (`gh ... > file`, `--jq` truncation) instead of through your context
 - **Repository searches in Phase 0 are delegated** to one prep subagent so their raw output never enters your context
 - Subagents return only what you need to aggregate; their output formats are already minimal. Do not ask them for extra narrative
@@ -29,8 +29,6 @@ The request may specify the target (PR number/URL, branch diff, file paths) plus
 
 | Flag | Effect |
 |---|---|
-| `--fast` | Pin to light mode regardless of size |
-| `--full` | Pin to heavy mode regardless of size |
 | `--fix` | Main policy fixed to option A (auto-fix all VALID findings); the Phase 3b-2 A/B/E prompt is skipped |
 | `--post` | Main policy fixed to option E (post pending review comments). PR targets only: otherwise warn in Japanese (`` `--post`はPR以外の対象では無効です``), ignore it, and prompt normally |
 
@@ -58,7 +56,7 @@ Two things this skill adds on top:
 
 ## Reviewers
 
-There are 10 perspectives. Each label's detailed checklist is in `perspectives/<label>.md`. This table is only for mode selection and aggregation.
+There are 10 perspectives. Each label's detailed checklist is in `perspectives/<label>.md`. This table is only for aggregation.
 
 | Label | Perspective |
 |---|---|
@@ -104,24 +102,11 @@ This is not a gate for refusing reviews. The default is to **state the verdict i
 | State | Handling |
 |---|---|
 | Already merged / closed | Continue with a note in Japanese: `注: このPRは既にマージ済みのため、事後レビューとして続行します` |
-| Auto-generated PR from a dependency bot etc. | Pin to light mode |
-| Changes are only generated artifacts, lockfiles, or formatting | Pin to light mode and state in Japanese that generated artifacts are excluded from findings (e.g. `注: 生成物は指摘対象外とします`) |
+| Changes are only generated artifacts, lockfiles, or formatting | State in Japanese that generated artifacts are excluded from findings (e.g. `注: 生成物は指摘対象外とします`) |
 | `isDraft` | Continue but note in Japanese (e.g. `注: ドラフトのため未完成部分を前提とします`) |
 | 0-line diff | Do not review; report in Japanese (e.g. `差分が0件のためレビューを終了します`) and finish |
 
-### 0.3 Mode Decision
-
-Decide the mode from size. An explicit `--fast` / `--full` takes precedence.
-
-| Mode | Condition (guideline) | Reviewers | Judge split |
-|---|---|---|---|
-| Light | Under 300 changed lines and 8 or fewer files | 6 perspectives: security / quality / naming / comment / test / spec (add a11y if there are UI changes) | Max 4 parallel |
-| Standard | Larger than above, within 1500 lines / 30 files | All 10 perspectives | Follow the split strategy below |
-| Heavy | Over 1500 lines or over 30 files | All 10 perspectives | Prefer finding-count splitting, max 8 parallel |
-
-**When the size is near a mode boundary, pick the lighter mode.** Use `--full` only when you want a thorough look. Log the chosen mode in one line in Japanese (e.g. `モード: Light（変更XXX行 / Xファイルのため）`).
-
-### 0.4 Fetch Existing Review Comments
+### 0.3 Fetch Existing Review Comments
 
 Mandatory for PR targets. Use GraphQL rather than the REST comments endpoint: only review threads carry the resolved state, and the resolved state is what decides whether a point may be raised again. **Write the result straight to `$CTX_DIR/existing-comments.txt`**; the `--jq` filter already truncates bodies, so you never hold the full comment bodies yourself. Read back only the line count.
 
@@ -159,9 +144,9 @@ The file serves three purposes for reviewers and judges:
 
 Resolved threads are never resurrected. Open threads whose point is only half-addressed in the current HEAD may be picked up as remaining issues.
 
-### 0.5 Prep Subagent
+### 0.4 Prep Subagent
 
-Delegate the three lookups below (convention documents, symmetric counterparts, linked spec documents) to **one read-only subagent** (`prep`) so the search output stays out of your context. Launch it right after 0.1 and let it run while you do 0.2 to 0.4. Its prompt:
+Delegate the three lookups below (convention documents, symmetric counterparts, linked spec documents) to **one read-only subagent** (`prep`) so the search output stays out of your context. Launch it right after 0.1 and let it run while you do 0.2 to 0.3. Its prompt:
 
 ```
 You are the "prep" helper for a multi-perspective code review. Read-only: do not edit any files. Return exactly the three sections below, tersely, and nothing else.
@@ -189,7 +174,7 @@ When the reply arrives:
 - Write the `SPEC_DOCS` section to `$SPEC_PATH` as-is. If it says "MCP unavailable", fetch the listed URLs yourself with the MCP tools and write the same title / url / verbatim-quotes shape to `$SPEC_PATH`; on failure write `(link fetch failed, URLs only: <urls>)`
 - Keep `CONVENTION_PATHS` and `SYMMETRY` for the context file. **A "none found" / "none" is passed on as such**: without conventions the only basis later is measured majority patterns in existing code, and without a counterpart the naming / arch comparison is recorded as skipped for that reason. Omitting the fact makes reviewers write generic advice
 
-### 0.6 Permalink Format
+### 0.5 Permalink Format
 
 `file:line` alone takes effort to verify. Assemble the format for the context file.
 
@@ -201,13 +186,12 @@ https://github.com/<owner>/<repo>/blob/<full 40-char SHA>/<path>#L<start>-L<end>
 - Include one line of context on each side of the range (to flag line 3, use `#L2-L4`)
 - For local diffs / file-specified targets where no SHA can be determined, the format is `none (file:line only)`
 
-### 0.7 Write the Context File
+### 0.6 Write the Context File
 
 Write `$CTX_PATH` once, in this shape. Every reviewer and judge reads it; the field names are the ones the perspective files refer to as `$NAME`.
 
 ```
 # deep-review context
-MODE: Light|Standard|Heavy
 PURPOSE: <PR title and body, or commit log plus stated intent, verbatim>
 FILES: <changed files, one per line; untracked ones marked "(untracked: read whole)">
 DIFF_PATH: <$DIFF_PATH, or "none (file targets)">
@@ -215,12 +199,12 @@ CONVENTION_PATHS: <paths, one per line> | none found (only evidence: measured ma
 EXISTING_COMMENTS: <path to existing-comments.txt> | not a PR | not fetched: <reason> (duplicates possible)
 SYMMETRY: <counterpart path(s) and pairing> | none
 SPEC_DOCS: <$SPEC_PATH> | (no linked spec documents) | (link fetch failed, URLs only: <urls>)
-PERMALINK: <format from 0.6> | none (file:line only)
+PERMALINK: <format from 0.5> | none (file:line only)
 ```
 
 ## Phase 1: Parallel Detail Review
 
-Launch reviewer subagents for the mode-selected perspectives **in parallel** (10 including meta in standard/heavy mode, 6-7 in light mode), all together in one batch. Avoid launching them one by one in sequence (it serializes and slows down). Each subagent has an independent context.
+Launch reviewer subagents for all 10 perspectives **in parallel**, all together in one batch. Avoid launching them one by one in sequence (it serializes and slows down). Each subagent has an independent context.
 
 Start each subagent as `<perspective> review` with this prompt, unchanged apart from the perspective name. No per-perspective additions: everything a perspective needs is in the context file.
 
@@ -239,7 +223,7 @@ Then review the diff at the DIFF_PATH given there, reading target files as your 
 Once all results are in:
 
 1. Parse each reviewer's reply, extracting `FINDING` blocks and the `CHECKLIST` table
-2. **Merge the inventory tables**: combine all reviewers' CHECKLIST rows, keyed by perspective, and keep them. Present them to the user in Phase 3b-1. Perspectives excluded by light mode are recorded orchestrator-side as "out of scope due to light mode"
+2. **Merge the inventory tables**: combine all reviewers' CHECKLIST rows, keyed by perspective, and keep them. Present them to the user in Phase 3b-1.
 3. If everyone said "LGTM", report that to the user in Japanese (e.g. `全観点LGTMでした`) with the merged inventory and finish. **Do not return bare "no issues" without the inventory** (approvers need to see what was and was not examined)
 4. Otherwise aggregate the findings. Tag each finding with `reviewer: <label>` and number them `#1, #2, ...` in the order collected. These numbers stay fixed for the rest of the run: judges, the Phase 3b-1 list, and option B all refer to them
 
@@ -264,7 +248,7 @@ Always split judges into **multiple parallel subagents**. Passing all findings t
 Pick the split policy from the aggregated finding count `N`. Launch **all judges in parallel** either way.
 
 1. **Split by perspective (default, N <= 24)**: one judge per reviewer label:
-   - Up to 10 parallel: `judge-<label>` per perspective (round down to max 4 parallel in light mode)
+   - Up to 10 parallel: `judge-<label>` per perspective
    - Do not launch judges whose label has 0 findings
    - Each judge examines only its own perspective's findings, so it is easy to focus on which code to read
 2. **Split by finding count (N > 24, or 10+ findings concentrated on one perspective)**: chunk the findings:
@@ -341,7 +325,7 @@ This step is unconditional and ends the turn. Even with 0 VALID findings, explic
    - Keep the `#N` numbers assigned in Phase 2 so option B can refer to them; do not renumber after sorting
    - Mark `EVIDENCE: UNVERIFIED` ones explicitly with an "unverified" mark in Japanese (e.g. `未検証`)
    - Sort by severity (CRITICAL -> HIGH -> MEDIUM -> LOW)
-   - For PR targets with a SHA available, attach permalinks (format from 0.6)
+   - For PR targets with a SHA available, attach permalinks (format from 0.5)
 2. Counts only (for reference) of findings excluded as INVALID/DUPLICATE, under the heading `## 除外件数`
 3. **Points checked and found fine** under the heading `## 確認済み・問題なし`. Never omit it even with many findings; approvers need to read "what was and was not examined". Present the merged inventory **compactly, one bullet per perspective**, grouping checklist items by result instead of one row per item:
    ```
@@ -351,7 +335,6 @@ This step is unconditional and ends the turn. Even with 0 VALID findings, explic
    Only "not applicable" and "not examined" items carry their reason; the "what was examined" details stay with you and are shown on request
 4. If there are meta findings, show them in a separate section under the heading `## アプローチ指摘（meta）` (with CATEGORY and proposal)
 5. If there are spec findings, also show them in a separate section under the heading `## 仕様整合性（spec）` (with CATEGORY / SPEC_REF / FIX_TARGET). Highlight `FIX_TARGET=SPEC` ones in particular in Japanese as `仕様側の修正が必要`
-6. When run in light mode, state the excluded perspectives in Japanese under the heading `## 対象外観点（Lightモード）`
 
 **No history**: write only the final verdict per finding. Do not write process details like severity raises/lowers or judge re-verdicts in the list or the final report (e.g. notes like "severity was lowered from HIGH to LOW" are unnecessary).
 
@@ -426,6 +409,6 @@ After posting, report the result in Japanese (e.g. `pendingコメントを投稿
 - **Subagent ignoring the specified format**: loosely match `FINDING:` lines in the reply to extract. If nothing is extractable, discard that reviewer's result
 - **Post-fix checks fail**: do not loop on fixing check failures silently. Report the failing output and ask via selection prompt in Japanese whether to fix the failures, revert the offending fix, or leave it to the user
 - **Existing review comment fetch failure**: on permission/API failure, set `EXISTING_COMMENTS: not fetched: <reason> (duplicates possible)` in the context file and continue, and also write that fact in the final report in Japanese (e.g. `注: 既存レビューコメントを取得できませんでした（重複を含む可能性あり）`)
-- **Prep subagent failure or missing section**: do the missing lookups (0.5) yourself, keeping the same output shape
+- **Prep subagent failure or missing section**: do the missing lookups (0.4) yourself, keeping the same output shape
 - **Spec document fetch failure**: on permission failure/bad URL/unconnected MCP, set `SPEC_DOCS: (link fetch failed, URLs only: <urls>)` and continue; the spec reviewer caps its findings at MEDIUM
 - **Subagent cannot read `$SKILL_DIR` or `$CTX_DIR` files**: fall back to inlining the applicable file's content into that subagent's prompt (read it yourself only in this fallback case)

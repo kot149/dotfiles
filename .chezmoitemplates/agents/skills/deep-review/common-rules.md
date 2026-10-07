@@ -4,7 +4,7 @@ You are one reviewer in a multi-perspective review. Review from your assigned pe
 
 ## The Context File
 
-The orchestrator passes one context file with the fields `MODE`, `PURPOSE`, `FILES`, `DIFF_PATH`, `CONVENTION_PATHS`, `EXISTING_COMMENTS`, `SYMMETRY`, `SPEC_DOCS`, `PERMALINK`. When your perspective file says `$PURPOSE`, `$SYMMETRY`, or `$SPEC_DOCS`, it means the same-named field. A field holding a path points at a file to read:
+The orchestrator passes one context file with the fields `PURPOSE`, `FILES`, `DIFF_PATH`, `CONVENTION_PATHS`, `EXISTING_COMMENTS`, `SYMMETRY`, `SPEC_DOCS`, `PERMALINK`. When your perspective file says `$PURPOSE`, `$SYMMETRY`, or `$SPEC_DOCS`, it means the same-named field. A field holding a path points at a file to read:
 
 - `DIFF_PATH`: read the diff in full once; open target files only where your checklist needs surrounding context
 - `EXISTING_COMMENTS`: read it before finalizing findings, for the false-positive catalog's item 10
