@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "keybindings": {},
+  "platforms": {
+    "darwin": {
+      "tab.nextAllTypes": [
+        "Mod+PageDown"
+      ],
+      "tab.previousAllTypes": [
+        "Mod+PageUp"
+      ],
+      "terminal.copySelection": [
+        "Ctrl+C"
+      ]
+    },
+    "linux": {},
+    "win32": {}
+  }
+}
