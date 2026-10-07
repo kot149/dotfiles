@@ -364,7 +364,7 @@ With `--fix` / `--post` the main policy (A/B/E) is fixed as described under Targ
 ```
 今回のVALID指摘への対応方針を選んでください：
 
-A. VALID指摘をすべて自動修正する（CRITICAL/HIGHは必須、MEDIUMは可能な範囲、LOWは報告のみ）
+A. VALID指摘をすべて自動修正する（LOWを含む全重要度）
 B. 修正する指摘を選ぶ（番号を指定）
 E. VALID指摘をPRレビューコメントとして投稿する（Phase 4bへ。pending状態のインラインコメント。PR対象時のみ提示）
 
@@ -396,7 +396,7 @@ Only findings the user chose to fix in Phase 3b.
 Precondition for PR targets: the PR's `headRefName` must be checked out. If it is not, stop before editing and ask the user via selection prompt in Japanese whether to check it out (`gh pr checkout <number>`) or finish with the list only. Never edit files on a different branch.
 
 1. Fix granularity follows the user selection:
-   - Option A (all auto): CRITICAL/HIGH required, MEDIUM where possible, LOW report-only
+   - Option A (all auto): every VALID finding regardless of severity, LOW included
    - Option B (individual): only the finding numbers the user specified
    - With M1 selected, include the meta findings
 2. The orchestrator (you) edits files directly to fix. Never let subagents rewrite
