@@ -5,11 +5,5 @@
   "keybinds": {
     "session_interrupt": "ctrl+c,escape"
   }
-}` | fromJson -}}
-
-{{- $current := dict -}}
-{{- if trim .chezmoi.stdin -}}
-{{-   $current = .chezmoi.stdin | fromJsonc -}}
-{{- end -}}
-
-{{ mergeOverwrite $current $managed | toPrettyJson | trim }}
+}` -}}
+{{- includeTemplate "agents/merge-config.tmpl" (dict "current" .chezmoi.stdin "managed" $managed "format" "json") -}}

@@ -1,0 +1,87 @@
+{{- /* Body of the agent config modify templates: merges .managed (text) into .current (the existing file, text) and renders the result. */ -}}
+{{- /* Objects are merged at any depth with managed values winning; arrays are replaced. With .hooks, the "hooks" object is merged per hook entry instead (see below). */ -}}
+{{- /* Recursion goes through this file itself (.op = "deep"), because a template pulled in with includeTemplate cannot call other shared templates. */ -}}
+{{- if hasKey . "op" -}}
+{{-   $dst := .dst -}}
+{{-   range $key, $value := .src -}}
+{{-     if and (kindIs "map" $value) (kindIs "map" (get $dst $key)) -}}
+{{-       template "agents/merge-config.tmpl" (dict "op" "deep" "dst" (get $dst $key) "src" $value) -}}
+{{-     else -}}
+{{-       $_ := set $dst $key $value -}}
+{{-     end -}}
+{{-   end -}}
+{{- else -}}
+{{-   $current := dict -}}
+{{-   $managed := dict -}}
+{{-   if eq .format "toml" -}}
+{{-     $managed = .managed | fromToml -}}
+{{-     if trim .current -}}
+{{-       $current = .current | fromToml -}}
+{{-     end -}}
+{{-   else -}}
+{{-     $managed = .managed | fromJsonc -}}
+{{-     if trim .current -}}
+{{-       $current = .current | fromJsonc -}}
+{{-     end -}}
+{{-   end -}}
+
+{{- /* Hooks (Claude Code settings.json / Codex hooks.json shape: event -> [{matcher, hooks: [{command, ...}]}]). */ -}}
+{{- /* Managed commands get a trailing "# chezmoi-managed" comment, and existing hooks carrying it are replaced, so hooks added by other tools survive and hooks removed from the template disappear. */ -}}
+{{- /* Existing hooks whose command equals an unmarked managed command are replaced too, which adopts entries written before the marker existed. */ -}}
+{{-   if hasKey . "hooks" -}}
+{{-     $marker := " # chezmoi-managed" -}}
+{{-     $managedHooks := get $managed "hooks" | default dict -}}
+{{-     $currentHooks := get $current "hooks" | default dict -}}
+{{-     $legacy := list -}}
+{{-     range $event, $groups := $managedHooks -}}
+{{-       range $group := $groups -}}
+{{-         range $hook := get $group "hooks" -}}
+{{-           if hasKey $hook "command" -}}
+{{-             $legacy = append $legacy $hook.command -}}
+{{-             $_ := set $hook "command" (printf "%s%s" $hook.command $marker) -}}
+{{-           end -}}
+{{-           if hasKey $hook "commandWindows" -}}
+{{-             $_ := set $hook "commandWindows" (printf "%s%s" $hook.commandWindows $marker) -}}
+{{-           end -}}
+{{-         end -}}
+{{-       end -}}
+{{-     end -}}
+{{-     $merged := dict -}}
+{{-     range $event, $groups := $currentHooks -}}
+{{-       $kept := list -}}
+{{-       range $group := $groups -}}
+{{-         if kindIs "slice" (get $group "hooks") -}}
+{{-           $hooks := list -}}
+{{-           range $hook := get $group "hooks" -}}
+{{-             $command := get $hook "command" | toString -}}
+{{-             if not (or (contains $marker $command) (has $command $legacy)) -}}
+{{-               $hooks = append $hooks $hook -}}
+{{-             end -}}
+{{-           end -}}
+{{-           if $hooks -}}
+{{-             $_ := set $group "hooks" $hooks -}}
+{{-             $kept = append $kept $group -}}
+{{-           end -}}
+{{-         else -}}
+{{-           $kept = append $kept $group -}}
+{{-         end -}}
+{{-       end -}}
+{{-       if $kept -}}
+{{-         $_ := set $merged $event $kept -}}
+{{-       end -}}
+{{-     end -}}
+{{-     range $event, $groups := $managedHooks -}}
+{{-       $_ := set $merged $event (concat $groups (get $merged $event | default list)) -}}
+{{-     end -}}
+{{-     $_ := set $current "hooks" $merged -}}
+{{-     $_ := unset $managed "hooks" -}}
+{{-   end -}}
+
+{{-   template "agents/merge-config.tmpl" (dict "op" "deep" "dst" $current "src" $managed) -}}
+
+{{-   if eq .format "toml" -}}
+{{      toToml $current }}
+{{    else -}}
+{{      toPrettyJson $current }}
+{{    end -}}
+{{- end -}}

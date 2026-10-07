@@ -109,7 +109,7 @@ When adding new tunable values, prefer threading them through `.chezmoidata/` + 
 
 Do not add `git -C * <subcommand>` style entries: a mid-pattern `*` also matches options such as `-c` or `--exec-path` inserted after the path. Claude Code instead runs `dot_claude/hooks/executable_rewrite-git-c.sh` (registered in place of `rtk hook claude`, which it calls itself), which rewrites `git -C <path> <args>` to `(cd <path> && git <args>)` so the plain `git <args>` rules apply. Codex and opencode prompt for `git -C`.
 
-rtk rewrites shell commands to `rtk <cmd>` in all three agents: Claude Code through the hook above, Codex through `rtk hook claude` in `dot_codex/hooks.json.tmpl` (Codex accepts the same `updatedInput` output), and opencode through the plugin `private_dot_config/opencode/plugins/rtk.ts`, which calls `rtk rewrite`.
+rtk rewrites shell commands to `rtk <cmd>` in all three agents: Claude Code through the hook above, Codex through `rtk hook claude` in `.chezmoitemplates/codex/hooks.json.tmpl` (Codex accepts the same `updatedInput` output), and opencode through the plugin `private_dot_config/opencode/plugins/rtk.ts`, which calls `rtk rewrite`.
 
 `agent_shell_allow_write` holds commands with side effects (`git add`, `git commit`, `herdr`) and is consumed by `.chezmoitemplates/opencode/opencode.json.tmpl` only. Claude Code and Codex keep prompting for those.
 
@@ -135,7 +135,9 @@ Hook scripts shared by more than one agent live in `.chezmoitemplates/agents/` a
 Registration differs per agent:
 
 - Claude Code: `hooks.PreToolUse` in `.chezmoitemplates/claude/settings.json.tmpl`. Tools are named `Bash`, `Write`, `Edit`, `mcp__*`.
-- Codex CLI: `dot_codex/hooks.json.tmpl` → `~/.codex/hooks.json`. A handler takes `command` (used on macOS/Linux) and `commandWindows` (used on Windows); they run the same script and differ only in quoting. `matcher` is a regex against the tool name; Codex's shell tool is also `Bash`, but its file edits arrive as a single `apply_patch` tool whose `tool_input.command` is the patch document — `check-writing-style.js` parses that patch format, and `textlint-rules/` must be materialized next to each copy.
+- Codex CLI: `.chezmoitemplates/codex/hooks.json.tmpl`, merged into `~/.codex/hooks.json` by `dot_codex/modify_hooks.json`. A handler takes `command` (used on macOS/Linux) and `commandWindows` (used on Windows); they run the same script and differ only in quoting. `matcher` is a regex against the tool name; Codex's shell tool is also `Bash`, but its file edits arrive as a single `apply_patch` tool whose `tool_input.command` is the patch document — `check-writing-style.js` parses that patch format, and `textlint-rules/` must be materialized next to each copy.
+
+Other tools (e.g. Orca IDE) also write hooks and settings into these files, so the agent config files are `modify_` templates that all render through `.chezmoitemplates/agents/merge-config.tmpl`: `~/.claude/settings.json`, `~/.codex/hooks.json`, `~/.codex/config.toml`, `~/.config/opencode/tui.json`. Objects are merged at any depth (managed values win, arrays are replaced). Hooks are merged per entry instead: every managed `command` / `commandWindows` gets a trailing `# chezmoi-managed` comment, and on apply the existing hooks carrying it are dropped and the managed ones re-added, so hooks from other tools are kept and hooks deleted from a template disappear. Do not write that marker by hand. A template pulled in with `includeTemplate` cannot call other shared templates, which is why the merge recurses through `merge-config.tmpl` itself.
 
 `tests/` holds tests for the hooks that carry enough logic to regress. They are plain Bun scripts rather than `bun test` files, because `bun test` cannot resolve the versioned import specifiers the hooks pin their dependencies with:
 

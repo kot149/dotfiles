@@ -1,0 +1,3 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Overwrites the managed hooks in .chezmoitemplates/codex/hooks.json.tmpl and keeps hooks other tools add. */ -}}
+{{- includeTemplate "agents/merge-config.tmpl" (dict "current" .chezmoi.stdin "managed" (includeTemplate "codex/hooks.json.tmpl" .) "format" "json" "hooks" true) -}}
