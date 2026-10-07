@@ -539,6 +539,14 @@
                    :to [{:key_code "c"
                          :modifiers ["control"]}]
                    :type "basic"}]
+                 [{:conditions [{:bundle_identifiers ["^com.stablyai.orca"]
+                                 :type "frontmost_application_if"}]
+                   :description "[Orca] Cmd+C -> Ctrl+C"
+                   :from {:key_code "c"
+                          :modifiers {:mandatory ["command"]}}
+                   :to [{:key_code "c"
+                         :modifiers ["control"]}]
+                   :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.apple.Terminal"]
                                  :type "frontmost_application_if"}]
                    :description "[Terminal] Home"
