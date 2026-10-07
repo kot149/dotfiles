@@ -1,6 +1,7 @@
 ---
 name: resolve-pr-comments
-description: Skill for checking GitHub PR review comments (review threads) and resolving the addressed ones. Use when the user asks things like "resolve the review comments", "mark the addressed findings as resolved", "resolve PR comments", 「レビューコメントをresolveして」「対応済みの指摘を解決済みにして」, or any similar phrasing in English or Japanese. Only resolve, react to, or reply to threads you started; treat threads started by others as reference-only. Never resolve a thread when in doubt.
+description: Skill for checking GitHub PR review comments (review threads) and resolving the addressed ones. Use when the user asks things like "resolve the review comments", "mark the addressed findings as resolved", "resolve PR comments", 「レビューコメントをresolveして」「対応済みの指摘を解決済みにして」, or any similar phrasing in English or Japanese. Only resolve, react to, or reply to threads you started; treat threads started by others as reference-only. Never resolve a thread when in doubt. With `--wait`, keeps polling the PR and re-checking until every thread you started is resolved.
+argument-hint: "[<PR number|PR URL>] [--wait[=<duration>]]"
 ---
 
 # Resolve PR Comments
@@ -15,6 +16,13 @@ them. Finally, report the still-unresolved comments.
 ## Target PR
 
 The PR named in the request, or the one for the current branch.
+
+## Options
+
+- `--wait[=<duration>]`: after the first pass, keep waiting for the PR author
+  to address your remaining threads and re-run the check whenever the PR
+  changes, until none of your threads is left unresolved. `<duration>` caps the
+  total wait (e.g. `30m`, `3h`); the default is `2h`. See Step 7.
 
 ## Steps (obey strictly)
 
@@ -214,3 +222,54 @@ These cannot be resolved, so only report their status.
 
 When unresolved comments remain, each entry carries its own action note on
 whether action is needed, as shown in the templates above.
+
+Step 7: **Wait for the rest (`--wait` only)** — skip this step without
+`--wait`. Otherwise, after the Step 6 report, loop:
+
+1. Stop if none of your threads is unresolved, the PR is merged or closed, or
+   the `--wait` duration has elapsed since the first pass.
+2. Stop if, in the last pass, the PR author replied in one of your unresolved
+   threads with a question, a rebuttal, or a "won't fix". That needs the
+   user's decision, not more waiting.
+3. Otherwise run the polling command below. It fingerprints the PR state, the
+   head commit, and the comment count and resolved state of your threads, and
+   returns as soon as any of them changes or after about 9 minutes. Run it in
+   the foreground with a command timeout of at least 10 minutes.
+4. On `changed`, re-run Steps 2 to 5 (all judgment rules apply unchanged) and
+   tell the user in one line what was resolved this round. On `no change`, go
+   back to 1.
+
+```bash
+fp() {
+  gh api graphql -f query='
+query($owner: String!, $repo: String!, $pr: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $pr) {
+      state
+      headRefOid
+      reviewThreads(first: 100) {
+        nodes {
+          isResolved
+          comments(first: 1) { totalCount nodes { author { login } } }
+        }
+      }
+    }
+  }
+}' -f owner="OWNER" -f repo="REPO" -F pr=NUMBER --jq '.data.repository.pullRequest
+  | [.state, .headRefOid,
+     ([.reviewThreads.nodes[] | select(.comments.nodes[0].author.login == "ME")
+       | "\(.isResolved):\(.comments.totalCount)"] | join(","))]
+  | @tsv'
+}
+start=$(fp); result="no change"
+for _ in $(seq 1 18); do
+  sleep 30
+  now=$(fp)
+  if [ "$now" != "$start" ]; then result="changed"; break; fi
+done
+echo "$result"
+```
+
+When the loop stops, present the Step 6 report again, reflecting every round,
+and state why waiting stopped (all resolved / merged or closed / timed out /
+needs your decision).
