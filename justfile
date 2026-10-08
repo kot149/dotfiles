@@ -137,13 +137,14 @@ render-check:
 lint:
     {{ uv_script }} scripts/lint.py
 
-# Run the textlint rule test, the repo-only skill-tree check and the template render check
+# Run the textlint rule test, the repo-only skill-tree check, the template render check and lint
 [group('dev')]
 test:
     #!/usr/bin/env bash
     status=0
     '{{ just_executable() }}' --justfile '{{ justfile() }}' skills-lint || status=1
     '{{ just_executable() }}' --justfile '{{ justfile() }}' render-check || status=1
+    '{{ just_executable() }}' --justfile '{{ justfile() }}' lint || status=1
     bun run tests/textlint-rule-ja-ai-phrasing.js || status=1
     {{ uv_script }} tests/update_agent_skills.py || status=1
     bash tests/writing-style.sh || status=1

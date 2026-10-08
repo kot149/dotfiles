@@ -1,6 +1,6 @@
 {{- if eq .chezmoi.os "darwin" -}}
-#!/bin/sh
-set -eu
+#!/bin/bash
+set -euo pipefail
 
 # Trigger when the resolved tailscaled binary path changes, so this re-runs
 # on any actual tailscale install/remove/version-bump (regardless of which

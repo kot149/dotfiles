@@ -11,8 +11,8 @@ chezmoi rewrites filenames on apply. Key prefixes used in this repo:
 - `readonly_foo` → read-only on apply
 - `executable_foo` → `+x`
 - `*.tmpl` → rendered through chezmoi's Go template engine (`.chezmoi.os`, `.chezmoi.arch`, `.chezmoi.username`, etc.); the `.tmpl` suffix is stripped
-- `.chezmoiscripts/run_onchange_*` → re-run when their content hash changes (hashes of dependencies are embedded as comments at the top; `run_onchange_after_00_home-manager.sh.tmpl` and `run_onchange_after_nix-darwin.sh.tmpl` hash every file under their source directory through `glob`, so adding or editing any file there re-triggers the switch and no hash list needs editing; the other scripts list their dependencies by hand)
-- `.chezmoitemplates/` → shared template snippets included via `{{ include "..." }}`
+- `.chezmoiscripts/run_onchange_*` → re-run when their content hash changes (hashes of dependencies are embedded as comments at the top; `run_onchange_after_00_home-manager.sh.tmpl` and `run_onchange_after_nix-darwin.sh.tmpl` hash every file under their source directory through `glob`, so adding or editing any file there re-triggers the switch and no hash list needs editing; the other scripts list their dependencies by hand). Scripts start with `#!/bin/bash` and `set -euo pipefail`; bodies shared by several scripts live in `.chezmoitemplates/scripts/` and are pulled in with `includeTemplate` and a `dict` of per-script values.
+- `.chezmoitemplates/` → shared template snippets included via `{{ include "..." }}` (verbatim) or `{{ includeTemplate "..." }}` (rendered)
 
 Per-OS file selection is controlled by `.chezmoiignore.tmpl` (gates `Library/**`, `AppData/**`, `winget.json`, etc. on `.chezmoi.os`).
 
@@ -62,7 +62,7 @@ herdr server reload-config
 
 Routine maintenance (chezmoi, skill revs, Home Manager, nix-darwin, Nix cleanup, plugin and tool upgrades, global bun / npm / pnpm / uv / cargo / go packages and their duplicates in Nix / winget, tests) is collected in the root `justfile`. The `dots` alias (zsh and PowerShell) runs it from anywhere: `dots` lists the tasks, `dots update` runs the full update for the current OS. OS-specific tasks use just's `[macos]` / `[linux]` / `[unix]` / `[windows]` attributes. The `justfile` is not a chezmoi target (it is in `.chezmoiignore.tmpl`).
 
-`just lint` (`scripts/lint.py`) runs shellcheck, ruff, nixfmt and oxlint, rendering the `.tmpl` sources for both macOS and Linux first. `ruff format` and `nixfmt` only report; `just test` does not run it yet.
+`just lint` (`scripts/lint.py`) runs shellcheck, ruff, nixfmt and oxlint, rendering the `.tmpl` sources for both macOS and Linux first. `ruff format` and `nixfmt` only report. `just test` runs it.
 
 Apply / diff / status (from anywhere):
 

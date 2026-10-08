@@ -1,5 +1,6 @@
 {{- if ne .chezmoi.os "windows" -}}
 #!/bin/bash
+set -euo pipefail
 
 {{- $src := printf "%s/" .chezmoi.sourceDir }}
 {{- range sortAlpha (glob (joinPath .chezmoi.sourceDir "private_dot_config/home-manager/**")) }}

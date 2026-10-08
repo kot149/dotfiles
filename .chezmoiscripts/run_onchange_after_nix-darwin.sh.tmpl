@@ -1,8 +1,7 @@
 {{ if eq .chezmoi.os "darwin" -}}
 #!/bin/bash
+set -euo pipefail
 # Apply nix-darwin configuration
-
-set -e
 
 {{- $src := printf "%s/" .chezmoi.sourceDir }}
 {{- range sortAlpha (glob (joinPath .chezmoi.sourceDir "private_dot_config/nix-darwin/**")) }}
