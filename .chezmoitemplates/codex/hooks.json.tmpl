@@ -1,4 +1,5 @@
 {{- $home := .chezmoi.homeDir | replace "\\" "/" -}}
+{{- /* On Windows (cmd.exe) the bash hooks run through Git Bash at its default install path. If Git is installed elsewhere, thread a git_bash_path value through .chezmoidata/ and chezmoi.toml [data]. */ -}}
 {
   "description": "User-level Codex hooks",
   "hooks": {
@@ -9,12 +10,14 @@
           {
             "type": "command",
             "command": "bash '{{ $home }}/.codex/hooks/check-force-push.sh'",
+            "commandWindows": "\"C:/Program Files/Git/bin/bash.exe\" \"{{ $home }}/.codex/hooks/check-force-push.sh\"",
             "timeout": 15,
             "statusMessage": "Checking force push"
           },
           {
             "type": "command",
             "command": "bash '{{ $home }}/.codex/hooks/check-github-api-write.sh'",
+            "commandWindows": "\"C:/Program Files/Git/bin/bash.exe\" \"{{ $home }}/.codex/hooks/check-github-api-write.sh\"",
             "timeout": 15,
             "statusMessage": "Checking GitHub API write"
           },
@@ -28,18 +31,21 @@
           {
             "type": "command",
             "command": "bash '{{ $home }}/.codex/hooks/check-commit-sha-links.sh'",
+            "commandWindows": "\"C:/Program Files/Git/bin/bash.exe\" \"{{ $home }}/.codex/hooks/check-commit-sha-links.sh\"",
             "timeout": 15,
             "statusMessage": "Checking commit SHA links"
           },
           {
             "type": "command",
             "command": "bash '{{ $home }}/.codex/hooks/check-cargo-install.sh'",
+            "commandWindows": "\"C:/Program Files/Git/bin/bash.exe\" \"{{ $home }}/.codex/hooks/check-cargo-install.sh\"",
             "timeout": 15,
             "statusMessage": "Checking cargo install"
           },
           {
             "type": "command",
             "command": "rtk hook claude",
+            "commandWindows": "rtk hook claude",
             "timeout": 15,
             "statusMessage": "Rewriting command with rtk"
           }
@@ -51,6 +57,7 @@
           {
             "type": "command",
             "command": "bun run '{{ $home }}/.codex/hooks/check-writing-style.js'",
+            "commandWindows": "bun run \"{{ $home }}/.codex/hooks/check-writing-style.js\"",
             "timeout": 30,
             "statusMessage": "Checking writing style"
           }
