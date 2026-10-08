@@ -1,0 +1,90 @@
+{{- /* Expands the shell lists in .chezmoidata/agent-permissions.toml into plain
+       patterns for every agent template:
+         {"allow": [...], "deny": [...], "allowWrite": [...]}
+       Each agent gets the full variant set (JS script and bin prefixes, /bin and
+       /usr/bin forms, `<tool> --help` / `--version`, rtk, rtk proxy, bare forms,
+       corepack) and only formats it. Codex turns the patterns into prefix rules
+       and skips those a prefix cannot express. */ -}}
+{{- $shellAllow := list -}}
+{{- range .agent_shell_allow -}}
+  {{- $shellAllow = append $shellAllow . -}}
+{{- end -}}
+{{- $scriptPrefixes := list "npm run" "pnpm run" "pnpm" "yarn run" "yarn" "bun run" "bun" "deno task" -}}
+{{- range .agent_shell_allow_js_scripts -}}
+  {{- $script := . -}}
+  {{- range $scriptPrefixes -}}
+    {{- $shellAllow = append $shellAllow (printf "%s %s *" . $script) -}}
+  {{- end -}}
+{{- end -}}
+{{- $binPrefixes := list "npx" "pnpm exec" "pnpm dlx" "pnpm" "yarn exec" "yarn dlx" "yarn" "bunx" "bun x" "bun" -}}
+{{- range .agent_shell_allow_js_bins -}}
+  {{- $bin := . -}}
+  {{- $shellAllow = append $shellAllow (printf "%s *" $bin) -}}
+  {{- range $binPrefixes -}}
+    {{- $shellAllow = append $shellAllow (printf "%s %s *" . $bin) -}}
+  {{- end -}}
+{{- end -}}
+{{- /* Models occasionally call read-only tools by absolute path to dodge shell aliases.
+       Mirror the already-allowed bare form so it does not trigger a manual prompt. */ -}}
+{{- $absDirs := list "/bin" "/usr/bin" -}}
+{{- $absBins := list "ls" "cat" "find" "grep" "head" "tail" "wc" "stat" "file" "du" "df" "sort" "uniq" "cut" "basename" "dirname" "realpath" "date" "which" -}}
+{{- range $absBins -}}
+  {{- $bin := . -}}
+  {{- if has (printf "%s *" $bin) $shellAllow -}}
+    {{- range $absDirs -}}
+      {{- $shellAllow = append $shellAllow (printf "%s/%s *" . $bin) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- /* `<tool> --help` and `<tool> --version` for the first word of every allowed entry,
+       instead of leading-wildcard rules that would also match `npx <pkg> --version`. */ -}}
+{{- $helpBins := list -}}
+{{- range $shellAllow -}}
+  {{- $bin := first (splitList " " .) -}}
+  {{- if and (not (contains "*" $bin)) (not (has $bin $helpBins)) -}}
+    {{- $helpBins = append $helpBins $bin -}}
+  {{- end -}}
+{{- end -}}
+{{- range $helpBins -}}
+  {{- $shellAllow = append $shellAllow (printf "%s --help" .) -}}
+  {{- $shellAllow = append $shellAllow (printf "%s --version" .) -}}
+{{- end -}}
+{{- $allow := list -}}
+{{- range $shellAllow -}}
+  {{- $allow = append $allow . -}}
+  {{- $allow = append $allow (printf "rtk %s" .) -}}
+  {{- $allow = append $allow (printf "rtk proxy %s" .) -}}
+  {{- if hasSuffix " *" . -}}
+    {{- $bare := trimSuffix " *" . -}}
+    {{- $allow = append $allow $bare -}}
+    {{- $allow = append $allow (printf "rtk %s" $bare) -}}
+    {{- $allow = append $allow (printf "rtk proxy %s" $bare) -}}
+  {{- end -}}
+  {{- if or (hasPrefix "pnpm " .) (hasPrefix "npm " .) (hasPrefix "yarn " .) -}}
+    {{- $allow = append $allow (printf "corepack %s" .) -}}
+  {{- end -}}
+{{- end -}}
+{{- range .agent_shell_allow_no_rtk -}}
+  {{- $allow = append $allow . -}}
+{{- end -}}
+{{- $allowWrite := list -}}
+{{- range .agent_shell_allow_write -}}
+  {{- $allowWrite = append $allowWrite . -}}
+  {{- $allowWrite = append $allowWrite (printf "rtk %s" .) -}}
+  {{- $allowWrite = append $allowWrite (printf "rtk proxy %s" .) -}}
+{{- end -}}
+{{- $deny := list -}}
+{{- range .agent_shell_deny -}}
+  {{- $rule := . -}}
+  {{- $deny = append $deny $rule -}}
+  {{- $deny = append $deny (printf "rtk %s" $rule) -}}
+  {{- $deny = append $deny (printf "rtk proxy %s" $rule) -}}
+  {{- if has (first (splitList " " $rule)) $absBins -}}
+    {{- range $absDirs -}}
+      {{- $deny = append $deny (printf "%s/%s" . $rule) -}}
+      {{- $deny = append $deny (printf "rtk %s/%s" . $rule) -}}
+      {{- $deny = append $deny (printf "rtk proxy %s/%s" . $rule) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- dict "allow" $allow "deny" $deny "allowWrite" $allowWrite | toJson -}}

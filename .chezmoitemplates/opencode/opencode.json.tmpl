@@ -2,65 +2,10 @@
        these patterns, in file order, last match wins. Allows are emitted first
        and denies last so a deny always overrides the allow it narrows.
        A pattern ending in " *" is rewritten to "( .*)?" by opencode, so it
-       already covers the bare command; no bare variants are emitted. */ -}}
-{{- $shellAllow := list -}}
-{{- range .agent_shell_allow -}}
-  {{- $shellAllow = append $shellAllow . -}}
-{{- end -}}
-{{- range .agent_shell_allow_write -}}
-  {{- $shellAllow = append $shellAllow . -}}
-{{- end -}}
-{{- $scriptPrefixes := list "npm run" "pnpm run" "pnpm" "yarn run" "yarn" "bun run" "bun" "deno task" -}}
-{{- range .agent_shell_allow_js_scripts -}}
-  {{- $script := . -}}
-  {{- range $scriptPrefixes -}}
-    {{- $shellAllow = append $shellAllow (printf "%s %s *" . $script) -}}
-  {{- end -}}
-{{- end -}}
-{{- $binPrefixes := list "npx" "pnpm exec" "pnpm dlx" "pnpm" "yarn exec" "yarn dlx" "yarn" "bunx" "bun x" "bun" -}}
-{{- range .agent_shell_allow_js_bins -}}
-  {{- $bin := . -}}
-  {{- $shellAllow = append $shellAllow (printf "%s *" $bin) -}}
-  {{- range $binPrefixes -}}
-    {{- $shellAllow = append $shellAllow (printf "%s %s *" . $bin) -}}
-  {{- end -}}
-{{- end -}}
-{{- $absDirs := list "/bin" "/usr/bin" -}}
-{{- $absBins := list "ls" "cat" "find" "grep" "head" "tail" "wc" "stat" "file" "du" "df" "sort" "uniq" "cut" "basename" "dirname" "realpath" "date" "which" -}}
-{{- range $absBins -}}
-  {{- $bin := . -}}
-  {{- if has (printf "%s *" $bin) $shellAllow -}}
-    {{- range $absDirs -}}
-      {{- $shellAllow = append $shellAllow (printf "%s/%s *" . $bin) -}}
-    {{- end -}}
-  {{- end -}}
-{{- end -}}
-{{- $denyPatterns := list -}}
-{{- range .agent_shell_deny -}}
-  {{- $rule := . -}}
-  {{- $denyPatterns = append $denyPatterns $rule -}}
-  {{- $denyPatterns = append $denyPatterns (printf "rtk %s" $rule) -}}
-  {{- $denyPatterns = append $denyPatterns (printf "rtk proxy %s" $rule) -}}
-  {{- if has (first (splitList " " $rule)) $absBins -}}
-    {{- range $absDirs -}}
-      {{- $denyPatterns = append $denyPatterns (printf "%s/%s" . $rule) -}}
-      {{- $denyPatterns = append $denyPatterns (printf "rtk %s/%s" . $rule) -}}
-      {{- $denyPatterns = append $denyPatterns (printf "rtk proxy %s/%s" . $rule) -}}
-    {{- end -}}
-  {{- end -}}
-{{- end -}}
-{{- $allowPatterns := list -}}
-{{- range $shellAllow -}}
-  {{- $allowPatterns = append $allowPatterns . -}}
-  {{- $allowPatterns = append $allowPatterns (printf "rtk %s" .) -}}
-  {{- $allowPatterns = append $allowPatterns (printf "rtk proxy %s" .) -}}
-  {{- if or (hasPrefix "pnpm " .) (hasPrefix "npm " .) (hasPrefix "yarn " .) -}}
-    {{- $allowPatterns = append $allowPatterns (printf "corepack %s" .) -}}
-  {{- end -}}
-{{- end -}}
-{{- range .agent_shell_allow_no_rtk -}}
-  {{- $allowPatterns = append $allowPatterns . -}}
-{{- end -}}
+       already covers the bare command. */ -}}
+{{- $perms := includeTemplate "agents/shell-permissions.tmpl" . | fromJson -}}
+{{- $allowPatterns := concat $perms.allow $perms.allowWrite -}}
+{{- $denyPatterns := $perms.deny -}}
 {{- $seen := dict "*" true -}}
 {{- range $denyPatterns -}}
   {{- $_ := set $seen . true -}}
