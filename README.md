@@ -1,14 +1,39 @@
-These dotfiles are maneged by [chezmoi](https://www.chezmoi.io) and [Nix Home Manager](https://github.com/nix-community/home-manager).
+These dotfiles are managed by [chezmoi](https://www.chezmoi.io) and [Nix Home Manager](https://github.com/nix-community/home-manager).
 
 ## Prerequisites
 
 ### Windows
 
-- git
+- Git for Windows. Its Git Bash (`C:/Program Files/Git/bin/bash.exe`) runs the Claude Code and Codex shell hooks.
+  ```pwsh
+  winget install Git.Git
+  ```
 - chezmoi
   ```pwsh
   winget install twpayne.chezmoi
   ```
+- just, for `dots`
+  ```pwsh
+  winget install Casey.Just
+  ```
+- uv, used by the Python hooks, the Python parsers inside the bash hooks and the `just` recipes. None of them download Python, so run `uv python install` once.
+  ```pwsh
+  winget install astral-sh.uv
+  ```
+- jq, for the bash hooks
+  ```pwsh
+  winget install jqlang.jq
+  ```
+- bun, for the writing-style hook and `just test`
+  ```pwsh
+  winget install Oven-sh.Bun
+  ```
+- rtk, for the agent command rewrite hooks
+  ```pwsh
+  winget install rtk-ai.rtk
+  ```
+
+`winget import winget.json` (run from the repo, see [Managing Winget packages](#managing-winget-packages)) installs all of them.
 
 ### Linux / Mac
 
@@ -27,6 +52,8 @@ These dotfiles are maneged by [chezmoi](https://www.chezmoi.io) and [Nix Home Ma
   ```sh
   curl -fsSL https://install.determinate.systems/nix | sh -s -- install
   ```
+
+Everything else (`just`, `uv`, `bun`, `rtk`, `nh`, ...) is installed by Home Manager on the first apply.
 
 #### Linux with no root
 
@@ -70,6 +97,57 @@ or with nix:
 ```sh
 nix --extra-experimental-features "flakes nix-command" run nixpkgs#chezmoi -- init --apply kot149
 ```
+
+Besides rendering the managed files into `$HOME`, the first apply:
+
+- downloads the pinned third-party agent skills into `~/.claude/skills` and `~/.agents/skills` (every OS);
+- macOS / Linux: on Determinate Nix, writes `/etc/nix/nix.custom.conf` (`sudo`), then runs the Home Manager switch through `nh home switch` (falls back to `nix run home-manager/master` when `nh` is not installed yet, as on the very first apply). The first switch builds the whole package set and takes minutes;
+- macOS: also runs the nix-darwin switch (`nh darwin switch`, or `nix run github:nix-darwin/nix-darwin#darwin-rebuild` before `nh` exists; prompts for the `sudo` password) and the Karabiner / Rectangle / DockDoor / AltTab scripts, and installs the tailscaled LaunchDaemon (`sudo`) when tailscaled is installed;
+- Linux: on Nix installs without `nix.custom.conf`, edits `/etc/nix/nix.conf` (`sudo`);
+- Windows: no Nix step; clones the PowerShell / AutoHotkey libraries.
+
+To preview first, clone without applying and check the diff (`chezmoi apply --dry-run -v` prints the same without changing anything):
+
+```sh
+chezmoi init kot149
+chezmoi diff
+```
+
+Then run `chezmoi apply -v`.
+
+## Maintenance (`dots`)
+
+The `dots` alias ([`dot_zshrc`](dot_zshrc), and a function in the [PowerShell profile](readonly_Documents/PowerShell/Microsoft.PowerShell_profile.ps1)) runs the repo [`justfile`](justfile) from anywhere. `dots` alone lists the tasks, `dots update` pulls the repo, applies it and updates everything for the current OS, and `dots test` runs the repo checks.
+
+| Task | What it does |
+|---|---|
+| `update` | Pull the dotfiles repo, apply it, then update everything this machine uses (the task list differs per OS) |
+| `apply *args` | Apply the source state to `$HOME` (extra args go to `chezmoi apply`) |
+| `pull` | Pull the dotfiles repo and apply it |
+| `diff *args` | Show what apply would change |
+| `status` | List targets that differ from the source state |
+| `skills-check` | Report third-party agent skills whose pinned rev is behind upstream |
+| `skills-update *args` | Review, bump and commit third-party agent skill revs, then install them |
+| `skills-lint` | Check the agent-skill tree: wrappers, store parity, frontmatter, `agent_skills` |
+| `skills-drift` | Report skill directories in `~/.claude/skills` and `~/.agents/skills` that this repo does not manage |
+| `hm-switch` (macOS / Linux) | Rebuild the Home Manager generation without updating flake inputs |
+| `hm-update` (macOS / Linux) | Update the Home Manager flake inputs and rebuild |
+| `darwin-update` (macOS) | Update the nix-darwin flake inputs and rebuild |
+| `nix-clean` (macOS / Linux) | Delete Nix generations older than 30 days, keeping the latest one |
+| `sheldon-update` (macOS / Linux) | Update zsh plugins |
+| `mise-upgrade` (macOS / Linux) | Upgrade the tools in the global mise config |
+| `pkgs-list *managers` | List globally installed bun / npm / pnpm / uv / cargo / go packages |
+| `pkgs-update *managers` | Update globally installed bun / npm / pnpm / uv / cargo / go packages |
+| `pkgs-dupes` | Find commands installed by both bun / npm / pnpm / uv / cargo / go and Nix / winget / others |
+| `gh-ext-upgrade` | Upgrade gh CLI extensions |
+| `winget-upgrade` (Windows) | Upgrade winget packages (run by hand; not part of `update`) |
+| `render-check` | Render the agent config templates and check that the output parses |
+| `lint` | Run shellcheck, ruff, nixfmt and oxlint over the repo |
+| `test` | Run `skills-lint`, `render-check`, `lint` and the tests under [`tests/`](tests) |
+
+## AI agent configuration
+
+The hooks, permission lists and skills for Claude Code, Codex CLI, opencode and Antigravity live in this repo ([`dot_claude/`](dot_claude), [`dot_codex/`](dot_codex), [`dot_agents/`](dot_agents), [`private_dot_config/opencode/`](private_dot_config/opencode), [`dot_gemini/`](dot_gemini)) and are generated from single sources under [`.chezmoitemplates/`](.chezmoitemplates) and [`.chezmoidata/`](.chezmoidata). [`AGENTS.md`](AGENTS.md) documents the layout and the rules.
 
 ## Managing OS-specific files
 

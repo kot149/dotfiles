@@ -137,7 +137,7 @@ render-check:
 lint:
     {{ uv_script }} scripts/lint.py
 
-# Run the textlint rule test, the repo-only skill-tree check, the template render check and lint
+# Run skills-lint, render-check, lint and the tests under tests/
 [group('dev')]
 test:
     #!/usr/bin/env bash
