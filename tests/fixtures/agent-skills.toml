@@ -1,0 +1,28 @@
+[[agent_skills]]
+repo = "o/shared"
+rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+prefix = "skills"
+names = ["one"]
+agents = ["claude", "agents"]
+
+[[agent_skills]]
+repo = "o/shared"
+rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+prefix = "skills"
+names = ["two"]
+agents = ["claude", "agents"]
+
+[[agent_skills]]
+repo = "o/solo"
+rev = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+prefix = "skills"
+names = ["solo"]
+agents = ["agents"]
+
+[[agent_skills]]
+repo = "o/skills"
+rev = "cccccccccccccccccccccccccccccccccccccccc"
+prefix = ""
+flat = true
+names = ["flat"]
+agents = ["claude"]
