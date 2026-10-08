@@ -52,7 +52,11 @@ if [ ! -f "$karabiner_json" ]; then
 JSON
 fi
 
-GOKU_EDN_CONFIG_FILE="$edn_file" nix run nixpkgs#goku --
+if command -v goku >/dev/null 2>&1; then
+  GOKU_EDN_CONFIG_FILE="$edn_file" goku
+else
+  GOKU_EDN_CONFIG_FILE="$edn_file" nix run nixpkgs#goku --
+fi
 
 if [ -x "$karabiner_cli" ]; then
   "$karabiner_cli" --select-profile US
