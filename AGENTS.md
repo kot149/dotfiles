@@ -107,11 +107,21 @@ When adding new tunable values, prefer threading them through `.chezmoidata/` + 
 
 `.chezmoidata/agent-permissions.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_no_rtk`, and `agent_shell_deny` arrays consumed by AI-agent settings templates (e.g. `.chezmoitemplates/claude/settings.json.tmpl`, `dot_codex/...`). Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Entries in `agent_shell_allow` are emitted both bare and with an auto-generated `rtk <cmd>` variant — put commands that should be allowed **without** the `rtk` wrapper (e.g. `rtk` itself) in `agent_shell_allow_no_rtk`, which emits only the bare form.
 
+A rule only stops a command when its own pattern matches, so a deny entry never narrows an allow entry. What goes into `agent_shell_allow`:
+
+- Read-only **including every option it accepts**: an option that names a program to run (`git fetch --upload-pack`, `rg --pre`) or a file to write (`git diff --output`, `yq -i`) disqualifies the entry unless `agent_shell_deny` covers that option.
+- No leading `*`. The Claude template generates `<tool> --help` and `<tool> --version` for the first word of every entry instead. `-h` and `-V` prompt, as do `--help` / `--version` in the other agents.
+- No mid-pattern `*`.
+- No trailing `*` after a subcommand that accepts further subcommands, task names or shell statements (`gradle tasks`, `mvn …`, `adb shell …`, `pwsh -Command …`, `tmux list-panes`, where a lone `;` argument starts a second tmux command, `rtk pnpm`, which passes unknown subcommands through). List the exact forms instead.
+- A tool whose dry run still evaluates project code (`make -n`, `just --evaluate`, `bundle list`, `gradle`) is accepted, the same way `cargo test` is. So are formatters and fixers that rewrite project files (`cargo fmt`, `ruff format`, `ruff check --fix`, `oxfmt`, the `format` script), since they only rewrite files inside the project.
+- The PowerShell launcher forms (`pwsh -Command …`, `powershell -Command …`) are not allowed, since a quoted `;` runs a second statement; Claude Code on Windows prompts for them. Only the bare cmdlets are listed, for opencode's per-stage matching.
+- Every new wildcard entry gets a case in `tests/permissions.py`, which renders the Claude rules and checks commands against them.
+
 Do not add `git -C * <subcommand>` style entries: a mid-pattern `*` also matches options such as `-c` or `--exec-path` inserted after the path. Claude Code instead runs `dot_claude/hooks/executable_rewrite-git-c.sh` (registered in place of `rtk hook claude`, which it calls itself), which rewrites `git -C <path> <args>` to `(cd <path> && git <args>)` so the plain `git <args>` rules apply. Codex and opencode prompt for `git -C`.
 
 rtk rewrites shell commands to `rtk <cmd>` in all three agents: Claude Code through the hook above, Codex through `rtk hook claude` in `.chezmoitemplates/codex/hooks.json.tmpl` (Codex accepts the same `updatedInput` output), and opencode through the plugin `private_dot_config/opencode/plugins/rtk.ts`, which calls `rtk rewrite`.
 
-`agent_shell_allow_write` holds commands with side effects (`git add`, `git commit`, `herdr`) and is consumed by `.chezmoitemplates/opencode/opencode.json.tmpl` only. Claude Code and Codex keep prompting for those.
+`agent_shell_allow_write` holds commands with side effects (`git add`, `git commit`, `git stash`, `herdr`) and is consumed by `.chezmoitemplates/opencode/opencode.json.tmpl` only. Claude Code and Codex keep prompting for those. `herdr` and `git stash` are listed per subcommand, not as `herdr *` / `git stash *`: `herdr pane run` and `herdr --machine` run arbitrary commands, and `git stash drop` / `clear` discard work.
 
 opencode's matcher differs from Claude Code's in ways the template depends on:
 
