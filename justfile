@@ -160,12 +160,18 @@ ci-render *args:
     "${cz[@]}" apply --exclude scripts,externals || exit 1
     {{ uv_script }} scripts/render_check.py --destination "$tmp/home" --os "$os"
 
-# Run skills-lint, render-check, lint and the tests under tests/
+# Check .chezmoidata/agent-hooks.toml against the hook files in dot_claude/hooks and dot_codex/hooks
+[group('dev')]
+hooks-lint:
+    {{ uv_script }} scripts/check_agent_hooks.py
+
+# Run skills-lint, hooks-lint, render-check, lint and the tests under tests/
 [group('dev')]
 test:
     #!/usr/bin/env bash
     status=0
     '{{ just_executable() }}' --justfile '{{ justfile() }}' skills-lint || status=1
+    '{{ just_executable() }}' --justfile '{{ justfile() }}' hooks-lint || status=1
     '{{ just_executable() }}' --justfile '{{ justfile() }}' render-check || status=1
     '{{ just_executable() }}' --justfile '{{ justfile() }}' lint || status=1
     bun run tests/textlint-rule-ja-ai-phrasing.js || status=1

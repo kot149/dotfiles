@@ -105,7 +105,7 @@ Windows package list lives in `winget.json`: `winget export -o winget.json` / `w
 
 ## Configuration layering (important)
 
-1. `.chezmoidata/*.toml` — repo-wide defaults, split by topic (`git.toml` for the git identity, `agent-permissions.toml` for the agent allow/deny lists, `agent-skills.toml` for the third-party skill entries, `nix-binary-caches.toml`)
+1. `.chezmoidata/*.toml` — repo-wide defaults, split by topic (`git.toml` for the git identity, `agent-permissions.toml` for the agent allow/deny lists, `agent-skills.toml` for the third-party skill entries, `agent-hooks.toml` for the agent hook registrations, `nix-binary-caches.toml`)
 2. `~/.config/chezmoi/chezmoi.toml` — per-machine overrides (created by `.chezmoi.toml.tmpl` on `chezmoi init`); `[data]` here wins
 3. `private_dot_config/git/create_config.machine.tmpl` → `~/.config/git/config.machine`, created only when absent and included by the shared `dot_gitconfig.tmpl` for per-host git settings (signing key paths, work email, `safe.directory`, etc.)
 
@@ -128,7 +128,7 @@ A rule only stops a command when its own pattern matches, so a deny entry never 
 Deny entries are anchored at the command name (no leading `*`). A `*` also matches spaces, so a pattern built around a single flag letter (`rm -*r* ~*`) catches ordinary paths such as `rm -f error.log .DS_Store`; spell out the flag forms instead (`rm *-rf ~*`, `sort -uo*`), and cover long-option abbreviations by prefix where the tool accepts them (getopt_long and git: `journalctl --rot`, `git fetch --upl=`). Each entry gets a `denied` case and, where it could catch an ordinary command, a `not_denied` case in `tests/permissions.py`. Known gaps: short-flag bundles other than the listed ones (`rm -rfv ~`, `chezmoi diff -vS <dir>`, `chezmoi status -vc <file>`), and `rm -rf *`, since a pattern cannot match a literal `*`. chezmoi's global flags (`--source`, `--config`, `--output`, `--pager` and their short forms) are denied only after the subcommand (`chezmoi * --source*`), where they would ride on an allowed entry such as `chezmoi diff *`; `chezmoi --source <dir> execute-template …` still prompts. `tree *-o *` is denied for GNU tree, where `-o` writes a file, and so also blocks eza's harmless `-o` (octal permissions).
 Do not add `git -C * <subcommand>` style entries: a mid-pattern `*` also matches options such as `-c` or `--exec-path` inserted after the path. Claude Code instead runs `dot_claude/hooks/executable_rewrite-git-c.sh` (registered in place of `rtk hook claude`, which it calls itself), which rewrites `git -C <path> <args>` to `(cd <path> && git <args>)` so the plain `git <args>` rules apply. Codex and opencode prompt for `git -C`.
 
-rtk rewrites shell commands to `rtk <cmd>` in all three agents: Claude Code through the hook above, Codex through `rtk hook claude` in `.chezmoitemplates/codex/hooks.json.tmpl` (Codex accepts the same `updatedInput` output), and opencode through the plugin `private_dot_config/opencode/plugins/rtk.ts`, which calls `rtk rewrite`.
+rtk rewrites shell commands to `rtk <cmd>` in all three agents: Claude Code through the hook above, Codex through its `rtk hook claude` entry in `.chezmoidata/agent-hooks.toml` (Codex accepts the same `updatedInput` output), and opencode through the plugin `private_dot_config/opencode/plugins/rtk.ts`, which calls `rtk rewrite`.
 
 `agent_shell_allow_write` holds commands with side effects (`git add`, `git commit`, `git stash`, `herdr`) and only `.chezmoitemplates/opencode/opencode.json.tmpl` uses its expansion (`allowWrite` in the shared template). Claude Code and Codex keep prompting for those. `herdr` and `git stash` are listed per subcommand, not as `herdr *` / `git stash *`: `herdr pane run` and `herdr --machine` run arbitrary commands, and `git stash drop` / `clear` discard work.
 
@@ -142,28 +142,17 @@ opencode's matcher differs from Claude Code's in ways the template depends on:
 
 ## Agent hooks
 
-Hook scripts shared by more than one agent live in `.chezmoitemplates/agents/` and are pulled into each agent's config directory by a one-line `{{ include ... }}` wrapper, so there is a single implementation per script:
+Every hook registration is one `[[agent_hooks]]` entry in `.chezmoidata/agent-hooks.toml`: the script `file`, its `runner` (`bash`, `uv-script`, `bun`, or `command` for a verbatim command such as `rtk hook claude`), optional `args`, and a `claude` / `codex` table per agent that registers it, holding the event, the optional matcher and any extra handler keys (`timeout`, `statusMessage`, `asyncRewake`). `.chezmoitemplates/agents/hooks.tmpl` turns the entries into each agent's `hooks` object, grouping them by event and matcher in entry order, so both registrations are rendered from the one list. `just hooks-lint` (`scripts/check_agent_hooks.py`, also run by `just test`) checks that every entry's script exists for each agent, that a hook registered for both agents is a one-line include of its body, and that every file in `dot_claude/hooks/` and `dot_codex/hooks/` is registered, except `python-runner.sh`.
 
-- `check-force-push.sh` (bash + python-runner) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-github-api-write.sh` (bash + python-runner) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-package-manager.py` (standalone Python, run via `uv run --no-python-downloads --script` on every OS) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-commit-sha-links.sh` (bash + python-runner) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-cargo-install.sh` (bash + python-runner) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-writing-style.js` (Bun + textlint, imports `./textlint-rules/` next to it) → `~/.claude/hooks/` and `~/.codex/hooks/`
+A hook registered for both agents has its body in `.chezmoitemplates/agents/` and a one-line `{{ include ... }}` wrapper in `dot_claude/hooks/` and `dot_codex/hooks/`, so there is a single implementation per script. A Claude Code only hook (`rewrite-git-c.sh`, `remind-stop-background.sh`, `check-japanese-reply.sh`, `keep-cache-warm.sh`) is a plain file in `dot_claude/hooks/`. Two support files are shared the same way but not registered:
+
 - `textlint-rules/textlint-rule-ja-ai-phrasing.js` (the textlint rule `check-writing-style.js` imports) → `~/.claude/hooks/textlint-rules/` and `~/.codex/hooks/textlint-rules/`
-- `python-runner.sh` (resolves the interpreter for the inline Python parsers: `uv run --script` with `UV_PYTHON_DOWNLOADS=never`, then `python3`, then `python`; with none, it exits 0 so the hook passes the command through; `source`d by the four bash hooks above and by `check-japanese-reply.sh` / `rewrite-git-c.sh`) → `~/.claude/hooks/` and `~/.codex/hooks/`
+- `python-runner.sh` (resolves the interpreter for the inline Python parsers: `uv run --script` with `UV_PYTHON_DOWNLOADS=never`, then `python3`, then `python`; with none, it exits 0 so the hook passes the command through; `source`d by the bash hooks) → `~/.claude/hooks/` and `~/.codex/hooks/`
 
-Claude Code only hooks are plain files in `dot_claude/hooks/` (no wrapper):
+Both registrations are rendered from `.chezmoidata/agent-hooks.toml` by `.chezmoitemplates/agents/hooks.tmpl`, which `.chezmoitemplates/claude/settings.json.tmpl` and `.chezmoitemplates/codex/hooks.json.tmpl` call. Agent-specific details:
 
-- `rewrite-git-c.sh` (PreToolUse, `Bash`)
-- `remind-stop-background.sh` (PostToolUse)
-- `check-japanese-reply.sh` (Stop)
-- `keep-cache-warm.sh` (Stop, and UserPromptSubmit with `reset`)
-
-Registration differs per agent:
-
-- Claude Code: `hooks.*` in `.chezmoitemplates/claude/settings.json.tmpl` (PreToolUse, PostToolUse, Stop, UserPromptSubmit). PreToolUse matchers name the tools `Bash`, `Write`, `Edit`, `mcp__*`.
-- Codex CLI: `.chezmoitemplates/codex/hooks.json.tmpl`, merged into `~/.codex/hooks.json` by `dot_codex/modify_hooks.json`. A handler takes `command` (used on macOS/Linux) and `commandWindows` (used on Windows); they run the same script and differ only in quoting. On Windows the bash hooks run through Git Bash (`C:/Program Files/Git/bin/bash.exe`, installed by `Git.Git` in `winget.json`); the bun and uv hooks call `bun` / `uv` directly. `matcher` is a regex against the tool name; Codex's shell tool is `Bash` or `Shell` and the matchers name both, but its file edits arrive as a single `apply_patch` tool whose `tool_input.command` is the patch document. `check-writing-style.js` parses that patch format, and `textlint-rules/` is materialized next to each copy by its own include wrapper.
+- Claude Code: events PreToolUse, PostToolUse, Stop and UserPromptSubmit. PreToolUse matchers name the tools `Bash`, `Write`, `Edit`, `mcp__*`.
+- Codex CLI: merged into `~/.codex/hooks.json` by `dot_codex/modify_hooks.json`. A handler takes `command` (used on macOS/Linux) and `commandWindows` (used on Windows); they run the same script and differ only in quoting. On Windows the bash hooks run through Git Bash (`C:/Program Files/Git/bin/bash.exe`, installed by `Git.Git` in `winget.json`); the bun and uv hooks call `bun` / `uv` directly. `matcher` is a regex against the tool name; Codex's shell tool is `Bash` or `Shell` and the matchers name both, but its file edits arrive as a single `apply_patch` tool whose `tool_input.command` is the patch document. `check-writing-style.js` parses that patch format, and `textlint-rules/` is materialized next to each copy by its own include wrapper.
 
 Other tools (e.g. Orca IDE) also write hooks and settings into these files, so the agent config files are `modify_` templates that all render through `.chezmoitemplates/agents/merge-config.tmpl`: `~/.claude/settings.json`, `~/.codex/hooks.json`, `~/.codex/config.toml`, `~/.config/opencode/tui.json`, `~/.gemini/antigravity-cli/settings.json`. Objects are merged at any depth (managed values win, arrays are replaced). Hooks are merged per entry instead: every managed `command` gets a trailing `# chezmoi-managed` comment (`commandWindows` does not, since cmd.exe would pass it to the hook as arguments), and on apply the existing hooks carrying it are dropped and the managed ones re-added, so hooks from other tools are kept and hooks deleted from a template disappear. Do not write that marker by hand. A template pulled in with `includeTemplate` cannot call other shared templates, which is why the merge recurses through `merge-config.tmpl` itself.
 
