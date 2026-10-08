@@ -64,6 +64,8 @@ Routine maintenance (chezmoi, skill revs, Home Manager, nix-darwin, Nix cleanup,
 
 `just lint` (`scripts/lint.py`) runs shellcheck, ruff, nixfmt and oxlint, rendering the `.tmpl` sources for both macOS and Linux first. `ruff format` and `nixfmt` only report. `just test` runs it.
 
+`just doctor` (`scripts/doctor.py`) reports `.chezmoiignore.tmpl` entries with no source file, a Home Manager / nix-darwin run_onchange script without its hash glob, missing tools, Codex hooks with no trust entry or possibly stale trust, and unmanaged skill directories. `dots update` runs it last; `--no-home` skips the checks that read this machine's `$HOME`. A new repo-only root file needs both a `# General` entry in `.chezmoiignore.tmpl` and a name in `REPO_ONLY` in `scripts/doctor.py`.
+
 Apply / diff / status (from anywhere):
 
 ```sh

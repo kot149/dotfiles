@@ -12,17 +12,17 @@ default:
 # Pull the dotfiles repo, apply it, then update everything this machine uses
 [group('all')]
 [macos]
-update: pull skills-update hm-update darwin-update sheldon-update mise-upgrade gh-ext-upgrade pkgs-update
+update: pull skills-update hm-update darwin-update sheldon-update mise-upgrade gh-ext-upgrade pkgs-update doctor
 
 # Pull the dotfiles repo, apply it, then update everything this machine uses
 [group('all')]
 [linux]
-update: pull skills-update hm-update sheldon-update mise-upgrade gh-ext-upgrade pkgs-update
+update: pull skills-update hm-update sheldon-update mise-upgrade gh-ext-upgrade pkgs-update doctor
 
 # Pull the dotfiles repo, apply it, then update everything this machine uses
 [group('all')]
 [windows]
-update: pull skills-update gh-ext-upgrade pkgs-update
+update: pull skills-update gh-ext-upgrade pkgs-update doctor
 
 # Apply the source state to $HOME (extra args go to chezmoi apply)
 [group('chezmoi')]
@@ -136,6 +136,11 @@ render-check:
 [group('dev')]
 lint:
     {{ uv_script }} scripts/lint.py
+
+# Report stale ignore entries, missing Nix hash globs, missing tools, Codex hook trust and skill drift (extra args go to the script)
+[group('dev')]
+doctor *args:
+    {{ uv_script }} scripts/doctor.py {{ args }}
 
 # Run skills-lint, render-check, lint and the tests under tests/
 [group('dev')]
