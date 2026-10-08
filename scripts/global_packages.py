@@ -20,11 +20,11 @@ from pathlib import Path
 
 
 def run(*cmd: str) -> bool:
-    """Run cmd with its output streamed; return whether it succeeded."""
+    """Run cmd with its output streamed; return whether it succeeded or was skipped."""
     exe = shutil.which(cmd[0])
     if exe is None:
         print(f"skip: {cmd[0]} not found")
-        return False
+        return True
     return subprocess.run([exe, *cmd[1:]]).returncode == 0
 
 
@@ -36,19 +36,18 @@ def capture(*cmd: str) -> str | None:
     return proc.stdout if proc.returncode == 0 else None
 
 
-def npm_global(action: str) -> None:
+def npm_global(action: str) -> bool:
     root = capture("npm", "root", "-g")
     if root is None:
         print("skip: npm not found")
-        return
+        return True
     # With Nix's nodejs the global prefix is a read-only store path that never holds packages.
     if not Path(root.strip()).is_dir():
         print(f"no global packages ({root.strip()} does not exist)")
-        return
+        return True
     if action == "list":
-        run("npm", "ls", "-g", "--depth=0")
-    else:
-        run("npm", "update", "-g")
+        return run("npm", "ls", "-g", "--depth=0")
+    return run("npm", "update", "-g")
 
 
 def cargo_crates() -> list[str] | None:
@@ -60,29 +59,28 @@ def cargo_crates() -> list[str] | None:
     return [line.split()[0] for line in out.splitlines() if line and not line[0].isspace() and "(" not in line]
 
 
-def cargo_list() -> None:
+def cargo_list() -> bool:
     if capture("cargo", "install", "--list") is None:
         print("skip: cargo is not usable (no toolchain?)")
-        return
-    run("cargo", "install", "--list")
+        return True
+    return run("cargo", "install", "--list")
 
 
-def cargo_update() -> None:
+def cargo_update() -> bool:
     crates = cargo_crates()
     if crates is None:
         print("skip: cargo is not usable (no toolchain?)")
-        return
+        return True
     if not crates:
         print("no crates installed")
-        return
+        return True
     if shutil.which("cargo-binstall"):
-        run("cargo", "binstall", "-y", *crates)
-    else:
-        run("cargo", "install", *crates)
+        return run("cargo", "binstall", "-y", *crates)
+    return run("cargo", "install", *crates)
 
 
-def go_binaries() -> dict[str, str] | None:
-    """Map each binary in GOBIN (or GOPATH/bin) to the module path it was built from."""
+def go_binaries() -> dict[str, tuple[str, str, bool]] | None:
+    """Map each binary in GOBIN (or GOPATH/bin) to its module path, version and whether it was built locally."""
     gobin = capture("go", "env", "GOBIN")
     gopath = capture("go", "env", "GOPATH")
     if gobin is None or gopath is None:
@@ -93,31 +91,41 @@ def go_binaries() -> dict[str, str] | None:
         info = capture("go", "version", "-m", str(exe)) or ""
         fields = [line.split("\t") for line in info.splitlines()]
         path = next((f[2] for f in fields if len(f) > 2 and f[1] == "path"), None)
+        mod = next((f for f in fields if len(f) > 3 and f[1] == "mod"), None)
+        version = mod[3] if mod else ""
+        # Local builds have no module sum; before Go 1.24 their version is also "(devel)".
+        local = mod is None or version == "(devel)" or len(mod) < 5 or not mod[4]
         if path:
-            binaries[exe.name] = path
+            binaries[exe.name] = (path, version, local)
     return binaries
 
 
-def go_list() -> None:
+def go_list() -> bool:
     binaries = go_binaries()
     if binaries is None:
         print("skip: go not found")
-        return
+        return True
     if not binaries:
         print("no binaries installed")
-    for name, path in binaries.items():
-        print(f"{name}\t{path}")
+    for name, (path, version, _) in binaries.items():
+        print(f"{name}\t{path}\t{version}")
+    return True
 
 
-def go_update() -> None:
+def go_update() -> bool:
     binaries = go_binaries()
     if binaries is None:
         print("skip: go not found")
-        return
+        return True
     if not binaries:
         print("no binaries installed")
-    for path in binaries.values():
-        run("go", "install", f"{path}@latest")
+    results = []
+    for name, (path, _, local) in binaries.items():
+        if local:
+            print(f"skip: {name} is built locally")
+            continue
+        results.append(run("go", "install", f"{path}@latest"))
+    return all(results)
 
 
 MANAGERS = {
@@ -140,11 +148,16 @@ def main() -> None:
     if unknown := [m for m in args.managers if m not in MANAGERS]:
         parser.error(f"unknown manager: {', '.join(unknown)}")
 
+    failed: list[str] = []
     for name in args.managers or MANAGERS:
         print(f"== {name}", flush=True)
         list_fn, update_fn = MANAGERS[name]
-        (list_fn if args.action == "list" else update_fn)()
+        if not (list_fn if args.action == "list" else update_fn)():
+            failed.append(name)
         sys.stdout.flush()
+    if failed:
+        print(f"failed: {', '.join(failed)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
