@@ -1,24 +1,60 @@
 {{- if eq .chezmoi.os "linux" -}}
 #!/bin/bash
+set -euo pipefail
 
-NIX_CONF="/etc/nix/nix.conf"
+# Legacy installs only: Determinate Nix includes nix.custom.conf, which
+# run_onchange_before_nix-custom-conf.sh manages instead.
+NIX_CONF="${NIX_CONF:-/etc/nix/nix.conf}"
+if grep -q '!include nix.custom.conf' "$NIX_CONF" 2>/dev/null; then
+  exit 0
+fi
 
-echo "Configuring /etc/nix/nix.conf..."
+changed=0
 
+# Both helpers rewrite every "key =" line, so duplicates end up consistent.
+
+# ensure_value <key> <value>: set a scalar key to value (drops an inline comment)
+ensure_value() {
+  local key=$1 value=$2 stale
+  local line="^[[:space:]]*${key}[[:space:]]*="
+  if grep -Eq "$line" "$NIX_CONF" 2>/dev/null; then
+    stale=$(grep -E "$line" "$NIX_CONF" | grep -Ev "${line}[[:space:]]*${value}[[:space:]]*(#.*)?\$" || true)
+    [ -z "$stale" ] && return 0
+    sudo sed -i -E "s/$line.*/$key = $value/" "$NIX_CONF"
+  else
+    echo "$key = $value" | sudo tee -a "$NIX_CONF" >/dev/null
+  fi
+  changed=1
+}
+
+# ensure_in_list <key> <token>: add token to a space-separated list key, keeping
+# the other tokens and any inline comment
+ensure_in_list() {
+  local key=$1 token=$2 stale
+  local line="^[[:space:]]*${key}[[:space:]]*="
+  local has="^[^#]*[[:space:]=]$token([[:space:]#]|\$)"
+  if grep -Eq "$line" "$NIX_CONF" 2>/dev/null; then
+    stale=$(grep -E "$line" "$NIX_CONF" | grep -Ev "$has" || true)
+    [ -z "$stale" ] && return 0
+    sudo sed -i -E "/$line/{/$has/!s/^([^#]*[^#[:space:]])([[:space:]]*(#.*)?)\$/\1 $token\2/;}" "$NIX_CONF"
+  else
+    echo "$key = $token" | sudo tee -a "$NIX_CONF" >/dev/null
+  fi
+  changed=1
+}
+
+echo "Configuring $NIX_CONF (legacy install without nix.custom.conf)..."
 sudo mkdir -p "$(dirname "$NIX_CONF")"
-
-if grep -q "^auto-optimise-store" "$NIX_CONF" 2>/dev/null; then
-  sudo sed -i 's/^auto-optimise-store.*/auto-optimise-store = true/' "$NIX_CONF"
-else
-  echo "auto-optimise-store = true" | sudo tee -a "$NIX_CONF" > /dev/null
+# Keep appended settings off a last line that lacks its newline.
+if [ -s "$NIX_CONF" ] && [ -n "$(tail -c1 "$NIX_CONF")" ]; then
+  echo | sudo tee -a "$NIX_CONF" >/dev/null
 fi
+ensure_value auto-optimise-store true
+ensure_in_list experimental-features nix-command
+ensure_in_list experimental-features flakes
 
-if grep -q "^experimental-features" "$NIX_CONF" 2>/dev/null; then
-  sudo sed -i 's/^experimental-features.*/experimental-features = nix-command flakes/' "$NIX_CONF"
-else
-  echo "experimental-features = nix-command flakes" | sudo tee -a "$NIX_CONF" > /dev/null
+if [ "$changed" = 1 ] && command -v systemctl >/dev/null 2>&1 &&
+  systemctl cat nix-daemon.service >/dev/null 2>&1; then
+  sudo systemctl restart nix-daemon || echo "warning: failed to restart nix-daemon" >&2
 fi
-
-echo "Done"
-
 {{- end -}}

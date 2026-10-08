@@ -20,6 +20,9 @@ end='# END chezmoi managed'
 block=$(cat <<'EOF'
 # BEGIN chezmoi managed
 trusted-users = root {{ .chezmoi.username }}
+{{- if eq .chezmoi.os "linux" }}
+auto-optimise-store = true
+{{- end }}
 extra-substituters = {{ range $i, $s := .nix_substituters }}{{ if $i }} {{ end }}{{ $s.url }}{{ end }}
 extra-trusted-public-keys = {{ range $i, $s := .nix_substituters }}{{ if $i }} {{ end }}{{ $s.key }}{{ end }}
 # END chezmoi managed
