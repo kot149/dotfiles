@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Ask before writing GitHub comments or pull requests through gh api.
+# Known limitations: a call inside a string passed to another shell (bash -c '...')
+# and a call after a background & in the same line are not seen.
 
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
@@ -26,11 +28,20 @@ def option_value(args, index, names):
     return None, 0
 
 
+def api_path(endpoint):
+    """Endpoint path without query, host, or the GHES api/v3/ (api/ for graphql) prefix."""
+    path = endpoint.split("?", 1)[0]
+    path = re.sub(r"^https?://[^/]+/", "", path).strip("/")
+    return re.sub(r"^api/(?:v3/)?", "", path)
+
+
 def is_target_endpoint(endpoint):
-    path = endpoint.split("?", 1)[0].strip("/").split("/")
+    path = api_path(endpoint).split("/")
     if len(path) < 4 or path[0] != "repos":
         return False
     if path[3] == "pulls":
+        return True
+    if path[3] == "issues" and len(path) >= 5 and path[4] == "comments":
         return True
     return path[3] == "issues" and len(path) >= 6 and path[5] == "comments"
 
@@ -46,13 +57,33 @@ def is_graphql_write(values):
     )
 
 
+# Options that take a value which must not be mistaken for the endpoint.
+VALUE_FLAGS = ("-H", "--header", "--jq", "-q", "-t", "--template", "--hostname", "-p", "--preview", "--cache")
+
+# Short options whose value may be attached or follow, also at the end of a cluster like -iX.
+SHORT_VALUE_FLAGS = "XfFHqtp"
+
+SPLIT = r"(?:&&|\|\||[;|]|\n)"
+
+
+def segments(command):
+    """Yield each command segment, plus the contents of every $( ) and backtick substitution in it."""
+    for segment in re.split(SPLIT, command):
+        yield segment
+        for match in re.finditer(r"\$\(([^()]*)\)|`([^`]*)`", segment):
+            yield match.group(1) if match.group(1) is not None else match.group(2)
+
+
 targets = []
 
-for segment in re.split(r"(?:&&|\|\||[;|]|\n)", command := sys.argv[1]):
+for segment in segments(sys.argv[1]):
     try:
         words = shlex.split(segment)
     except ValueError:
         continue
+
+    # Strip ( { $( glued to the front of words and ) } to the back: (gh api) -> gh api.
+    words = [w for w in (w.lstrip("({").removeprefix("$(").rstrip(")}") for w in words) if w]
 
     for gh_index, word in enumerate(words):
         if os.path.basename(word) != "gh" or gh_index + 1 >= len(words) or words[gh_index + 1] != "api":
@@ -66,6 +97,23 @@ for segment in re.split(r"(?:&&|\|\||[;|]|\n)", command := sys.argv[1]):
         index = 0
         while index < len(args):
             arg = args[index]
+            if re.fullmatch(r"-[A-Za-z].+", arg):
+                letters = arg[1:]
+                pos = next((i for i, c in enumerate(letters) if c in SHORT_VALUE_FLAGS), None)
+                if pos is None:
+                    index += 1
+                    continue
+                flag, value, consumed = letters[pos], letters[pos + 1 :], 0
+                if not value and index + 1 < len(args):
+                    value, consumed = args[index + 1], 1
+                if flag == "X":
+                    method = value.upper()
+                elif flag in "fF":
+                    has_body = True
+                    values.append(value)
+                index += consumed + 1
+                continue
+
             value, consumed = option_value(args, index, ("-X", "--method"))
             if value is not None:
                 method = value.upper()
@@ -83,6 +131,11 @@ for segment in re.split(r"(?:&&|\|\||[;|]|\n)", command := sys.argv[1]):
                 index += consumed + 1
                 continue
 
+            value, consumed = option_value(args, index, VALUE_FLAGS)
+            if value is not None:
+                index += consumed + 1
+                continue
+
             if arg.startswith("-"):
                 index += 1
                 continue
@@ -94,7 +147,7 @@ for segment in re.split(r"(?:&&|\|\||[;|]|\n)", command := sys.argv[1]):
         if method in {"GET", "HEAD"} or endpoint is None:
             continue
 
-        if endpoint.rstrip("/").split("?", 1)[0].strip("/") == "graphql":
+        if api_path(endpoint) == "graphql":
             if is_graphql_write(values):
                 targets.append(f"gh api {method} {endpoint}")
         elif is_target_endpoint(endpoint):
