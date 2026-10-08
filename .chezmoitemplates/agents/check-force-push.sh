@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Ask for confirmation before pushing to a remote.
+# Known limitations: a push inside a string passed to another shell (bash -c '...')
+# and a push after a background & in the same line are not seen.
 
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
@@ -15,13 +17,28 @@ import shlex
 import sys
 
 command = sys.argv[1]
+SPLIT = r'(?:&&|\|\||[;|]|\n)'
 
-for segment in re.split(r'(?:&&|\|\||[;|]|\n)', command):
+
+def segments(command):
+    """Yield each command segment, plus the contents of every $( ) and backtick substitution in it."""
+    for segment in re.split(SPLIT, command):
+        yield segment
+        for match in re.finditer(r"\$\(([^()]*)\)|`([^`]*)`", segment):
+            yield match.group(1) if match.group(1) is not None else match.group(2)
+
+
+# Push aliases defined in dot_gitconfig.tmpl.
+ALIASES = {"publish": ["push", "--set-upstream"]}
+
+for segment in segments(command):
     try:
         words = shlex.split(segment)
     except ValueError:
         continue
 
+    # Strip ( { $( glued to the front of words and ) } to the back: (git push) -> git push.
+    words = [w for w in (w.lstrip("({").removeprefix("$(").rstrip(")}") for w in words) if w]
     if not words:
         continue
 
@@ -50,6 +67,8 @@ for segment in re.split(r'(?:&&|\|\||[;|]|\n)', command):
     else:
         continue
 
+    if args[cursor] in ALIASES:
+        args = args[:cursor] + ALIASES[args[cursor]] + args[cursor + 1 :]
     if args[cursor] != "push":
         continue
 
@@ -58,6 +77,8 @@ for segment in re.split(r'(?:&&|\|\||[;|]|\n)', command):
         arg == "-f"
         or (arg.startswith("-") and not arg.startswith("--") and "f" in arg[1:])
         or arg.startswith("--force")
+        # A +refspec is a force push.
+        or (len(arg) > 1 and arg.startswith("+"))
         for arg in push_args
     )
     kind = "force" if force else "normal"
