@@ -1,8 +1,6 @@
 # General
 README.md
-CLAUDE.md
 AGENTS.md
-Library/Preferences/com.knollsoft.Rectangle.plist
 ./.vscode/
 ./scripts/
 ./tests/
@@ -11,53 +9,28 @@ justfile
 # Windows
 {{- if ne .chezmoi.os "windows" }}
 winget.json
-lazygit-diff.ps1
 .local/bin/hunk-pick.ps1
 .local/bin/tcr-pick.ps1
 
 AppData/**
-AppData/Roaming/Code/User/settings.json
-AppData/Roaming/Code/User/keybindings.json
-AppData/Roaming/Cursor/User/settings.json
-AppData/Roaming/Cursor/User/keybindings.json
-AppData/Roaming/tuicr/config.toml
-AppData/Roaming/fresh/config.json
 
 ## Powershell
 Documents/**
-Documents/PowerShell/**
-Documents/PowerShell/Microsoft.PowerShell_profile.ps1
-Documents/PowerShell/profile.ps1
-Documents/WindowsPowerShell/**
-Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1
-
-AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json
 {{- end }}
 
 # macOS
 {{- if ne .chezmoi.os "darwin" }}
 Library/**
-Library/Application Support/**
-Library/Application Support/Cursor/User/settings.json
-Library/Application Support/Cursor/User/keybindings.json
-Library/Application Support/Code/User/settings.json
-Library/Application Support/Code/User/keybindings.json
 .config/AutoRaise
 .config/AutoRaise/config
-.config/karabiner
-.config/karabiner/karabiner.json
 .config/karabiner.edn
-.Brewfile
 .config/nix-darwin
-.config/nix-darwin/flake.nix.tmpl
-.config/nix-darwin/darwin-configuration.nix.tmpl
 .claude/skills/keychain-credentials/**
 .agents/skills/keychain-credentials/**
 {{- end }}
 
 # Linux
 {{- if ne .chezmoi.os "linux" }}
-setup_linux.sh
 .config/lazygit/**
 .config/Code/User/settings.json
 .config/Code/User/keybindings.json
@@ -75,8 +48,6 @@ setup_linux.sh
 # Linux and macOS
 {{- if and (ne .chezmoi.os "linux") (ne .chezmoi.os "darwin") }}
 .zshrc
-.zprofile
-.zshenv
 .zsh/**
 .config/sheldon
 .config/sheldon/plugins.toml
@@ -90,6 +61,16 @@ setup_linux.sh
 .local/bin/tcr-pick
 .local/bin/pick-loop
 .local/bin/git-base-branch
-.config/herdr/plugins/**
+.config/herdr
 .local/share/herdr-plugins/**
+.config/zsh-abbr
+.config/home-manager
+.config/zellij
+.config/zellij/**
+.local/bin/zjdev
+.local/bin/zellij-dev-lazygit
+.local/bin/zellij-dev-new-workspace-tab
+.local/bin/zellij-dev-toggle-lazygit
+.local/bin/zellij-dev-yazi
+.local/bin/zellij-dev-yazi-open
 {{- end}}
