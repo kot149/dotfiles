@@ -44,11 +44,13 @@ Nix files need an extra switch step: a targeted `chezmoi apply -v <target>` does
 
 ```sh
 # Home Manager (after applying ~/.config/home-manager/<file>)
-nix run home-manager/master -- switch --flake "$HOME/.config/home-manager#default"
+just hm-switch
 
 # nix-darwin (after applying ~/.config/nix-darwin/<file>; needs sudo, may prompt the user)
-cd ~/.config/nix-darwin && sudo -H nix run github:LnL7/nix-darwin#darwin-rebuild -- switch --flake .#"$(hostname -s)"
+nh darwin switch ~/.config/nix-darwin -H "$(hostname -s)"
 ```
+
+The run_onchange scripts fall back to `nix run home-manager/master` / `nix run github:nix-darwin/nix-darwin#darwin-rebuild` when `nh` is not installed yet (first switch on a fresh machine).
 
 herdr config needs a reload: after applying `~/.config/herdr/config.toml`, run the reload yourself in the same turn so the running session picks it up (no restart needed):
 
@@ -73,7 +75,7 @@ chezmoi execute-template < file.tmpl   # render a template ad-hoc
 Home Manager (invoked automatically by `.chezmoiscripts/run_onchange_after_00_home-manager.sh.tmpl` on non-Windows):
 
 ```sh
-nix run home-manager/master -- switch --flake "$HOME/.config/home-manager#default"
+just hm-switch
 ```
 
 The Home Manager flake lives at `private_dot_config/home-manager/` (rendered to `~/.config/home-manager/`). Edit `common.nix.tmpl` to change cross-platform packages; `linux-*.nix`, `darwin.nix`, `wsl.nix` for OS-specific bits. `local.nix` (gitignored, not in repo) is auto-included if present and can set `localDeny.packages = [ ... ]` to remove packages from the common set.
@@ -81,7 +83,7 @@ The Home Manager flake lives at `private_dot_config/home-manager/` (rendered to 
 nix-darwin (macOS system-level settings; invoked automatically by `.chezmoiscripts/run_onchange_after_nix-darwin.sh.tmpl`):
 
 ```sh
-cd ~/.config/nix-darwin && sudo -H nix run github:LnL7/nix-darwin#darwin-rebuild -- switch --flake .#"$(hostname -s)"
+nh darwin switch ~/.config/nix-darwin -H "$(hostname -s)"
 ```
 
 The nix-darwin flake lives at `private_dot_config/nix-darwin/` (rendered to `~/.config/nix-darwin/`). Edit `darwin-configuration.nix.tmpl` for macOS system settings (`system.defaults.*`, `system.startup.*`, etc.). Note the split: **Home Manager** owns packages and user-level dotfile programs, **nix-darwin** owns macOS system settings — do not assume the repo is "Home Manager only".

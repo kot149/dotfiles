@@ -18,8 +18,13 @@ NIX_DARWIN_DIR="$HOME/.config/nix-darwin"
 cd "$NIX_DARWIN_DIR"
 
 echo "Applying nix-darwin configuration..."
-nix flake update
-sudo -H nix --extra-experimental-features 'nix-command flakes' run github:LnL7/nix-darwin#darwin-rebuild -- switch --flake .#"{{ .chezmoi.hostname }}"
+if command -v nh >/dev/null 2>&1; then
+  nh darwin switch "$NIX_DARWIN_DIR" -H "{{ .chezmoi.hostname }}"
+else
+  # Lock as the user so flake.lock is not created or rewritten by root
+  nix --extra-experimental-features 'nix-command flakes' flake lock
+  sudo -H nix --extra-experimental-features 'nix-command flakes' run github:nix-darwin/nix-darwin#darwin-rebuild -- switch --flake .#"{{ .chezmoi.hostname }}"
+fi
 
 echo "nix-darwin configuration applied successfully"
 {{- end -}}

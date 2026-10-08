@@ -27,5 +27,9 @@ export NIX_CONFIG="extra-substituters = {{ range $i, $s := .nix_substituters }}{
 extra-trusted-public-keys = {{ range $i, $s := .nix_substituters }}{{ if $i }} {{ end }}{{ $s.key }}{{ end }}"
 
 # Use the generic 'default' configuration
-nix --extra-experimental-features "flakes nix-command" run home-manager/master -- switch --flake "$HOME/.config/home-manager#default"
+if command -v nh >/dev/null 2>&1; then
+  nh home switch "$HOME/.config/home-manager" -c default
+else
+  nix --extra-experimental-features "flakes nix-command" run home-manager/master -- switch --flake "$HOME/.config/home-manager#default"
+fi
 {{- end -}}

@@ -81,8 +81,7 @@ hm-update:
 [group('nix')]
 [macos]
 darwin-update:
-    cd ~/.config/nix-darwin && nix flake update
-    cd ~/.config/nix-darwin && sudo -H nix --extra-experimental-features 'nix-command flakes' run github:LnL7/nix-darwin#darwin-rebuild -- switch --flake ".#$(hostname -s)"
+    nh darwin switch ~/.config/nix-darwin -H "$(hostname -s)" -u
 
 # Delete Nix generations older than 30 days, keeping the latest one
 [group('nix')]
