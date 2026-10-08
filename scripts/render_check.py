@@ -9,9 +9,15 @@ Each target is rendered with `chezmoi cat` (modify_ templates merge the live
 file in $HOME) and parsed as JSON / TOML / Nix. Exits 1 if any target fails
 to render or parse. Read-only: it never writes to the repository or to $HOME.
 
+With --destination, the targets are read from a directory chezmoi already
+applied into (see `just ci-render`) instead, for the OS given with --os; a
+missing target fails unless .chezmoiignore drops it on that OS, and the
+non-target templates are not checked.
+
 Usage:
   uv run --script scripts/render_check.py
   uv run --script scripts/render_check.py --source <dir>
+  uv run --script scripts/render_check.py --destination <dir> [--os <os>]
 """
 import argparse
 import json
@@ -42,19 +48,27 @@ NON_TARGETS = [
 ]
 
 
+HOST_OS = {"win32": "windows"}.get(sys.platform, sys.platform)
+
+
 def run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
     return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
                           errors="replace", **kwargs)
 
 
-def skip_reason(target: str, kind: str) -> str | None:
-    if target.startswith(".config/nix-darwin/") and sys.platform != "darwin":
+def gated_reason(target: str, os_name: str) -> str | None:
+    """Why .chezmoiignore drops this target on os_name (a .chezmoi.os value)."""
+    if target.startswith(".config/nix-darwin/") and os_name != "darwin":
         return "nix-darwin is macOS only"
-    if target == ".zshrc" and sys.platform == "win32":
+    if target.startswith(".config/home-manager/") and os_name == "windows":
+        return "Home Manager is not used on Windows"
+    if target == ".zshrc" and os_name == "windows":
         return "ignored on Windows"
-    if kind == "nix" and shutil.which("nix-instantiate") is None:
-        return "nix-instantiate not found"
     return None
+
+
+def nix_missing(kind: str) -> bool:
+    return kind == "nix" and shutil.which("nix-instantiate") is None
 
 
 def parse_error(text: str, kind: str) -> str | None:
@@ -77,10 +91,32 @@ def report(name: str, error: str | None) -> bool:
     return error is None
 
 
+def check_destination(dest: Path, os_name: str) -> int:
+    ok = True
+    for target, kind in TARGETS:
+        path = dest / target
+        reason = gated_reason(target, os_name)
+        if reason:
+            print(f"SKIP {target}: {reason}")
+        elif not path.is_file():
+            ok &= report(target, "not rendered")
+        elif nix_missing(kind):
+            print(f"SKIP {target}: nix-instantiate not found")
+        else:
+            ok &= report(target, parse_error(path.read_text(encoding="utf-8"), kind))
+    return 0 if ok else 1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     ap.add_argument("--source", help="chezmoi source directory (default: chezmoi source-path)")
+    ap.add_argument("--destination", help="check the files chezmoi applied into this directory")
+    ap.add_argument("--os", default=HOST_OS,
+                    help="the .chezmoi.os the targets were rendered for (default: this host's)")
     args = ap.parse_args()
+
+    if args.destination:
+        return check_destination(Path(args.destination), args.os)
 
     if args.source:
         source_dir = Path(args.source).resolve()
@@ -96,7 +132,7 @@ def main() -> int:
 
     ok = True
     for target, kind in TARGETS:
-        reason = skip_reason(target, kind)
+        reason = gated_reason(target, HOST_OS) or ("nix-instantiate not found" if nix_missing(kind) else None)
         if reason:
             print(f"SKIP {target}: {reason}")
             continue

@@ -142,6 +142,24 @@ lint:
 doctor *args:
     {{ uv_script }} scripts/doctor.py {{ args }}
 
+# Apply the source tree into a scratch directory without scripts and externals, then parse the agent configs (extra args go to chezmoi, e.g. --override-data)
+[group('dev')]
+[positional-arguments]
+ci-render *args:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+    # Git Bash hands out /tmp/... paths that the Windows chezmoi binary cannot open.
+    if command -v cygpath >/dev/null; then tmp=$(cygpath -m "$tmp"); fi
+    mkdir "$tmp/home"
+    printf "sourceDir = '%s'\n" '{{ justfile_directory() }}' > "$tmp/chezmoi.toml"
+    # User args come first so they cannot override the isolation flags.
+    cz=(chezmoi "$@" --config "$tmp/chezmoi.toml" --persistent-state "$tmp/state.boltdb" --cache "$tmp/cache" --destination "$tmp/home")
+    os=$("${cz[@]}" execute-template '{{{{ .chezmoi.os }}') || exit 1
+    "${cz[@]}" apply --exclude scripts,externals || exit 1
+    {{ uv_script }} scripts/render_check.py --destination "$tmp/home" --os "$os"
+
 # Run skills-lint, render-check, lint and the tests under tests/
 [group('dev')]
 test:

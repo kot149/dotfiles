@@ -22,6 +22,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 HOOKS = ROOT / ".chezmoitemplates" / "agents"
 
+# Resolved through PATH: on Windows a bare "bash" can start System32's WSL launcher.
+BASH = shutil.which("bash")
+if BASH is None:
+    sys.exit("bash not found on PATH")
+
 PUSH = "check-force-push.sh"
 GH_API = "check-github-api-write.sh"
 
@@ -127,7 +132,7 @@ def check(label: str, ok: bool, detail: str) -> None:
 def run(hook: str, command: str) -> tuple[int, None | tuple[str, str]]:
     """Return the hook's exit status and its decision (None when silent)."""
     result = subprocess.run(
-        ["bash", str(HOOKS / hook)],
+        [BASH, str(HOOKS / hook)],
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
         capture_output=True,
         text=True,
@@ -155,7 +160,7 @@ for hook, command, expected in CASES:
 def rewrite(hook_dir: Path, command: str) -> tuple[int, str, None | str]:
     """Return the rewrite hook's exit status, stderr and updatedInput command (None when silent)."""
     result = subprocess.run(
-        ["bash", str(hook_dir / "rewrite-git-c.sh")],
+        [BASH, str(hook_dir / "rewrite-git-c.sh")],
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
         capture_output=True,
         text=True,
