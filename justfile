@@ -60,6 +60,11 @@ skills-update *args:
 skills-lint:
     {{ uv_script }} scripts/check_agent_skills.py
 
+# Report skill directories in ~/.claude/skills and ~/.agents/skills that this repo does not manage
+[group('skills')]
+skills-drift:
+    {{ uv_script }} scripts/check_agent_skills.py --home
+
 # Rebuild the Home Manager generation without updating flake inputs
 [group('nix')]
 [unix]
@@ -123,7 +128,11 @@ gh-ext-upgrade:
 winget-upgrade:
     winget upgrade --all
 
-# Run the hook tests and the skill-tree check
+# Run the textlint rule test and the repo-only skill-tree check
 [group('dev')]
-test: skills-lint
-    bun run tests/textlint-rule-ja-ai-phrasing.js
+test:
+    #!/usr/bin/env bash
+    status=0
+    '{{ just_executable() }}' --justfile '{{ justfile() }}' skills-lint || status=1
+    bun run tests/textlint-rule-ja-ai-phrasing.js || status=1
+    exit $status

@@ -10,7 +10,9 @@ writes to the repository or to $HOME.
 
 Usage:
   uv run --script scripts/check_agent_skills.py
+  uv run --script scripts/check_agent_skills.py --home
 """
+import argparse
 import re
 import sys
 import tomllib
@@ -24,6 +26,7 @@ STORES = {"agents": ROOT / "dot_agents" / "skills",
 HOME_STORES = {"agents": Path.home() / ".agents" / "skills",
                "claude": Path.home() / ".claude" / "skills"}
 DATA_FILE = ROOT / ".chezmoidata" / "agent-skills.toml"
+LOCAL_UNMANAGED_FILE = Path.home() / ".config" / "chezmoi" / "agent-skills-unmanaged.txt"
 WRAPPER_RE = re.compile(r'^\{\{ includeTemplate "(agents/skills/[^"]+)" \. -\}\}$')
 NAME_RE = re.compile(r"^name:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 # An unquoted YAML scalar ends at " #": the rest of the description is parsed
@@ -33,8 +36,8 @@ REV_RE = re.compile(r"^[0-9a-f]{40}$")
 VALID_AGENTS = {"claude", "agents"}
 # Directories in a store that this repo deliberately does not define.
 # "synced" is Claude Code's own first-party skill set, which it installs and
-# updates itself; the other two are machine-local skills kept out of the repo.
-UNMANAGED_OK = {"synced", "codex-review", "prompt-review"}
+# updates itself. Machine-local skills go in LOCAL_UNMANAGED_FILE instead.
+UNMANAGED_OK = {"synced"}
 
 
 def wrappers(store: Path) -> list[Path]:
@@ -178,14 +181,23 @@ def check_agent_skills(entries: list[dict]) -> list[str]:
     return problems
 
 
+def local_unmanaged() -> set[str]:
+    """Names from LOCAL_UNMANAGED_FILE: one per line, `#` comments allowed."""
+    if not LOCAL_UNMANAGED_FILE.is_file():
+        return set()
+    lines = LOCAL_UNMANAGED_FILE.read_text(encoding="utf-8").splitlines()
+    return {s for s in (line.strip() for line in lines) if s and not s.startswith("#")}
+
+
 def check_unmanaged(entries: list[dict]) -> list[str]:
     """Invariant 10: no skill directory in $HOME that this repo does not define."""
     problems = []
+    allowed = UNMANAGED_OK | local_unmanaged()
     for agent, home_store in HOME_STORES.items():
         if not home_store.is_dir():
             print(f"SKIP: {home_store} does not exist", file=sys.stderr)
             continue
-        expected = {d.name for d in skill_dirs(STORES[agent])} | UNMANAGED_OK
+        expected = {d.name for d in skill_dirs(STORES[agent])} | allowed
         for entry in entries:
             if agent in entry.get("agents", []):
                 expected.update(entry.get("names", []))
@@ -198,6 +210,14 @@ def check_unmanaged(entries: list[dict]) -> list[str]:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Check the agent-skill tree.")
+    parser.add_argument(
+        "--home",
+        action="store_true",
+        help="also scan ~/.claude/skills and ~/.agents/skills for directories"
+        " this repo does not manage",
+    )
+    args = parser.parse_args()
     entries = tomllib.loads(DATA_FILE.read_text(encoding="utf-8"))["agent_skills"]
     wrapper_problems, targets = check_wrappers()
     sections = [
@@ -207,8 +227,9 @@ def main() -> int:
         ("frontmatter", check_frontmatter(targets)),
         ("agents/openai.yaml", check_openai_yaml()),
         ("agent_skills entries", check_agent_skills(entries)),
-        ("unmanaged directories", check_unmanaged(entries)),
     ]
+    if args.home:
+        sections.append(("unmanaged directories", check_unmanaged(entries)))
     failed = False
     for title, problems in sections:
         if not problems:
