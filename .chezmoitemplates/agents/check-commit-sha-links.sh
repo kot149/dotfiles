@@ -54,7 +54,8 @@ def path_candidates(cmd):
     one piece; splitting the raw string on shell metacharacters additionally
     reaches a path buried in a command substitution (`-f body="$(cat reply.md)"`),
     which shlex hands back as one opaque word. Heredocs break shlex, so failures
-    are ignored.
+    are ignored. A gh field read from a file (`-F body=@reply.md`) leaves a
+    leading `@` on the path, so that is stripped too.
     """
     try:
         words = shlex.split(cmd, comments=False)
@@ -64,7 +65,7 @@ def path_candidates(cmd):
         word.split("=", 1)[1] if word.startswith("-") and "=" in word else word
         for word in words
     ]
-    return candidates + SHELL_SPLIT.split(cmd)
+    return [word.removeprefix("@") for word in candidates + SHELL_SPLIT.split(cmd)]
 
 def read_body_files(cmd):
     texts, seen = [], set()
