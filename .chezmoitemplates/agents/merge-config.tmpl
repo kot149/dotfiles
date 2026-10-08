@@ -40,9 +40,6 @@
 {{-             $legacy = append $legacy $hook.command -}}
 {{-             $_ := set $hook "command" (printf "%s%s" $hook.command $marker) -}}
 {{-           end -}}
-{{-           if hasKey $hook "commandWindows" -}}
-{{-             $_ := set $hook "commandWindows" (printf "%s%s" $hook.commandWindows $marker) -}}
-{{-           end -}}
 {{-         end -}}
 {{-       end -}}
 {{-     end -}}
