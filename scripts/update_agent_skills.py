@@ -8,8 +8,9 @@ Bump the pinned revs in .chezmoidata/agent-skills.toml.
 An entry counts as outdated only when one of its skill directories differs
 between the pinned rev and the upstream default branch HEAD (compared by blob
 SHA), so commits that touch other parts of the repo are ignored.
-Entries that share a `repo` are bumped together, so one repository is never
-pinned at two revs.
+Entries that share a `repo` are bumped together, so one repository stays at one
+rev. An entry whose skills are gone at HEAD keeps its rev; `just skills-lint`
+then reports the repo as pinned at several revs until the entry is removed.
 Accepted bumps are committed as one commit touching only the data file.
 Requires the `gh` CLI.
 
@@ -105,15 +106,17 @@ def check_entry(index: int, entry: dict, head: str) -> tuple[str, dict | None]:
             continue
         changes += diff_files(under(old_files, d), new)
     if missing:
-        return f"  MISSING     {label}: not found at HEAD: {', '.join(missing)} (left unchanged)", None
+        line = f"  MISSING     {label}: not found at HEAD: {', '.join(missing)} (left unchanged)"
+        return line, {"index": index, "label": label, "repo": repo, "missing": True}
     if not changes:
         return f"  up to date  {label} (other paths changed upstream)", None
     return f"  outdated    {label}", {"index": index, "label": label, "repo": repo, "old": rev, "new": head, "changes": changes}
 
 
-def group_by_repo(updates: list[dict], entries: list[dict]) -> list[dict]:
+def group_by_repo(updates: list[dict], entries: list[dict], missing: list[dict] | None = None) -> list[dict]:
     """Merge the updates of one repo into a single update covering every entry
-    of that repo, so a repository is never left pinned at two revs."""
+    of that repo that still exists at HEAD. Entries in missing keep their rev,
+    so accepting such an update leaves the repo pinned at several revs."""
     grouped: dict[str, dict] = {}
     for update in updates:
         group = grouped.get(update["repo"])
@@ -122,9 +125,17 @@ def group_by_repo(updates: list[dict], entries: list[dict]) -> list[dict]:
             continue
         group["labels"].append(update["label"])
         group["changes"] += update["changes"]
+    missing_labels = {m["index"]: m["label"] for m in missing or ()}
     for repo, group in grouped.items():
-        group["targets"] = [(i, e["rev"]) for i, e in enumerate(entries) if e["repo"] == repo]
-        names = ", ".join(sorted({n for e in entries if e["repo"] == repo for n in e["names"]}))
+        indexes = [i for i, e in enumerate(entries) if e["repo"] == repo]
+        group["targets"] = [(i, entries[i]["rev"]) for i in indexes if i not in missing_labels]
+        skipped = [missing_labels[i] for i in indexes if i in missing_labels]
+        if skipped:
+            group["warning"] = (
+                f"{', '.join(skipped)} missing at HEAD and kept at the current rev;"
+                " accepting leaves the repo pinned at several revs (just skills-lint reports it)"
+            )
+        names = ", ".join(sorted({n for i, _ in group["targets"] for n in entries[i]["names"]}))
         group["label"] = f"{repo} ({names})"
     return list(grouped.values())
 
@@ -135,12 +146,14 @@ def find_updates(entries: list[dict]) -> list[dict]:
         heads = dict(zip(repos, pool.map(lambda r: json.loads(gh(f"repos/{r}/commits/HEAD"))["sha"], repos)))
         results = list(pool.map(lambda ie: check_entry(ie[0], ie[1], heads[ie[1]["repo"]]), enumerate(entries)))
 
-    updates = []
+    updates, missing = [], []
     for line, update in results:
         print(line)
-        if update:
+        if update and update.get("missing"):
+            missing.append(update)
+        elif update:
             updates.append(update)
-    return group_by_repo(updates, entries)
+    return group_by_repo(updates, entries, missing)
 
 
 def print_patch(update: dict, status: str, path: str) -> None:
@@ -159,7 +172,10 @@ def show_update(update: dict, with_patch: bool) -> None:
     print(f"\n== {update['label']}: {len(changes)} file(s) changed")
     print(f"   https://github.com/{update['repo']}/compare/{update['old']}...{update['new']}")
     if len(update["targets"]) > 1:
-        print(f"   bumps all {len(update['targets'])} entries of this repo together")
+        scope = "" if update.get("warning") else "all "
+        print(f"   bumps {scope}{len(update['targets'])} entries of this repo together")
+    if update.get("warning"):
+        print(f"   WARNING: {update['warning']}")
     listed = changes if with_patch else changes[:MAX_LISTED_FILES]
     for status, path in listed:
         print(f"   {status:<9} {path}")
