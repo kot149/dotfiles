@@ -1,12 +1,3 @@
 {{- /* chezmoi:modify-template */ -}}
-{{- /* Overwrites "permissions" with .chezmoitemplates/antigravity/settings.json.tmpl and keeps everything else. */ -}}
-{{- $managed := includeTemplate "antigravity/settings.json.tmpl" . | fromJson -}}
-
-{{- $settings := dict -}}
-{{- if trim .chezmoi.stdin -}}
-{{-   $settings = .chezmoi.stdin | fromJson -}}
-{{- end -}}
-
-{{- $_ := set $settings "permissions" $managed.permissions -}}
-
-{{- toPrettyJson $settings }}
+{{- /* Deep-merges .chezmoitemplates/antigravity/settings.json.tmpl through agents/merge-config.tmpl: replaces permissions.allow and permissions.deny and keeps everything else. */ -}}
+{{- includeTemplate "agents/merge-config.tmpl" (dict "current" .chezmoi.stdin "managed" (includeTemplate "antigravity/settings.json.tmpl" .) "format" "json") -}}
