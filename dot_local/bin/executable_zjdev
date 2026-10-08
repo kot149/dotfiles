@@ -44,7 +44,12 @@ if [[ -z "$session_name" ]]; then
   session_name="d-${session_workspace}-${workspace_hash:0:6}"
 fi
 
-sessions="$(zellij list-sessions 2>/dev/null | sed -E 's/\x1b\[[0-9;]*[[:alpha:]]//g')"
+# Prints the list-sessions line whose first field is exactly $2.
+find_session_line() {
+  print -r -- "$1" | awk -v n="$2" '$1 == n { print; exit }'
+}
+
+sessions="$(zellij list-sessions --no-formatting 2>/dev/null)"
 base_session_name="$session_name"
 
 if [[ "$force_new" == "true" ]]; then
@@ -60,7 +65,7 @@ if [[ "$force_new" == "true" ]]; then
       candidate_session_name="${candidate_prefix}${suffix_text}"
     fi
 
-    session_line="$(print -r -- "$sessions" | grep -F "${candidate_session_name} [" | head -n 1)"
+    session_line="$(find_session_line "$sessions" "$candidate_session_name")"
     if [[ -z "$session_line" ]]; then
       session_name="$candidate_session_name"
       break
@@ -69,12 +74,18 @@ if [[ "$force_new" == "true" ]]; then
     (( suffix++ ))
   done
 else
-  session_line="$(print -r -- "$sessions" | grep -F "${session_name} [" | head -n 1)"
+  session_line="$(find_session_line "$sessions" "$session_name")"
 fi
 
 if [[ -n "$session_line" ]]; then
   if zellij attach --forget "$session_name"; then
     exit 0
+  fi
+
+  session_line="$(find_session_line "$(zellij list-sessions --no-formatting 2>/dev/null)" "$session_name")"
+  if [[ "$session_line" != *EXITED* ]]; then
+    print -u2 -r -- "zjdev: could not attach to running session ${session_name}"
+    exit 1
   fi
 
   zellij delete-session --force "$session_name" >/dev/null 2>&1 || true
