@@ -67,7 +67,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "DietrichGebert/ponytail"
-rev = "552acd5efd0aeae2583a12efe39373d2f076f25e"
+rev = "b088b2df6e08d4306c6a3c3d575fe38c2d2d2989"
 prefix = "skills"
 names = [
   "ponytail",
@@ -81,7 +81,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "mattpocock/skills"
-rev = "d81f3a183412e71a5b1e84ca21bc1a35eea03a60"
+rev = "b0618bc436ad893b3c5e84e55fba86586d34a404"
 prefix = "skills/productivity"
 names = ["grilling"]
 agents = ["claude", "agents"]
@@ -90,7 +90,7 @@ agents = ["claude", "agents"]
 # domain-modeling も併せて入れる。
 [[agent_skills]]
 repo = "mattpocock/skills"
-rev = "d81f3a183412e71a5b1e84ca21bc1a35eea03a60"
+rev = "b0618bc436ad893b3c5e84e55fba86586d34a404"
 prefix = "skills/engineering"
 names = ["grill-with-docs", "domain-modeling"]
 agents = ["claude", "agents"]
@@ -115,14 +115,14 @@ agents = ["claude", "agents"]
 # its bundled manual checklist.
 [[agent_skills]]
 repo = "nwiizo/suiko"
-rev = "a8fafacf04dd404405a2fab218ed7dc9e8bf3fa2"
+rev = "a088f585c01db4edbab060a3f43c1e626382297d"
 prefix = "skills"
 names = ["suiko"]
 agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "nanaism/yomiyasu"
-rev = "986da6ffc89316a90e509d007c1efe1fc59057e6"
+rev = "c2ffae670994fec96daef92e0bc219f5c1923113"
 prefix = "skills"
 names = ["yomiyasu"]
 agents = ["claude", "agents"]
