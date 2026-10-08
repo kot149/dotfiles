@@ -5,11 +5,11 @@
 """
 Run shellcheck, ruff, nixfmt and oxlint over the repo.
 
-Templates (.chezmoiscripts/*.sh.tmpl, *.nix.tmpl) are rendered with
-`chezmoi execute-template` once per OS in RENDER_OS into a temporary
-directory first; a render identical to an earlier OS's is checked once.
-Rendered paths show as `[<os>]/<source path minus .tmpl>`. A tool that is
-missing or whose `--version` fails is skipped. Exits 1 if a template fails to
+Templates (.chezmoiscripts/*.sh.tmpl, *.nix.tmpl, the opencode plugin
+*.ts.tmpl) are rendered with `chezmoi execute-template` once per OS in
+RENDER_OS into a temporary directory first; a render identical to an earlier
+OS's is checked once. Rendered paths show as `[<os>]/<source path minus
+.tmpl>`. A tool that is missing or whose `--version` fails is skipped. Exits 1 if a template fails to
 render, nixfmt cannot parse a file, or shellcheck, `ruff check` or oxlint
 reports anything; formatting differences from `ruff format --check` and
 `nixfmt --check` only report.
@@ -66,6 +66,7 @@ JS_FILES = [
     "tests/*.js",
     "private_dot_config/opencode/plugins/*.ts",
 ]
+JS_TEMPLATES = ["private_dot_config/opencode/plugins/*.ts.tmpl"]
 
 # chezmoi data overrides per rendered OS. kernel.osrelease is set because the
 # templates read it on Linux (WSL detection) and macOS has no such key.
@@ -205,7 +206,8 @@ def lint_nix(rd: Renderer) -> bool:
 def lint_js(rd: Renderer) -> bool:
     if not available("oxlint"):
         return True
-    r = run(["oxlint", "-f", "unix", "--deny-warnings", *(rel(p) for p in glob(JS_FILES))])
+    files = [*map(rel, glob(JS_FILES)), *map(str, rd.render(JS_TEMPLATES))]
+    r = run(["oxlint", "-f", "unix", "--deny-warnings", *files])
     return report(rd, "oxlint", [r], count(r.stdout, r"^\S+:\d+:\d+: "))
 
 

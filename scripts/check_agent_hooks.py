@@ -20,8 +20,10 @@ DATA_FILE = ROOT / ".chezmoidata" / "agent-hooks.toml"
 BODIES = ROOT / ".chezmoitemplates" / "agents"
 HOOK_DIRS = {"claude": ROOT / "dot_claude" / "hooks", "codex": ROOT / "dot_codex" / "hooks"}
 RUNNERS = {"bash", "uv-script", "bun", "command"}
-ENTRY_KEYS = {"name", "file", "runner", "args", "command", *HOOK_DIRS}
+ENTRY_KEYS = {"name", "file", "runner", "args", "command", "opencode", *HOOK_DIRS}
 TABLE_KEYS = {"event", "matcher", "timeout", "statusMessage", "asyncRewake"}
+# Tools whose arguments guards.ts maps onto Claude Code's tool_input.
+OPENCODE_TOOLS = {"bash", "write", "edit", "apply_patch"}
 # Sourced by the hooks, not registered.
 NOT_REGISTERED = {"python-runner.sh"}
 
@@ -69,6 +71,30 @@ def check_entries(entries: list[dict]) -> list[str]:
                 problems.append(f"{name}: {agent} table has no event")
             for key in sorted(set(table) - TABLE_KEYS):
                 problems.append(f"{name}: unknown key {key!r} in the {agent} table")
+        if "opencode" in entry:
+            problems.extend(check_opencode(name, entry))
+    return problems
+
+
+def check_opencode(name: str, entry: dict) -> list[str]:
+    """guards.ts runs the installed Claude / Codex copy of a script as a PreToolUse guard."""
+    problems = []
+    table = entry["opencode"]
+    if not isinstance(table, dict):
+        return [f"{name}: opencode table must be a table"]
+    for key in sorted(set(table) - {"tools"}):
+        problems.append(f"{name}: unknown key {key!r} in the opencode table")
+    tools = table.get("tools")
+    if not tools or not isinstance(tools, list):
+        problems.append(f"{name}: opencode table needs a non-empty tools list")
+    else:
+        for tool in tools:
+            if tool not in OPENCODE_TOOLS:
+                problems.append(f"{name}: unknown opencode tool {tool!r} (known: {', '.join(sorted(OPENCODE_TOOLS))})")
+    if "file" not in entry or "args" in entry:
+        problems.append(f"{name}: an opencode guard needs a file and no args")
+    if not any(entry.get(agent, {}).get("event") == "PreToolUse" for agent in HOOK_DIRS):
+        problems.append(f"{name}: an opencode guard must be a PreToolUse hook for claude or codex")
     return problems
 
 
