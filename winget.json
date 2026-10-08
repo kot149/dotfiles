@@ -437,6 +437,12 @@
 				},
 				{
 					"PackageIdentifier" : "LuisPater.CLIProxyAPI"
+				},
+				{
+					"PackageIdentifier" : "astral-sh.uv"
+				},
+				{
+					"PackageIdentifier" : "rtk-ai.rtk"
 				}
 			],
 			"SourceDetails" : 
