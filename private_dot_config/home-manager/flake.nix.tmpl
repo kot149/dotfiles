@@ -19,7 +19,7 @@
     nixpkgs-terraform.url = "github:stackbuilders/nixpkgs-terraform";
     {{- if eq .chezmoi.os "linux" }}
     nixgl = {
-      url = "github:guibou/nixGL";
+      url = "github:nix-community/nixGL";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     {{- end }}
