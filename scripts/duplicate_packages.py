@@ -88,7 +88,7 @@ def pnpm_packages() -> tuple[dict[str, str], list[Path]]:
     if out is None:
         return {}, []
     node_modules = Path(out.strip())
-    bin_dir = capture("pnpm", "config", "get", "global-bin-dir")
+    bin_dir = capture("pnpm", "bin", "-g")
     dirs = [node_modules.parent] + ([Path(bin_dir.strip())] if bin_dir and bin_dir.strip() != "undefined" else [])
     return npm_bins(node_modules, top_level_packages(node_modules)), dirs
 

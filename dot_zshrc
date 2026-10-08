@@ -126,6 +126,15 @@ mkcd() {
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
+# pnpm (v11+ keeps global binaries in $PNPM_HOME/bin; see `pnpm bin -g`)
+if [[ -n "${XDG_DATA_HOME:-}" ]]; then
+  export PATH="$XDG_DATA_HOME/pnpm/bin:$PATH"
+elif [[ "$OSTYPE" == darwin* ]]; then
+  export PATH="$HOME/Library/pnpm/bin:$PATH"
+else
+  export PATH="$HOME/.local/share/pnpm/bin:$PATH"
+fi
+
 # go
 export PATH="${GOPATH:-$HOME/go}/bin:$PATH"
 
