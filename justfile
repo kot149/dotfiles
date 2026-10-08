@@ -142,4 +142,5 @@ test:
     '{{ just_executable() }}' --justfile '{{ justfile() }}' render-check || status=1
     bun run tests/textlint-rule-ja-ai-phrasing.js || status=1
     {{ uv_script }} tests/hooks.py || status=1
+    {{ uv_script }} tests/merge_config.py || status=1
     exit $status

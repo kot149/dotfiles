@@ -1,0 +1,1 @@
+{"x":1,"hooks":{"Stop":[{"hooks":[{"type":"command","command":"bash s.sh # chezmoi-managed"}]}]}}
