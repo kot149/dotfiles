@@ -5,7 +5,7 @@ typeset -U path PATH
 # 起動処理中の command -v だけで 1 秒近くを消費する。起動中は退避しておき、
 # mise を読み込む直前 (元々 /mnt が並んでいた位置) で復元する。
 typeset -a _win_path
-_win_path=(${path:#^/mnt/*})
+_win_path=(${(M)path:#/mnt/*})
 path=(${path:#/mnt/*})
 
 export PATH=$HOME/.local/bin:/usr/local/bin:$PATH
@@ -137,30 +137,38 @@ fi
 # Aliases
 unalias rm 2>/dev/null
 rm() {
-  local -a args
-  local arg filtered
-
+  local -a opts paths
+  local arg letters
+  local force=0 inspect=0 after_dashes=0
   for arg in "$@"; do
+    if (( after_dashes )); then
+      paths+=("$arg")
+      continue
+    fi
     case "$arg" in
-      --recursive)
-        continue
-        ;;
-      -[!-]*)
-        filtered="-${arg[2,-1]//[rR]/}"
-        if [[ "$filtered" != "-" ]]; then
-          args+=("$filtered")
+      -r|-R|--recursive) ;;                     # rip is always recursive
+      -f|--force) force=1 ;;                    # rip -f: non-interactive
+      -i|--interactive) inspect=1 ;;            # rip -i: inspect before burying
+      -v|--verbose|-d|--dir) ;;                 # no rip equivalent; drop
+      --) after_dashes=1 ;;                     # everything after -- is a path
+      -[!-]*)                                   # combined short flags, e.g. -rf, -rdf
+        letters="${arg[2,-1]}"
+        if [[ "$letters" == *[!rRfivd]* ]]; then
+          print -u2 "rm: unsupported flag in $arg (use 'command rm')"
+          return 2
         fi
+        [[ "$letters" == *f* ]] && force=1
+        [[ "$letters" == *i* ]] && inspect=1
         ;;
-      -r|-R)
-        continue
-        ;;
-      *)
-        args+=("$arg")
-        ;;
+      --*) print -u2 "rm: unsupported flag $arg (use 'command rm')"; return 2 ;;
+      *) paths+=("$arg") ;;
     esac
   done
-
-  command rip "${args[@]}"
+  # rip rejects repeated flags, so each is passed once before the paths.
+  (( force )) && opts+=(-f)
+  (( inspect )) && opts+=(-i)
+  (( after_dashes )) && opts+=(--)
+  command rip "${opts[@]}" "${paths[@]}"
 }
 
 alias git-reset-all="git reset --hard && git clean -fd"
@@ -194,7 +202,7 @@ git-clean-merged() {
     esac
   done < <(git worktree list --porcelain)
 
-  local -a targets skipped
+  local -a targets skipped skipped_dirty
   local branch head_sha pr_head
 
   while IFS= read -r branch; do
@@ -209,12 +217,23 @@ git-clean-merged() {
       continue
     fi
 
+    if [[ -n "${worktree_of_branch[$branch]:-}" ]] &&
+        [[ -n "$(git -C "${worktree_of_branch[$branch]}" status --porcelain --untracked-files=normal 2>/dev/null)" ]]; then
+      skipped_dirty+=("$branch")
+      continue
+    fi
+
     targets+=("$branch")
   done < <(git for-each-ref --format='%(refname:short)' refs/heads/)
 
   if (( ${#skipped[@]} > 0 )); then
     echo "Skipped (commits added after the merge):"
     printf '  %s\n' "${skipped[@]}"
+  fi
+
+  if (( ${#skipped_dirty[@]} > 0 )); then
+    echo "Skipped (worktree has uncommitted changes):"
+    printf '  %s\n' "${skipped_dirty[@]}"
   fi
 
   if (( ${#targets[@]} == 0 )); then
@@ -239,7 +258,10 @@ git-clean-merged() {
 
   for b in "${targets[@]}"; do
     if [[ -n "${worktree_of_branch[$b]:-}" ]]; then
-      git worktree remove "${worktree_of_branch[$b]}" --force
+      if ! git worktree remove "${worktree_of_branch[$b]}"; then
+        echo "Kept branch $b: its worktree could not be removed" >&2
+        continue
+      fi
     fi
     git branch -D "$b"
   done
@@ -412,7 +434,27 @@ alias ls='eza -1 -F=auto --group-directories-first'
 alias tree='eza --tree -F=auto'
 
 function mtouch {
-    mkdir -p "$(dirname "$1")" && touch "$1"
+  local f skip_value=0 after_dashes=0
+  for f in "$@"; do
+    if (( skip_value )); then
+      skip_value=0
+      continue
+    fi
+    if (( ! after_dashes )); then
+      case "$f" in
+        --) after_dashes=1; continue ;;
+        --date|--reference) skip_value=1; continue ;;
+        -[!-]*)
+          # A short-flag cluster ending in -d/-t/-r/-A takes the next word as its value.
+          [[ "${f[2,-1]}" != *[!acfhmdtrA]* && "$f" == *[dtrA] ]] && skip_value=1
+          continue
+          ;;
+        -*) continue ;;
+      esac
+    fi
+    mkdir -p -- "${f:h}"
+  done
+  command touch "$@"
 }
 
 alias touch='mtouch';
@@ -636,7 +678,11 @@ bindkey '^[[1;3C' forward-word
 bindkey '^[[1;3D' backward-word
 
 gh() {
-  local -x GH_REPO="${GH_REPO:-$(git remote get-url origin 2>/dev/null | sed -E 's|https?://github\.com/||; s|git@github\.com[^:]*:||; s|\.git$||')}"
+  local repo
+  if [[ -z "${GH_REPO:-}" ]] && [[ -z "$(git config --get-regexp '^remote\..*\.gh-resolved$' 2>/dev/null)" ]]; then
+    repo=$(git remote get-url origin 2>/dev/null | sed -E 's|^ssh://||; s|^https?://github\.com/||; s|^git@github\.com[^:/]*[:/]||; s|\.git$||')
+    [[ "$repo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] && local -x GH_REPO="$repo"
+  fi
   command gh "$@"
 }
 
