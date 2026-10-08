@@ -2,7 +2,7 @@
 {{- range .agent_shell_allow -}}
   {{- $shellAllow = append $shellAllow . -}}
 {{- end -}}
-{{- $scriptPrefixes := list "npm run" "pnpm run" "pnpm" "yarn run" "yarn" "bun run" "bun" -}}
+{{- $scriptPrefixes := list "npm run" "pnpm run" "pnpm" "yarn run" "yarn" "bun run" "bun" "deno task" -}}
 {{- range .agent_shell_allow_js_scripts -}}
   {{- $script := . -}}
   {{- range $scriptPrefixes -}}
@@ -28,6 +28,19 @@
       {{- $shellAllow = append $shellAllow (printf "%s/%s *" . $bin) -}}
     {{- end -}}
   {{- end -}}
+{{- end -}}
+{{- /* `<tool> --help` and `<tool> --version` for the first word of every allowed entry,
+       instead of leading-wildcard rules that would also match `npx <pkg> --version`. */ -}}
+{{- $helpBins := list -}}
+{{- range $shellAllow -}}
+  {{- $bin := first (splitList " " .) -}}
+  {{- if and (not (contains "*" $bin)) (not (has $bin $helpBins)) -}}
+    {{- $helpBins = append $helpBins $bin -}}
+  {{- end -}}
+{{- end -}}
+{{- range $helpBins -}}
+  {{- $shellAllow = append $shellAllow (printf "%s --help" .) -}}
+  {{- $shellAllow = append $shellAllow (printf "%s --version" .) -}}
 {{- end -}}
 {{- $allow := list -}}
 {{- range .agent_plain_allow -}}

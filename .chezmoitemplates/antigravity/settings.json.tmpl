@@ -2,7 +2,7 @@
 {{- range .agent_shell_allow -}}
   {{- $shellAllow = append $shellAllow . -}}
 {{- end -}}
-{{- $scriptPrefixes := list "npm run" "pnpm run" "pnpm" "yarn run" "yarn" "bun run" "bun" -}}
+{{- $scriptPrefixes := list "npm run" "pnpm run" "pnpm" "yarn run" "yarn" "bun run" "bun" "deno task" -}}
 {{- range .agent_shell_allow_js_scripts -}}
   {{- $script := . -}}
   {{- range $scriptPrefixes -}}
