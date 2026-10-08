@@ -7,6 +7,9 @@
 #   runner   bash | uv-script | bun | command (runs `command` verbatim)
 #   args     appended to the command after a space
 #   claude / codex   registers the hook for that agent: event, optional matcher, and handler keys (timeout, statusMessage, asyncRewake) copied as is
+#   opencode         runs the installed Claude / Codex copy as a PreToolUse guard from
+#                    ~/.config/opencode/plugins/guards.ts before the listed opencode
+#                    tools (bash, write, edit, apply_patch)
 #
 # A hook with both tables has its body in .chezmoitemplates/agents/<file> and a
 # one-line include wrapper in dot_claude/hooks/ and dot_codex/hooks/; a Claude
@@ -38,6 +41,7 @@ file = "check-package-manager.py"
 runner = "uv-script"
 claude = { event = "PreToolUse", matcher = "Bash" }
 codex = { event = "PreToolUse", matcher = "^(Bash|Shell)$", timeout = 15, statusMessage = "Checking package manager" }
+opencode = { tools = ["bash"] }
 
 [[agent_hooks]]
 name = "check-commit-sha-links"
@@ -45,6 +49,7 @@ file = "check-commit-sha-links.sh"
 runner = "bash"
 claude = { event = "PreToolUse", matcher = "Bash" }
 codex = { event = "PreToolUse", matcher = "^(Bash|Shell)$", timeout = 15, statusMessage = "Checking commit SHA links" }
+opencode = { tools = ["bash"] }
 
 [[agent_hooks]]
 name = "check-cargo-install"
@@ -52,6 +57,7 @@ file = "check-cargo-install.sh"
 runner = "bash"
 claude = { event = "PreToolUse", matcher = "Bash" }
 codex = { event = "PreToolUse", matcher = "^(Bash|Shell)$", timeout = 15, statusMessage = "Checking cargo install" }
+opencode = { tools = ["bash"] }
 
 # Claude Code runs rtk through rewrite-git-c.sh, which calls `rtk hook claude` itself.
 [[agent_hooks]]
@@ -66,6 +72,7 @@ file = "check-writing-style.js"
 runner = "bun"
 claude = { event = "PreToolUse", matcher = "Bash|Write|Edit|mcp__.*(?i:jira|confluence|atlassian).*" }
 codex = { event = "PreToolUse", matcher = "^(Bash|Shell|apply_patch)$", timeout = 30, statusMessage = "Checking writing style" }
+opencode = { tools = ["bash", "write", "edit", "apply_patch"] }
 
 [[agent_hooks]]
 name = "remind-stop-background"

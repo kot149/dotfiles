@@ -13,7 +13,8 @@ included). Approximates Claude Code's matcher; it does not model its prefix rule
 
 Also renders the Codex rules and matches commands against their prefix_rule
 patterns as argv prefixes, checking that Codex never blocks or allows more than
-the Claude rules do.
+the Claude rules do, and renders the opencode bash rules for the checks
+that differ there.
 """
 import json
 import re
@@ -25,6 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / ".chezmoitemplates" / "claude" / "settings.json.tmpl"
 CODEX_TEMPLATE = ROOT / "dot_codex" / "rules" / "default.rules.tmpl"
+OPENCODE_TEMPLATE = ROOT / ".chezmoitemplates" / "opencode" / "opencode.json.tmpl"
 
 
 def bash_patterns(rules: list[str]) -> list[re.Pattern[str]]:
@@ -58,6 +60,24 @@ for line in render(CODEX_TEMPLATE).splitlines():
     match = re.match(r'prefix_rule\(pattern=(\[.*?\]), decision="(\w+)"', line)
     if match:
         CODEX_RULES[match[2]].append(json.loads(match[1]))
+
+
+def opencode_regex(pattern: str) -> re.Pattern[str]:
+    """opencode's wildcard match: `*` is any run of characters, a trailing ` *` is `( .*)?`."""
+    optional = pattern.endswith(" *")
+    body = ".*".join(re.escape(part) for part in pattern.removesuffix(" *").split("*"))
+    return re.compile("^" + body + ("( .*)?" if optional else "") + "$", re.DOTALL)
+
+
+OPENCODE_RULES = [
+    (opencode_regex(pattern), action)
+    for pattern, action in json.loads(render(OPENCODE_TEMPLATE))["permission"]["bash"].items()
+]
+
+
+def opencode_action(cmd: str) -> str:
+    """opencode's decision for a single command: the last matching rule wins."""
+    return [action for regex, action in OPENCODE_RULES if regex.match(cmd)][-1]
 
 
 def denied(cmd: str) -> bool:
@@ -378,6 +398,19 @@ for group, check, cases, expected in (
         checks += 1
         if check(cmd) is not expected:
             failures.append(f"{group}: {cmd}")
+
+# opencode runs no github-api-write guard, so GraphQL calls must prompt there.
+for cmd, expected in (
+    ("gh api graphql -f query='mutation { x }'", "ask"),
+    ("rtk gh api graphql -f query='mutation { x }'", "ask"),
+    ("rtk proxy gh api graphql -f query='mutation { x }'", "ask"),
+    ("gh api graphql", "ask"),
+    ("gh api rate_limit", "allow"),
+    ("git status", "allow"),
+):
+    checks += 1
+    if opencode_action(cmd) != expected:
+        failures.append(f"opencode: {cmd}: expected {expected}, got {opencode_action(cmd)}")
 
 for name, offenders in codex_rule_offenders().items():
     checks += 1

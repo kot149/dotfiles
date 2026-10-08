@@ -2,9 +2,16 @@
        these patterns, in file order, last match wins. Allows are emitted first
        and denies last so a deny always overrides the allow it narrows.
        A pattern ending in " *" is rewritten to "( .*)?" by opencode, so it
-       already covers the bare command. */ -}}
+       already covers the bare command.
+       `gh api graphql` stays at "ask": Claude Code and Codex catch GraphQL
+       mutations with check-github-api-write.sh, which opencode does not run. */ -}}
 {{- $perms := includeTemplate "agents/shell-permissions.tmpl" . | fromJson -}}
-{{- $allowPatterns := concat $perms.allow $perms.allowWrite -}}
+{{- $allowPatterns := list -}}
+{{- range concat $perms.allow $perms.allowWrite -}}
+  {{- if not (hasPrefix "gh api graphql" (trimPrefix "rtk " (trimPrefix "rtk proxy " .))) -}}
+    {{- $allowPatterns = append $allowPatterns . -}}
+  {{- end -}}
+{{- end -}}
 {{- $denyPatterns := $perms.deny -}}
 {{- $seen := dict "*" true -}}
 {{- range $denyPatterns -}}
