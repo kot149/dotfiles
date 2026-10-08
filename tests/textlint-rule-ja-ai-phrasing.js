@@ -11,7 +11,13 @@
  */
 import { TextlintKernel } from "@textlint/kernel@15.8.0";
 import markdownPlugin from "@textlint/textlint-plugin-markdown@15.8.0";
-import rule from "../dot_claude/hooks/textlint-rules/textlint-rule-ja-ai-phrasing.js";
+import rule from "../.chezmoitemplates/agents/textlint-rules/textlint-rule-ja-ai-phrasing.js";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+
+/** The @textlint/kernel version a file pins in its import specifier. */
+const kernelPin = (file) =>
+  fs.readFileSync(fileURLToPath(new URL(file, import.meta.url)), "utf8").match(/@textlint\/kernel@([\d.]+)/)?.[1] ?? null;
 
 const kernel = new TextlintKernel();
 
@@ -243,6 +249,12 @@ for (const [text, output] of [
 for (const text of ["公開語彙に寄せる。", "判断は安全側に倒す。", "この方針で通す。"]) {
   check(`fixer が書き換えない: ${text}`, await fixed(text), text);
 }
+
+check(
+  "textlint version matches the hook",
+  kernelPin("../.chezmoitemplates/agents/check-writing-style.js"),
+  kernelPin(import.meta.url),
+);
 
 console.log(`${checks - failures.length}/${checks} passed`);
 for (const failure of failures) console.error(`  x ${failure}`);
