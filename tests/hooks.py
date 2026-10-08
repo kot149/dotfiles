@@ -3,7 +3,8 @@
 # dependencies = []
 # ///
 """
-Tests for the Bash permission hooks in .chezmoitemplates/agents/.
+Tests for the Bash permission hooks in .chezmoitemplates/agents/ and Claude
+Code's git -C rewrite hook.
 
   uv run --no-python-downloads --script tests/hooks.py
 
@@ -11,8 +12,11 @@ Each hook runs as a subprocess with the same stdin JSON the agents send, so a
 passing run means the installed hook behaves the same way.
 """
 import json
+import os
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -80,6 +84,35 @@ CASES: list[tuple[str, str, None | tuple[str, str]]] = [
     (GH_API, "gh api https://api.github.com/repos/o/r/pulls", None),
 ]
 
+# (command, expected updatedInput.command): None means the hook leaves it as is.
+REWRITE_CASES: list[tuple[str, None | str]] = [
+    ("git -C /tmp status", "(cd /tmp && git status)"),
+    ('git -C "/path with space" log -1', '(cd "/path with space" && git log -1)'),
+    ("git -C '/q' diff", "(cd '/q' && git diff)"),
+    ("git -C repo status && git -C other log", "(cd repo && git status) && (cd other && git log)"),
+    ("cd x; git -C y status", "cd x; (cd y && git status)"),
+    ("(git -C repo status)", "( (cd repo && git status))"),
+    ("git -C a -C b status", None),
+    ("git -C repo log > out.txt", None),
+    ("git -C repo log | head", "(cd repo && git log) | head"),
+    ("git -C $(pwd) status", None),
+    ('git -C repo commit -m "a && b"', '(cd repo && git commit -m "a && b")'),
+    ("git status", None),
+    ("git -C -x status", None),
+    ("echo 'git -C x status'", None),
+    ("git -C repo log 2>&1", None),
+    ('git -C repo log "a > b"', '(cd repo && git log "a > b")'),
+    ("git -C repo log && echo hi > out", "(cd repo && git log) && echo hi > out"),
+    ("git -C repo status || git -C r2 status", "(cd repo && git status) || (cd r2 && git status)"),
+    ("git -C repo status |& cat", "(cd repo && git status) |& cat"),
+    ("git -C repo status &", "(cd repo && git status) &"),
+    ("git -C repo status\ngit -C b log", "(cd repo && git status)\n(cd b && git log)"),
+    ("git -C=repo status", None),
+    ("git -Crepo status", None),
+    ("git -C repo log <<EOF", None),
+    ("git -C 'unterminated status", None),
+]
+
 failures: list[str] = []
 checks = 0
 
@@ -117,6 +150,42 @@ for hook, command, expected in CASES:
     else:
         ok = actual is not None and actual[0] == expected[0] and expected[1] in actual[1]
     check(label, ok, f"expected: {expected!r}\n      actual:   {actual!r}")
+
+
+def rewrite(hook_dir: Path, command: str) -> tuple[int, str, None | str]:
+    """Return the rewrite hook's exit status, stderr and updatedInput command (None when silent)."""
+    result = subprocess.run(
+        ["bash", str(hook_dir / "rewrite-git-c.sh")],
+        input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        env={**os.environ, "PATH": f"{hook_dir}{os.pathsep}{os.environ['PATH']}"},
+    )
+    if not result.stdout.strip():
+        return result.returncode, result.stderr, None
+    updated = json.loads(result.stdout)["hookSpecificOutput"]["updatedInput"]["command"]
+    return result.returncode, result.stderr, updated
+
+
+# Lay the hook out as installed, next to python-runner.sh, with an rtk stub
+# first on PATH so a real rtk does not rewrite the command further.
+with tempfile.TemporaryDirectory() as tmp:
+    hook_dir = Path(tmp)
+    shutil.copy(ROOT / "dot_claude" / "hooks" / "executable_rewrite-git-c.sh", hook_dir / "rewrite-git-c.sh")
+    shutil.copy(HOOKS / "python-runner.sh", hook_dir / "python-runner.sh")
+    stub = hook_dir / "rtk"
+    stub.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    stub.chmod(0o755)
+
+    for command, expected in REWRITE_CASES:
+        label = f"rewrite-git-c: {command}"
+        status, stderr, actual = rewrite(hook_dir, command)
+        # A failing python step falls through silently, so stderr must stay empty too.
+        if status != 0 or stderr:
+            check(label, False, f"exit status {status}, stderr: {stderr.strip()!r}")
+            continue
+        check(label, actual == expected, f"expected: {expected!r}\n      actual:   {actual!r}")
 
 print(f"{checks - len(failures)}/{checks} passed")
 for failure in failures:
