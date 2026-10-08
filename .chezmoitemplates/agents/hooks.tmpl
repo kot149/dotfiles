@@ -1,11 +1,15 @@
 {{- /* Renders the "hooks" object (event -> [{matcher, hooks: [...]}]) for one agent
        from .hooks (the .chezmoidata/agent-hooks.toml entries). Called with
-       (dict "agent" "claude"|"codex" "hooks" .agent_hooks "home" <forward-slash home>).
+       (dict "agent" "claude"|"codex" "hooks" .agent_hooks "home" <forward-slash home>
+       "git_bash_path" <forward-slash Git Bash, codex only>).
        Codex handlers also get commandWindows; on Windows (cmd.exe) the bash hooks
-       run through Git Bash at its default install path. If Git is installed
-       elsewhere, thread a git_bash_path value through .chezmoidata/ and
-       chezmoi.toml [data]. */ -}}
+       run through Git Bash (.git_bash_path, default C:/Program Files/Git/bin/bash.exe,
+       overridable per machine in chezmoi.toml [data]). */ -}}
 {{- $agent := .agent -}}
+{{- $gitBash := "C:/Program Files/Git/bin/bash.exe" -}}
+{{- if hasKey . "git_bash_path" -}}
+{{-   $gitBash = get . "git_bash_path" -}}
+{{- end -}}
 {{- $dir := "~/.claude/hooks" -}}
 {{- if eq $agent "codex" -}}
 {{-   $dir = printf "%s/.codex/hooks" .home -}}
@@ -25,9 +29,9 @@
 {{-       $prefix := get $prefixes $entry.runner -}}
 {{-       if eq $agent "codex" -}}
 {{-         $command = printf "%s '%s'" $prefix $path -}}
-{{-         if eq $entry.runner "bash" -}}
-{{-           $prefix = "\"C:/Program Files/Git/bin/bash.exe\"" -}}
-{{-         end -}}
+        {{-         if eq $entry.runner "bash" -}}
+        {{-           $prefix = printf "\"%s\"" $gitBash -}}
+        {{-         end -}}
 {{-         $commandWindows = printf "%s \"%s\"" $prefix $path -}}
 {{-       else -}}
 {{-         $command = printf "%s %s" $prefix $path -}}

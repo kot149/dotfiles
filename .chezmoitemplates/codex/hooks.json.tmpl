@@ -1,5 +1,5 @@
 {{- $home := .chezmoi.homeDir | replace "\\" "/" -}}
 {
   "description": "User-level Codex hooks",
-  "hooks": {{ includeTemplate "agents/hooks.tmpl" (dict "agent" "codex" "hooks" .agent_hooks "home" $home) }}
+  "hooks": {{ includeTemplate "agents/hooks.tmpl" (dict "agent" "codex" "hooks" .agent_hooks "home" $home "git_bash_path" .git_bash_path) }}
 }

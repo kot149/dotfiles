@@ -5,3 +5,7 @@ git_allowed_signers = ""
 git_editor = "code --wait"
 git_commit_gpgsign = true
 git_safe_directories = []
+# Git Bash used for the Codex bash hooks' commandWindows (forward slashes).
+# Override per machine in ~/.config/chezmoi/chezmoi.toml under [data] when
+# Git for Windows lives elsewhere (e.g. a winget install on another drive).
+git_bash_path = "C:/Program Files/Git/bin/bash.exe"

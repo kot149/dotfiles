@@ -4,7 +4,7 @@ These dotfiles are managed by [chezmoi](https://www.chezmoi.io) and [Nix Home Ma
 
 ### Windows
 
-- Git for Windows. Its Git Bash (`C:/Program Files/Git/bin/bash.exe`) runs the Claude Code and Codex shell hooks.
+- Git for Windows. Its Git Bash (default `C:/Program Files/Git/bin/bash.exe`, overridable per machine via `git_bash_path` in `~/.config/chezmoi/chezmoi.toml`) runs the Claude Code and Codex shell hooks.
   ```pwsh
   winget install Git.Git
   ```

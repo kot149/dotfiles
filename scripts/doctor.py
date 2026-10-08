@@ -39,7 +39,7 @@ HASH_GLOBS = [
     ("run_onchange_after_nix-darwin.sh.tmpl", 'glob (joinPath .chezmoi.sourceDir "private_dot_config/nix-darwin/**")'),
 ]
 TOOLS = ["uv", "bun", "rtk", "just", "jq", "chezmoi"]
-GIT_BASH = Path("C:/Program Files/Git/bin/bash.exe")
+GIT_BASH_DEFAULT = "C:/Program Files/Git/bin/bash.exe"
 CHUNK = 200
 
 failed = False
@@ -155,10 +155,33 @@ def check_tools(no_home: bool) -> None:
         else:
             report("FAIL", "tool", f"{tool} not on PATH")
     if sys.platform == "win32":
-        if GIT_BASH.exists():
-            report("OK", "tool", str(GIT_BASH))
+        bash = git_bash_path()
+        if bash.exists():
+            report("OK", "tool", str(bash))
         else:
-            report("FAIL", "tool", f"{GIT_BASH} not found")
+            report("FAIL", "tool", f"{bash} not found")
+
+
+def git_bash_path() -> Path:
+    """Expected Git Bash location: .chezmoidata default, ~/.config/chezmoi/chezmoi.toml [data] wins."""
+    default = GIT_BASH_DEFAULT
+    try:
+        data = tomllib.loads((ROOT / ".chezmoidata" / "git.toml").read_text(encoding="utf-8"))
+        if data.get("git_bash_path"):
+            default = data["git_bash_path"]
+    except (OSError, tomllib.TOMLDecodeError):
+        pass
+    try:
+        override = (
+            tomllib.loads((Path.home() / ".config" / "chezmoi" / "chezmoi.toml").read_text(encoding="utf-8"))
+            .get("data", {})
+            .get("git_bash_path")
+        )
+        if override:
+            return Path(override)
+    except (OSError, tomllib.TOMLDecodeError):
+        pass
+    return Path(default)
 
 
 def snake(name: str) -> str:
