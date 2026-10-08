@@ -128,11 +128,17 @@ gh-ext-upgrade:
 winget-upgrade:
     winget upgrade --all
 
-# Run the textlint rule test and the repo-only skill-tree check
+# Render the agent config templates and check that the output parses
+[group('dev')]
+render-check:
+    {{ uv_script }} scripts/render_check.py
+
+# Run the textlint rule test, the repo-only skill-tree check and the template render check
 [group('dev')]
 test:
     #!/usr/bin/env bash
     status=0
     '{{ just_executable() }}' --justfile '{{ justfile() }}' skills-lint || status=1
+    '{{ just_executable() }}' --justfile '{{ justfile() }}' render-check || status=1
     bun run tests/textlint-rule-ja-ai-phrasing.js || status=1
     exit $status
