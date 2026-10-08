@@ -1,0 +1,93 @@
+# Agent hooks, rendered into ~/.claude/settings.json and ~/.codex/hooks.json by
+# .chezmoitemplates/agents/hooks.tmpl. One entry per registration; entries keep
+# their order inside each (event, matcher) group.
+#
+#   name     label for `just hooks-lint` messages
+#   file     script name in ~/.<agent>/hooks/ (omitted for runner = "command")
+#   runner   bash | uv-script | bun | command (runs `command` verbatim)
+#   args     appended to the command after a space
+#   claude / codex   registers the hook for that agent: event, optional matcher, and handler keys (timeout, statusMessage, asyncRewake) copied as is
+#
+# A hook with both tables has its body in .chezmoitemplates/agents/<file> and a
+# one-line include wrapper in dot_claude/hooks/ and dot_codex/hooks/; a Claude
+# Code only hook is a plain file in dot_claude/hooks/.
+
+[[agent_hooks]]
+name = "check-force-push"
+file = "check-force-push.sh"
+runner = "bash"
+claude = { event = "PreToolUse", matcher = "Bash" }
+codex = { event = "PreToolUse", matcher = "^(Bash|Shell)$", timeout = 15, statusMessage = "Checking force push" }
+
+[[agent_hooks]]
+name = "check-github-api-write"
+file = "check-github-api-write.sh"
+runner = "bash"
+claude = { event = "PreToolUse", matcher = "Bash" }
+codex = { event = "PreToolUse", matcher = "^(Bash|Shell)$", timeout = 15, statusMessage = "Checking GitHub API write" }
+
+[[agent_hooks]]
+name = "rewrite-git-c"
+file = "rewrite-git-c.sh"
+runner = "bash"
+claude = { event = "PreToolUse", matcher = "Bash" }
+
+[[agent_hooks]]
+name = "check-package-manager"
+file = "check-package-manager.py"
+runner = "uv-script"
+claude = { event = "PreToolUse", matcher = "Bash" }
+codex = { event = "PreToolUse", matcher = "^(Bash|Shell)$", timeout = 15, statusMessage = "Checking package manager" }
+
+[[agent_hooks]]
+name = "check-commit-sha-links"
+file = "check-commit-sha-links.sh"
+runner = "bash"
+claude = { event = "PreToolUse", matcher = "Bash" }
+codex = { event = "PreToolUse", matcher = "^(Bash|Shell)$", timeout = 15, statusMessage = "Checking commit SHA links" }
+
+[[agent_hooks]]
+name = "check-cargo-install"
+file = "check-cargo-install.sh"
+runner = "bash"
+claude = { event = "PreToolUse", matcher = "Bash" }
+codex = { event = "PreToolUse", matcher = "^(Bash|Shell)$", timeout = 15, statusMessage = "Checking cargo install" }
+
+# Claude Code runs rtk through rewrite-git-c.sh, which calls `rtk hook claude` itself.
+[[agent_hooks]]
+name = "rtk"
+runner = "command"
+command = "rtk hook claude"
+codex = { event = "PreToolUse", matcher = "^(Bash|Shell)$", timeout = 15, statusMessage = "Rewriting command with rtk" }
+
+[[agent_hooks]]
+name = "check-writing-style"
+file = "check-writing-style.js"
+runner = "bun"
+claude = { event = "PreToolUse", matcher = "Bash|Write|Edit|mcp__.*(?i:jira|confluence|atlassian).*" }
+codex = { event = "PreToolUse", matcher = "^(Bash|Shell|apply_patch)$", timeout = 30, statusMessage = "Checking writing style" }
+
+[[agent_hooks]]
+name = "remind-stop-background"
+file = "remind-stop-background.sh"
+runner = "bash"
+claude = { event = "PostToolUse", matcher = "Agent|Bash|Monitor|ScheduleWakeup|CronCreate" }
+
+[[agent_hooks]]
+name = "check-japanese-reply"
+file = "check-japanese-reply.sh"
+runner = "bash"
+claude = { event = "Stop" }
+
+[[agent_hooks]]
+name = "keep-cache-warm"
+file = "keep-cache-warm.sh"
+runner = "bash"
+claude = { event = "Stop", asyncRewake = true, timeout = 3600 }
+
+[[agent_hooks]]
+name = "keep-cache-warm-reset"
+file = "keep-cache-warm.sh"
+runner = "bash"
+args = "reset"
+claude = { event = "UserPromptSubmit" }

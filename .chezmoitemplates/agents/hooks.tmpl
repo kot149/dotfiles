@@ -1,0 +1,74 @@
+{{- /* Renders the "hooks" object (event -> [{matcher, hooks: [...]}]) for one agent
+       from .hooks (the .chezmoidata/agent-hooks.toml entries). Called with
+       (dict "agent" "claude"|"codex" "hooks" .agent_hooks "home" <forward-slash home>).
+       Codex handlers also get commandWindows; on Windows (cmd.exe) the bash hooks
+       run through Git Bash at its default install path. If Git is installed
+       elsewhere, thread a git_bash_path value through .chezmoidata/ and
+       chezmoi.toml [data]. */ -}}
+{{- $agent := .agent -}}
+{{- $dir := "~/.claude/hooks" -}}
+{{- if eq $agent "codex" -}}
+{{-   $dir = printf "%s/.codex/hooks" .home -}}
+{{- end -}}
+{{- $prefixes := dict "bash" "bash" "uv-script" "uv run --no-python-downloads --script" "bun" "bun run" -}}
+{{- $groups := list -}}
+{{- range $entry := .hooks -}}
+{{-   if hasKey $entry $agent -}}
+{{-     $reg := get $entry $agent -}}
+{{-     $command := "" -}}
+{{-     $commandWindows := "" -}}
+{{-     if eq $entry.runner "command" -}}
+{{-       $command = $entry.command -}}
+{{-       $commandWindows = $entry.command -}}
+{{-     else -}}
+{{-       $path := printf "%s/%s" $dir $entry.file -}}
+{{-       $prefix := get $prefixes $entry.runner -}}
+{{-       if eq $agent "codex" -}}
+{{-         $command = printf "%s '%s'" $prefix $path -}}
+{{-         if eq $entry.runner "bash" -}}
+{{-           $prefix = "\"C:/Program Files/Git/bin/bash.exe\"" -}}
+{{-         end -}}
+{{-         $commandWindows = printf "%s \"%s\"" $prefix $path -}}
+{{-       else -}}
+{{-         $command = printf "%s %s" $prefix $path -}}
+{{-       end -}}
+{{-     end -}}
+{{-     if hasKey $entry "args" -}}
+{{-       $command = printf "%s %s" $command $entry.args -}}
+{{-       if $commandWindows -}}
+{{-         $commandWindows = printf "%s %s" $commandWindows $entry.args -}}
+{{-       end -}}
+{{-     end -}}
+{{-     $hook := dict "type" "command" "command" $command -}}
+{{-     if eq $agent "codex" -}}
+{{-       $_ := set $hook "commandWindows" $commandWindows -}}
+{{-     end -}}
+{{-     range $key, $value := $reg -}}
+{{-       if not (has $key (list "event" "matcher")) -}}
+{{-         $_ := set $hook $key $value -}}
+{{-       end -}}
+{{-     end -}}
+{{-     $event := $reg.event -}}
+{{-     $matcher := get $reg "matcher" -}}
+{{-     $group := dict -}}
+{{-     range $g := $groups -}}
+{{-       if and (eq $g.event $event) (eq $g.matcher $matcher) -}}
+{{-         $group = $g -}}
+{{-       end -}}
+{{-     end -}}
+{{-     if $group -}}
+{{-       $_ := set $group "hooks" (append $group.hooks $hook) -}}
+{{-     else -}}
+{{-       $groups = append $groups (dict "event" $event "matcher" $matcher "hooks" (list $hook)) -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+{{- $out := dict -}}
+{{- range $g := $groups -}}
+{{-   $obj := dict "hooks" $g.hooks -}}
+{{-   if $g.matcher -}}
+{{-     $_ := set $obj "matcher" $g.matcher -}}
+{{-   end -}}
+{{-   $_ := set $out $g.event (append (get $out $g.event | default list) $obj) -}}
+{{- end -}}
+{{- $out | toJson -}}
