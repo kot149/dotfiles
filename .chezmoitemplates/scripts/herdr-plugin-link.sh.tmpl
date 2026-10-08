@@ -1,0 +1,30 @@
+#!/bin/bash
+set -euo pipefail
+
+# manifest hash: {{ include (printf "dot_local/share/herdr-plugins/%s/herdr-plugin.toml" .dir) | sha256sum }}
+# script hash: {{ include (printf "dot_local/share/herdr-plugins/%s/%s" .dir .script) | sha256sum }}
+# plugin config hash: {{ include .config | sha256sum }}
+
+plugin_id="{{ .id }}"
+plugin_dir="$HOME/.local/share/herdr-plugins/{{ .dir }}"
+
+if ! command -v herdr >/dev/null 2>&1; then
+  echo "herdr not found; skipping $plugin_id link."
+  exit 0
+fi
+
+if [ ! -f "$plugin_dir/herdr-plugin.toml" ]; then
+  echo "$plugin_dir is missing a manifest; skipping $plugin_id link."
+  exit 0
+fi
+
+# Captured first: under pipefail, grep -q exiting early would SIGPIPE herdr.
+plugins=$(herdr plugin list 2>/dev/null || true)
+if grep -q "^- $plugin_id " <<<"$plugins"; then
+  echo "$plugin_id already linked."
+else
+  echo "Linking $plugin_id..."
+  herdr plugin link "$plugin_dir"
+fi
+
+herdr server reload-config >/dev/null 2>&1 || true
