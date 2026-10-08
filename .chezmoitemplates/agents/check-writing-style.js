@@ -27,9 +27,12 @@ import path from "node:path";
 import rule from "./textlint-rules/textlint-rule-ja-ai-phrasing.js";
 
 // Codex edits files by emitting a patch document instead of Claude's Write / Edit
-// calls. Prose lives in the added / changed lines, one "+ text" or "- text" pair
-// per line under a *** Add File / *** Update File header.
+// calls. Prose lives in the added lines, one "+ text" line per line under a
+// *** Add File / *** Update File header; removed "- text" lines never land, so
+// they are not checked.
 const PATCH_FILE = /^\*{3} (?:Add|Update) File: (.+)$/;
+// A renamed file is judged by its destination path.
+const PATCH_MOVE = /^\*{3} Move to: (.+)$/;
 
 const PROSE_SUFFIXES = [".md", ".markdown", ".mdx", ".txt"];
 
@@ -252,7 +255,7 @@ function targetTexts(toolName, toolInput, cwd) {
   }
   if (toolName === "apply_patch") {
     // Codex edits files by emitting a patch document instead of Claude's Write /
-    // Edit calls. Prose lives in the added / removed lines under a file header.
+    // Edit calls. Prose lives in the added lines under a file header.
     const targets = [];
     let currentFile = null;
     let currentText = "";
@@ -271,7 +274,12 @@ function targetTexts(toolName, toolInput, cwd) {
         currentFile = header[1];
         continue;
       }
-      if (currentFile && (line.startsWith("+") || line.startsWith("-"))) {
+      const move = line.match(PATCH_MOVE);
+      if (currentFile && move) {
+        currentFile = move[1];
+        continue;
+      }
+      if (currentFile && line.startsWith("+")) {
         currentText += `${line.slice(1)}\n`;
       }
     }
