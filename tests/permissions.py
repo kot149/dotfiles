@@ -10,15 +10,21 @@ Tests for the Bash allow / deny rules rendered from .chezmoidata/agent-permissio
 Renders the Claude Code settings template and matches commands against its
 Bash(...) rules, treating `*` as any run of characters (spaces and newlines
 included). Approximates Claude Code's matcher; it does not model its prefix rules.
+
+Also renders the Codex rules and matches commands against their prefix_rule
+patterns as argv prefixes, checking that Codex never blocks or allows more than
+the Claude rules do.
 """
 import json
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / ".chezmoitemplates" / "claude" / "settings.json.tmpl"
+CODEX_TEMPLATE = ROOT / "dot_codex" / "rules" / "default.rules.tmpl"
 
 
 def bash_patterns(rules: list[str]) -> list[re.Pattern[str]]:
@@ -32,16 +38,26 @@ def bash_patterns(rules: list[str]) -> list[re.Pattern[str]]:
     return patterns
 
 
-rendered = subprocess.run(
-    ["chezmoi", "--source", str(ROOT), "execute-template", "-f", str(TEMPLATE)],
-    capture_output=True,
-    text=True,
-    encoding="utf-8",
-    check=True,
-)
-permissions = json.loads(rendered.stdout)["permissions"]
+def render(template: Path) -> str:
+    return subprocess.run(
+        ["chezmoi", "--source", str(ROOT), "execute-template", "-f", str(template)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+    ).stdout
+
+
+permissions = json.loads(render(TEMPLATE))["permissions"]
+DENY_PATTERNS = [r[len("Bash(") : -1] for r in permissions["deny"] if r.startswith("Bash(")]
 ALLOW = bash_patterns(permissions["allow"])
 DENY = bash_patterns(permissions["deny"])
+
+CODEX_RULES: dict[str, list[list[str]]] = {"allow": [], "forbidden": []}
+for line in render(CODEX_TEMPLATE).splitlines():
+    match = re.match(r'prefix_rule\(pattern=(\[.*?\]), decision="(\w+)"', line)
+    if match:
+        CODEX_RULES[match[2]].append(json.loads(match[1]))
 
 
 def denied(cmd: str) -> bool:
@@ -50,6 +66,55 @@ def denied(cmd: str) -> bool:
 
 def allowed(cmd: str) -> bool:
     return any(p.match(cmd) for p in ALLOW) and not denied(cmd)
+
+
+def codex_matches(decision: str, cmd: str) -> bool:
+    argv = shlex.split(cmd)
+    return any(argv[: len(p)] == p for p in CODEX_RULES[decision])
+
+
+def codex_denied(cmd: str) -> bool:
+    return codex_matches("forbidden", cmd)
+
+
+def codex_allowed(cmd: str) -> bool:
+    return codex_matches("allow", cmd) and not codex_denied(cmd)
+
+
+def shadowed(prefix: list[str], deny: str) -> bool:
+    """Whether a deny that a Codex prefix cannot fully express overlaps an allow prefix."""
+    tokens = deny.split(" ")
+    if tokens[-1] == "*" and deny.count("*") == 1:
+        return False
+    k = next((i for i, t in enumerate(tokens) if "*" in t), len(tokens))
+    head = tokens[k].split("*")[0] if k < len(tokens) else ""
+    if prefix[:k] != tokens[:k]:
+        return False
+    return len(prefix) <= k or prefix[k].startswith(head)
+
+
+def codex_rule_offenders() -> dict[str, list[str]]:
+    """Each Codex rule property mapped to the patterns that break it."""
+    allow, forbidden = CODEX_RULES["allow"], CODEX_RULES["forbidden"]
+    return {
+        "no * survives in a pattern": [
+            json.dumps(p) for p in allow + forbidden if any("*" in t for t in p)
+        ],
+        "every forbidden prefix is denied by the Claude rules": [
+            json.dumps(p) for p in forbidden if not denied(" ".join(p) + " x")
+        ],
+        "every allow prefix is allowed by the Claude rules": [
+            json.dumps(p) for p in allow if not allowed(" ".join(p) + " x")
+        ],
+        "no allow prefix overlaps a deny that Codex cannot fully express": [
+            json.dumps(p) for p in allow if any(shadowed(p, d) for d in DENY_PATTERNS)
+        ],
+        'allow ["git","status"] and forbidden ["rm","-rf","/"] are rendered': [
+            json.dumps(p)
+            for p, rules in ((["git", "status"], allow), (["rm", "-rf", "/"], forbidden))
+            if p not in rules
+        ],
+    }
 
 
 # Commands that must prompt: they run arbitrary code, write, or hit a non-GET endpoint.
@@ -99,6 +164,20 @@ NOT_ALLOWED = [
     "git grep -nO'sh -c id' foo",
     "yq -yi '.a=1' f.yml",
     "xxd f out",
+]
+
+# Commands Claude denies through a mid-pattern `*`, which Codex cannot block,
+# so it must not auto-approve them either.
+CODEX_NOT_ALLOWED = [
+    "find . -exec rm {} \\;",
+    "find . -delete",
+    "rg -n --pre x p",
+    "git diff HEAD --output=/tmp/x",
+    "sort in -o out",
+    "git fetch origin --upload-pack=./x",
+    "go list -toolexec x ./...",
+    "chezmoi diff --pager 'sh -c id'",
+    "bat x --pager 'sh -c id'",
 ]
 
 # Read-only commands that must stay prompt-free.
@@ -292,11 +371,18 @@ for group, check, cases, expected in (
     ("allowed", allowed, ALLOWED, True),
     ("denied", denied, DENIED, True),
     ("not_denied", denied, NOT_DENIED, False),
+    ("codex_not_allowed", codex_allowed, NOT_ALLOWED + CODEX_NOT_ALLOWED + DENIED, False),
+    ("codex_not_denied", codex_denied, NOT_DENIED, False),
 ):
     for cmd in cases:
         checks += 1
         if check(cmd) is not expected:
             failures.append(f"{group}: {cmd}")
+
+for name, offenders in codex_rule_offenders().items():
+    checks += 1
+    if offenders:
+        failures.append(f"codex_rules: {name}: {', '.join(offenders)}")
 
 print(f"{checks - len(failures)}/{checks} passed")
 for failure in failures:

@@ -1,40 +1,73 @@
-{{- define "codexPattern" -}}
-{{- $tokens := list -}}
-{{- range (splitList " " .) -}}
-  {{- $token := trimAll "*" . -}}
-  {{- if ne $token "" -}}
-    {{- $tokens = append $tokens $token -}}
+{{- /* Codex prefix_rule patterns match the leading argv tokens exactly. A shared
+       pattern becomes the prefix obtained by reading every `*` as empty, which
+       matches only commands the pattern matches too. Patterns with no trailing
+       `*` (exact commands) and patterns with a lone `*` before the last token
+       have no such prefix and are skipped, so Codex prompts for them.
+       A deny pattern other than `<literal tokens> *` blocks more than its
+       prefix rule does, so an allow prefix that overlaps the deny's literal
+       head (either one starts with the other) is skipped as well. */ -}}
+{{- $perms := includeTemplate "agents/shell-permissions.tmpl" . | fromJson -}}
+{{- $shadows := dict -}}
+{{- range $perms.deny -}}
+  {{- if not (and (hasSuffix " *" .) (eq (len (splitList "*" .)) 2)) -}}
+    {{- $literal := list -}}
+    {{- $head := "" -}}
+    {{- $open := true -}}
+    {{- range splitList " " . -}}
+      {{- if $open -}}
+        {{- if contains "*" . -}}
+          {{- $head = first (splitList "*" .) -}}
+          {{- $open = false -}}
+        {{- else -}}
+          {{- $literal = append $literal . -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $short := "" -}}
+    {{- $long := $head -}}
+    {{- if $literal -}}
+      {{- $short = printf "%s " (join " " $literal) -}}
+      {{- $long = printf "%s%s" $short $head -}}
+    {{- end -}}
+    {{- $_ := set $shadows (printf "%s|%s" $short $long) (dict "short" $short "long" $long) -}}
   {{- end -}}
 {{- end -}}
-{{- $tokens | toJson -}}
-{{- end -}}
-{{- range .agent_shell_deny }}
-prefix_rule(pattern={{ template "codexPattern" . }}, decision="forbidden", justification="Blocked by shared agent deny list")
-prefix_rule(pattern={{ template "codexPattern" (printf "rtk %s" .) }}, decision="forbidden", justification="Blocked by shared agent deny list")
-{{- end }}
-{{- $shellAllow := list -}}
-{{- range .agent_shell_allow -}}
-  {{- $shellAllow = append $shellAllow . -}}
-{{- end -}}
-{{- $scriptPrefixes := list "npm run" "pnpm run" "pnpm" "yarn run" "yarn" "bun run" "bun" "deno task" -}}
-{{- range .agent_shell_allow_js_scripts -}}
-  {{- $script := . -}}
-  {{- range $scriptPrefixes -}}
-    {{- $shellAllow = append $shellAllow (printf "%s %s *" . $script) -}}
+{{- $rules := list -}}
+{{- $seen := dict -}}
+{{- range $decision, $patterns := dict "forbidden" $perms.deny "allow" $perms.allow -}}
+  {{- range $patterns -}}
+    {{- $tokens := splitList " " . -}}
+    {{- $ok := true -}}
+    {{- if eq (last $tokens) "*" -}}
+      {{- $tokens = initial $tokens -}}
+    {{- else if not (hasSuffix "*" .) -}}
+      {{- $ok = false -}}
+    {{- end -}}
+    {{- $prefix := list -}}
+    {{- range $tokens -}}
+      {{- $token := replace "*" "" . -}}
+      {{- if eq $token "" -}}
+        {{- $ok = false -}}
+      {{- end -}}
+      {{- $prefix = append $prefix $token -}}
+    {{- end -}}
+    {{- if and $ok (eq $decision "allow") -}}
+      {{- $joined := join " " $prefix -}}
+      {{- range $shadows -}}
+        {{- if or (and .short (hasPrefix (printf "%s " $joined) .short)) (hasPrefix .long $joined) -}}
+          {{- $ok = false -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $key := printf "%s %s" $decision (toJson $prefix) -}}
+    {{- if and $ok (not (hasKey $seen $key)) -}}
+      {{- $_ := set $seen $key true -}}
+      {{- if eq $decision "forbidden" -}}
+        {{- $rules = append $rules (printf "prefix_rule(pattern=%s, decision=\"forbidden\", justification=\"Blocked by shared agent deny list\")" (toJson $prefix)) -}}
+      {{- else -}}
+        {{- $rules = append $rules (printf "prefix_rule(pattern=%s, decision=\"allow\")" (toJson $prefix)) -}}
+      {{- end -}}
+    {{- end -}}
   {{- end -}}
 {{- end -}}
-{{- $binPrefixes := list "npx" "pnpm exec" "pnpm dlx" "pnpm" "yarn exec" "yarn dlx" "yarn" "bunx" "bun x" "bun" -}}
-{{- range .agent_shell_allow_js_bins -}}
-  {{- $bin := . -}}
-  {{- $shellAllow = append $shellAllow (printf "%s *" $bin) -}}
-  {{- range $binPrefixes -}}
-    {{- $shellAllow = append $shellAllow (printf "%s %s *" . $bin) -}}
-  {{- end -}}
-{{- end }}
-{{- range $shellAllow }}
-prefix_rule(pattern={{ template "codexPattern" . }}, decision="allow")
-prefix_rule(pattern={{ template "codexPattern" (printf "rtk %s" .) }}, decision="allow")
-{{- end }}
-{{- range .agent_shell_allow_no_rtk }}
-prefix_rule(pattern={{ template "codexPattern" . }}, decision="allow")
-{{- end }}
+{{ join "\n" $rules }}
