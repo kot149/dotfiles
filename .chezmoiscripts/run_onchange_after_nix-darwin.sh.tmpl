@@ -4,8 +4,14 @@
 
 set -e
 
-# flake.nix hash: {{ include "private_dot_config/nix-darwin/flake.nix.tmpl" | sha256sum }}
-# darwin-configuration.nix hash: {{ include "private_dot_config/nix-darwin/darwin-configuration.nix.tmpl" | sha256sum }}
+{{- $src := printf "%s/" .chezmoi.sourceDir }}
+{{- range sortAlpha (glob (joinPath .chezmoi.sourceDir "private_dot_config/nix-darwin/**")) }}
+{{- $name := base . }}
+{{- if not (or (stat .).isDir (hasPrefix "." $name) (hasSuffix "~" $name) (hasSuffix ".swp" $name)) }}
+# {{ trimPrefix $src . }} hash: {{ include . | sha256sum }}
+{{- end }}
+{{- end }}
+# data: username={{ .chezmoi.username }} hostname={{ .chezmoi.hostname }} arch={{ .chezmoi.arch }}
 
 NIX_DARWIN_DIR="$HOME/.config/nix-darwin"
 

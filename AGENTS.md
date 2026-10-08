@@ -11,7 +11,7 @@ chezmoi rewrites filenames on apply. Key prefixes used in this repo:
 - `readonly_foo` → read-only on apply
 - `executable_foo` → `+x`
 - `*.tmpl` → rendered through chezmoi's Go template engine (`.chezmoi.os`, `.chezmoi.arch`, `.chezmoi.username`, etc.); the `.tmpl` suffix is stripped
-- `.chezmoiscripts/run_onchange_*` → re-run when their content hash changes (hashes of dependencies are embedded as comments at the top, e.g. `run_onchange_after_00_home-manager.sh.tmpl`, so editing a referenced file re-triggers the script)
+- `.chezmoiscripts/run_onchange_*` → re-run when their content hash changes (hashes of dependencies are embedded as comments at the top; `run_onchange_after_00_home-manager.sh.tmpl` and `run_onchange_after_nix-darwin.sh.tmpl` hash every file under their source directory through `glob`, so adding or editing any file there re-triggers the switch and no hash list needs editing; the other scripts list their dependencies by hand)
 - `.chezmoitemplates/` → shared template snippets included via `{{ include "..." }}`
 
 Per-OS file selection is controlled by `.chezmoiignore.tmpl` (gates `Library/**`, `AppData/**`, `winget.json`, etc. on `.chezmoi.os`).

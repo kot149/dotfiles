@@ -1,14 +1,15 @@
 {{- if ne .chezmoi.os "windows" -}}
 #!/bin/bash
 
-# flake.nix hash: {{ include "private_dot_config/home-manager/flake.nix.tmpl" | sha256sum }}
-# common.nix hash: {{ include "private_dot_config/home-manager/common.nix.tmpl" | sha256sum }}
-# linux-common.nix hash: {{ include "private_dot_config/home-manager/linux-common.nix" | sha256sum }}
-# linux-desktop.nix hash: {{ include "private_dot_config/home-manager/linux-desktop.nix" | sha256sum }}
-# linux-headless.nix hash: {{ include "private_dot_config/home-manager/linux-headless.nix" | sha256sum }}
-# darwin.nix hash: {{ include "private_dot_config/home-manager/darwin.nix" | sha256sum }}
-# wsl.nix hash: {{ include "private_dot_config/home-manager/wsl.nix" | sha256sum }}
-# pkgs/cli-proxy-api.nix hash: {{ include "private_dot_config/home-manager/pkgs/cli-proxy-api.nix" | sha256sum }}
+{{- $src := printf "%s/" .chezmoi.sourceDir }}
+{{- range sortAlpha (glob (joinPath .chezmoi.sourceDir "private_dot_config/home-manager/**")) }}
+{{- $name := base . }}
+{{- if not (or (stat .).isDir (hasPrefix "." $name) (hasSuffix "~" $name) (hasSuffix ".swp" $name)) }}
+# {{ trimPrefix $src . }} hash: {{ include . | sha256sum }}
+{{- end }}
+{{- end }}
+{{- $wsl := and (eq .chezmoi.os "linux") (contains "microsoft" (lower .chezmoi.kernel.osrelease)) }}
+# data: username={{ .chezmoi.username }} homeDir={{ .chezmoi.homeDir }} arch={{ .chezmoi.arch }} wsl={{ $wsl }} linuxGui={{ if hasKey . "linuxGui" }}{{ .linuxGui }}{{ else }}unset{{ end }} nix_substituters={{ toJson .nix_substituters | sha256sum }}
 {{- $localPath := printf "%s/.config/home-manager/local.nix" .chezmoi.homeDir -}}
 {{- $localStat := stat $localPath -}}
 {{- if $localStat }}
