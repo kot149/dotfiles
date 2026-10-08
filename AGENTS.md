@@ -139,10 +139,11 @@ Registration differs per agent:
 
 Other tools (e.g. Orca IDE) also write hooks and settings into these files, so the agent config files are `modify_` templates that all render through `.chezmoitemplates/agents/merge-config.tmpl`: `~/.claude/settings.json`, `~/.codex/hooks.json`, `~/.codex/config.toml`, `~/.config/opencode/tui.json`. Objects are merged at any depth (managed values win, arrays are replaced). Hooks are merged per entry instead: every managed `command` / `commandWindows` gets a trailing `# chezmoi-managed` comment, and on apply the existing hooks carrying it are dropped and the managed ones re-added, so hooks from other tools are kept and hooks deleted from a template disappear. Do not write that marker by hand. A template pulled in with `includeTemplate` cannot call other shared templates, which is why the merge recurses through `merge-config.tmpl` itself.
 
-`tests/` holds tests for the hooks that carry enough logic to regress. They are plain Bun scripts rather than `bun test` files, because `bun test` cannot resolve the versioned import specifiers the hooks pin their dependencies with:
+`tests/` holds tests for the hooks that carry enough logic to regress. They are a plain Bun script (not a `bun test` file, because `bun test` cannot resolve the versioned import specifiers the hooks pin their dependencies with) and a plain PEP 723 Python script that runs the Bash hooks as subprocesses:
 
 ```sh
 bun run tests/textlint-rule-ja-ai-phrasing.js   # the rule behind check-writing-style.js
+uv run --no-python-downloads --script tests/hooks.py   # check-force-push.sh and check-github-api-write.sh
 ```
 
 Two Codex-specific details:
