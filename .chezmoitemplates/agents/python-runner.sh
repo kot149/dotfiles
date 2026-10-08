@@ -13,6 +13,7 @@
 # Sourcing this exits the calling hook when no interpreter is available, which
 # lets the hook pass the command through instead of blocking it.
 
+# shellcheck disable=SC2034 # PYTHON is used by the sourcing hook
 if command -v uv >/dev/null 2>&1 &&
     env UV_PYTHON_DOWNLOADS=never uv run --script - </dev/null >/dev/null 2>&1; then
     PYTHON=(env UV_PYTHON_DOWNLOADS=never uv run --script)

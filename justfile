@@ -132,6 +132,11 @@ winget-upgrade:
 render-check:
     {{ uv_script }} scripts/render_check.py
 
+# Run shellcheck, ruff, nixfmt and oxlint over the repo (templates are rendered first)
+[group('dev')]
+lint:
+    {{ uv_script }} scripts/lint.py
+
 # Run the textlint rule test, the repo-only skill-tree check and the template render check
 [group('dev')]
 test:

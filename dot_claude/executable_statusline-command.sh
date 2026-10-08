@@ -142,7 +142,7 @@ if [ -n "$cwd_raw" ]; then
     deleted=$(git -C "$cwd_raw" -c core.fsmonitor= diff --name-only --diff-filter=D 2>/dev/null | wc -l | tr -d ' ')
     git_info="$git_branch_raw"
     parts=""
-    upstream=$(git -C "$cwd_raw" -c core.fsmonitor= rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+    upstream=$(git -C "$cwd_raw" -c core.fsmonitor= rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)
     if [ -n "$upstream" ]; then
       ahead_count=$(git -C "$cwd_raw" -c core.fsmonitor= rev-list --count "$upstream"..HEAD 2>/dev/null || echo 0)
       behind_count=$(git -C "$cwd_raw" -c core.fsmonitor= rev-list --count "HEAD..$upstream" 2>/dev/null || echo 0)

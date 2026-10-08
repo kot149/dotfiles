@@ -136,35 +136,33 @@ def main():
     # Allow if FORCE_PM=1 is set in env or prepended to the command
     if os.environ.get("FORCE_PM") == "1" or "FORCE_PM=1" in command:
         print(
-            "[PM Warning] Using {} but project uses {} (FORCE_PM=1 set, allowing)".format(
-                used_pm, project_pm
-            ),
+            f"[PM Warning] Using {used_pm} but project uses {project_pm} (FORCE_PM=1 set, allowing)",
             file=sys.stderr,
         )
         return
 
     if used_pm == "python":
-        reason = """[Python Outside Project Environment]
+        reason = f"""[Python Outside Project Environment]
 
   Detected:   bare python (global interpreter)
-  Project PM: {pm}  (detected from lock file)
+  Project PM: {project_pm}  (detected from lock file)
   Project:    {cwd}
 
-Please run it through the project environment: {pm} run python ...
+Please run it through the project environment: {project_pm} run python ...
 To force execution, set FORCE_PM=1:
 
-  FORCE_PM=1 {command}""".format(pm=project_pm, cwd=cwd, command=command)
+  FORCE_PM=1 {command}"""
     else:
-        reason = """[Package Manager Mismatch]
+        reason = f"""[Package Manager Mismatch]
 
-  Detected PM: {used}
-  Project PM:  {pm}  (detected from lock file)
+  Detected PM: {used_pm}
+  Project PM:  {project_pm}  (detected from lock file)
   Project:     {cwd}
 
-Please use {pm} instead.
+Please use {project_pm} instead.
 To force execution, set FORCE_PM=1:
 
-  FORCE_PM=1 {command}""".format(used=used_pm, pm=project_pm, cwd=cwd, command=command)
+  FORCE_PM=1 {command}"""
 
     print(reason, file=sys.stderr)
 

@@ -36,7 +36,7 @@ def oklch_to_hex(L: float, C: float, h_deg: float) -> str:
         v = 12.92 * u if u <= 0.0031308 else 1.055 * (u ** (1 / 2.4)) - 0.055
         return round(max(0.0, min(1.0, v)) * 255)
 
-    return "#{:02x}{:02x}{:02x}".format(to_srgb(r), to_srgb(g), to_srgb(bl))
+    return f"#{to_srgb(r):02x}{to_srgb(g):02x}{to_srgb(bl):02x}"
 
 
 def relative_luminance(hex_color: str) -> float:

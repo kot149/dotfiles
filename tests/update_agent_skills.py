@@ -96,7 +96,11 @@ try:
 finally:
     module.list_files = list_files
 check("check_entry missing: line", line.startswith("  MISSING"), True)
-check("check_entry missing: update", update, {"index": 0, "label": "o/shared (one)", "repo": "o/shared", "missing": True})
+check(
+    "check_entry missing: update",
+    update,
+    {"index": 0, "label": "o/shared (one)", "repo": "o/shared", "missing": True},
+)
 
 print(f"{checks - len(failures)}/{checks} passed")
 for failure in failures:

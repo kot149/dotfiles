@@ -62,6 +62,8 @@ herdr server reload-config
 
 Routine maintenance (chezmoi, skill revs, Home Manager, nix-darwin, Nix cleanup, plugin and tool upgrades, global bun / npm / pnpm / uv / cargo / go packages and their duplicates in Nix / winget, tests) is collected in the root `justfile`. The `dots` alias (zsh and PowerShell) runs it from anywhere: `dots` lists the tasks, `dots update` runs the full update for the current OS. OS-specific tasks use just's `[macos]` / `[linux]` / `[unix]` / `[windows]` attributes. The `justfile` is not a chezmoi target (it is in `.chezmoiignore.tmpl`).
 
+`just lint` (`scripts/lint.py`) runs shellcheck, ruff, nixfmt and oxlint, rendering the `.tmpl` sources for both macOS and Linux first. `ruff format` and `nixfmt` only report; `just test` does not run it yet.
+
 Apply / diff / status (from anywhere):
 
 ```sh

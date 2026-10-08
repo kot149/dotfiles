@@ -60,7 +60,8 @@ def skill_dirs(entry: dict) -> list[str]:
 
 def list_files(repo: str, ref: str, path: str) -> dict[str, str]:
     """Map each file under path at ref to its blob SHA (empty if path does not exist)."""
-    body = gh(f"repos/{repo}/git/trees/{ref}:{path}?recursive=1" if path else f"repos/{repo}/git/trees/{ref}?recursive=1")
+    tree_ref = f"{ref}:{path}" if path else ref
+    body = gh(f"repos/{repo}/git/trees/{tree_ref}?recursive=1")
     if body is None:
         return {}
     tree = json.loads(body)
@@ -110,7 +111,8 @@ def check_entry(index: int, entry: dict, head: str) -> tuple[str, dict | None]:
         return line, {"index": index, "label": label, "repo": repo, "missing": True}
     if not changes:
         return f"  up to date  {label} (other paths changed upstream)", None
-    return f"  outdated    {label}", {"index": index, "label": label, "repo": repo, "old": rev, "new": head, "changes": changes}
+    update = {"index": index, "label": label, "repo": repo, "old": rev, "new": head, "changes": changes}
+    return f"  outdated    {label}", update
 
 
 def group_by_repo(updates: list[dict], entries: list[dict], missing: list[dict] | None = None) -> list[dict]:
@@ -143,7 +145,8 @@ def group_by_repo(updates: list[dict], entries: list[dict], missing: list[dict] 
 def find_updates(entries: list[dict]) -> list[dict]:
     with ThreadPoolExecutor(max_workers=8) as pool:
         repos = sorted({e["repo"] for e in entries})
-        heads = dict(zip(repos, pool.map(lambda r: json.loads(gh(f"repos/{r}/commits/HEAD"))["sha"], repos)))
+        shas = pool.map(lambda r: json.loads(gh(f"repos/{r}/commits/HEAD"))["sha"], repos)
+        heads = dict(zip(repos, shas, strict=True))
         results = list(pool.map(lambda ie: check_entry(ie[0], ie[1], heads[ie[1]["repo"]]), enumerate(entries)))
 
     updates, missing = [], []

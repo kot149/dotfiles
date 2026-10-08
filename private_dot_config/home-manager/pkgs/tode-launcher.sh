@@ -3,6 +3,7 @@
 # (dist/runtime/release.js:writeLauncher), which fails on a read-only store.
 # TODE_TERMINAL_BROWSER_BIN points at this script so that rewrite is skipped;
 # the env below has to match what writeLauncher would have produced.
+# shellcheck disable=SC1007 # empty CDPATH for this cd only
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)"
 export TERMINAL_BROWSER_DIST_ROOT="$ROOT"
 export ELECTRON_RUN_AS_NODE=1
