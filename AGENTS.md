@@ -18,21 +18,21 @@ Per-OS file selection is controlled by `.chezmoiignore.tmpl` (gates `Library/**`
 
 Files **not** managed by chezmoi (no `dot_`/`private_`/etc. prefix, listed in `.chezmoiignore.tmpl`, or sitting at the repo root as plain docs) live only inside this repository and are never copied to `$HOME`. Notable examples:
 
-- `./AGENTS.md` and `./CLAUDE.md` (this file and its stub) — repo-level agent guidance, read directly from the repo by tools like Codex CLI / Claude Code. Edits take effect immediately; **do not** run `chezmoi apply` for them (it will say "not managed").
-- `./README.md`, `./LICENSE`, `.chezmoiignore.tmpl`, `.chezmoidata/`, `.chezmoiscripts/`, `.chezmoitemplates/` — chezmoi metadata / repo docs, not targets.
+- `./AGENTS.md` (this file): repo-level agent guidance, read directly from the repo by tools like Codex CLI / Claude Code. Edits take effect immediately; **do not** run `chezmoi apply` for it (it will say "not managed").
+- `./README.md`, `justfile`, `.chezmoiignore.tmpl`, `.chezmoidata/`, `.chezmoiscripts/`, `.chezmoitemplates/`: chezmoi metadata / repo docs, not targets.
 
 To check whether a given file is a chezmoi target, run `chezmoi target-path <source>` (prints the destination) or `chezmoi managed | grep <name>`.
 
 ## Applying changes after editing files (MANDATORY for agents)
 
-Editing a managed file in this repo does **not** change anything in `$HOME` — chezmoi only syncs on `apply`. If you (the agent) edit a managed file here, you **must run `chezmoi apply -v <target>` yourself in the same turn**. Do not tell the user to run it; do not end the turn with "now run apply". The edit-then-apply pair is one atomic action. (Unmanaged files like `./AGENTS.md` / `./CLAUDE.md` skip this step — they are read straight from the repo.)
+Editing a managed file in this repo does **not** change anything in `$HOME`; chezmoi only syncs on `apply`. If you (the agent) edit a managed file here, you **must run `chezmoi apply -v <target>` yourself in the same turn**. Do not tell the user to run it; do not end the turn with "now run apply". The edit-then-apply pair is one atomic action. (Unmanaged files like `./AGENTS.md` skip this step; they are read straight from the repo.)
 
 Rules:
 
 - Always pass a target path. **Never** run a bare `chezmoi apply` — it may overwrite unrelated files.
 - The target is the **destination path in `$HOME`**, not the source path in the repo. Translate the chezmoi filename prefixes to get it:
   - `dot_zshrc` → `chezmoi apply -v ~/.zshrc`
-  - `dot_claude/settings.json` → `chezmoi apply -v ~/.claude/settings.json`
+  - `dot_claude/modify_settings.json` → `chezmoi apply -v ~/.claude/settings.json`
   - `private_dot_config/zellij/config.kdl` → `chezmoi apply -v ~/.config/zellij/config.kdl`
   - `dot_local/bin/executable_zjdev` → `chezmoi apply -v ~/.local/bin/zjdev`
   - `foo.tmpl` → target is `foo` (drop the `.tmpl` suffix)
@@ -109,7 +109,7 @@ When adding new tunable values, prefer threading them through `.chezmoidata/` + 
 
 ## Agent permission lists
 
-`.chezmoidata/agent-permissions.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_no_rtk`, and `agent_shell_deny` arrays. `.chezmoitemplates/agents/shell-permissions.tmpl` expands the shell lists once (JS script and bin prefixes, `/bin` and `/usr/bin` forms, `--help` / `--version`, `rtk`, `rtk proxy`, bare and `corepack` variants) into plain patterns, and `.chezmoitemplates/claude/settings.json.tmpl`, `.chezmoitemplates/opencode/opencode.json.tmpl`, `.chezmoitemplates/antigravity/settings.json.tmpl` and `dot_codex/rules/default.rules.tmpl` only format them. Codex `prefix_rule` patterns match leading argv tokens exactly, so the Codex template reads every `*` as empty to get a prefix that matches only commands the pattern matches too, and skips patterns with no such prefix (no trailing `*`, or a lone `*` before the last token), so Codex prompts for those, including the exact allow entries. A deny entry other than `<literal tokens> *` blocks more than its prefix rule, so Codex also skips every allow prefix that overlaps the deny's literal head (`rg`, `find`, `git diff`, `chezmoi diff`, `nix eval`, …) and prompts for those commands. Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Entries in `agent_shell_allow` are emitted both bare and with an auto-generated `rtk <cmd>` variant; put commands that should be allowed **without** the `rtk` wrapper (e.g. `rtk` itself) in `agent_shell_allow_no_rtk`, which emits only the bare form.
+`.chezmoidata/agent-permissions.toml` defines `agent_plain_allow`, `agent_shell_allow`, `agent_shell_allow_no_rtk`, `agent_shell_allow_js_scripts`, `agent_shell_allow_js_bins`, `agent_shell_allow_write` and `agent_shell_deny` arrays. `agent_shell_allow_js_scripts` holds package.json / deno.json script names, expanded for every JS package manager (`npm run X`, `pnpm X`, `yarn X`, `bun X`, `deno task X`, …); `agent_shell_allow_js_bins` holds `node_modules/.bin` executables, expanded to `npx X`, `bunx X`, `pnpm exec X`, `pnpm dlx X`, `yarn dlx X`, … plus the bare `X`. `.chezmoitemplates/agents/shell-permissions.tmpl` expands the shell lists once (JS script and bin prefixes, `/bin` and `/usr/bin` forms, `--help` / `--version`, `rtk`, `rtk proxy`, bare and `corepack` variants) into plain patterns, and `.chezmoitemplates/claude/settings.json.tmpl`, `.chezmoitemplates/opencode/opencode.json.tmpl`, `.chezmoitemplates/antigravity/settings.json.tmpl` and `dot_codex/rules/default.rules.tmpl` only format them. Codex `prefix_rule` patterns match leading argv tokens exactly, so the Codex template reads every `*` as empty to get a prefix that matches only commands the pattern matches too, and skips patterns with no such prefix (no trailing `*`, or a lone `*` before the last token), so Codex prompts for those, including the exact allow entries. A deny entry other than `<literal tokens> *` blocks more than its prefix rule, so Codex also skips every allow prefix that overlaps the deny's literal head (`rg`, `find`, `git diff`, `chezmoi diff`, `nix eval`, …) and prompts for those commands. Add new always-allowed read-only commands to `agent_shell_allow`; destructive patterns belong in `agent_shell_deny`. Entries in `agent_shell_allow` are emitted both bare and with an auto-generated `rtk <cmd>` variant; put commands that should be allowed **without** the `rtk` wrapper (e.g. `rtk` itself) in `agent_shell_allow_no_rtk`, which emits only the bare form.
 
 A rule only stops a command when its own pattern matches, so a deny entry never narrows an allow entry. What goes into `agent_shell_allow`:
 
@@ -140,27 +140,36 @@ opencode's matcher differs from Claude Code's in ways the template depends on:
 
 Hook scripts shared by more than one agent live in `.chezmoitemplates/agents/` and are pulled into each agent's config directory by a one-line `{{ include ... }}` wrapper, so there is a single implementation per script:
 
-- `check-force-push.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-github-api-write.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
+- `check-force-push.sh` (bash + python-runner) → `~/.claude/hooks/` and `~/.codex/hooks/`
+- `check-github-api-write.sh` (bash + python-runner) → `~/.claude/hooks/` and `~/.codex/hooks/`
 - `check-package-manager.py` (standalone Python, run via `uv run --no-python-downloads --script` on every OS) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-commit-sha-links.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
-- `check-cargo-install.sh` (bash + python3) → `~/.claude/hooks/` and `~/.codex/hooks/`
+- `check-commit-sha-links.sh` (bash + python-runner) → `~/.claude/hooks/` and `~/.codex/hooks/`
+- `check-cargo-install.sh` (bash + python-runner) → `~/.claude/hooks/` and `~/.codex/hooks/`
 - `check-writing-style.js` (Bun + textlint, imports `./textlint-rules/` next to it) → `~/.claude/hooks/` and `~/.codex/hooks/`
 - `textlint-rules/textlint-rule-ja-ai-phrasing.js` (the textlint rule `check-writing-style.js` imports) → `~/.claude/hooks/textlint-rules/` and `~/.codex/hooks/textlint-rules/`
+- `python-runner.sh` (resolves the interpreter for the inline Python parsers: `uv run --script` with `UV_PYTHON_DOWNLOADS=never`, then `python3`, then `python`; with none, it exits 0 so the hook passes the command through; `source`d by the four bash hooks above and by `check-japanese-reply.sh` / `rewrite-git-c.sh`) → `~/.claude/hooks/` and `~/.codex/hooks/`
+
+Claude Code only hooks are plain files in `dot_claude/hooks/` (no wrapper):
+
+- `rewrite-git-c.sh` (PreToolUse, `Bash`)
+- `remind-stop-background.sh` (PostToolUse)
+- `check-japanese-reply.sh` (Stop)
+- `keep-cache-warm.sh` (Stop, and UserPromptSubmit with `reset`)
 
 Registration differs per agent:
 
-- Claude Code: `hooks.PreToolUse` in `.chezmoitemplates/claude/settings.json.tmpl`. Tools are named `Bash`, `Write`, `Edit`, `mcp__*`.
-- Codex CLI: `.chezmoitemplates/codex/hooks.json.tmpl`, merged into `~/.codex/hooks.json` by `dot_codex/modify_hooks.json`. A handler takes `command` (used on macOS/Linux) and `commandWindows` (used on Windows); they run the same script and differ only in quoting. On Windows the bash hooks run through Git Bash (`C:/Program Files/Git/bin/bash.exe`, installed by `Git.Git` in `winget.json`); the bun and uv hooks call `bun` / `uv` directly. `matcher` is a regex against the tool name; Codex's shell tool is also `Bash`, but its file edits arrive as a single `apply_patch` tool whose `tool_input.command` is the patch document. `check-writing-style.js` parses that patch format, and `textlint-rules/` is materialized next to each copy by its own include wrapper.
+- Claude Code: `hooks.*` in `.chezmoitemplates/claude/settings.json.tmpl` (PreToolUse, PostToolUse, Stop, UserPromptSubmit). PreToolUse matchers name the tools `Bash`, `Write`, `Edit`, `mcp__*`.
+- Codex CLI: `.chezmoitemplates/codex/hooks.json.tmpl`, merged into `~/.codex/hooks.json` by `dot_codex/modify_hooks.json`. A handler takes `command` (used on macOS/Linux) and `commandWindows` (used on Windows); they run the same script and differ only in quoting. On Windows the bash hooks run through Git Bash (`C:/Program Files/Git/bin/bash.exe`, installed by `Git.Git` in `winget.json`); the bun and uv hooks call `bun` / `uv` directly. `matcher` is a regex against the tool name; Codex's shell tool is `Bash` or `Shell` and the matchers name both, but its file edits arrive as a single `apply_patch` tool whose `tool_input.command` is the patch document. `check-writing-style.js` parses that patch format, and `textlint-rules/` is materialized next to each copy by its own include wrapper.
 
-Other tools (e.g. Orca IDE) also write hooks and settings into these files, so the agent config files are `modify_` templates that all render through `.chezmoitemplates/agents/merge-config.tmpl`: `~/.claude/settings.json`, `~/.codex/hooks.json`, `~/.codex/config.toml`, `~/.config/opencode/tui.json`. Objects are merged at any depth (managed values win, arrays are replaced). Hooks are merged per entry instead: every managed `command` gets a trailing `# chezmoi-managed` comment (`commandWindows` does not, since cmd.exe would pass it to the hook as arguments), and on apply the existing hooks carrying it are dropped and the managed ones re-added, so hooks from other tools are kept and hooks deleted from a template disappear. Do not write that marker by hand. A template pulled in with `includeTemplate` cannot call other shared templates, which is why the merge recurses through `merge-config.tmpl` itself.
+Other tools (e.g. Orca IDE) also write hooks and settings into these files, so the agent config files are `modify_` templates that all render through `.chezmoitemplates/agents/merge-config.tmpl`: `~/.claude/settings.json`, `~/.codex/hooks.json`, `~/.codex/config.toml`, `~/.config/opencode/tui.json`, `~/.gemini/antigravity-cli/settings.json`. Objects are merged at any depth (managed values win, arrays are replaced). Hooks are merged per entry instead: every managed `command` gets a trailing `# chezmoi-managed` comment (`commandWindows` does not, since cmd.exe would pass it to the hook as arguments), and on apply the existing hooks carrying it are dropped and the managed ones re-added, so hooks from other tools are kept and hooks deleted from a template disappear. Do not write that marker by hand. A template pulled in with `includeTemplate` cannot call other shared templates, which is why the merge recurses through `merge-config.tmpl` itself.
 
-`tests/` holds tests for the hooks, the config merge template and the skill rev updater, the parts that carry enough logic to regress. They are a plain Bun script (not a `bun test` file, because `bun test` cannot resolve the versioned import specifiers the hooks pin their dependencies with) and plain PEP 723 Python scripts that run the Bash hooks and `chezmoi execute-template` as subprocesses or import the script under test:
+`tests/` holds tests for the hooks, the permission lists, the config merge template and the skill rev updater, the parts that carry enough logic to regress. They are a plain Bun script (not a `bun test` file, because `bun test` cannot resolve the versioned import specifiers the hooks pin their dependencies with), a Bash script that pipes Codex `apply_patch` payloads into `check-writing-style.js`, and plain PEP 723 Python scripts that run the Bash hooks and `chezmoi execute-template` as subprocesses or import the script under test:
 
 ```sh
 bun run tests/textlint-rule-ja-ai-phrasing.js   # the rule behind check-writing-style.js
 bash tests/writing-style.sh   # apply_patch parsing in check-writing-style.js
-uv run --no-python-downloads --script tests/hooks.py   # check-force-push.sh and check-github-api-write.sh
+uv run --no-python-downloads --script tests/hooks.py   # check-force-push.sh, check-github-api-write.sh and rewrite-git-c.sh
+uv run --no-python-downloads --script tests/permissions.py   # rendered Claude allow / deny rules and Codex prefix rules
 uv run --no-python-downloads --script tests/merge_config.py   # merge-config.tmpl fixtures
 uv run --no-python-downloads --script tests/update_agent_skills.py   # rev rewrite and grouping in update_agent_skills.py
 ```
@@ -174,7 +183,7 @@ Two Codex-specific details:
 
 ## Agent skills
 
-Skills live in two stores. `~/.agents/skills` is the shared store: Codex CLI reads it natively (alongside its own deprecated `~/.codex/skills`), as do opencode, Cursor, Gemini CLI and Amp. `~/.claude/skills` exists because Claude Code is the one agent with no `.agents/` awareness and no setting for extra skill roots, so anything Claude Code should see has to be materialized there as well. Nothing in this repo writes to `~/.codex/skills` any more.
+Skills live in two stores. `~/.agents/skills` is the shared store: Codex CLI reads it natively (alongside its own deprecated `~/.codex/skills`), as do opencode, Cursor, Gemini CLI and Amp. `~/.claude/skills` exists because Claude Code is the one agent with no `.agents/` awareness and no setting for extra skill roots, so anything Claude Code should see has to be materialized there as well. Nothing in this repo writes to `~/.codex/skills`.
 
 Both stores are generated, never hand-synced and never symlinked together: a skill is declared or written **once** and the same definition materializes into every store that needs it. For self-authored skills the single source is the body under `.chezmoitemplates/agents/skills/`; for third-party skills it is the `[[agent_skills]]` entry, whose `agents` list names the target stores. `add-slash-command` (case 1 below) is the one exception: it is written twice, by hand.
 
@@ -185,7 +194,7 @@ Skills come from three places, and which one a skill belongs to decides where yo
    One skill sits here: `add-slash-command`, because the Claude Code copy (`dot_claude/commands/add-slash-command.md`) writes a slash-command file while the shared-store copy writes a Codex skill. The two produce different artifacts and cannot share a body, so both are maintained by hand.
 2. **Self-authored, shared between agents** — body lives in `.chezmoitemplates/agents/skills/<name>.md` and each agent gets a one-line `{{ includeTemplate "agents/skills/<name>.md" . }}` wrapper named `SKILL.md.tmpl`, same pattern as the shared hooks. Scripts shipped with a shared skill follow the same pattern: body in `.chezmoitemplates/agents/<script>`, and each agent gets an `executable_<script>.tmpl` wrapper (e.g. `keychain-cred.sh`). This is the default for a new self-authored skill.
 
-   A procedure needed by more than one skill body lives under `.chezmoitemplates/agents/skills/_shared/` and is pulled in by the bodies with `{{ includeTemplate "agents/skills/_shared/<name>.md" . }}`. There are three: `git-base.md` (base-branch / merge-base determination, used by `autosquash`, `fixup`, `reorganize-commits`), `user-choice.md` (the selection-prompt mapping, used by 11 skills), and `subagents.md` (the subagent mapping and its invariants, used by 5 skills). Every skill wrapper uses `includeTemplate`, with no exceptions. `include` inserts a file verbatim without rendering it, so a body that later grows a nested `_shared/` include would emit that directive as literal text into the installed `SKILL.md`. Using one spelling everywhere removes that failure mode. Snippets are numbered as sub-steps (`#### 2-1.` …), so each body supplies its own `### 2. ...` heading and intro before the include.
+   A procedure needed by more than one skill body lives under `.chezmoitemplates/agents/skills/_shared/` and is pulled in by the bodies with `{{ includeTemplate "agents/skills/_shared/<name>.md" . }}`. There are three: `git-base.md` (base-branch / merge-base determination, used by `autosquash`, `fixup`, `reorganize-commits`, `resolve-conflict`), `user-choice.md` (the selection-prompt mapping, used by `autosquash`, `dedup`, `deep-review`, `fixup`, `issue-recon`, `loop-until-settled`, `pending-review-comments`, `pr-brief`, `release-notes`, `reorganize-commits`, `reply-pr-comments`, `resolve-conflict`), and `subagents.md` (the subagent mapping and its invariants, used by the skills listed under **Subagents** below). Every skill wrapper uses `includeTemplate`, with no exceptions. `include` inserts a file verbatim without rendering it, so a body that later grows a nested `_shared/` include would emit that directive as literal text into the installed `SKILL.md`. Using one spelling everywhere removes that failure mode. Snippets are numbered as sub-steps (`#### 2-1.` …), so each body supplies its own `### 2. ...` heading and intro before the include.
 
    A shared body must not hardcode one agent's tool names or call syntax. The repo settles this by naming the capability and mapping it onto each agent once, near the top of the body:
 
@@ -211,9 +220,9 @@ agents = ["claude", "agents"]   # one entry per target store; "claude" ->
 
 For a repo that keeps `SKILL.md` directly under `prefix` (or at the repo root, with `prefix = ""`) instead of in a per-skill subdirectory, add `flat = true`; `names` then holds the single target directory name.
 
-Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.agents/skills`). The template derives `include` and `stripComponents` from `prefix`, so each skill lands with `SKILL.md` at the root of its target directory. Updating a skill means bumping `rev`; `refreshPeriod = "168h"` only controls re-download of the pinned tarball, never which commit is used. `dots skills-update` (`uv run --script scripts/update_agent_skills.py`) finds entries whose skill directories changed upstream, shows the changed files (`d` prints the diff), and bumps `rev` for the ones you accept, committing the bump as one `chore(agents): bump ... skill revs` commit that touches only `agent-skills.toml` (`--check` only reports, `--yes` accepts all, `--no-commit` skips the commit; the commit is also skipped when that file already had uncommitted edits). Entries that share a `repo` are offered and bumped as one, so a repository split across several `prefix` values stays at one rev. The exception is an entry whose skill directory no longer exists at upstream HEAD: it is reported as `MISSING` and keeps its rev while the rest of the repo is bumped, and `just skills-lint` reports the repo as pinned at several revs until the entry is removed from `agent-skills.toml`.
+Then `chezmoi apply -v ~/.claude/skills` (and/or `~/.agents/skills`). The template derives `include` and `stripComponents` from `prefix`, so each skill lands with `SKILL.md` at the root of its target directory. Updating a skill means bumping `rev`; `refreshPeriod = "168h"` only controls re-download of the pinned tarball, never which commit is used. `dots skills-update` (`scripts/update_agent_skills.py`, then `chezmoi apply` of both stores) finds entries whose skill directories changed upstream, shows the changed files (`d` prints the diff), and bumps `rev` for the ones you accept, committing the bump as one `chore(agents): bump ... skill revs` commit that touches only `agent-skills.toml` (`--check` only reports, `--yes` accepts all, `--no-commit` skips the commit; the commit is also skipped when that file already had uncommitted edits). Entries that share a `repo` are offered and bumped as one, so a repository split across several `prefix` values stays at one rev. The exception is an entry whose skill directory no longer exists at upstream HEAD: it is reported as `MISSING` and keeps its rev while the rest of the repo is bumped, and `just skills-lint` reports the repo as pinned at several revs until the entry is removed from `agent-skills.toml`.
 
-`dots skills-update` covers third-party `rev` freshness only. `just skills-lint` (`scripts/check_agent_skills.py`, also a dependency of `just test`) checks the rest: wrapper shape and target, store parity, orphan templates, `name` against the directory name, `agents/openai.yaml` presence, and the `agents` values and `rev` shape in `[[agent_skills]]`. `just render-check` (`scripts/render_check.py`) renders the agent config targets with `chezmoi cat` and checks that the output parses as JSON / TOML / Nix; it runs inside `just test`.
+`dots skills-update` covers third-party `rev` freshness only. `just skills-lint` (`scripts/check_agent_skills.py`, also run by `just test`) checks the rest: wrapper shape and target, store parity, orphan templates, `name` against the directory name, `agents/openai.yaml` presence, and the `agents` values and `rev` shape in `[[agent_skills]]`. `just render-check` (`scripts/render_check.py`) renders the agent config targets with `chezmoi cat` and checks that the output parses as JSON / TOML / Nix; it runs inside `just test`.
 
 Two things not managed here:
 
@@ -226,7 +235,7 @@ Two things not managed here:
 
 Per-agent global instruction files live under each agent's config directory and are distinct from this repo-level `AGENTS.md`:
 
-- `dot_claude/CLAUDE.md` → `~/.claude/CLAUDE.md` (Claude Code, applies to *all* projects)
-- `dot_codex/private_AGENTS.md` → `~/.codex/AGENTS.md` (Codex CLI, applies to *all* projects)
+- `dot_claude/CLAUDE.md.tmpl` → `~/.claude/CLAUDE.md` (Claude Code, applies to *all* projects)
+- `dot_codex/AGENTS.md.tmpl` → `~/.codex/AGENTS.md` (Codex CLI, applies to *all* projects)
 
-Edit those files to change user-global agent behavior; edit this file (`AGENTS.md` / `CLAUDE.md` stub) for repo-specific guidance.
+Both start with `{{ include ".chezmoitemplates/agents/common.md" }}`, and the Claude one adds a "Claude Code specific" section. Put shared content in `.chezmoitemplates/agents/common.md` and edit the `.tmpl` wrappers only for agent-specific additions. These are chezmoi targets: after editing, run `chezmoi apply -v ~/.claude/CLAUDE.md` / `chezmoi apply -v ~/.codex/AGENTS.md`. Edit this file (`AGENTS.md`) for repo-specific guidance.
