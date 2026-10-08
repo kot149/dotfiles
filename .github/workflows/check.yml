@@ -1,0 +1,77 @@
+# Render the dotfiles on each OS and run the repo checks.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install chezmoi (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install chezmoi (Windows)
+        if: runner.os == 'Windows'
+        run: choco install chezmoi -y --no-progress
+
+      # The uv scripts run with --no-python-downloads, so they need this on PATH.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+
+      # Plain chezmoi commands (render-check, doctor) find the checkout through
+      # this config; .chezmoidata supplies every data key the templates read.
+      - name: Write chezmoi config
+        run: |
+          mkdir -p ~/.config/chezmoi
+          printf "sourceDir = '%s'\n" "$GITHUB_WORKSPACE" > ~/.config/chezmoi/chezmoi.toml
+          chezmoi --version
+          chezmoi source-path
+          jq --version
+          uv python find --no-python-downloads '>=3.11'
+
+      - name: Install Nix (Ubuntu)
+        if: runner.os == 'Linux'
+        uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+
+      - name: Install linters (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          shellcheck --version
+          uv tool install ruff
+          bun install -g oxlint
+          nix profile install nixpkgs#nixfmt
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.nix-profile/bin" >> "$GITHUB_PATH"
+
+      - run: just ci-render
+      - run: just test
+      - run: just doctor --no-home

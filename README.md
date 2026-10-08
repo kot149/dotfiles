@@ -144,7 +144,10 @@ The `dots` alias ([`dot_zshrc`](dot_zshrc), and a function in the [PowerShell pr
 | `render-check` | Render the agent config templates and check that the output parses |
 | `lint` | Run shellcheck, ruff, nixfmt and oxlint over the repo |
 | `doctor *args` | Report stale ignore entries, missing Nix hash globs, missing tools, Codex hooks with no trust entry or possibly stale trust, and unmanaged skill directories (run last by `update`; `--no-home` skips the `$HOME` checks) |
+| `ci-render *args` | Apply the source tree into a scratch directory without scripts and externals, then parse the agent configs (extra args go to `chezmoi`) |
 | `test` | Run `skills-lint`, `render-check`, `lint` and the tests under [`tests/`](tests) |
+
+Every push to `main` and every pull request runs [`.github/workflows/check.yml`](.github/workflows/check.yml), which runs `ci-render`, `test` and `doctor --no-home` on Ubuntu, macOS and Windows.
 
 ## AI agent configuration
 
