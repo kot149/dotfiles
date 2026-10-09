@@ -76,6 +76,17 @@ let
     # ai (from llm-agents.nix, prebuilt in cache.numtide.com)
     llmAgents.claude-code
     llmAgents.codex
+    # The native require-builtin addon fails on Nix's node; use createRequire
+    # instead (https://github.com/numtide/llm-agents.nix/issues/9994).
+    (llmAgents.dsh.overrideAttrs (old: {
+      postInstall = (old.postInstall or "") + ''
+        substituteInPlace \
+          $out/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js \
+          --replace-fail \
+          'createRequire(import.meta.url)("node-addon-require-builtin")' \
+          '{ requireBuiltin: createRequire(import.meta.url) }'
+      '';
+    }))
     llmAgents.herdr
     llmAgents.hunk
     llmAgents.ax

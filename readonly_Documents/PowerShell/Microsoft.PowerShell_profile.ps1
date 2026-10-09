@@ -495,6 +495,76 @@ function claudex {
     }
 }
 
+# DeepSeek Harness on the same proxy. The --patch overlay replaces the
+# llm-pi-ai config for this run, so providers saved in the profile are hidden.
+function Get-DshGptPatch {
+    param(
+        [Parameter(Mandatory)][string]$Model,
+        [Parameter(Mandatory)][string]$Effort
+    )
+    $patch = Join-Path $HOME ".cache\cli-proxy-api\dsh-$Model-$Effort.yml"
+    $models = foreach ($m in 'gpt-6-luna', 'gpt-6-sol', 'gpt-6-astra') {
+        @"
+          - id: $m
+            contextWindow: 1050000
+            input: [text, image]
+            reasoningEfforts: {low: low, medium: medium, high: high, xhigh: xhigh}
+"@
+    }
+    $content = @"
+- id: llm-pi-ai
+  config:
+    providers:
+      chatgpt:
+        displayName: ChatGPT (cli-proxy-api)
+        apiKeyEnv: CLIPROXY_API_KEY
+        api: openai-responses
+        baseURL: http://127.0.0.1:8317/v1
+        models:
+$($models -join "`n")
+- id: agent-default-model
+  config:
+    provider: chatgpt
+    model: $Model
+    reasoningEffort: $Effort
+"@
+    Set-Content -Path $patch -Value $content
+    return $patch
+}
+
+function dshx {
+    # Arguments other than the variant go to dsh; the profile defaults to web.
+    $variant = 'luna'
+    $rest = @($args)
+    if ($rest.Count -gt 0 -and $rest[0] -in 'luna', 'sol', 'astra') {
+        $variant = $rest[0]
+        $rest = @($rest | Select-Object -Skip 1)
+    }
+    switch ($variant) {
+        'luna' { $model = 'gpt-6-luna'; $effort = 'xhigh' }
+        'sol' { $model = 'gpt-6-sol'; $effort = 'medium' }
+        'astra' { $model = 'gpt-6-astra'; $effort = 'low' }
+    }
+    if ($rest.Count -eq 0) { $rest = @('web') }
+    # dsh accepts the profile shorthand only as its first argument.
+    if (-not "$($rest[0])".StartsWith('-')) { $rest = @('--profile') + $rest }
+
+    if (-not (Get-Command dsh -ErrorAction SilentlyContinue)) {
+        Write-Error 'DeepSeek Harness (dsh) is not installed'
+        return
+    }
+    if (-not (Invoke-CliProxyEnsure)) { return }
+    $patch = Get-DshGptPatch -Model $model -Effort $effort
+
+    $previous = $env:CLIPROXY_API_KEY
+    try {
+        $env:CLIPROXY_API_KEY = 'sk-local-cliproxy'
+        dsh --patch $patch @rest
+    } finally {
+        $env:CLIPROXY_API_KEY = $previous
+    }
+}
+
 function git-logout {
 	cmdkey /delete:git:https://github.com
 }

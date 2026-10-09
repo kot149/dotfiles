@@ -309,7 +309,7 @@ alias opus-sonnet='CLAUDE_CODE_SUBAGENT_MODEL=claude-sonnet-5-5 claude --model c
 alias fable-opus='CLAUDE_CODE_SUBAGENT_MODEL=claude-opus-5-5 claude --model claude-fable-5-1 --append-system-prompt "Delegate task and work execution to subagents with clear, appropriately-scoped instructions. You oversee the overall progress and planning. Exceptions based on your own judgment are allowed."'
 alias opus-opus='CLAUDE_CODE_SUBAGENT_MODEL=claude-opus-5-5 claude --model claude-opus-5-5 --append-system-prompt "Delegate task and work execution to subagents with clear, appropriately-scoped instructions. You oversee the overall progress and planning. Exceptions based on your own judgment are allowed."'
 
-# Shared cli-proxy-api setup for claudex: a single proxy serves Codex OAuth
+# Shared cli-proxy-api setup for claudex and dshx: a single proxy serves Codex OAuth
 # models (luna/sol/astra). Port is 8319 on zsh (8317 is held outside WSL on
 # this machine; plain Linux/macOS work the same) and 8317 on PowerShell
 # (Windows). The runtime config only rewrites the port, keeping the managed
@@ -411,6 +411,63 @@ claudex() {
     astra) _claude_gpt gpt-6-astra low gpt-6-luna xhigh "$@" ;;
     *) echo "claudex: unknown variant '$variant' (expected luna|sol|astra)" >&2; return 1 ;;
   esac
+}
+
+# DeepSeek Harness on the same proxy. The --patch overlay replaces the
+# llm-pi-ai config for this run, so providers saved in the profile are hidden.
+_dsh_gpt_patch() {
+  local model="$1"
+  local effort="$2"
+  local patch="${XDG_CACHE_HOME:-$HOME/.cache}/cli-proxy-api/dsh-$model-$effort.yml"
+  local m models=""
+  for m in gpt-6-luna gpt-6-sol gpt-6-astra; do
+    models+="
+          - id: $m
+            contextWindow: 1050000
+            input: [text, image]
+            reasoningEfforts: {low: low, medium: medium, high: high, xhigh: xhigh}"
+  done
+  cat >"$patch" <<EOF
+- id: llm-pi-ai
+  config:
+    providers:
+      chatgpt:
+        displayName: ChatGPT (cli-proxy-api)
+        apiKeyEnv: CLIPROXY_API_KEY
+        api: openai-responses
+        baseURL: http://127.0.0.1:8319/v1
+        models:$models
+- id: agent-default-model
+  config:
+    provider: chatgpt
+    model: $model
+    reasoningEffort: $effort
+EOF
+  printf '%s' "$patch"
+}
+
+dshx() {
+  # Arguments other than the variant go to dsh; the profile defaults to web.
+  local variant="luna"
+  case "${1:-}" in
+    luna|sol|astra) variant="$1"; shift ;;
+  esac
+  local model effort
+  case "$variant" in
+    luna) model=gpt-6-luna effort=xhigh ;;
+    sol) model=gpt-6-sol effort=medium ;;
+    astra) model=gpt-6-astra effort=low ;;
+  esac
+  (( $# > 0 )) || set -- web
+
+  _cli_proxy_ensure || return 1
+  local patch
+  patch="$(_dsh_gpt_patch "$model" "$effort")" || return 1
+  # dsh accepts the profile shorthand only as its first argument.
+  if [[ "$1" != -* ]]; then
+    set -- --profile "$@"
+  fi
+  CLIPROXY_API_KEY=sk-local-cliproxy dsh --patch "$patch" "$@"
 }
 
 # .git/info/exclude にローカル限定の無視パターンを追加する
