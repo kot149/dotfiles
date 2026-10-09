@@ -470,6 +470,34 @@ dshx() {
   CLIPROXY_API_KEY=sk-local-cliproxy dsh --patch "$patch" "$@"
 }
 
+# oh-my-pi on its own ChatGPT OAuth (openai-codex, log in once with /login).
+# The --config overlay sets the model roles for this run only.
+ompx() {
+  local variant="luna"
+  case "${1:-}" in
+    luna|sol|astra) variant="$1"; shift ;;
+  esac
+  local main
+  case "$variant" in
+    luna) main=gpt-6-luna:xhigh ;;
+    sol) main=gpt-6-sol:medium ;;
+    astra) main=gpt-6-astra:low ;;
+  esac
+  local sub=gpt-6-luna:xhigh
+  local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/omp"
+  local overlay="$cache_dir/ompx-$variant.yml"
+  mkdir -p "$cache_dir"
+  cat >"$overlay" <<EOF
+modelRoles:
+  default: openai-codex/$main
+  slow: openai-codex/$main
+  plan: openai-codex/$main
+  smol: openai-codex/$sub
+  task: openai-codex/$sub
+EOF
+  omp --config "$overlay" "$@"
+}
+
 # .git/info/exclude にローカル限定の無視パターンを追加する
 local-ignore() {
   if [ $# -eq 0 ]; then

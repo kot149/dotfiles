@@ -565,6 +565,37 @@ function dshx {
     }
 }
 
+# oh-my-pi on its own ChatGPT OAuth (openai-codex, log in once with /login).
+# The --config overlay sets the model roles for this run only.
+function ompx {
+    $variant = 'luna'
+    $rest = @($args)
+    if ($rest.Count -gt 0 -and $rest[0] -in 'luna', 'sol', 'astra') {
+        $variant = $rest[0]
+        $rest = @($rest | Select-Object -Skip 1)
+    }
+    switch ($variant) {
+        'luna' { $main = 'gpt-6-luna:xhigh' }
+        'sol' { $main = 'gpt-6-sol:medium' }
+        'astra' { $main = 'gpt-6-astra:low' }
+    }
+    $sub = 'gpt-6-luna:xhigh'
+    $cacheDir = Join-Path $HOME '.cache\omp'
+    if (-not (Test-Path $cacheDir)) {
+        New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
+    }
+    $overlay = Join-Path $cacheDir "ompx-$variant.yml"
+    Set-Content -Path $overlay -Value @"
+modelRoles:
+  default: openai-codex/$main
+  slow: openai-codex/$main
+  plan: openai-codex/$main
+  smol: openai-codex/$sub
+  task: openai-codex/$sub
+"@
+    omp --config $overlay @rest
+}
+
 function git-logout {
 	cmdkey /delete:git:https://github.com
 }
