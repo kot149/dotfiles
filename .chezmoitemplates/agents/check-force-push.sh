@@ -10,13 +10,17 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
 
 source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
 
-DETECTED=$("${PYTHON[@]}" - "$COMMAND" <<'PYEOF'
+# A heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash), so the
+# parser runs from a temporary file written by a top-level heredoc instead.
+PARSE_TMP=$(mktemp)
+trap 'rm -f "$PARSE_TMP"' EXIT
+cat >"$PARSE_TMP" <<'PYEOF'
 import os
 import re
 import shlex
 import sys
 
-command = sys.argv[1]
+command = sys.argv[1].replace("\r\n", "\n")
 SPLIT = r'(?:&&|\|\||[;|]|\n)'
 
 
@@ -85,31 +89,31 @@ for segment in segments(command):
     print(kind + "\tgit push " + " ".join(push_args))
     sys.exit(0)
 PYEOF
-) || exit 0
+DETECTED=$("${PYTHON[@]}" "$PARSE_TMP" "$COMMAND") || exit 0
+# A Windows-native Python translates \n to \r\n on stdout.
+DETECTED=${DETECTED//$'\r'/}
 
 [[ -z "$DETECTED" ]] && exit 0
 
 IFS=$'\t' read -r PUSH_KIND TARGET <<< "$DETECTED"
 if [[ "$PUSH_KIND" == "force" ]]; then
-    REASON=$(cat <<EOF
-[Force push requires confirmation]
+    # printf instead of $(cat <<EOF): a heredoc inside $( ) fails to parse on
+    # bash 3.2 (macOS /bin/bash).
+    REASON=$(printf '[Force push requires confirmation]
 
-  Command: $TARGET
+  Command: %s
 
 Force-pushing can discard commits on the remote branch. Confirm this operation
 explicitly if you intend to rewrite the remote history.
-EOF
-    )
+' "$TARGET")
 else
-    REASON=$(cat <<EOF
-[Git push requires confirmation]
+    REASON=$(printf '[Git push requires confirmation]
 
-  Command: $TARGET
+  Command: %s
 
 This command publishes commits to a remote repository. Confirm the operation
 explicitly if you intend to update the remote branch.
-EOF
-    )
+' "$TARGET")
 fi
 
 printf '%s\n' "$REASON" >&2

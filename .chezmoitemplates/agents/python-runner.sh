@@ -1,5 +1,13 @@
 # Resolve the Python used to run the inline parsers, as a PYTHON array.
-# Callers keep their own `-` argument, so every branch reads the script from stdin:
+# A parser whose output is captured runs from a temporary file, because a
+# heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash):
+#   PARSE_TMP=$(mktemp)
+#   trap 'rm -f "$PARSE_TMP"' EXIT
+#   cat >"$PARSE_TMP" <<'PYEOF'
+#   ...
+#   PYEOF
+#   VAR=$("${PYTHON[@]}" "$PARSE_TMP" "$ARG")
+# A parser at the top level (output not captured) keeps reading from stdin:
 #   "${PYTHON[@]}" - "$ARG" <<'PYEOF'
 #
 # uv comes first for portability: Windows has no /usr/bin/python3, and a bare

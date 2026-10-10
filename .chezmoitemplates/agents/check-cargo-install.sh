@@ -11,12 +11,16 @@ command -v cargo-binstall >/dev/null 2>&1 || exit 0
 
 source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
 
-TARGET=$("${PYTHON[@]}" - "$COMMAND" <<'PYEOF'
+# A heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash), so the
+# parser runs from a temporary file written by a top-level heredoc instead.
+PARSE_TMP=$(mktemp)
+trap 'rm -f "$PARSE_TMP"' EXIT
+cat >"$PARSE_TMP" <<'PYEOF'
 import os
 import re
 import sys
 
-command = sys.argv[1]
+command = sys.argv[1].replace("\r\n", "\n")
 
 # Flags that take a separate value, so the value itself is not a crate name.
 VALUE_FLAGS = {
@@ -69,7 +73,9 @@ for segment in re.split(r"(?:&&|\|\||[;|]|\n)", command):
     print(" ".join(crates) if crates else "")
     sys.exit(0)
 PYEOF
-) || exit 0
+TARGET=$("${PYTHON[@]}" "$PARSE_TMP" "$COMMAND") || exit 0
+# A Windows-native Python translates \n to \r\n on stdout.
+TARGET=${TARGET//$'\r'/}
 
 [[ -z "$TARGET" ]] && exit 0
 
@@ -78,22 +84,22 @@ if [[ "${FORCE_CARGO_INSTALL:-}" == "1" ]] || echo "$COMMAND" | grep -q 'FORCE_C
     exit 0
 fi
 
-REASON=$(cat <<EOF
-[Use cargo-binstall instead of cargo install]
+# printf instead of $(cat <<EOF): a heredoc inside $( ) fails to parse on
+# bash 3.2 (macOS /bin/bash).
+REASON=$(printf '[Use cargo-binstall instead of cargo install]
 
-  Crate(s): $TARGET
+  Crate(s): %s
 
 cargo install builds from source and can take minutes. cargo-binstall is
 installed on this machine and fetches a prebuilt binary instead, falling back
 to a source build only when no release artifact exists:
 
-  cargo binstall $TARGET
+  cargo binstall %s
 
 If a source build is required (a patched fork, a crate with no release
 artifact, non-default features), re-run with FORCE_CARGO_INSTALL=1 prepended
 to the command.
-EOF
-)
+' "$TARGET" "$TARGET")
 
 printf '%s\n' "$REASON" >&2
 

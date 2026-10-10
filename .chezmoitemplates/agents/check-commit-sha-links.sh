@@ -14,14 +14,18 @@ CWD=$(echo "$INPUT" | jq -r '.cwd // ""')
 
 source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
 
-FINDINGS=$("${PYTHON[@]}" - "$COMMAND" "$CWD" <<'PYEOF'
+# A heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash), so the
+# parser runs from a temporary file written by a top-level heredoc instead.
+PARSE_TMP=$(mktemp)
+trap 'rm -f "$PARSE_TMP"' EXIT
+cat >"$PARSE_TMP" <<'PYEOF'
 import os
 import re
 import shlex
 import subprocess
 import sys
 
-command, cwd = sys.argv[1], sys.argv[2]
+command, cwd = sys.argv[1].replace("\r\n", "\n"), sys.argv[2]
 
 GH_SUBCOMMAND = re.compile(
     r"\bgh\s+(?:pr|issue|release)\s+"
@@ -167,7 +171,9 @@ for text in texts:
 if lines:
     print("\n".join(lines))
 PYEOF
-) || exit 0
+FINDINGS=$("${PYTHON[@]}" "$PARSE_TMP" "$COMMAND" "$CWD") || exit 0
+# A Windows-native Python translates \n to \r\n on stdout.
+FINDINGS=${FINDINGS//$'\r'/}
 
 [[ -z "$FINDINGS" ]] && exit 0
 
@@ -178,14 +184,15 @@ if [[ "${FORCE_SHA:-}" == "1" ]] || echo "$COMMAND" | grep -q 'FORCE_SHA=1'; the
     exit 0
 fi
 
-REASON=$(cat <<EOF
-[Commit SHA is not auto-linkable]
+# printf instead of $(cat <<EOF): a heredoc inside $( ) fails to parse on
+# bash 3.2 (macOS /bin/bash).
+REASON=$(printf '[Commit SHA is not auto-linkable]
 
 GitHub only turns a commit SHA into a link when it is written bare and
 delimited by whitespace or ASCII punctuation. Full-width characters such as
 （）「」、。 break the link. These will render as plain text:
 
-$FINDINGS
+%s
 
 Rewrite each one as a bare SHA delimited by spaces or ASCII punctuation,
 for example:
@@ -196,8 +203,7 @@ for example:
 
 If the match is a false positive (a hash that is not a commit SHA, or a
 deliberate literal), re-run with FORCE_SHA=1 prepended to the command.
-EOF
-)
+' "$FINDINGS")
 
 printf '%s\n' "$REASON" >&2
 

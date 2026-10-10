@@ -19,11 +19,15 @@ fi
 
 source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
 
-REWRITTEN=$("${PYTHON[@]}" - "$COMMAND" <<'PYEOF'
+# A heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash), so the
+# parser runs from a temporary file written by a top-level heredoc instead.
+PARSE_TMP=$(mktemp)
+trap 'rm -f "$PARSE_TMP"' EXIT
+cat >"$PARSE_TMP" <<'PYEOF'
 import re
 import sys
 
-command = sys.argv[1]
+command = sys.argv[1].replace("\r\n", "\n")
 
 # Substitutions and heredocs hide operators from the scanner below.
 if "`" in command or "$(" in command or "<<" in command:
@@ -88,7 +92,9 @@ for text, has_redirect, is_op in parts:
 if changed:
     print(out, end="")
 PYEOF
-) || REWRITTEN=""
+REWRITTEN=$("${PYTHON[@]}" "$PARSE_TMP" "$COMMAND") || REWRITTEN=""
+# A Windows-native Python translates \n to \r\n on stdout.
+REWRITTEN=${REWRITTEN//$'\r'/}
 
 if [[ -z "$REWRITTEN" ]]; then
     printf '%s' "$INPUT" | run_rtk

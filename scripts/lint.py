@@ -166,7 +166,10 @@ def report(
 def lint_shell(rd: Renderer) -> bool:
     if not available("shellcheck"):
         return True
-    rc = ["--rcfile", str(ROOT / ".shellcheckrc"), "-S", "warning"]
+    # No --rcfile: the preinstalled shellcheck on ubuntu-latest (0.9.x) rejects
+    # it. Every shellcheck run executes with cwd=ROOT, so ./.shellcheckrc is
+    # picked up from the working directory anyway.
+    rc = ["-S", "warning"]
     files = [*map(rel, shell_sources()), *map(str, rd.render(SHELL_TEMPLATES))]
     results = [run(["shellcheck", *rc, *files]), run(["shellcheck", *rc, "-s", "bash", *SHELL_LIBS])]
     n = sum(count(r.stdout, r"\^[-^]* SC\d{4} ") for r in results)
