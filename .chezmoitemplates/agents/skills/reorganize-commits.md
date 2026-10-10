@@ -59,6 +59,8 @@ Run the following in parallel:
 - `git status --porcelain=v1 -b` — confirm no uncommitted changes and no rebase/merge in progress
 - `git rev-parse --abbrev-ref HEAD` — current branch name
 - `git log --oneline -30` — recent history
+- `git rev-parse --symbolic-full-name @{u}` — check whether the branch has an upstream. If it fails, there is no upstream and all target commits are unpushed
+- If upstream exists (after `<MB>` is determined in Step 2), compute `TOTAL=$(git rev-list --count <MB>..HEAD)` and `UNPUSHED=$(git rev-list --count <MB>..HEAD --not @{u})`, then `PUSHED=$((TOTAL - UNPUSHED))`. `PUSHED > 0` means the reorganization range contains already-pushed commits
 
 If there are uncommitted changes, stop and present the following to the user in Japanese. **Never stash on your own.**
 
@@ -125,7 +127,14 @@ Following the "Reorganization Criteria" above, present the current-history to re
 この方針で進めますか? 別の分け方を希望する場合は指示してください。
 ```
 
-**Do not touch history until the user approves.** Present the approval request to the user in Japanese (e.g. `この方針で進めますか? 別の分け方を希望する場合は指示してください。`) and wait for an answer. At approval time, also decide which of the two execution methods to use:
+**Do not touch history until the user approves.** Present the approval request to the user in Japanese (e.g. `この方針で進めますか? 別の分け方を希望する場合は指示してください。`) and wait for an answer.
+
+Handle pushed vs. unpushed history differently:
+
+- If `PUSHED > 0`: the range rewrites already-pushed history. Get explicit confirmation with a selection prompt in Japanese (e.g. `push済みの<PUSHED>件を書き換えます。後でforce pushが必要になりますが進めますか? (進める / 中止する)`) and wait for an answer. Do not proceed on ambiguous replies.
+- If `PUSHED == 0` or there is no upstream: unpushed-only range. A one-line notice in Japanese attached to the plan approval request is enough (e.g. `※ 未pushの履歴のみを整理します。`). No separate rewrite confirmation is needed.
+
+At approval time, also decide which of the two execution methods to use:
 
 - **Method A (full rebuild)**: rebuild the whole branch. Use this for wide ranges / many commits. No conflicts, but the original author dates are lost
 - **Method B (partial rewrite)**: use interactive rebase to `edit` / `squash` / `fixup` / `reword` only the target commits. Use this when only part of the history needs reorganizing and the rest should keep its metadata
@@ -292,6 +301,7 @@ git branch -D "${BACKUP_BRANCH}"
 - **Never `--abort` / `--skip` on conflicts on your own.** Ask the user to decide
 - **Always verify staged content after a hunk-level split.** Patch-based splitting can sweep in the wrong hunk, so confirm with `git diff --cached` that only the intended hunks are staged before committing
 - **Never use `git add -A` / `git add .`**
+- **Never rewrite pushed history without explicit user confirmation.** When `PUSHED > 0`, get approval via a selection prompt. When unpushed-only, a one-line notice is enough
 - **Never force push.** That is the user's job
 - When the range contains merge commits, reorganizing linearizes the history. Warn the user beforehand and get approval
 - When the branch only has accumulated `fixup!` / `squash!` commits, [[autosquash]] is safer and faster than this skill. To fold uncommitted changes into existing commits, use [[fixup]]
