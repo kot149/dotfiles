@@ -53,7 +53,7 @@ agents = ["claude", "agents"]
 # private_dot_config/home-manager/pkgs/open-code-review.nix.
 [[agent_skills]]
 repo = "alibaba/open-code-review"
-rev = "494bf1c8d7a19196ab166960a06fef38d69a1d16"
+rev = "35fc3e259da583b96cf0fb470d535da9dd5ad7b3"
 prefix = "skills"
 names = ["open-code-review-delegate"]
 agents = ["claude", "agents"]
@@ -67,7 +67,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "DietrichGebert/ponytail"
-rev = "b088b2df6e08d4306c6a3c3d575fe38c2d2d2989"
+rev = "9cc65d03aa2da1db7121b912d03596409ee340b8"
 prefix = "skills"
 names = [
   "ponytail",
@@ -122,7 +122,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "nanaism/yomiyasu"
-rev = "c2ffae670994fec96daef92e0bc219f5c1923113"
+rev = "373356eb874af5184962c88e925ea7eb58450318"
 prefix = "skills"
 names = ["yomiyasu"]
 agents = ["claude", "agents"]
@@ -132,7 +132,7 @@ agents = ["claude", "agents"]
 # needs them materialized.
 [[agent_skills]]
 repo = "cloudflare/skills"
-rev = "41e0d19858946d18af9ee2c2feebbe2e11d829ff"
+rev = "0871daceb347e3c51693fbe9c77555468df7e410"
 prefix = "skills"
 names = [
   "agents-sdk",
