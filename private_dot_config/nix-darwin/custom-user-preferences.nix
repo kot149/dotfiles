@@ -94,5 +94,24 @@ in
     "com.lwouis.alt-tab-macos" = {
       previousWindowShortcut = "⇧⇥"; # Shift+Tab
     };
+
+    "com.caldis.Mos" = {
+      allowlist = false;
+      deadZone = 1.0;
+      duration = 4.35;
+      hideStatusItem = false;
+      precision = 1.0;
+      reverse = false;
+      reverseHorizontal = true;
+      reverseVertical = true;
+      smooth = false;
+      smoothHorizontal = true;
+      smoothSimTrackpad = false;
+      smoothVertical = true;
+      speed = 2.7;
+      step = 33.6;
+      updateCheckOnAppStart = false;
+      updateIncludingBetaVersion = false;
+    };
   };
 }
