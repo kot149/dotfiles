@@ -1,6 +1,8 @@
 {pkgs, ...}: {
   # https://nix-darwin.github.io/nix-darwin/manual/index.html
 
+  imports = [./custom-user-preferences.nix];
+
   nix = {
     enable = false;
     # optimise.automatic = true;

@@ -92,14 +92,7 @@ nix-darwin (macOS system-level settings; invoked automatically by `.chezmoiscrip
 nh darwin switch ~/.config/nix-darwin -H "$(hostname -s)"
 ```
 
-The nix-darwin flake lives at `private_dot_config/nix-darwin/` (rendered to `~/.config/nix-darwin/`). Edit `darwin-configuration.nix.tmpl` for macOS system settings (`system.defaults.*`, `system.startup.*`, etc.). Note the split: **Home Manager** owns packages and user-level dotfile programs, **nix-darwin** owns macOS system settings — do not assume the repo is "Home Manager only".
-
-macOS-specific re-apply helpers (see README for full list):
-
-```sh
-chezmoi execute-template -f .chezmoiscripts/run_onchange_import_rectangle.sh.tmpl | sh
-chezmoi execute-template -f .chezmoiscripts/run_onchange_configure_alttab.sh.tmpl | sh
-```
+The nix-darwin flake lives at `private_dot_config/nix-darwin/` (rendered to `~/.config/nix-darwin/`). Edit `darwin-configuration.nix.tmpl` for macOS system settings (`system.defaults.*`, `system.startup.*`, etc.) and `custom-user-preferences.nix` for Rectangle, DockDoor and AltTab preferences. **Home Manager** owns packages and user-level dotfile programs; **nix-darwin** owns macOS system settings and these app preferences.
 
 Windows package list lives in `winget.json`: `winget export -o winget.json` / `winget import winget.json`.
 

@@ -1,3 +1,0 @@
-{{- if eq .chezmoi.os "darwin" -}}
-{{ includeTemplate "scripts/plist-import.sh.tmpl" (dict "template" "rectangle.plist.tmpl" "domain" "com.knollsoft.Rectangle" "name" "rectangle" "app" "Rectangle") }}
-{{- end -}}

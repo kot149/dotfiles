@@ -39,6 +39,7 @@ TARGETS = [
     (".config/home-manager/common.nix", "nix"),
     (".config/nix-darwin/flake.nix", "nix"),
     (".config/nix-darwin/darwin-configuration.nix", "nix"),
+    (".config/nix-darwin/custom-user-preferences.nix", "nix"),
     (".zshrc", "text"),
 ]
 # (template relative to the source dir, printed name, kind)

@@ -102,7 +102,7 @@ Besides rendering the managed files into `$HOME`, the first apply:
 
 - downloads the pinned third-party agent skills into `~/.claude/skills` and `~/.agents/skills` (every OS);
 - macOS / Linux: on Determinate Nix, writes `/etc/nix/nix.custom.conf` (`sudo`), then runs the Home Manager switch through `nh home switch` (falls back to `nix run home-manager/master` when `nh` is not installed yet, as on the very first apply). The first switch builds the whole package set and takes minutes;
-- macOS: also runs the nix-darwin switch (`nh darwin switch`, or `nix run github:nix-darwin/nix-darwin#darwin-rebuild` before `nh` exists; prompts for the `sudo` password) and the Karabiner / Rectangle / DockDoor / AltTab scripts, and installs the tailscaled LaunchDaemon (`sudo`) when tailscaled is installed;
+- macOS: also runs the nix-darwin switch (`nh darwin switch`, or `nix run github:nix-darwin/nix-darwin#darwin-rebuild` before `nh` exists; prompts for the `sudo` password), including Rectangle, DockDoor and AltTab preferences, and the Karabiner script, and installs the tailscaled LaunchDaemon (`sudo`) when tailscaled is installed;
 - Linux: on Nix installs without `nix.custom.conf`, edits `/etc/nix/nix.conf` (`sudo`);
 - Windows: no Nix step; clones the PowerShell / AutoHotkey libraries.
 
@@ -198,32 +198,3 @@ Import:
 ```sh
 winget import winget.json
 ```
-
-## Managing `.plist` files
-- To re-add Rectangle.plist, use the following command:
-  ```sh
-  defaults export com.knollsoft.Rectangle - > ~/.local/share/chezmoi/.chezmoitemplates/rectangle.plist.tmpl
-  ```
-- `chezmoi apply` uses [`run_onchange_import_rectangle.sh.tmpl`](.chezmoiscripts/run_onchange_import_rectangle.sh.tmpl) to automatically apply Rectangle's plist. To manually apply the plist, use the following command:
-  ```sh
-  chezmoi execute-template -f .chezmoiscripts/run_onchange_import_rectangle.sh.tmpl | sh
-  ```
-- To re-add DockDoor.plist, use the following command:
-  ```sh
-  defaults export com.ethanbills.DockDoor - > ~/.local/share/chezmoi/.chezmoitemplates/dockdoor.plist.tmpl
-  ```
-  Then strip transient keys (`SUHasLaunchedBefore`, `SULastCheckTime`, `launched`, `lastKnownScreenRecordingPermission`, `persistedWindowOrder`) before committing.
-- `chezmoi apply` uses [`run_onchange_import_dockdoor.sh.tmpl`](.chezmoiscripts/run_onchange_import_dockdoor.sh.tmpl) to automatically apply DockDoor's plist. To manually apply the plist, use the following command:
-  ```sh
-  chezmoi execute-template -f .chezmoiscripts/run_onchange_import_dockdoor.sh.tmpl | sh
-  ```
-
-## AltTab (macOS)
-
-[`run_onchange_configure_alttab.sh.tmpl`](.chezmoiscripts/run_onchange_configure_alttab.sh.tmpl) sets **Select previous window** to **Shift+Tab** (`previousWindowShortcut` in `com.lwouis.alt-tab-macos`). It runs on `chezmoi apply` when that script changes. To apply once by hand:
-
-```sh
-chezmoi execute-template -f .chezmoiscripts/run_onchange_configure_alttab.sh.tmpl | sh
-```
-
-Restart AltTab (or log out and back in) if the shortcut does not pick up immediately.
