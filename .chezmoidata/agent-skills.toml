@@ -132,7 +132,7 @@ agents = ["claude", "agents"]
 # needs them materialized.
 [[agent_skills]]
 repo = "cloudflare/skills"
-rev = "0871daceb347e3c51693fbe9c77555468df7e410"
+rev = "c430dd965cea3a8faf0ef035e3b3d73b38518081"
 prefix = "skills"
 names = [
   "agents-sdk",
