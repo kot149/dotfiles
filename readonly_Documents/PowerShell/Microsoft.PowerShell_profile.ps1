@@ -342,6 +342,10 @@ function sonnet { claude --model claude-sonnet-5-5 @args }
 function opus { claude --model 'claude-opus-5-5[1m]' @args }
 function fable { claude --model claude-fable-5-1 @args }
 
+function luna { codex -m gpt-6-luna -c model_reasoning_effort="xhigh" @args }
+function sol { codex -m gpt-6-sol -c model_reasoning_effort="medium" @args }
+function astra { codex -m gpt-6-astra -c model_reasoning_effort="low" @args }
+
 # Shared cli-proxy-api setup for claudex: a single proxy on port 8317 serves
 # Codex OAuth models (luna/sol/astra). The runtime config only rewrites the
 # port, keeping the managed config.yaml secret-free.

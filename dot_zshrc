@@ -309,6 +309,10 @@ alias opus-sonnet='CLAUDE_CODE_SUBAGENT_MODEL=claude-sonnet-5-5 claude --model c
 alias fable-opus='CLAUDE_CODE_SUBAGENT_MODEL=claude-opus-5-5 claude --model claude-fable-5-1 --append-system-prompt "Delegate task and work execution to subagents with clear, appropriately-scoped instructions. You oversee the overall progress and planning. Exceptions based on your own judgment are allowed."'
 alias opus-opus='CLAUDE_CODE_SUBAGENT_MODEL=claude-opus-5-5 claude --model claude-opus-5-5 --append-system-prompt "Delegate task and work execution to subagents with clear, appropriately-scoped instructions. You oversee the overall progress and planning. Exceptions based on your own judgment are allowed."'
 
+alias luna='codex -m gpt-6-luna -c model_reasoning_effort="xhigh"'
+alias sol='codex -m gpt-6-sol -c model_reasoning_effort="medium"'
+alias astra='codex -m gpt-6-astra -c model_reasoning_effort="low"'
+
 # Shared cli-proxy-api setup for claudex and dshx: a single proxy serves Codex OAuth
 # models (luna/sol/astra). Port is 8319 on zsh (8317 is held outside WSL on
 # this machine; plain Linux/macOS work the same) and 8317 on PowerShell
