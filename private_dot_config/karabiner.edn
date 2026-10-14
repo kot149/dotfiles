@@ -461,7 +461,7 @@
                    :to [{:key_code "right_arrow"
                          :modifiers ["option"]}]
                    :type "basic"}]
-                 [{:conditions [{:bundle_identifiers ["^com.apple.finder" "^com.apple.systempreferences" "^com.hnc.Discord" "^com.tinyspeck.slackmacgap" "^com.google.Chrome" "^com.microsoft.edgemac"]
+                 [{:conditions [{:bundle_identifiers ["^com.apple.finder" "^com.apple.systempreferences" "^com.hnc.Discord" "^com.tinyspeck.slackmacgap" "^com.vivaldi.Vivaldi.app.oalogkinedobldccnohoeihbbhdejhoc" "^com.google.Chrome" "^com.microsoft.edgemac"]
                                  :type "frontmost_application_if"}]
                    :description "Alt+Left -> Cmd+["
                    :from {:key_code "left_arrow"
@@ -469,7 +469,7 @@
                    :to [{:key_code "open_bracket"
                          :modifiers ["command"]}]
                    :type "basic"}]
-                 [{:conditions [{:bundle_identifiers ["^com.apple.finder" "^com.apple.systempreferences" "^com.hnc.Discord" "^com.tinyspeck.slackmacgap" "^com.google.Chrome" "^com.microsoft.edgemac"]
+                 [{:conditions [{:bundle_identifiers ["^com.apple.finder" "^com.apple.systempreferences" "^com.hnc.Discord" "^com.tinyspeck.slackmacgap" "^com.vivaldi.Vivaldi.app.oalogkinedobldccnohoeihbbhdejhoc" "^com.google.Chrome" "^com.microsoft.edgemac"]
                                  :type "frontmost_application_if"}]
                    :description "Alt+Right -> Cmd+]"
                    :from {:key_code "right_arrow"
@@ -600,28 +600,28 @@
                    :to [{:key_code "delete_or_backspace"
                          :modifiers ["command"]}]
                    :type "basic"}]
-                 [{:conditions [{:bundle_identifiers ["^com.hnc.Discord" "^com.tinyspeck.slackmacgap"]
+                 [{:conditions [{:bundle_identifiers ["^com.hnc.Discord" "^com.tinyspeck.slackmacgap" "^com.vivaldi.Vivaldi.app.oalogkinedobldccnohoeihbbhdejhoc"]
                                  :type "frontmost_application_if"}]
                    :description "[Discord] New message down"
                    :from {:key_code "f20"}
                    :to [{:key_code "down_arrow"
                          :modifiers ["option" "shift"]}]
                    :type "basic"}]
-                 [{:conditions [{:bundle_identifiers ["^com.hnc.Discord" "^com.tinyspeck.slackmacgap"]
+                 [{:conditions [{:bundle_identifiers ["^com.hnc.Discord" "^com.tinyspeck.slackmacgap" "^com.vivaldi.Vivaldi.app.oalogkinedobldccnohoeihbbhdejhoc"]
                                  :type "frontmost_application_if"}]
                    :description "[Discord] New message up"
                    :from {:key_code "f16"}
                    :to [{:key_code "up_arrow"
                          :modifiers ["option" "shift"]}]
                    :type "basic"}]
-                 [{:conditions [{:bundle_identifiers ["^com.hnc.Discord" "^com.tinyspeck.slackmacgap"]
+                 [{:conditions [{:bundle_identifiers ["^com.hnc.Discord" "^com.tinyspeck.slackmacgap" "^com.vivaldi.Vivaldi.app.oalogkinedobldccnohoeihbbhdejhoc"]
                                  :type "frontmost_application_if"}]
                    :description "[Discord] Channel up"
                    :from {:key_code "f15"}
                    :to [{:key_code "up_arrow"
                          :modifiers ["option"]}]
                    :type "basic"}]
-                 [{:conditions [{:bundle_identifiers ["^com.hnc.Discord" "^com.tinyspeck.slackmacgap"]
+                 [{:conditions [{:bundle_identifiers ["^com.hnc.Discord" "^com.tinyspeck.slackmacgap" "^com.vivaldi.Vivaldi.app.oalogkinedobldccnohoeihbbhdejhoc"]
                                  :type "frontmost_application_if"}]
                    :description "[Discord] Channel down"
                    :from {:key_code "f19"}
