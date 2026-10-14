@@ -628,6 +628,14 @@
                    :to [{:key_code "down_arrow"
                          :modifiers ["option"]}]
                    :type "basic"}]
+                 [{:conditions [{:bundle_identifiers ["^com.vivaldi.Vivaldi.app.oalogkinedobldccnohoeihbbhdejhoc"]
+                                 :type "frontmost_application_if"}]
+                   :description "[Slack PWA] Ctrl+T -> Jump to (Cmd+K)"
+                   :from {:key_code "t"
+                          :modifiers {:mandatory ["command"]}}
+                   :to [{:key_code "k"
+                         :modifiers ["command"]}]
+                   :type "basic"}]
                  [{:conditions [{:bundle_identifiers ["^com.microsoft.edgemac" "^com.google.Chrome"]
                                  :type "frontmost_application_if"}]
                    :description "[Chrome/Edge] F5"
