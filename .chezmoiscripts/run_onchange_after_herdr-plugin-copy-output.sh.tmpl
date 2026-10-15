@@ -1,3 +1,3 @@
 {{- if ne .chezmoi.os "windows" -}}
-{{ includeTemplate "scripts/herdr-plugin-link.sh.tmpl" (dict "id" "local.copy-output" "dir" "copy-output-py" "script" "executable_copy_output.py" "config" "private_dot_config/herdr/plugins/config/local.copy-output/config.toml") }}
+{{ includeTemplate "scripts/herdr-plugin-link.sh.tmpl" (dict "id" "local.copy-output" "dir" "copy-output-py" "sources" (list "executable_copy_output.py") "config" "private_dot_config/herdr/plugins/config/local.copy-output/config.toml") }}
 {{- end -}}

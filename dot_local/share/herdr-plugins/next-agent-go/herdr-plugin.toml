@@ -9,10 +9,10 @@ platforms = ["linux", "macos"]
 id = "next"
 title = "Focus next matching Agent"
 contexts = ["pane", "workspace"]
-command = ["uv", "run", "--script", "next_agent.py", "next"]
+command = ["./next-agent", "next"]
 
 [[actions]]
 id = "previous"
 title = "Focus previous matching Agent"
 contexts = ["pane", "workspace"]
-command = ["uv", "run", "--script", "next_agent.py", "previous"]
+command = ["./next-agent", "previous"]
