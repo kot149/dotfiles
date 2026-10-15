@@ -11,37 +11,36 @@ dots := (if os_family() == "windows" { "& " } else { "" }) + quote(just_executab
 default:
     @just --justfile '{{ justfile() }}' --list
 
-# Pull the dotfiles repo and apply it; with --all or --full, then update everything this machine uses
-[group('all')]
-update *flags:
-    {{ if flags =~ '^(--all|--full)?$' { "" } else { error("usage: dots update [--all|--full]") } }}
-    {{ dots }} pull
-    {{ if flags == "" { "" } else { dots + " update-full" } }}
-
-# Update everything this machine uses except the dotfiles repo itself
+# Pull the dotfiles repo and apply it, then update agent skills, Nix, tools and global packages
 [group('all')]
 [macos]
-update-full: skills-update hm-update darwin-update sheldon-update mise-upgrade gh-ext-upgrade pkgs-update doctor
+update-full: update skills-update hm-update darwin-update sheldon-update mise-upgrade gh-ext-upgrade pkgs-update doctor
 
-# Update everything this machine uses except the dotfiles repo itself
+# Pull the dotfiles repo and apply it, then update agent skills, Nix, tools and global packages
 [group('all')]
 [linux]
-update-full: skills-update hm-update sheldon-update mise-upgrade gh-ext-upgrade pkgs-update doctor
+update-full: update skills-update hm-update sheldon-update mise-upgrade gh-ext-upgrade pkgs-update doctor
 
-# Update everything this machine uses except the dotfiles repo itself
+# Pull the dotfiles repo and apply it, then update agent skills, Nix, tools and global packages
 [group('all')]
 [windows]
-update-full: skills-update gh-ext-upgrade pkgs-update doctor
+update-full: update skills-update gh-ext-upgrade pkgs-update doctor
 
 # Apply the source state to $HOME (extra args go to chezmoi apply)
 [group('chezmoi')]
 apply *args:
     chezmoi apply {{ args }}
 
-# Pull the dotfiles repo and apply it
+# Pull the dotfiles repo and apply it; with --all or --full, run update-full instead
+[group('chezmoi')]
+update *flags:
+    {{ if flags =~ '^(--all|--full)?$' { "" } else { error("usage: dots update [--all|--full]") } }}
+    {{ if flags == "" { "chezmoi update" } else { dots + " update-full" } }}
+
+# Pull the dotfiles repo without applying it
 [group('chezmoi')]
 pull:
-    chezmoi update
+    git pull
 
 # Show what apply would change
 [group('chezmoi')]

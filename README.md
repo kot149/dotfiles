@@ -121,9 +121,10 @@ The `dots` alias ([`dot_zshrc`](dot_zshrc), and a function in the [PowerShell pr
 
 | Task | What it does |
 |---|---|
-| `update` | Pull the dotfiles repo, apply it, then update everything this machine uses (the task list differs per OS) |
+| `update-full` | Pull the dotfiles repo and apply it, then update agent skills, Nix, tools and global packages (the task list differs per OS) |
 | `apply *args` | Apply the source state to `$HOME` (extra args go to `chezmoi apply`) |
-| `pull` | Pull the dotfiles repo and apply it |
+| `update *flags` | Pull the dotfiles repo and apply it; with `--all` or `--full`, run `update-full` instead |
+| `pull` | Pull the dotfiles repo without applying it |
 | `diff *args` | Show what apply would change |
 | `status` | List targets that differ from the source state |
 | `skills-check` | Report third-party agent skills whose pinned rev is behind upstream |
@@ -140,10 +141,10 @@ The `dots` alias ([`dot_zshrc`](dot_zshrc), and a function in the [PowerShell pr
 | `pkgs-update *managers` | Update globally installed bun / npm / pnpm / uv / cargo / go packages |
 | `pkgs-dupes` | Find commands installed by both bun / npm / pnpm / uv / cargo / go and Nix / winget / others |
 | `gh-ext-upgrade` | Upgrade gh CLI extensions |
-| `winget-upgrade` (Windows) | Upgrade winget packages (run by hand; not part of `update`) |
+| `winget-upgrade` (Windows) | Upgrade winget packages (run by hand; not part of `update-full`) |
 | `render-check` | Render the agent config templates and check that the output parses |
 | `lint` | Run shellcheck, ruff, nixfmt and oxlint over the repo |
-| `doctor *args` | Report stale ignore entries, missing Nix hash globs, missing tools, Codex hooks with no trust entry or possibly stale trust, and unmanaged skill directories (run last by `update`; `--no-home` skips the `$HOME` checks) |
+| `doctor *args` | Report stale ignore entries, missing Nix hash globs, missing tools, Codex hooks with no trust entry or possibly stale trust, and unmanaged skill directories (run last by `update-full`; `--no-home` skips the `$HOME` checks) |
 | `ci-render *args` | Apply the source tree into a scratch directory without scripts and externals, then parse the agent configs (extra args go to `chezmoi`) |
 | `hooks-lint` | Check `.chezmoidata/agent-hooks.toml` against the hook files in `dot_claude/hooks` and `dot_codex/hooks` |
 | `test` | Run `skills-lint`, `hooks-lint`, `render-check`, `lint` and the tests under [`tests/`](tests) |
