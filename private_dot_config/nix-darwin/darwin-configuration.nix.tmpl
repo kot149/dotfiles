@@ -77,7 +77,14 @@
   };
 
   # Automatically apply nix-darwin config changes
-  system.activationScripts.activateSettings.text = ''
+  # nix-darwin runs only its predefined activation script names, so this must be postActivation
+  system.activationScripts.postActivation.text = ''
+    # Disable Spotlight indexing and its Cmd+Space / Cmd+Option+Space shortcuts (Raycast replaces it)
+    mdutil -a -i off >/dev/null
+    for key in 64 65; do
+      sudo -u {{ .chezmoi.username }} defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys \
+        -dict-add "$key" "<dict><key>enabled</key><false/></dict>"
+    done
     sudo -u {{ .chezmoi.username }} /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
   '';
 }
