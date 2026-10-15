@@ -394,7 +394,8 @@ function* findMatches(tokens) {
     const hit = { index: token.word_position - 1, length: surface.length };
     const quiet = quietEnd(tokens, i);
 
-    if (token.pos === "動詞" && VERB_RULES[form]) {
+    // 辞書にない漢語 (採番) は 採 (体言接続特殊２) + 番 に分かれるので、語幹だけの動詞は除く。
+    if (token.pos === "動詞" && token.conjugated_form !== "体言接続特殊２" && VERB_RULES[form]) {
       const rule = VERB_RULES[form];
       if (rule.skip?.(tokens, i)) continue;
       yield { ...hit, advice: rule.advice, replacement: rule.fix?.[surface] };
