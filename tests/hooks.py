@@ -4,7 +4,7 @@
 # ///
 """
 Tests for the Bash permission hooks in .chezmoitemplates/agents/ and Claude
-Code's git -C rewrite hook.
+Code's git -C rewrite and Japanese reply Stop hooks.
 
   uv run --no-python-downloads --script tests/hooks.py
 
@@ -118,6 +118,22 @@ REWRITE_CASES: list[tuple[str, None | str]] = [
     ("git -C 'unterminated status", None),
 ]
 
+ENGLISH_REPLY = (
+    "I've updated the section in the README. Checking the file after the update, "
+    "the TODO line is gone and the new steps are there."
+)
+
+# (user prompt, last reply, expected block): the Stop hook should block English prose only.
+JAPANESE_REPLY_CASES: list[tuple[str, str, bool]] = [
+    ("READMEを更新して", ENGLISH_REPLY, True),
+    ("READMEを更新して", "I've updated the 「使い方」 section. " + ENGLISH_REPLY, True),
+    ("READMEを更新して", "I've updated the 『はじめに』 section. " + ENGLISH_REPLY, True),
+    ("READMEを更新して", "「使い方」の節を更新しました。TODOの行は消えています。", False),
+    ("READMEを更新して", "更新しました。\n\n```\n" + ENGLISH_REPLY + "\n```", False),
+    ("READMEを更新して", "Done.", False),
+    ("英訳して", ENGLISH_REPLY, False),
+]
+
 failures: list[str] = []
 checks = 0
 
@@ -191,6 +207,38 @@ with tempfile.TemporaryDirectory() as tmp:
             check(label, False, f"exit status {status}, stderr: {stderr.strip()!r}")
             continue
         check(label, actual == expected, f"expected: {expected!r}\n      actual:   {actual!r}")
+
+
+def japanese_reply(hook_dir: Path, prompt: str, reply: str) -> tuple[int, str, bool]:
+    """Return the Stop hook's exit status, stderr and whether it blocked."""
+    transcript = hook_dir / "transcript.jsonl"
+    transcript.write_text(
+        json.dumps({"type": "user", "message": {"role": "user", "content": prompt}}) + "\n",
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        [BASH, str(hook_dir / "check-japanese-reply.sh")],
+        input=json.dumps({"transcript_path": str(transcript), "last_assistant_message": reply}),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    blocked = bool(result.stdout.strip()) and json.loads(result.stdout).get("decision") == "block"
+    return result.returncode, result.stderr, blocked
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    hook_dir = Path(tmp)
+    shutil.copy(ROOT / "dot_claude" / "hooks" / "executable_check-japanese-reply.sh", hook_dir / "check-japanese-reply.sh")
+    shutil.copy(HOOKS / "python-runner.sh", hook_dir / "python-runner.sh")
+
+    for prompt, reply, expected in JAPANESE_REPLY_CASES:
+        label = f"check-japanese-reply: {prompt} / {reply[:40]!r}"
+        status, stderr, actual = japanese_reply(hook_dir, prompt, reply)
+        if status != 0 or stderr:
+            check(label, False, f"exit status {status}, stderr: {stderr.strip()!r}")
+            continue
+        check(label, actual == expected, f"expected block: {expected}\n      actual:   {actual}")
 
 print(f"{checks - len(failures)}/{checks} passed")
 for failure in failures:

@@ -2,10 +2,11 @@
 # Stop hook: when the final reply is written in English prose, block the stop
 # and ask Claude to answer again in Japanese.
 #
-# Only the prose counts. Code blocks, inline code, blockquotes, URLs and paths
-# are removed first, so quoting or generating English text inside them never
-# triggers it. The reply passes as long as its prose contains Japanese at all,
-# which covers a Japanese lead-in followed by an English translation or draft.
+# Only the prose counts. Code blocks, inline code, blockquotes, URLs, paths and
+# quoted spans (including 「」『』) are removed first, so quoting text inside
+# them neither triggers it nor lets English prose pass. The reply passes as
+# long as its prose contains Japanese at all, which covers a Japanese lead-in
+# followed by an English translation or draft.
 
 INPUT=$(cat)
 
@@ -73,7 +74,7 @@ prose = re.sub(r"^\s*>.*$", " ", prose, flags=re.MULTILINE)
 prose = re.sub(r"^ {4,}\S.*$", " ", prose, flags=re.MULTILINE)
 prose = re.sub(r"\]\([^)]*\)", "]", prose)
 prose = re.sub(r"https?://\S+|\S*[/\\]\S*", " ", prose)
-prose = re.sub(r"\"[^\"\n]*\"|“[^”\n]*”", " ", prose)
+prose = re.sub(r"\"[^\"\n]*\"|“[^”\n]*”|「[^」\n]*」|『[^』\n]*』", " ", prose)
 
 if re.search(r"[぀-ヿ]", prose):
     raise SystemExit

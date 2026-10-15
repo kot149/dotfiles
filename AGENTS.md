@@ -156,7 +156,7 @@ Other tools (e.g. Orca IDE) also write hooks and settings into these files, so t
 bun run tests/textlint-rule-ja-ai-phrasing.js   # the rule behind check-writing-style.js
 bash tests/writing-style.sh   # apply_patch parsing in check-writing-style.js
 bun run tests/opencode-guards.js   # opencode tool mapping and rtk prefix handling in guards.ts
-uv run --no-python-downloads --script tests/hooks.py   # check-force-push.sh, check-github-api-write.sh and rewrite-git-c.sh
+uv run --no-python-downloads --script tests/hooks.py   # check-force-push.sh, check-github-api-write.sh, rewrite-git-c.sh and check-japanese-reply.sh
 uv run --no-python-downloads --script tests/permissions.py   # rendered Claude allow / deny rules, Codex prefix rules and opencode gh api graphql rules
 uv run --no-python-downloads --script tests/merge_config.py   # merge-config.tmpl fixtures
 uv run --no-python-downloads --script tests/update_agent_skills.py   # rev rewrite and grouping in update_agent_skills.py
