@@ -44,6 +44,9 @@ const VAGUE_SUBJECTS = new Set([
 const FINANCIAL_FAILURE = new Set(["経営", "財政", "家計", "ローン", "国家", "生活", "資金", "事業"]);
 const LANDING_PLACES = new Set(["両足", "足", "滑走路", "地面", "床", "マット", "ジャンプ", "空中"]);
 const CONTESTS = new Set(["試合", "勝負", "対戦", "決勝", "ゲーム", "選挙", "裁判", "訴訟"]);
+// 「払う」の目的語として正しい語。金額やコストのほか、「注意を払う」などの慣用句と「埃を払う」。
+const PAYABLE =
+  /(?:コスト|費用|代償|対価|犠牲|ツケ|ペナルティ|オーバーヘッド|注意|敬意|関心|努力|税|金|代|料|費|円|ドル|埃|ほこり|塵|雪)$/i;
 
 const CANON_ADVICE =
   "「正本」「正典」→ 何を基準にするのかを具体的に書く" +
@@ -89,6 +92,17 @@ const VERB_RULES = {
     advice:
       "「壊れる」→ 何がどうなるのかを具体的に書く" +
       " (例: 「放置した場合に壊れるもの」→「放置した場合に起きること」)",
+  },
+  払う: {
+    // 目的語が書かれていない「先に払う」は判断できないので対象外。
+    skip: (tokens, i) => {
+      const object = objectNoun(tokens, i);
+      return !object || PAYABLE.test(object);
+    },
+    advice:
+      "「払う」→ 金額やコスト以外には使わず、実際の動作を書く" +
+      " (例: 「毎回次の処理を払っている」→「毎回次の処理を実行している」" +
+      " /「コールドスタートを払う行が増える」→「コールドスタートになる行が増える」)",
   },
   効く: {
     // 「キャッシュが効く」「薬が効く」は作用が具体的に決まっているので対象外。
@@ -152,6 +166,7 @@ const POTENTIAL_FORMS = {
   倒せる: "倒す",
   通せる: "通す",
   申し送れる: "申し送る",
+  払える: "払う",
 };
 
 // テストの成否の比喩でしか使わない語。単独で出ても指摘する。大文字小文字は問わない。
@@ -274,6 +289,18 @@ const hasVagueSubject = (tokens, i) =>
 const isNominalized = (tokens, i) => {
   const after = neighbor(tokens, i, 1);
   return after.pos === "名詞" && after.pos_detail_1 === "非自立";
+};
+
+/** 「〜を払う」の目的語の複合名詞。「を」「は」「も」で受けていなければ空文字。 */
+const objectNoun = (tokens, i) => {
+  const particle = neighborIndex(tokens, i, -1);
+  if (particle < 0 || tokens[particle].pos !== "助詞") return "";
+  if (!["を", "は", "も"].includes(tokens[particle].surface_form)) return "";
+  let noun = "";
+  for (let j = neighborIndex(tokens, particle, -1); j >= 0 && tokens[j].pos === "名詞"; j = neighborIndex(tokens, j, -1)) {
+    noun = tokens[j].surface_form + noun;
+  }
+  return noun;
 };
 
 const dictionaryForm = (token) =>
