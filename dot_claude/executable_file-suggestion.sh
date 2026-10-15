@@ -11,6 +11,10 @@
 # Code allows this command, so every query returns nothing. Respecting .gitignore keeps
 # the same tree at ~38k paths in ~0.17s.
 #
+# Claude Code runs this on every keystroke, so the path list is cached per $PWD and
+# served from the cache while a background fd run refreshes it. New files show up from
+# the next query after the refresh. The first query in a directory waits for fd.
+#
 # Input : JSON on stdin, with the current @ query in `.query`.
 # Output: newline-separated paths on stdout, best match first.
 #
@@ -22,6 +26,12 @@ set -uo pipefail
 readonly MAX_RESULTS=100
 readonly DEBUG_FLAG="$HOME/.claude/file-suggestion.debug"
 readonly DEBUG_LOG="$HOME/.claude/file-suggestion.log"
+readonly CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/claude-file-suggestion"
+# Seconds a cached list is served before a background refresh starts. Keeps fast
+# typing from running fd on every keystroke.
+readonly REFRESH_INTERVAL=5
+# A refresh lock older than this many minutes belongs to a killed run.
+readonly STALE_LOCK_MINUTES=1
 
 # Gitignored directories to surface anyway, looked up at the top two levels so a
 # workspace of repos resolves both ./notes and ./<repo>/notes.
@@ -65,41 +75,91 @@ debug() {
 stdin_json=$(cat)
 query=$(printf '%s' "$stdin_json" | jq -r '.query // ""' 2>/dev/null) || query=""
 
-list_tracked() {
-  fd --hidden --follow "${EXCLUDES[@]/#/--exclude=}"
+escape_glob() {
+  local s=${1//\\/\\\\}
+  s=${s//\*/\\*}
+  s=${s//\?/\\?}
+  s=${s//\[/\\[}
+  s=${s//\{/\\{}
+  printf '%s' "$s"
 }
 
-list_unignored() {
-  local dir search_paths=()
-  for dir in "${UNIGNORE_DIRS[@]}"; do
-    local candidate
-    for candidate in "$dir" */"$dir"; do
-      [[ -d $candidate ]] && search_paths+=(--search-path "$candidate")
-    done
-  done
-  if ((${#search_paths[@]} > 0)); then
-    fd --hidden --follow --no-ignore-vcs "${EXCLUDES[@]/#/--exclude=}" "${search_paths[@]}"
-  fi
-
-  local file
-  for dir in "${UNIGNORE_FILES[@]}"; do
-    for file in "$dir" */"$dir"; do
-      [[ -f $file ]] && printf '%s\n' "$file"
-    done
-  done
-}
-
+# Pass 1 excludes the paths pass 2 lists, anchored to the search root, so no path is
+# printed twice and the output needs no dedup pass.
 list_paths() {
-  { list_tracked; list_unignored; } 2>/dev/null | awk '!seen[$0]++'
+  local name path unignored_dirs=() unignored_files=()
+  for name in "${UNIGNORE_DIRS[@]}"; do
+    for path in "$name" */"$name"; do
+      [[ -d $path ]] && unignored_dirs+=("$path")
+    done
+  done
+  for name in "${UNIGNORE_FILES[@]}"; do
+    for path in "$name" */"$name"; do
+      [[ -f $path ]] && unignored_files+=("$path")
+    done
+  done
+
+  local excludes=("${EXCLUDES[@]/#/--exclude=}") pass1_excludes
+  pass1_excludes=("${excludes[@]}")
+  for path in "${unignored_dirs[@]}" "${unignored_files[@]}"; do
+    pass1_excludes+=("--exclude=/$(escape_glob "$path")")
+  done
+
+  fd --hidden --follow "${pass1_excludes[@]}"
+  if ((${#unignored_dirs[@]} > 0)); then
+    printf '%s/\n' "${unignored_dirs[@]}"
+    fd --hidden --follow --no-ignore-vcs "${excludes[@]}" "${unignored_dirs[@]/#/--search-path=}"
+  fi
+  if ((${#unignored_files[@]} > 0)); then
+    printf '%s\n' "${unignored_files[@]}"
+  fi
 }
 
-if [[ -z $query ]]; then
-  results=$(list_paths | head -n "$MAX_RESULTS")
+# Rewrites the cache atomically. Returns 1 when another run holds the lock. Run it in
+# a subshell: the EXIT trap releases the lock, so lock and tmp are not local.
+refresh_cache() {
+  lock=$cache_file.lock
+  if ! mkdir "$lock" 2>/dev/null; then
+    [[ -n $(find "$lock" -maxdepth 0 -mmin +"$STALE_LOCK_MINUTES" 2>/dev/null) ]] || return 1
+    rmdir "$lock" 2>/dev/null
+    mkdir "$lock" 2>/dev/null || return 1
+  fi
+  tmp=$(mktemp "$cache_file.XXXXXX") || { rmdir "$lock"; return 1; }
+  trap 'rm -f "$tmp"; rmdir "$lock" 2>/dev/null' EXIT
+  trap 'exit 1' HUP INT TERM
+  # fd exits non-zero on unreadable directories, so its status is not checked.
+  list_paths 2>/dev/null >"$tmp"
+  mv -f "$tmp" "$cache_file" && date +%s >"$cache_file.time"
+}
+
+[[ -d $CACHE_DIR ]] || mkdir -p "$CACHE_DIR"
+cache_key=$(printf '%s' "$PWD" | cksum)
+cache_file="$CACHE_DIR/${cache_key%% *}"
+
+if [[ -f $cache_file ]]; then
+  cache=hit
+  refreshed_at=0
+  [[ -f $cache_file.time ]] && read -r refreshed_at <"$cache_file.time"
+  if (($(date +%s) - refreshed_at >= REFRESH_INTERVAL)); then
+    (refresh_cache) </dev/null >/dev/null 2>&1 &
+    disown
+  fi
+  list() { cat "$cache_file"; }
+elif (refresh_cache); then
+  cache=miss
+  list() { cat "$cache_file"; }
 else
-  results=$(list_paths | fzf --filter="$query" | head -n "$MAX_RESULTS")
+  cache=bypass
+  list() { list_paths 2>/dev/null; }
 fi
 
-debug "cwd=$PWD query=[$query] results=$(printf '%s' "$results" | grep -c . || true)"
+if [[ -z $query ]]; then
+  results=$(list | head -n "$MAX_RESULTS")
+else
+  results=$(list | fzf --filter="$query" | head -n "$MAX_RESULTS")
+fi
+
+debug "cwd=$PWD cache=$cache query=[$query] results=$(printf '%s' "$results" | grep -c . || true)"
 
 printf '%s\n' "$results"
 exit 0
