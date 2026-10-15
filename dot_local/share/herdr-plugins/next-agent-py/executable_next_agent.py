@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
+import socket
 import sys
 
 SUPPORTED_STATES = frozenset({"idle", "working", "blocked", "done", "unknown"})
@@ -63,26 +63,36 @@ def load_config(config_dir: str) -> tuple[tuple[str, ...], str]:
     return states, order
 
 
-def run_herdr(binary: str, *args: str) -> str:
-    argv = (binary, *args)
+def call_herdr(socket_path: str, method: str, params: dict) -> dict:
+    """Send one request over the Herdr API socket, avoiding a CLI process per call."""
+    request = json.dumps({"id": "next-agent", "method": method, "params": params})
     try:
-        done = subprocess.run(argv, capture_output=True, text=True, check=False)
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as conn:
+            conn.settimeout(5)
+            conn.connect(socket_path)
+            conn.sendall(request.encode() + b"\n")
+            with conn.makefile("rb") as reader:
+                line = reader.readline()
     except OSError as err:
-        raise NextAgentError(f"{' '.join(argv)} failed: {err}") from err
-    if done.returncode != 0:
-        detail = done.stderr.strip() or f"exit status {done.returncode}"
-        raise NextAgentError(f"{' '.join(argv)} failed: {detail}")
-    return done.stdout
-
-
-def list_agents(binary: str) -> list[dict]:
-    stdout = run_herdr(binary, "agent", "list")
+        raise NextAgentError(f"herdr {method} failed: {err}") from err
     try:
-        agents = json.loads(stdout)["result"]["agents"]
-    except (json.JSONDecodeError, KeyError, TypeError) as err:
-        raise NextAgentError("herdr agent list returned an invalid response") from err
+        response = json.loads(line)
+    except json.JSONDecodeError as err:
+        raise NextAgentError(f"herdr {method} returned an invalid response") from err
+    if not isinstance(response, dict):
+        raise NextAgentError(f"herdr {method} returned an invalid response")
+    if "error" in response:
+        raise NextAgentError(f"herdr {method} failed: {response['error'].get('message')}")
+    result = response.get("result")
+    if not isinstance(result, dict):
+        raise NextAgentError(f"herdr {method} returned an invalid response")
+    return result
+
+
+def list_agents(socket_path: str) -> list[dict]:
+    agents = call_herdr(socket_path, "agent.list", {}).get("agents")
     if not isinstance(agents, list):
-        raise NextAgentError("herdr agent list returned an invalid response")
+        raise NextAgentError("herdr agent.list returned an invalid response")
     return agents
 
 
@@ -130,12 +140,14 @@ def main(argv: list[str]) -> int:
     try:
         step = parse_step(argv)
         states, order = load_config(os.environ.get("HERDR_PLUGIN_CONFIG_DIR", ""))
-        binary = os.environ.get("HERDR_BIN_PATH") or "herdr"
-        target = select_agent(list_agents(binary), states, order, step)
+        socket_path = os.environ.get("HERDR_SOCKET_PATH")
+        if not socket_path:
+            raise NextAgentError("HERDR_SOCKET_PATH is not set")
+        target = select_agent(list_agents(socket_path), states, order, step)
         if target is None:
-            run_herdr(binary, "notification", "show", NO_MATCH_MESSAGE)
+            call_herdr(socket_path, "notification.show", {"title": NO_MATCH_MESSAGE})
         else:
-            run_herdr(binary, "agent", "focus", target["pane_id"])
+            call_herdr(socket_path, "agent.focus", {"target": target["pane_id"]})
     except NextAgentError as err:
         print(err, file=sys.stderr)
         return 1
