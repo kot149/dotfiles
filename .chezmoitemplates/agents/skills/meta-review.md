@@ -1,12 +1,12 @@
 ---
 name: meta-review
-description: Verify review feedback (from human reviewers, AI reviews such as Codex/deep-review, GitHub PR comments, lint bots) instead of taking it at face value, by handing each finding to a fresh subagent that has no conversation context and must judge it from the real code. The point is to remove both the reviewer's assumptions and the author's hindsight bias. Use when the user asks "is this finding valid?", "verify these review comments", "should I really fix this?", "don't just accept the feedback, check it", 「この指摘は妥当か確認して」「レビューコメントを検証して」「鵜呑みにせず確かめて」, any similar phrasing in English or Japanese, or before acting on findings from Codex/deep-review/GitHub PR reviews. Judges validity only by default; pass `--fix` to also apply the findings that were judged valid, or `--post` to post them as pending PR review comments instead.
+description: Verify review feedback (from human reviewers, AI reviews such as Codex/deep-review, GitHub PR comments, lint bots) instead of taking it at face value, by having fresh subagents with no conversation context judge each finding from the real code, judging it again with the conversation context when the session has any, and reconciling the two. The point is to remove both the reviewer's assumptions and the author's hindsight bias without losing what only the context knows. Use when the user asks "is this finding valid?", "verify these review comments", "should I really fix this?", "don't just accept the feedback, check it", 「この指摘は妥当か確認して」「レビューコメントを検証して」「鵜呑みにせず確かめて」, any similar phrasing in English or Japanese, or before acting on findings from Codex/deep-review/GitHub PR reviews. Judges validity only by default; pass `--fix` to also apply the findings that were judged valid, or `--post` to post them as pending PR review comments instead.
 argument-hint: "[target: PR number/URL/text] [--fix|--post]"
 ---
 
 # meta-review
 
-Verify review findings with independent subagents dedicated to judging whether each finding actually holds.
+Verify review findings with two judgments, one without conversation context (independent subagents) and one with it (you), and reconcile them.
 
 ## Target
 
@@ -25,7 +25,7 @@ Strip the flag out of the request before using the rest as the target. A plain-l
 
 The judging subagent is a read-only role, so every edit is made by the orchestrator in step 5.
 
-## Why an independent subagent is required
+## Why two judgments
 
 Whoever receives the feedback (the author of the code, or an agent that has already read the review context) is prone to these biases:
 
@@ -33,17 +33,21 @@ Whoever receives the feedback (the author of the code, or an agent that has alre
 - Conversely, unconsciously dismissing findings against code they wrote themselves
 - Knowing the conversation history (why the code was written that way) and therefore assuming that reasoning was correct to begin with
 
-To avoid this, judging is done by a **fresh subagent with no conversation history**. Pass only the finding text and the target file paths; never pass background such as "why it was written this way" or "who raised it". The verdict must rest solely on reading the actual files.
+To avoid this, the **context-free judgment** is done by fresh subagents with no conversation history. Pass only the finding text and the target file paths; never pass background such as "why it was written this way" or "who raised it". Their verdict rests solely on reading the actual files.
 
-### Exception: when you have no context to begin with
+The context itself also carries facts the code does not show: requirements and decisions the user stated, specs and tickets read earlier, constraints found while working. A judgment without them can wrongly accept a finding that contradicts a deliberate decision, or wrongly reject one whose impact only the context reveals. So when this session has such context, you (the orchestrator) also make a **context-aware judgment** of every finding (step 3b), and step 4 reconciles the two.
 
-What is required is a judgment free of those biases, not the subagent mechanism itself. If you (the orchestrator) genuinely hold none of the biasing context, you may judge the findings yourself and skip the subagents. That applies only when all of the following hold:
+### When you have no context to begin with
+
+Then there is no context-aware judgment to make, and only the context-free judgment is run. That applies only when all of the following hold:
 
 - You did not write or edit the code under review in this conversation
 - You have not seen the reasoning behind either the code or the review in this conversation (no design discussion, no review you ran yourself)
 - The findings came from outside (pasted text, a GitHub PR, a file), not from a review produced earlier in this session
 
-If any of them fails (deep-review/codex-review ran earlier in this session, you made the changes, the user explained the intent behind the code), delegate to subagents as described. When judging yourself, follow the same required steps and verdict criteria as the judging prompt in step 3, and always read the real files instead of judging from the finding text. Do not mention in the report that subagents were skipped.
+In that case you hold none of the biasing context either, so you may make the context-free judgment yourself instead of delegating it to subagents. Follow the same required steps and verdict criteria as the judging prompt in step 3, always read the real files instead of judging from the finding text, and skip step 3b and the reconciliation in step 4. Do not mention in the report that subagents were skipped.
+
+If any of the conditions fails (deep-review/codex-review ran earlier in this session, you made the changes, the user explained the intent behind the code), run both judgments.
 
 ## Steps
 
@@ -65,7 +69,7 @@ Always assign `id` as `F1`, `F2`, ... . It is the only key for matching a judgin
 
 ### 2. Split the judging subagents into batches
 
-Skip this step and step 3's delegation when the exception above applies; judge the findings yourself and go to step 4.
+Skip this step and step 3's delegation when you have no context (see above); judge the findings yourself and go to step 4.
 
 Decide in this order; earlier rules win over later ones.
 
@@ -115,16 +119,36 @@ Findings:
 <paste this batch's findings here, listing id/claim/file/line/suggestion verbatim>
 ```
 
+### 3b. Make the context-aware judgment
+
+Skip this step when you have no context (see above).
+
+Once the subagents of step 3 are launched, judge every finding yourself, using what this conversation knows. Finish and record all of your verdicts **before reading any subagent output**, so the two judgments stay independent.
+
+- Follow the same required steps, verdict criteria and output format as the prompt in step 3. Read the real files; the context adds to the code reading and never replaces it
+- Add one line per finding, `CONTEXT: <the fact from this conversation the verdict depends on, and where it came from (user's statement, spec, ticket, earlier finding)>`, or `CONTEXT: NONE` when the verdict rests on the code alone
+- Your own reasons for having written the code a certain way are not a fact. Treat them as the bias this skill exists to remove, and do not cite them in CONTEXT
+
 ### 4. Aggregate and present to the user
 
 Aggregate only after every subagent has returned. Match each output back to the original finding by `ID`, and check that every input ID came back. Include any missing ID in the list as UNVERIFIABLE, stating explicitly that no verdict was returned.
 
-Present as plain Markdown text, grouped by VERDICT:
+When step 3b ran, reconcile the two verdicts per ID into one final verdict:
+
+1. Same verdict: adopt it
+2. Different verdicts: re-read the code at both EVIDENCE locations. If one side misread the code (quote does not match, wrong location, missed caller or guard), adopt the other side
+3. Otherwise, if the context-aware verdict has a CONTEXT that the code cannot show (a requirement or decision the user stated, a spec, a ticket), adopt it and cite that source in the reason
+4. Anything still split is DISPUTED: keep both verdicts and reasons and leave the call to the user
+
+Present as plain Markdown text, grouped by final verdict:
 
 1. VALID / PARTIALLY_VALID findings (id, file:line, claim, evidence, reason)
 2. INVALID findings with the reason for rejection
 3. STALE findings (noting they are already handled)
 4. UNVERIFIABLE findings (what could not be determined)
+5. DISPUTED findings (both verdicts and what each rests on)
+
+For findings settled by rule 2 or 3, state which judgment was adopted and why. DISPUTED findings are outside the scope of steps 4b and 5.
 
 Without `--fix` or `--post`, **stop here and do not proceed further**, leaving the decision to act to the user. With `--fix` and/or `--post`, present this list first and then continue to step 4b and/or step 5 in the same turn.
 
@@ -158,7 +182,7 @@ Then report per finding id: fixed / skipped (with reason) / needs a decision, fo
 
 - Never include steering information in the judging prompt, such as "the reviewer is trustworthy" or "this came from an AI review tool". Pass only the finding text and target file paths
 - Judging subagents **never write**. Fixes are made by the orchestrator (you)
-- Never assign the same finding to more than one judging subagent (batch so that findings do not overlap)
+- Never assign the same finding to more than one judging subagent (batch so that findings do not overlap). The context-aware judgment in step 3b covers every finding on top of that
 - If a finding is too coarse (one comment mixing several points), split it per point before assigning
 
 ## Error Handling
