@@ -4,25 +4,34 @@
 set windows-shell := ["pwsh", "-NoLogo", "-NoProfile", "-Command"]
 
 uv_script := "uv run --no-python-downloads --script"
+# pwsh needs `&` to run a quoted path as a command.
+dots := (if os_family() == "windows" { "& " } else { "" }) + quote(just_executable()) + " --justfile " + quote(justfile())
 
 # List the tasks
 default:
     @just --justfile '{{ justfile() }}' --list
 
-# Pull the dotfiles repo, apply it, then update everything this machine uses
+# Pull the dotfiles repo and apply it; with --all or --full, then update everything this machine uses
+[group('all')]
+update *flags:
+    {{ if flags =~ '^(--all|--full)?$' { "" } else { error("usage: dots update [--all|--full]") } }}
+    {{ dots }} pull
+    {{ if flags == "" { "" } else { dots + " update-full" } }}
+
+# Update everything this machine uses except the dotfiles repo itself
 [group('all')]
 [macos]
-update: pull skills-update hm-update darwin-update sheldon-update mise-upgrade gh-ext-upgrade pkgs-update doctor
+update-full: skills-update hm-update darwin-update sheldon-update mise-upgrade gh-ext-upgrade pkgs-update doctor
 
-# Pull the dotfiles repo, apply it, then update everything this machine uses
+# Update everything this machine uses except the dotfiles repo itself
 [group('all')]
 [linux]
-update: pull skills-update hm-update sheldon-update mise-upgrade gh-ext-upgrade pkgs-update doctor
+update-full: skills-update hm-update sheldon-update mise-upgrade gh-ext-upgrade pkgs-update doctor
 
-# Pull the dotfiles repo, apply it, then update everything this machine uses
+# Update everything this machine uses except the dotfiles repo itself
 [group('all')]
 [windows]
-update: pull skills-update gh-ext-upgrade pkgs-update doctor
+update-full: skills-update gh-ext-upgrade pkgs-update doctor
 
 # Apply the source state to $HOME (extra args go to chezmoi apply)
 [group('chezmoi')]

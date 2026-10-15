@@ -117,7 +117,7 @@ Then run `chezmoi apply -v`.
 
 ## Maintenance (`dots`)
 
-The `dots` alias ([`dot_zshrc`](dot_zshrc), and a function in the [PowerShell profile](readonly_Documents/PowerShell/Microsoft.PowerShell_profile.ps1)) runs the repo [`justfile`](justfile) from anywhere. `dots` alone lists the tasks, `dots update` pulls the repo, applies it and updates everything for the current OS, and `dots test` runs the repo checks.
+The `dots` alias ([`dot_zshrc`](dot_zshrc), and a function in the [PowerShell profile](readonly_Documents/PowerShell/Microsoft.PowerShell_profile.ps1)) runs the repo [`justfile`](justfile) from anywhere. `dots` alone lists the tasks, `dots update` pulls the repo and applies it, `dots update --all` (or `--full`) also updates everything for the current OS (`update-full`), and `dots test` runs the repo checks.
 
 | Task | What it does |
 |---|---|
