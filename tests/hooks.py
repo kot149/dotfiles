@@ -32,7 +32,7 @@ GH_API = "check-github-api-write.sh"
 
 PUSH_ASK = ("ask", "Git push requires confirmation")
 FORCE_ASK = ("ask", "Force push")
-GH_ASK = ("ask", "GitHub API write requires confirmation")
+GH_ASK = ("ask", "GitHub write requires confirmation")
 
 # (hook, command, expected): None means no decision, else (decision, reason substring).
 CASES: list[tuple[str, str, None | tuple[str, str]]] = [
@@ -87,6 +87,18 @@ CASES: list[tuple[str, str, None | tuple[str, str]]] = [
     (GH_API, "gh api -i repos/o/r/pulls", None),
     (GH_API, "x=$(gh api repos/o/r/pulls)", None),
     (GH_API, "gh api https://api.github.com/repos/o/r/pulls", None),
+    (GH_API, "gh pr comment 1 --repo o/r --body-file /tmp/c.md", GH_ASK),
+    (GH_API, "rtk gh pr comment 1 -b x", GH_ASK),
+    (GH_API, "gh pr create --title x --body y", GH_ASK),
+    (GH_API, "gh pr edit 1 --body-file b.md", GH_ASK),
+    (GH_API, "gh pr review 1 --comment -b x", GH_ASK),
+    (GH_API, "gh pr ready 1 --undo", GH_ASK),
+    (GH_API, "cd repo && gh issue comment 1 -b x", GH_ASK),
+    (GH_API, "gh issue create --title x", GH_ASK),
+    (GH_API, "gh pr list --state all", None),
+    (GH_API, "gh pr checks 1", None),
+    (GH_API, "gh issue view 1 --comments", None),
+    (GH_API, 'echo "gh pr comment 1"', None),
 ]
 
 # (command, expected updatedInput.command): None means the hook leaves it as is.

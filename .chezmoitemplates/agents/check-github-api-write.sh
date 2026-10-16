@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Ask before writing GitHub comments or pull requests through gh api.
+# Ask before writing GitHub comments, issues or pull requests through gh api,
+# gh pr or gh issue.
 # Known limitations: a call inside a string passed to another shell (bash -c '...')
 # and a call after a background & in the same line are not seen.
 
@@ -71,6 +72,12 @@ SHORT_VALUE_FLAGS = "XfFHqtp"
 
 SPLIT = r"(?:&&|\|\||[;|]|\n)"
 
+# gh subcommands that post comments or create / modify pull requests and issues.
+WRITE_SUBCOMMANDS = {
+    "pr": {"create", "comment", "edit", "review", "ready", "merge", "close", "reopen"},
+    "issue": {"create", "comment", "edit", "close", "reopen", "delete"},
+}
+
 
 def segments(command):
     """Yield each command segment, plus the contents of every $( ) and backtick substitution in it."""
@@ -92,7 +99,14 @@ for segment in segments(command):
     words = [w for w in (w.lstrip("({").removeprefix("$(").rstrip(")}") for w in words) if w]
 
     for gh_index, word in enumerate(words):
-        if os.path.basename(word) != "gh" or gh_index + 1 >= len(words) or words[gh_index + 1] != "api":
+        if os.path.basename(word) != "gh" or gh_index + 1 >= len(words):
+            continue
+        group = words[gh_index + 1]
+        if group in WRITE_SUBCOMMANDS:
+            if gh_index + 2 < len(words) and words[gh_index + 2] in WRITE_SUBCOMMANDS[group]:
+                targets.append(f"gh {group} {words[gh_index + 2]}")
+            continue
+        if group != "api":
             continue
 
         args = words[gh_index + 2 :]
@@ -171,11 +185,11 @@ COMMANDS=$(printf '%s\n' "$TARGET" | sed 's/^/  /')
 
 # printf instead of $(cat <<EOF): a heredoc inside $( ) fails to parse on
 # bash 3.2 (macOS /bin/bash).
-REASON=$(printf '[GitHub API write requires confirmation]
+REASON=$(printf '[GitHub write requires confirmation]
 
 %s
 
-These commands can create or modify a pull request or post GitHub comments.
+These commands can create or modify a pull request or issue, or post GitHub comments.
 Confirm the operation explicitly if you intend to publish this change.
 ' "$COMMANDS")
 
