@@ -1,4 +1,4 @@
-{ ... }:
+{ config, lib, ... }:
 let
   shift = 131072;
   control = 262144;
@@ -9,6 +9,20 @@ let
     right = 124;
     down = 125;
     up = 126;
+  };
+  mosData = {
+    # Option
+    dash = {
+      type = "keyboard";
+      code = 58;
+    };
+    # Shift
+    toggle = {
+      type = "keyboard";
+      code = 56;
+    };
+    applications = [ ];
+    buttonBindings = [ ];
   };
 in
 {
@@ -98,20 +112,32 @@ in
     "com.caldis.Mos" = {
       allowlist = false;
       deadZone = 1.0;
-      duration = 4.35;
+      duration = 4.0;
       hideStatusItem = false;
       precision = 1.0;
-      reverse = false;
+      reverse = true;
       reverseHorizontal = true;
       reverseVertical = true;
-      smooth = false;
+      smooth = true;
       smoothHorizontal = true;
       smoothSimTrackpad = false;
       smoothVertical = true;
-      speed = 2.7;
-      step = 33.6;
+      speed = 1.0;
+      step = 1.0;
       updateCheckOnAppStart = false;
       updateIncludingBetaVersion = false;
     };
   };
+
+  # Mos keeps these as JSON in data values, which CustomUserPreferences can only write as strings
+  system.activationScripts.postActivation.text = ''
+    ${lib.concatStrings (
+      lib.mapAttrsToList (key: value: ''
+        sudo -u ${config.system.primaryUser} defaults write com.caldis.Mos ${key} \
+          -data "$(printf '%s' ${lib.escapeShellArg (builtins.toJSON value)} | xxd -p | tr -d '\n')"
+      '') mosData
+    )}
+    # No key for "block" means no hotkey is assigned
+    sudo -u ${config.system.primaryUser} defaults delete com.caldis.Mos block 2>/dev/null || true
+  '';
 }
