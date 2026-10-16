@@ -23,7 +23,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "herdrdev/herdr"
-rev = "5da0a01e1eedda054db0c81dd3a780000c40d9f0"
+rev = "143bf5fd4781d164260c63fe28e7dc08054ad32f"
 prefix = "skills"
 names = ["herdr"]
 agents = ["claude", "agents"]
@@ -67,7 +67,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "DietrichGebert/ponytail"
-rev = "9cc65d03aa2da1db7121b912d03596409ee340b8"
+rev = "84740e3d344b69b4a133201fa519eb37a62a2b2a"
 prefix = "skills"
 names = [
   "ponytail",
@@ -98,7 +98,7 @@ agents = ["claude", "agents"]
 # SKILL.md sits at the repo root, so there is no per-skill subdirectory.
 [[agent_skills]]
 repo = "luchasarie/bro-skill"
-rev = "3aa8c40b1241111f73ab5360e770f7512193a20e"
+rev = "6c08e7ee5eb8ef8b9bf0588d400170654abc256b"
 prefix = ""
 names = ["bro"]
 agents = ["claude", "agents"]
@@ -106,7 +106,7 @@ flat = true
 
 [[agent_skills]]
 repo = "dmmulroy/anti-slop"
-rev = "c44ef22ca116d0ba62a3ff663a0bd13a3f3fa40b"
+rev = "13909c9e07590f5a85d93c62712259fe14a883f7"
 prefix = "skills"
 names = ["install-anti-slop"]
 agents = ["claude", "agents"]
@@ -122,7 +122,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "nanaism/yomiyasu"
-rev = "373356eb874af5184962c88e925ea7eb58450318"
+rev = "60bf877acebc86651e0b67d70112a66245f87758"
 prefix = "skills"
 names = ["yomiyasu"]
 agents = ["claude", "agents"]
@@ -132,7 +132,7 @@ agents = ["claude", "agents"]
 # needs them materialized.
 [[agent_skills]]
 repo = "cloudflare/skills"
-rev = "c430dd965cea3a8faf0ef035e3b3d73b38518081"
+rev = "86505e44f87d801aa1864a3c4109e9a8ae5c409f"
 prefix = "skills"
 names = [
   "agents-sdk",
