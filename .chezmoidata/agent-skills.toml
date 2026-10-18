@@ -67,7 +67,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "DietrichGebert/ponytail"
-rev = "6f1c2bfff0c837d268929a7c4e490918eb4fab29"
+rev = "09c434ab73ca43761c5d8b0c5d341926c2fba710"
 prefix = "skills"
 names = [
   "ponytail",
@@ -122,7 +122,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "nanaism/yomiyasu"
-rev = "68075bea91ae27958766effd6aaa56d42d6be125"
+rev = "84e1f5b15e497538fcfe19ab7e9c6f6d138f19ff"
 prefix = "skills"
 names = ["yomiyasu"]
 agents = ["claude", "agents"]
