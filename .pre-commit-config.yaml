@@ -1,0 +1,19 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: Format Python
+        entry: ruff format
+        language: system
+        files: \.py$
+      - id: nixfmt
+        name: Format Nix
+        entry: nixfmt
+        language: system
+        files: \.nix$
+      - id: lint
+        name: Lint repository
+        entry: just lint
+        language: system
+        pass_filenames: false
+        always_run: true

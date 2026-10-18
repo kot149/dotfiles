@@ -145,6 +145,16 @@ render-check:
 lint:
     {{ uv_script }} scripts/lint.py
 
+# Install a POSIX hook compatible with the global Git hook dispatcher
+[group('dev')]
+hooks-install:
+    #!/bin/sh
+    set -eu
+    hooks_dir=$(git rev-parse --git-common-dir)/hooks
+    mkdir -p "$hooks_dir"
+    cp scripts/pre-commit.sh "$hooks_dir/pre-commit"
+    chmod +x "$hooks_dir/pre-commit"
+
 # Report stale ignore entries, missing Nix hash globs, missing tools, Codex hook trust and skill drift (extra args go to the script)
 [group('dev')]
 doctor *args:

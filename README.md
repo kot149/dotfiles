@@ -1,5 +1,22 @@
 These dotfiles are managed by [chezmoi](https://www.chezmoi.io) and [Nix Home Manager](https://github.com/nix-community/home-manager).
 
+## Development
+
+Install the commit hooks after cloning:
+
+```sh
+just hooks-install
+```
+
+The hooks autoformat staged Python and Nix files, then run `just lint`.
+Restage formatting changes and retry the commit. Nix templates are checked
+after rendering by `just lint`; format their source manually.
+The hooks use `ruff`, `nixfmt`, `shellcheck`, `oxlint`, `chezmoi`, `uv` and
+`just` from PATH. `just lint` skips unavailable linters.
+
+The installed POSIX hook also works when the global `core.hooksPath` hook
+delegates to `.git/hooks/pre-commit` using `sh`.
+
 ## Prerequisites
 
 ### Windows

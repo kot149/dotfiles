@@ -29,7 +29,7 @@ from pathlib import Path, PurePosixPath
 ROOT = Path(__file__).resolve().parent.parent
 # Unprefixed root entries that are repo-only. chezmoi already skips source
 # entries starting with ".", so those need no listing here.
-REPO_ONLY = {"README.md", "AGENTS.md", "scripts", "tests", "justfile", "ruff.toml"}
+REPO_ONLY = {".pre-commit-config.yaml", "README.md", "AGENTS.md", "scripts", "tests", "justfile", "ruff.toml"}
 # (run_onchange script, glob its hash comments must range over)
 HASH_GLOBS = [
     (
