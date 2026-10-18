@@ -241,7 +241,9 @@ def japanese_reply(hook_dir: Path, prompt: str, reply: str) -> tuple[int, str, b
 
 with tempfile.TemporaryDirectory() as tmp:
     hook_dir = Path(tmp)
-    shutil.copy(ROOT / "dot_claude" / "hooks" / "executable_check-japanese-reply.sh", hook_dir / "check-japanese-reply.sh")
+    shutil.copy(
+        ROOT / "dot_claude" / "hooks" / "executable_check-japanese-reply.sh", hook_dir / "check-japanese-reply.sh"
+    )
     shutil.copy(HOOKS / "python-runner.sh", hook_dir / "python-runner.sh")
 
     for prompt, reply, expected in JAPANESE_REPLY_CASES:
