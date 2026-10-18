@@ -1,4 +1,4 @@
-import type { Plugin } from "@opencode-ai/plugin"
+import type { Plugin } from "@opencode/plugin"
 import { existsSync } from "node:fs"
 import { homedir } from "node:os"
 import path from "node:path"
@@ -7,9 +7,8 @@ import path from "node:path"
 // before opencode tool calls, with the same stdin JSON Claude Code sends. The
 // list comes from the `opencode` tables in .chezmoidata/agent-hooks.toml.
 //
-// A throw from tool.execute.before fails the tool call with the message. opencode
-// gives plugins no way to ask the user, so "ask" blocks like "deny"; commands the
-// user runs with `!` in the TUI do not go through plugins.
+// This pre-tool bridge blocks "ask" like "deny" rather than opening a permission
+// prompt; a throw fails the tool call with the reason.
 
 type Hook = { name: string; file: string; runner: string; tools: string[] }
 type Block = { decision: string; reason: string }
@@ -43,9 +42,9 @@ function claudeInput(tool: string, args: Record<string, unknown>): [string, Reco
     case "bash":
       return text("command") ? ["Bash", { command: text("command").replace(RTK_PREFIX, "$1$2") }] : undefined
     case "write":
-      return ["Write", { file_path: text("filePath"), content: text("content") }]
+      return ["Write", { file_path: text("path"), content: text("content") }]
     case "edit":
-      return ["Edit", { file_path: text("filePath"), old_string: text("oldString"), new_string: text("newString") }]
+      return ["Edit", { file_path: text("path"), old_string: text("oldString"), new_string: text("newString") }]
     case "apply_patch":
       return ["apply_patch", { command: text("patchText") }]
   }
@@ -84,24 +83,26 @@ async function runHook(argv: string[], payload: string, cwd: string): Promise<Bl
   return undefined
 }
 
-export const GuardsOpenCodePlugin: Plugin = async ({ directory }) => {
-  const hooks = HOOKS.flatMap((hook) => {
-    const file = HOOK_DIRS.map((dir) => path.join(dir, hook.file)).find((p) => existsSync(p))
-    const launcher = LAUNCHERS[hook.runner]
-    if (!file || !launcher) {
-      console.warn(`[guards] ${hook.file} not found in ${HOOK_DIRS.join(" or ")}; skipped`)
-      return []
-    }
-    return [{ ...hook, argv: [...launcher, file] }]
-  })
-  if (hooks.length === 0) return {}
+export default {
+  id: "guards",
+  async setup(ctx) {
+    const directory = ctx.location.directory
+    const hooks = HOOKS.flatMap((hook) => {
+      const file = HOOK_DIRS.map((dir) => path.join(dir, hook.file)).find((p) => existsSync(p))
+      const launcher = LAUNCHERS[hook.runner]
+      if (!file || !launcher) {
+        console.warn(`[guards] ${hook.file} not found in ${HOOK_DIRS.join(" or ")}; skipped`)
+        return []
+      }
+      return [{ ...hook, argv: [...launcher, file] }]
+    })
+    if (hooks.length === 0) return
 
-  return {
-    "tool.execute.before": async (input, output) => {
-      const raw = String(input?.tool ?? "").toLowerCase()
-      const tool = raw === "shell" ? "bash" : raw
+    await ctx.tool.hook("execute.before", async (event) => {
+      const raw = event.tool
+      const tool = raw === "shell" ? "bash" : raw === "patch" ? "apply_patch" : raw
       const selected = hooks.filter((hook) => hook.tools.includes(tool))
-      const args = output?.args
+      const args = event.input
       if (selected.length === 0 || !args || typeof args !== "object") return
 
       const claude = claudeInput(tool, args as Record<string, unknown>)
@@ -111,7 +112,7 @@ export const GuardsOpenCodePlugin: Plugin = async ({ directory }) => {
       const cwd = typeof workdir === "string" && workdir ? path.resolve(directory, workdir) : directory
       const payload = JSON.stringify({
         hook_event_name: "PreToolUse",
-        session_id: input?.sessionID ?? "",
+        session_id: event.sessionID ?? "",
         cwd,
         tool_name: toolName,
         tool_input: toolInput,
@@ -121,11 +122,11 @@ export const GuardsOpenCodePlugin: Plugin = async ({ directory }) => {
       const blocks = results.filter((block): block is Block => block !== undefined)
       if (blocks.length === 0) return
       const askHint =
-        "\n\nThis needs the user's confirmation, which an opencode plugin cannot ask for. " +
+        "\n\nThis needs the user's confirmation; this guard bridge cannot forward a confirmation prompt. " +
         "Ask the user to run the command themselves with ! in the opencode TUI."
       throw new Error(
         blocks.map(({ decision, reason }) => (decision === "ask" ? reason + askHint : reason)).join("\n\n"),
       )
-    },
-  }
-}
+    })
+  },
+} satisfies Plugin.Plugin

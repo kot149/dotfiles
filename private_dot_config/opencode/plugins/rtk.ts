@@ -1,4 +1,5 @@
-import type { Plugin } from "@opencode-ai/plugin"
+import type { Plugin } from "@opencode/plugin"
+import { $ } from "bun"
 
 // RTK OpenCode plugin — rewrites commands to use rtk for token savings.
 // Requires: rtk >= 0.23.0 in PATH.
@@ -7,19 +8,19 @@ import type { Plugin } from "@opencode-ai/plugin"
 // which is the single source of truth (src/discover/registry.rs).
 // To add or change rewrite rules, edit the Rust registry — not this file.
 
-export const RtkOpenCodePlugin: Plugin = async ({ $ }) => {
-  try {
-    await $`which rtk`.quiet()
-  } catch {
-    console.warn("[rtk] rtk binary not found in PATH — plugin disabled")
-    return {}
-  }
+export default {
+  id: "rtk",
+  async setup(ctx) {
+    try {
+      await $`which rtk`.quiet()
+    } catch {
+      console.warn("[rtk] rtk binary not found in PATH — plugin disabled")
+      return
+    }
 
-  return {
-    "tool.execute.before": async (input, output) => {
-      const tool = String(input?.tool ?? "").toLowerCase()
-      if (tool !== "bash" && tool !== "shell") return
-      const args = output?.args
+    await ctx.tool.hook("execute.before", async (event) => {
+      if (event.tool !== "shell") return
+      const args = event.input
       if (!args || typeof args !== "object") return
 
       const command = (args as Record<string, unknown>).command
@@ -34,6 +35,6 @@ export const RtkOpenCodePlugin: Plugin = async ({ $ }) => {
       } catch {
         // rtk rewrite failed — pass through unchanged
       }
-    },
-  }
-}
+    })
+  },
+} satisfies Plugin.Plugin

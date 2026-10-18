@@ -81,7 +81,10 @@ let
     llmAgents.herdr
     llmAgents.hunk
     llmAgents.ax
-    llmAgents.opencode
+    (pkgs.runCommand "opencode-${llmAgents.opencode2.version}" { } ''
+      mkdir -p "$out/bin"
+      ln -s ${lib.getExe llmAgents.opencode2} "$out/bin/opencode"
+    '')
     llmAgents.omp
     llmAgents.rtk
 
