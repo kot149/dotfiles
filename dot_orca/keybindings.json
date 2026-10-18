@@ -11,9 +11,26 @@
       ],
       "terminal.copySelection": [
         "Ctrl+C"
-      ]
+      ],
+      "terminal.splitRight": [
+        "Mod+Slash"
+      ],
+      "terminal.splitDown": [
+        "Mod+Minus"
+      ],
+      "zoom.in": [],
+      "zoom.out": []
     },
     "linux": {},
-    "win32": {}
+    "win32": {
+      "terminal.splitRight": [
+        "Mod+Slash"
+      ],
+      "terminal.splitDown": [
+        "Mod+Minus"
+      ],
+      "zoom.in": [],
+      "zoom.out": []
+    }
   }
 }
