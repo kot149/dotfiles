@@ -310,7 +310,7 @@ alias fable-opus='CLAUDE_CODE_SUBAGENT_MODEL=claude-opus-5-5 claude --model clau
 alias opus-opus='CLAUDE_CODE_SUBAGENT_MODEL=claude-opus-5-5 claude --model claude-opus-5-5 --append-system-prompt "Delegate task and work execution to subagents with clear, appropriately-scoped instructions. You oversee the overall progress and planning. Exceptions based on your own judgment are allowed."'
 
 alias luna='codex -m gpt-6-luna -c model_reasoning_effort="xhigh"'
-alias sol='codex -m gpt-6-sol -c model_reasoning_effort="medium"'
+alias sol='codex -m gpt-6.1-sol -c model_reasoning_effort="medium"'
 alias astra='codex -m gpt-6-astra -c model_reasoning_effort="low"'
 
 # Shared cli-proxy-api setup for claudex and dshx: a single proxy serves Codex OAuth
@@ -411,7 +411,7 @@ claudex() {
   fi
   case "$variant" in
     luna) _claude_gpt gpt-6-luna xhigh "$@" ;;
-    sol) _claude_gpt gpt-6-sol medium gpt-6-luna xhigh "$@" ;;
+    sol) _claude_gpt gpt-6.1-sol medium gpt-6-luna xhigh "$@" ;;
     astra) _claude_gpt gpt-6-astra low gpt-6-luna xhigh "$@" ;;
     *) echo "claudex: unknown variant '$variant' (expected luna|sol|astra)" >&2; return 1 ;;
   esac
@@ -424,7 +424,7 @@ _dsh_gpt_patch() {
   local effort="$2"
   local patch="${XDG_CACHE_HOME:-$HOME/.cache}/cli-proxy-api/dsh-$model-$effort.yml"
   local m models=""
-  for m in gpt-6-luna gpt-6-sol gpt-6-astra; do
+  for m in gpt-6-luna gpt-6.1-sol gpt-6-astra; do
     models+="
           - id: $m
             contextWindow: 1050000
@@ -459,7 +459,7 @@ dshx() {
   local model effort
   case "$variant" in
     luna) model=gpt-6-luna effort=xhigh ;;
-    sol) model=gpt-6-sol effort=medium ;;
+    sol) model=gpt-6.1-sol effort=medium ;;
     astra) model=gpt-6-astra effort=low ;;
   esac
   (( $# > 0 )) || set -- web
@@ -484,7 +484,7 @@ ompx() {
   local main
   case "$variant" in
     luna) main=gpt-6-luna:xhigh ;;
-    sol) main=gpt-6-sol:medium ;;
+    sol) main=gpt-6.1-sol:medium ;;
     astra) main=gpt-6-astra:low ;;
   esac
   local sub=gpt-6-luna:xhigh

@@ -343,7 +343,7 @@ function opus { claude --model 'claude-opus-5-5[1m]' @args }
 function fable { claude --model claude-fable-5-1 @args }
 
 function luna { codex -m gpt-6-luna -c model_reasoning_effort="xhigh" @args }
-function sol { codex -m gpt-6-sol -c model_reasoning_effort="medium" @args }
+function sol { codex -m gpt-6.1-sol -c model_reasoning_effort="medium" @args }
 function astra { codex -m gpt-6-astra -c model_reasoning_effort="low" @args }
 
 # Shared cli-proxy-api setup for claudex: a single proxy on port 8317 serves
@@ -493,7 +493,7 @@ function claudex {
     }
     switch ($variant) {
         'luna' { Invoke-ClaudeGpt -Model gpt-6-luna -Effort xhigh -ClaudeArgs $rest }
-        'sol' { Invoke-ClaudeGpt -Model gpt-6-sol -Effort medium -SubagentModel gpt-6-luna -SubagentEffort xhigh -ClaudeArgs $rest }
+        'sol' { Invoke-ClaudeGpt -Model gpt-6.1-sol -Effort medium -SubagentModel gpt-6-luna -SubagentEffort xhigh -ClaudeArgs $rest }
         'astra' { Invoke-ClaudeGpt -Model gpt-6-astra -Effort low -SubagentModel gpt-6-luna -SubagentEffort xhigh -ClaudeArgs $rest }
         default { Write-Error "claudex: unknown variant '$variant' (expected luna|sol|astra)" }
     }
@@ -507,7 +507,7 @@ function Get-DshGptPatch {
         [Parameter(Mandatory)][string]$Effort
     )
     $patch = Join-Path $HOME ".cache\cli-proxy-api\dsh-$Model-$Effort.yml"
-    $models = foreach ($m in 'gpt-6-luna', 'gpt-6-sol', 'gpt-6-astra') {
+    $models = foreach ($m in 'gpt-6-luna', 'gpt-6.1-sol', 'gpt-6-astra') {
         @"
           - id: $m
             contextWindow: 1050000
@@ -546,7 +546,7 @@ function dshx {
     }
     switch ($variant) {
         'luna' { $model = 'gpt-6-luna'; $effort = 'xhigh' }
-        'sol' { $model = 'gpt-6-sol'; $effort = 'medium' }
+        'sol' { $model = 'gpt-6.1-sol'; $effort = 'medium' }
         'astra' { $model = 'gpt-6-astra'; $effort = 'low' }
     }
     if ($rest.Count -eq 0) { $rest = @('web') }
@@ -580,7 +580,7 @@ function ompx {
     }
     switch ($variant) {
         'luna' { $main = 'gpt-6-luna:xhigh' }
-        'sol' { $main = 'gpt-6-sol:medium' }
+        'sol' { $main = 'gpt-6.1-sol:medium' }
         'astra' { $main = 'gpt-6-astra:low' }
     }
     $sub = 'gpt-6-luna:xhigh'
