@@ -33,7 +33,7 @@ TARGETS = [
     (".codex/hooks.json", "json"),
     (".codex/config.toml", "toml"),
     (".config/opencode/opencode.json", "json"),
-    (".config/opencode/tui.json", "json"),
+    (".config/opencode/cli.json", "json"),
     (".gemini/antigravity-cli/settings.json", "json"),
     (".config/home-manager/flake.nix", "nix"),
     (".config/home-manager/common.nix", "nix"),

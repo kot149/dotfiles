@@ -1,9 +1,11 @@
 {{- /* chezmoi:modify-template */ -}}
 {{- /* Keys set here win; anything else in the current file (e.g. plugins added by other tools) is kept. */ -}}
+{{- /* ctrl+c stays on app.exit; plugins/ctrl-c-interrupt/tui.ts interrupts with it while a session runs. */ -}}
 {{- $managed := `{
-  "$schema": "https://opencode.ai/tui.json",
+  "$schema": "https://opencode.ai/v2/cli.json",
   "keybinds": {
-    "session_interrupt": "ctrl+c,escape"
+    "app.exit": "ctrl+c,ctrl+d,<leader>q",
+    "session.interrupt": "escape"
   }
 }` -}}
 {{- includeTemplate "agents/merge-config.tmpl" (dict "current" .chezmoi.stdin "managed" $managed "format" "json") -}}

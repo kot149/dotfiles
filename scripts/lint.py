@@ -65,6 +65,7 @@ JS_FILES = [
     ".chezmoitemplates/agents/textlint-rules/*.js",
     "tests/*.js",
     "private_dot_config/opencode/plugins/*.ts",
+    "private_dot_config/opencode/plugins/*/*.ts",
 ]
 JS_TEMPLATES = ["private_dot_config/opencode/plugins/*.ts.tmpl"]
 
