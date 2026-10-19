@@ -132,6 +132,22 @@ refresh_cache() {
   mv -f "$tmp" "$cache_file" && date +%s >"$cache_file.time"
 }
 
+# A path query (~/x, /x, ./x, ../x) lists the entries of its directory part, hidden
+# and ignored ones included, and fuzzy-matches the last component.
+if [[ $query == \~/* || $query == /* || $query == ./* || $query == ../* ]]; then
+  dir_part=${query%/*}/
+  base_part=${query##*/}
+  results=$(
+    fd --hidden --no-ignore --max-depth 1 --base-directory "${dir_part/#\~\//$HOME/}" 2>/dev/null |
+      fzf --filter="$base_part" |
+      head -n "$MAX_RESULTS" |
+      while IFS= read -r entry; do printf '%s%s\n' "$dir_part" "$entry"; done
+  )
+  debug "cwd=$PWD cache=path query=[$query] results=$(printf '%s' "$results" | grep -c . || true)"
+  printf '%s\n' "$results"
+  exit 0
+fi
+
 [[ -d $CACHE_DIR ]] || mkdir -p "$CACHE_DIR"
 cache_key=$(printf '%s' "$PWD" | cksum)
 cache_file="$CACHE_DIR/${cache_key%% *}"
