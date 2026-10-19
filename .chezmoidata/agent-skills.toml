@@ -122,7 +122,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "nanaism/yomiyasu"
-rev = "84e1f5b15e497538fcfe19ab7e9c6f6d138f19ff"
+rev = "5b7cacc7749e9195338d7305635c06871fc6daf1"
 prefix = "skills"
 names = ["yomiyasu"]
 agents = ["claude", "agents"]
