@@ -1,0 +1,90 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+  "bottom_dock_layout": "contained",
+  "project_panel": {
+    "dock": "left"
+  },
+  "outline_panel": {
+    "dock": "left"
+  },
+  "collaboration_panel": {
+    "dock": "left"
+  },
+  "agent": {
+    "default_model": {
+      "provider": "zed.dev",
+      "model": "gpt-5.4",
+      "enable_thinking": true,
+      "effort": "medium"
+    },
+    "dock": "right",
+    "favorite_models": [
+      {
+        "provider": "zed.dev",
+        "model": "claude-sonnet-4-6",
+        "enable_thinking": true,
+        "effort": "high"
+      },
+      {
+        "provider": "zed.dev",
+        "model": "gpt-5.5",
+        "enable_thinking": true,
+        "effort": "medium"
+      },
+      {
+        "provider": "zed.dev",
+        "model": "gpt-5.4",
+        "enable_thinking": true,
+        "effort": "medium"
+      }
+    ],
+    "model_parameters": []
+  },
+  "git_panel": {
+    "dock": "left"
+  },
+  "telemetry": {
+    "diagnostics": false,
+    "metrics": false
+  },
+  "terminal": {
+    "font_family": "Inconsolata Nerd Font",
+    "option_as_meta": true
+  },
+  "git": {
+    "inline_blame": {
+      "enabled": true
+    }
+  },
+  "base_keymap": "VSCode",
+  "minimap": {
+    "show": "never"
+  },
+  "buffer_font_fallbacks": [
+    "Menlo",
+    "Monaco",
+    "Courier New",
+    "monospace",
+    "Inconsolata Nerd Font"
+  ],
+  "buffer_font_family": "Consolas",
+  "soft_wrap": "editor_width",
+  "ui_font_size": 16,
+  "buffer_font_size": 15,
+  "theme": {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "One Dark",
+  },
+  "markdown_preview": {
+    "open_markdown_files_in_preview": true,
+    "limit_content_width": false
+  }
+}

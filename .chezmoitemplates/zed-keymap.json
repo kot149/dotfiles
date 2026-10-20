@@ -1,0 +1,40 @@
+// Zed keymap
+//
+// For information on binding keys, see the Zed
+// documentation: https://zed.dev/docs/key-bindings
+//
+// To see the default key bindings run `zed: open default keymap`
+// from the command palette.
+[
+  {
+    "context": "Workspace",
+    "bindings": {
+      // "shift shift": "file_finder::Toggle"
+    },
+  },
+  {
+    "context": "Editor && vim_mode == insert",
+    "bindings": {
+      // "j k": "vim::NormalBefore"
+    },
+  },
+  {
+    "bindings": {
+      "f1": "command_palette::Toggle"
+    }
+  },
+  {
+    "context": "Pane",
+    "bindings": {
+      "cmd-pageup": "pane::ActivatePreviousItem",
+      "cmd-pagedown": "pane::ActivateNextItem"
+    }
+  },
+  {
+    "context": "Editor",
+    "bindings": {
+      "cmd-pageup": "pane::ActivatePreviousItem",
+      "cmd-pagedown": "pane::ActivateNextItem"
+    }
+  }
+]
