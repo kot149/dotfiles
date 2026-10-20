@@ -111,6 +111,38 @@ const VERB_RULES = {
       "「効く」→ 何にどう作用するのかを具体的に書く" +
       " (例: 「着手順を決めるならここが効く」→「着手順を決めるならこの点を先に見る」)",
   },
+  要る: {
+    // 平仮名の「いる」(居る) は対象外。
+    skip: (tokens, i) => !tokens[i].surface_form.startsWith("要"),
+    advice:
+      "「要る」→「必要」と書く" +
+      " (例: 「force pushが要ります」→「force pushが必要です」/「再依頼は要りません」→「再依頼は必要ありません」)",
+    fix: (tokens, i) => fixNeeded(tokens, i),
+  },
+};
+
+/**
+ * 「要る」の活用形を「必要」に書き換える置換。後ろの助動詞ごと置き換える形は fixEnd を返す。
+ * 「要った」のように言い換えが一つに決まらない形は undefined で、指摘だけにする。
+ */
+const fixNeeded = (tokens, i) => {
+  const surface = tokens[i].surface_form;
+  const j = neighborIndex(tokens, i, 1);
+  const next = tokens[j] ?? {};
+  const nextForm = dictionaryForm(next);
+  const through = (replacement) => ({ replacement, fixEnd: next.word_position - 1 + next.surface_form.length });
+  if (surface === "要る") {
+    // 「要るリクエスト」「要るのは」「要るので」は連体形なので「必要な」にする。
+    return { replacement: next.pos === "名詞" || nextForm === "ので" ? "必要な" : "必要" };
+  }
+  if (surface === "要ら") return nextForm === "ない" ? { replacement: "必要" } : undefined;
+  if (surface !== "要り") return undefined;
+  if (next.pos_detail_1 === "読点") return { replacement: "必要で" };
+  if (nextForm !== "ます") return undefined;
+  if (next.surface_form === "ます") return through("必要です");
+  if (next.surface_form === "ませ") return through("必要ありませ");
+  if (next.surface_form === "まし") return through("必要でし");
+  return undefined;
 };
 
 const NOUN_RULES = {
@@ -425,7 +457,8 @@ function* findMatches(tokens) {
     if (token.pos === "動詞" && token.conjugated_form !== "体言接続特殊２" && VERB_RULES[form]) {
       const rule = VERB_RULES[form];
       if (rule.skip?.(tokens, i)) continue;
-      yield { ...hit, advice: rule.advice, replacement: rule.fix?.[surface] };
+      const fix = typeof rule.fix === "function" ? rule.fix(tokens, i) : { replacement: rule.fix?.[surface] };
+      yield { ...hit, advice: rule.advice, ...fix };
     } else if (token.pos === "名詞" && NOUN_RULES[form] && !NOUN_RULES[form].skip?.(tokens, i)) {
       yield { ...hit, advice: NOUN_RULES[form].advice };
     } else if (quiet >= 0) {
