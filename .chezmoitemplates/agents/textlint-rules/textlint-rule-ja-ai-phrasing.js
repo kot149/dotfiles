@@ -52,6 +52,20 @@ const CANON_ADVICE =
   "「正本」「正典」→ 何を基準にするのかを具体的に書く" +
   " (例: 「どこが正本か読めない」→「同じ結論が3か所にあり、どれを直せばよいか決まらない」)";
 
+const INSUFFICIENT_ADVICE =
+  "「〜では足りない」→ 何が欠けていて何が起きるのかを具体的に書く" +
+  " (例: 「単体テストだけでは足りない」→「単体テストだけではDB接続の失敗を検出できない」)";
+
+/**
+ * 「〜では足りない」「〜じゃ足りない」の形。「お金が足りない」のように不足するものを
+ * 名指しする形と「取るに足らない」は対象外。
+ */
+const isInsufficient = (tokens, i) => {
+  const before = neighbor(tokens, i, -1).surface_form;
+  const after = dictionaryForm(neighbor(tokens, i, 1));
+  return ["は", "じゃ"].includes(before) && ["ない", "ぬ", "ます"].includes(after);
+};
+
 const VERB_RULES = {
   寄せる: {
     advice:
@@ -118,6 +132,21 @@ const VERB_RULES = {
       "「要る」→「必要」と書く" +
       " (例: 「force pushが要ります」→「force pushが必要です」/「再依頼は要りません」→「再依頼は必要ありません」)",
     fix: (tokens, i) => fixNeeded(tokens, i),
+  },
+  足す: {
+    // 「用を足す」は慣用句、「足し合わせる」のような複合動詞は計算の意味なので対象外。
+    skip: (tokens, i) => objectNoun(tokens, i) === "用" || neighbor(tokens, i, 1).pos === "動詞",
+    advice: "「足す」→「追加する」と書く (例: 「テストを足す」→「テストを追加する」)",
+    // 足さない、足せば などは語尾の組み替えが必要なので指摘だけ。
+    fix: { 足す: "追加する", 足し: "追加し" },
+  },
+  足りる: {
+    skip: (tokens, i) => !isInsufficient(tokens, i),
+    advice: INSUFFICIENT_ADVICE,
+  },
+  足る: {
+    skip: (tokens, i) => !isInsufficient(tokens, i),
+    advice: INSUFFICIENT_ADVICE,
   },
 };
 
@@ -199,6 +228,7 @@ const POTENTIAL_FORMS = {
   通せる: "通す",
   申し送れる: "申し送る",
   払える: "払う",
+  足せる: "足す",
 };
 
 // テストの成否の比喩でしか使わない語。単独で出ても指摘する。大文字小文字は問わない。
