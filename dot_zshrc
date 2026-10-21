@@ -24,6 +24,7 @@ alias dots='just --justfile ~/.local/share/chezmoi/justfile'
 export NIX_BUILD_SHELL=zsh
 export PAGER=moor
 export OPENCODE_CONFIG=$HOME/.config/opencode/opencode.local.json
+export CLAUDE_CODE_CERT_STORE=bundled,system
 
 #################################  HISTORY  #################################
 # history
