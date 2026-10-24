@@ -181,5 +181,29 @@ in
         extraArgs = "--keep-since 30d --keep 1";
       };
     };
+
+    # nixpkgs' rustup patchelf's every toolchain binary under ~/.rustup to a Nix
+    # glibc loader. That path lives outside the store, so nothing keeps it alive
+    # once the generation that referenced it is gone (programs.nh.clean keeps
+    # only 30d / 1 generation), and cargo/rustc then die with "No such file or
+    # directory". Re-point binaries whose interpreter has vanished at the
+    # system loader, which cannot be collected (a Nix loader would only work
+    # through the rustup proxy, since the toolchain needs zlib from Nix).
+    home.activation.repairRustupToolchains = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
+      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if [ -d "$HOME/.rustup/toolchains" ]; then
+          loader=/lib64/ld-linux-x86-64.so.2
+          [ -e "$loader" ] || loader=${pkgs.stdenv.cc.bintools.dynamicLinker}
+          ${pkgs.findutils}/bin/find "$HOME/.rustup/toolchains" -type f -perm -u+x |
+            while IFS= read -r bin; do
+              interp=$(${lib.getExe pkgs.patchelf} --print-interpreter "$bin" 2>/dev/null) || continue
+              [ -n "$interp" ] && [ ! -e "$interp" ] || continue
+              verboseEcho "repairing rustup toolchain binary: $bin"
+              ${lib.getExe pkgs.patchelf} --set-interpreter "$loader" "$bin" ||
+                warnEcho "failed to repair $bin"
+            done
+        fi
+      ''
+    );
   };
 }
