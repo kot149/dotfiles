@@ -23,7 +23,9 @@ if (process.platform === "win32") {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const bodies = path.join(root, ".chezmoitemplates", "agents");
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "opencode-guards-"));
+// realpathSync: on macOS os.tmpdir() is /var/folders/..., while a process started
+// there reports the resolved /private/var/folders/... from process.cwd().
+const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "opencode-guards-")));
 // Runs on every exit path, including the early process.exit calls and a thrown error.
 process.on("exit", () => fs.rmSync(tmp, { recursive: true, force: true }));
 const hookDir = path.join(tmp, "hooks");
