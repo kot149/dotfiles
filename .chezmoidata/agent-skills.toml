@@ -155,3 +155,23 @@ rev = "33762551d4dfa2e757fa1b43417c7dab528a215f"
 prefix = "skills"
 names = ["create-skill"]
 agents = ["claude", "agents"]
+
+# Orca ADE (https://www.onorca.dev). Orca scans ~/.claude/skills,
+# ~/.agents/skills and ~/.codex/skills itself, so the two stores above are
+# enough. `jira-tickets` / `linear-tickets` are the legacy names of `orca-jira`
+# / `orca-linear` and ship only to let existing installs converge, so they stay
+# out; a fresh install is not one of them. The `orca-emulator*` skills drive a
+# mobile device/simulator and are left out too.
+[[agent_skills]]
+repo = "stablyai/orca"
+rev = "5dc197e5ec11528afee6bdfb289f44fdba2b8872"
+prefix = "skills"
+names = [
+  "computer-use",
+  "orca-cli",
+  "orca-jira",
+  "orca-linear",
+  "orca-per-workspace-env",
+  "orchestration",
+]
+agents = ["claude", "agents"]
