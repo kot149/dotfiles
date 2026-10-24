@@ -4,7 +4,7 @@
 # ///
 """
 Find commands installed through a language package manager (bun, npm, pnpm, uv,
-cargo, go) that are also provided by another source on PATH, such as Nix,
+cargo, go) that are also provided by another source on PATH, such as Nix, apt,
 winget or Homebrew, and show the version each source provides.
 
 The first source on PATH is the one that runs; it is marked with "*".
@@ -192,6 +192,38 @@ def brew_version(path: Path) -> str:
     return "?"
 
 
+APT_DIRS = (Path("/usr/bin"), Path("/usr/sbin"))
+_apt_owners: dict[str, str] | None = None
+_apt_versions: dict[str, str] = {}
+
+
+def apt_owner(path: Path) -> str | None:
+    """Package that ships path, when a dpkg package does."""
+    global _apt_owners
+    if _apt_owners is None:
+        # One dpkg-query call for every system binary beats one call per command.
+        _apt_owners = {}
+        for pattern in ("/usr/bin/*", "/usr/sbin/*"):
+            for line in (capture("dpkg-query", "-S", pattern) or "").splitlines():
+                package, sep, file = line.partition(": ")
+                if sep:
+                    _apt_owners[file] = package.split(",")[0].strip()
+    return _apt_owners.get(path.as_posix())
+
+
+def apt_version(path: Path) -> str | None:
+    """package@version from dpkg for a system binary, if a dpkg package owns it."""
+    for candidate in (path, Path(os.path.realpath(path))):
+        # an alternatives symlink points outside the package's own path list
+        if any(candidate.is_relative_to(d) for d in APT_DIRS):
+            if (package := apt_owner(candidate)) is not None:
+                if package not in _apt_versions:
+                    version = capture("dpkg-query", "-W", "-f=${Version}", package) or "?"
+                    _apt_versions[package] = version.strip() or "?"
+                return f"{package}@{_apt_versions[package]}"
+    return None
+
+
 def reported_version(path: Path) -> str:
     """First line of `<cmd> --version`, for sources without version metadata."""
     try:
@@ -216,6 +248,8 @@ def classify(path: Path, own: dict[str, tuple[dict[str, str], list[Path]]], name
         return "nix", nix_version(path)
     if "/Cellar/" in real or text.startswith("/opt/homebrew/"):
         return "brew", brew_version(path)
+    if (version := apt_version(path)) is not None:
+        return "apt", version
     if "/winget/" in text.lower() or "/windowsapps/" in text.lower():
         return "winget", reported_version(path)
     return "other", reported_version(path)

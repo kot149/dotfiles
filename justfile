@@ -119,7 +119,7 @@ pkgs-list *managers:
 pkgs-update *managers:
     {{ uv_script }} scripts/global_packages.py update {{ managers }}
 
-# Find commands installed by both bun / npm / pnpm / uv / cargo / go and Nix / winget / others
+# Find commands installed by both bun / npm / pnpm / uv / cargo / go and Nix / apt / winget / others
 [group('tools')]
 pkgs-dupes:
     {{ uv_script }} scripts/duplicate_packages.py
@@ -134,6 +134,13 @@ gh-ext-upgrade:
 [windows]
 winget-upgrade:
     winget upgrade --all
+
+# Upgrade apt packages (run by hand; not part of update)
+[group('tools')]
+[linux]
+apt-upgrade:
+    sudo apt-get update
+    sudo apt-get upgrade
 
 # Render the agent config templates and check that the output parses
 [group('dev')]

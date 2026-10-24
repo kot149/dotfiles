@@ -156,9 +156,10 @@ The `dots` alias ([`dot_zshrc`](dot_zshrc), and a function in the [PowerShell pr
 | `mise-upgrade` (macOS / Linux) | Upgrade the tools in the global mise config |
 | `pkgs-list *managers` | List globally installed bun / npm / pnpm / uv / cargo / go packages |
 | `pkgs-update *managers` | Update globally installed bun / npm / pnpm / uv / cargo / go packages |
-| `pkgs-dupes` | Find commands installed by both bun / npm / pnpm / uv / cargo / go and Nix / winget / others |
+| `pkgs-dupes` | Find commands installed by both bun / npm / pnpm / uv / cargo / go and Nix / apt / winget / others |
 | `gh-ext-upgrade` | Upgrade gh CLI extensions |
 | `winget-upgrade` (Windows) | Upgrade winget packages (run by hand; not part of `update-full`) |
+| `apt-upgrade` (Linux) | Upgrade apt packages (run by hand; not part of `update-full`) |
 | `render-check` | Render the agent config templates and check that the output parses |
 | `lint` | Run shellcheck, ruff, nixfmt and oxlint over the repo |
 | `doctor *args` | Report stale ignore entries, missing Nix hash globs, missing tools, Codex hooks with no trust entry or possibly stale trust, and unmanaged skill directories (run last by `update-full`; `--no-home` skips the `$HOME` checks) |
