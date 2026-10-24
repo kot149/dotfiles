@@ -183,15 +183,18 @@ in
     };
 
     # nixpkgs' rustup patchelf's every toolchain binary under ~/.rustup to a Nix
-    # glibc loader. That path lives outside the store, so nothing keeps it alive
-    # once the generation that referenced it is gone (programs.nh.clean keeps
-    # only 30d / 1 generation), and cargo/rustc then die with "No such file or
-    # directory". Re-point binaries whose interpreter has vanished at the
-    # system loader, which cannot be collected (a Nix loader would only work
-    # through the rustup proxy, since the toolchain needs zlib from Nix).
+    # glibc loader, and wraps lld in a script that calls back into the rustup
+    # package which installed it. Those paths live outside the store, so nothing
+    # keeps them alive once the generation that referenced them is gone
+    # (programs.nh.clean keeps only 30d / 1 generation), and then cargo fails
+    # with "No such file or directory" or "ld-wrapper.sh: No such file or
+    # directory". Repair both on every activation.
     home.activation.repairRustupToolchains = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
       lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         if [ -d "$HOME/.rustup/toolchains" ]; then
+          # Missing interpreter: use the system loader, which cannot be
+          # collected. A Nix loader only works through the rustup proxy, since
+          # the toolchain also needs zlib from Nix.
           loader=/lib64/ld-linux-x86-64.so.2
           [ -e "$loader" ] || loader=${pkgs.stdenv.cc.bintools.dynamicLinker}
           ${pkgs.findutils}/bin/find "$HOME/.rustup/toolchains" -type f -perm -u+x |
@@ -202,6 +205,16 @@ in
               ${lib.getExe pkgs.patchelf} --set-interpreter "$loader" "$bin" ||
                 warnEcho "failed to repair $bin"
             done
+
+          # rustc links through this wrapper when it uses `-fuse-ld=lld`.
+          for wrapper in "$HOME"/.rustup/toolchains/*/lib/rustlib/*/bin/gcc-ld/ld.lld; do
+            [ -f "$wrapper" ] || continue
+            ref=$(${pkgs.gnused}/bin/sed -n 's#.*"\(/nix/store/[^"]*/nix-support/ld-wrapper\.sh\)".*#\1#p' "$wrapper" | head -n 1)
+            [ -n "$ref" ] && [ ! -e "$ref" ] || continue
+            verboseEcho "repairing rustup lld wrapper: $wrapper"
+            ${pkgs.gnused}/bin/sed -i "s#$ref#${pkgs.rustup}/nix-support/ld-wrapper.sh#" "$wrapper" ||
+              warnEcho "failed to repair $wrapper"
+          done
         fi
       ''
     );
