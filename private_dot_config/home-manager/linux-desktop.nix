@@ -18,7 +18,6 @@
   };
 
   home.packages = with pkgs; [
-    discord
     remmina
   ];
 
@@ -64,4 +63,20 @@
       default-size-rows = 30;
     };
   };
+  
+  nixpkgs.overlays = [
+  (_final: prev: {
+    mozc =
+      if prev.mozc.version == "2.30.5544.102" then
+        prev.mozc.overrideAttrs (old: {
+          postPatch = (old.postPatch or "") + ''
+            substituteInPlace src/gui/dictionary_tool/dictionary_tool.ui \
+              --replace-fail "::mozc::gui::DictionaryContentTableWidget" \
+                             "mozc::gui::DictionaryContentTableWidget"
+          '';
+        })
+      else
+        prev.mozc;
+  })
+];
 }
