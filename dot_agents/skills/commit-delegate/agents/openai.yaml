@@ -1,0 +1,4 @@
+interface:
+  display_name: "Delegate Commit"
+  short_description: "Delegate commits to a lightweight worker, keeping diffs out of the main context."
+  default_prompt: "Use commit-delegate to let a lightweight subagent inspect changes, confirm a message, stage and commit."

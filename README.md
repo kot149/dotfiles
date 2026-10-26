@@ -199,6 +199,21 @@ Every push to `main` and every pull request runs [`.github/workflows/check.yml`]
 
 The hooks, permission lists and skills for Claude Code, Codex CLI, opencode and Antigravity live in this repo ([`dot_claude/`](dot_claude), [`dot_codex/`](dot_codex), [`dot_agents/`](dot_agents), [`private_dot_config/opencode/`](private_dot_config/opencode), [`dot_gemini/`](dot_gemini)) and are generated from single sources under [`.chezmoitemplates/`](.chezmoitemplates) and [`.chezmoidata/`](.chezmoidata). [`AGENTS.md`](AGENTS.md) documents the layout and the rules.
 
+### Delegated commits
+
+Use `/commit-delegate` for the separate lightweight-worker workflow; `/commit`
+keeps its existing behavior. The worker reads status, diffs and history, proposes
+three messages, obtains your selection, then stages explicit paths and commits.
+Claude Code selects Haiku; GPT runtimes must expose a write-capable Luna
+(`gpt-6-luna`) model or role. If the runtime cannot select a lightweight worker,
+the skill stops rather than running the workflow on the main model.
+
+Only message choices (when the worker cannot ask directly), scope warnings and
+the final result reach the main agent. Raw Git output stays in the worker;
+coordination still uses some main-agent context. The shared body and worker
+reference install into both `~/.claude/skills/commit-delegate` and
+`~/.agents/skills/commit-delegate`.
+
 ### Customizing third-party skills
 
 Third-party skills stay pinned in [`.chezmoidata/agent-skills.toml`](.chezmoidata/agent-skills.toml). Local changes live in [`scripts/agent-skill-patches/`](scripts/agent-skill-patches) as one unified diff per skill: `<skill-name>.patch`, with paths relative to the skill root (`a/SKILL.md`, `b/SKILL.md`, or paths under `references/` and `scripts/`). The same patch feeds every declared agent store; do not edit the installed copies.
