@@ -1,0 +1,64 @@
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -4,7 +4,7 @@
+   Quality review of a change: is the logic right, is it safe, does it hold
+   under real load, is risky code tested, is it fast enough, and is every line
+   needed. Reads the connected code, not only the diff. Each finding is
+-  explained in plain English. Use for "review this", "code review", "review
++  explained in clear, natural Japanese. Use for "review this", "code review", "review
+   the last commit", "review my PR", "is this over-engineered", /ponytail-review.
+ ---
+ 
+@@ -68,34 +68,35 @@
+ 
+ ## 4. Output
+ 
+-Very simple English: short sentences, everyday words. Explain a technical
+-term the first time you use it. The reader may never have seen this code.
++Write in clear, natural Japanese: short sentences, everyday words. Explain
++a technical term the first time you use it. The reader may never have seen this code.
++Use the Japanese labels below; keep code, paths and identifiers unchanged.
+ 
+-Start with `What this change does:` in two or three sentences.
++Start with `この変更の内容:` in two or three sentences.
+ 
+ Then the findings in three groups, skip empty groups:
+-- **Must fix:** bug, security, data loss, breaks at the expected load.
+-- **Should fix:** risky code without a test, real slowness, duplication, a
++- **修正必須:** bug, security, data loss, breaks at the expected load.
++- **修正推奨:** risky code without a test, real slowness, duplication, a
+   function that mixes jobs, code that should not exist.
+-- **Nice to have:** small speed-ups, shorter forms.
++- **改善案:** small speed-ups, shorter forms.
+ 
+ Number findings across all groups, so the user can say "fix 2 and 5".
+ Every finding has all four parts, each one or two short sentences:
+ 
+-2. **Orders land on the wrong day** (`billing/close_day.py:L40-52`)
+-   - **What this is:** At midnight this job closes the day and bills all orders of that day.
+-   - **Problem:** It takes "today" from the server clock, which runs in UTC. An order placed
+-     at 00:30 in Berlin is billed on the day before.
+-   - **Fix:** Compute the day once in the shop's time zone:
+-     `datetime.now(ZoneInfo("Europe/Berlin")).date()`. One line, nothing else changes.
+-   - **If we skip it:** Late orders show the wrong date, and accounting fixes them by hand.
++2. **注文が誤った日付で計上される** (`billing/close_day.py:L40-52`)
++   - **処理の内容:** 毎日深夜に、その日の注文を締めて請求します。
++   - **問題:** UTCで動くサーバーの時計から「今日」を決めています。ベルリンで
++     00:30に入った注文が前日分として請求されます。
++   - **修正案:** 店舗のタイムゾーンで日付を一度だけ求めます:
++     `datetime.now(ZoneInfo("Europe/Berlin")).date()`。この1行だけ変更します。
++   - **放置した場合:** 深夜の注文に誤った日付が付き、経理が手作業で直すことになります。
+ 
+ End with:
+-- `Verdict: Ship.` or `Verdict: fix 1 and 3 first.`
+-- `Lean: -<N> lines possible.` when lean findings exist.
+-- `Not checked:` one line, if something mattered and you could not check it.
++- `判定: リリース可。` or `判定: 先に1と3を修正。`
++- `削減余地: <N>行。` when lean findings exist.
++- `未確認:` one line, if something mattered and you could not check it.
+ 
+-Nothing found: `What this change does:`, then `Looks good. Ship.` and one line
++Nothing found: `この変更の内容:`, then `問題ありません。リリース可。` and one line
+ on what you checked.
+ 
+ Lists findings, changes no code.

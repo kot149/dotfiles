@@ -12,7 +12,8 @@ Entries that share a `repo` are bumped together, so one repository stays at one
 rev. An entry whose skills are gone at HEAD keeps its rev; `just skills-lint`
 then reports the repo as pinned at several revs until the entry is removed.
 Accepted bumps are committed as one commit touching only the data file.
-Requires the `gh` CLI.
+Accepted candidates with local skill patches are validated before any rev is written.
+Requires the `gh` CLI, plus Git when patches are present.
 
 Usage:
   uv run --script scripts/update_agent_skills.py               # review, apply and commit interactively
@@ -20,15 +21,20 @@ Usage:
   uv run --script scripts/update_agent_skills.py --yes         # apply and commit every update without asking
   uv run --script scripts/update_agent_skills.py --no-commit   # apply without committing
 """
+
 import argparse
 import difflib
 import json
 import re
 import subprocess
 import sys
+import tarfile
 import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from urllib.request import urlopen
+
+from filter_agent_skill import filter_archive, patch_path
 
 DATA_FILE = Path(__file__).resolve().parent.parent / ".chezmoidata" / "agent-skills.toml"
 BLOCK_HEADER = "[[agent_skills]]"
@@ -224,6 +230,32 @@ def commit_message(updates: list[dict]) -> str:
     return f"chore(agents): bump {joined} skill rev{'' if len(names) == 1 else 's'}"
 
 
+def validate_patches(updates: list[dict], entries: list[dict]) -> None:
+    """Validate every selected candidate before writing or committing any rev."""
+    for update in updates:
+        patched = []
+        for index, _ in update["targets"]:
+            entry = entries[index]
+            for name in entry["names"]:
+                patch = patch_path(name)
+                if patch.is_file():
+                    path = entry.get("prefix", "")
+                    if not entry.get("flat", False):
+                        path = f"{path}/{name}" if path else name
+                    patched.append((name, path, patch))
+        if not patched:
+            continue
+        candidate = f"{update['repo']}@{update['new']}"
+        try:
+            with urlopen(f"https://github.com/{update['repo']}/archive/{update['new']}.tar.gz", timeout=60) as response:
+                archive = response.read()
+            for name, path, patch in patched:
+                print(f"   checking patch: {candidate} {name}", flush=True)
+                filter_archive(archive, path, patch)
+        except (OSError, ValueError, tarfile.TarError) as error:
+            raise ValueError(f"Patch validation failed for {candidate}: {error}") from error
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     mode = parser.add_mutually_exclusive_group()
@@ -256,6 +288,10 @@ def main() -> None:
         sys.exit(1)
     if not selected:
         return
+    try:
+        validate_patches(selected, entries)
+    except ValueError as error:
+        sys.exit(str(error))
     # Committing a file that already had local edits would sweep them into the bump commit.
     dirty = bool(git("status", "--porcelain", "--", DATA_FILE.name).stdout.strip())
     DATA_FILE.write_bytes(apply_updates(text, selected).encode("utf-8"))

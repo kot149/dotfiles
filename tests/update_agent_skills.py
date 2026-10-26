@@ -9,13 +9,20 @@ Tests for the pure functions of scripts/update_agent_skills.py.
 
 No network: list_files is replaced where check_entry needs it.
 """
+
+import contextlib
 import importlib.util
+import io
 import sys
+import tarfile
+import tempfile
 import tomllib
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "update_agent_skills.py"
+sys.path.insert(0, str(ROOT / "scripts"))
 
 spec = importlib.util.spec_from_file_location("update_agent_skills", SCRIPT)
 module = importlib.util.module_from_spec(spec)
@@ -61,7 +68,11 @@ except SystemExit as e:
 
 # A MISSING entry is left out of its repo's targets and reported in a warning.
 outdated = {
-    "index": 0, "label": "o/shared (one)", "repo": "o/shared", "old": A, "new": D,
+    "index": 0,
+    "label": "o/shared (one)",
+    "repo": "o/shared",
+    "old": A,
+    "new": D,
     "changes": [("modified", "skills/one/SKILL.md")],
 }
 missing = {"index": 1, "label": "o/shared (two)", "repo": "o/shared", "missing": True}
@@ -101,6 +112,62 @@ check(
     update,
     {"index": 0, "label": "o/shared (one)", "repo": "o/shared", "missing": True},
 )
+
+# Candidate archives are patched with real git apply before main mutates the pin.
+with tempfile.TemporaryDirectory(prefix="skill-update-preflight-") as temporary:
+    directory = Path(temporary)
+    data_file = directory / "agent-skills.toml"
+    initial = (
+        '[[agent_skills]]\nrepo = "owner/demo"\n'
+        f'rev = "{A}"\nprefix = "skills"\nnames = ["demo"]\nagents = ["agents"]\n'
+    ).encode()
+    local_patch = directory / "demo.patch"
+    local_patch.write_bytes(b"--- a/SKILL.md\n+++ b/SKILL.md\n@@ -1 +1 @@\n-English\n+Japanese\n")
+    candidate = {
+        "repo": "owner/demo",
+        "label": "owner/demo (demo)",
+        "old": A,
+        "new": B,
+        "targets": [(0, A)],
+        "changes": [("modified", "skills/demo/SKILL.md")],
+    }
+    for content, succeeds in [(b"Upstream changed\n", False), (b"English\n", True)]:
+        data_file.write_bytes(initial)
+        archive = io.BytesIO()
+        with tarfile.open(fileobj=archive, mode="w:gz") as output:
+            member = tarfile.TarInfo("demo-rev/skills/demo/SKILL.md")
+            member.size = len(content)
+            output.addfile(member, io.BytesIO(content))
+        with (
+            patch.object(module, "DATA_FILE", data_file),
+            patch.object(module, "find_updates", return_value=[candidate]),
+            patch.object(module, "patch_path", return_value=local_patch),
+            patch.object(module, "urlopen", return_value=io.BytesIO(archive.getvalue())),
+            patch.object(module, "git", side_effect=AssertionError("Git must not run on validation failure")),
+            patch.object(sys, "argv", ["update_agent_skills.py", "--yes"]),
+            contextlib.redirect_stdout(io.TextIOWrapper(io.BytesIO(), encoding="utf-8")),
+        ):
+            if succeeds:
+                # The no-commit path still validates, then updates the pin.
+                with (
+                    patch.object(sys, "argv", ["update_agent_skills.py", "--yes", "--no-commit"]),
+                    patch.object(module, "git", return_value=type("Result", (), {"stdout": ""})()),
+                ):
+                    module.main()
+                check(
+                    "preflight success: candidate rev written",
+                    data_file.read_bytes(),
+                    initial.replace(A.encode(), B.encode()),
+                )
+            else:
+                try:
+                    module.main()
+                    check("preflight conflict: exits", None, "SystemExit")
+                except SystemExit as error:
+                    check(
+                        "preflight conflict: diagnostic", "Patch validation failed for owner/demo@" in str(error), True
+                    )
+                check("preflight conflict: original rev retained", data_file.read_bytes(), initial)
 
 print(f"{checks - len(failures)}/{checks} passed")
 for failure in failures:

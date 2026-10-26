@@ -21,8 +21,8 @@ refreshPeriod = "168h"
 {{- end }}
 
 {{/* Third-party agent skills, declared in .chezmoidata/agent-skills.toml as [[agent_skills]].
-     Each skill is extracted straight out of a pinned GitHub tarball, so the same
-     definition works on macOS, Linux and Windows without symlinks or Nix.
+     Each skill is extracted from a pinned GitHub tarball, optionally filtered
+     through its local git patch before chezmoi builds the target state.
      stripComponents drops the archive's top-level <repo>-<rev> directory plus the
      in-repo prefix, leaving SKILL.md at the root of the target directory.
      flat = true marks a repo that keeps SKILL.md directly under prefix (or at the
@@ -46,6 +46,11 @@ url = "https://github.com/{{ $skill.repo }}/archive/{{ $skill.rev }}.tar.gz"
 include = ["*/{{ if $parts }}{{ join "/" $parts }}/{{ end }}**"]
 stripComponents = {{ add 1 (len $parts) }}
 refreshPeriod = "168h"
+{{- $patch := joinPath $.chezmoi.sourceDir "scripts" "agent-skill-patches" (printf "%s.patch" $name) }}
+{{- if glob $patch }}
+filter.command = "uv"
+filter.args = {{ list "run" "--no-python-downloads" "--script" (joinPath $.chezmoi.sourceDir "scripts" "filter_agent_skill.py") "--skill-path" (join "/" $parts) "--patch" $patch | toJson }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

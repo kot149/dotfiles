@@ -12,6 +12,7 @@ Usage:
   uv run --script scripts/check_agent_skills.py
   uv run --script scripts/check_agent_skills.py --home
 """
+
 import argparse
 import re
 import sys
@@ -21,10 +22,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES = ROOT / ".chezmoitemplates" / "agents" / "skills"
-STORES = {"agents": ROOT / "dot_agents" / "skills",
-          "claude": ROOT / "dot_claude" / "skills"}
-HOME_STORES = {"agents": Path.home() / ".agents" / "skills",
-               "claude": Path.home() / ".claude" / "skills"}
+STORES = {"agents": ROOT / "dot_agents" / "skills", "claude": ROOT / "dot_claude" / "skills"}
+HOME_STORES = {"agents": Path.home() / ".agents" / "skills", "claude": Path.home() / ".claude" / "skills"}
 DATA_FILE = ROOT / ".chezmoidata" / "agent-skills.toml"
 LOCAL_UNMANAGED_FILE = Path.home() / ".config" / "chezmoi" / "agent-skills-unmanaged.txt"
 WRAPPER_RE = re.compile(r'^\{\{ includeTemplate "(agents/skills/[^"]+)" \. -\}\}$')
@@ -75,10 +74,7 @@ def check_wrappers() -> tuple[list[str], dict[Path, str]]:
             body = wrapper.read_text(encoding="utf-8").rstrip("\n")
             match = WRAPPER_RE.match(body)
             if "\n" in body or match is None:
-                problems.append(
-                    f"{rel(wrapper)}: not a single "
-                    f'`{{{{ includeTemplate "agents/skills/..." . -}}}}` line'
-                )
+                problems.append(f'{rel(wrapper)}: not a single `{{{{ includeTemplate "agents/skills/..." . -}}}}` line')
                 continue
             target = match.group(1)
             targets[wrapper] = target
@@ -90,10 +86,7 @@ def check_wrappers() -> tuple[list[str], dict[Path, str]]:
 def check_store_parity() -> list[str]:
     """Invariant 3: a wrapper is byte-identical in both stores."""
     problems = []
-    listings = {
-        name: {w.relative_to(store): w for w in wrappers(store)}
-        for name, store in STORES.items()
-    }
+    listings = {name: {w.relative_to(store): w for w in wrappers(store)} for name, store in STORES.items()}
     for key in sorted(set(listings["agents"]) | set(listings["claude"]), key=str):
         paths = {name: listing.get(key) for name, listing in listings.items()}
         missing = [name for name, path in paths.items() if path is None]
@@ -147,9 +140,7 @@ def check_frontmatter(targets: dict[Path, str]) -> list[str]:
             if name is None:
                 problems.append(f"{rel(source)}: no `name:` in the frontmatter")
             elif name != directory.name:
-                problems.append(
-                    f"{rel(source)}: name is {name!r}, directory is {directory.name!r}"
-                )
+                problems.append(f"{rel(source)}: name is {name!r}, directory is {directory.name!r}")
     return problems
 
 
@@ -178,6 +169,20 @@ def check_agent_skills(entries: list[dict]) -> list[str]:
     for repo, pinned in sorted(revs.items()):
         if len(pinned) > 1:
             problems.append(f"{repo}: pinned at several revs ({', '.join(sorted(pinned))})")
+    return problems
+
+
+def check_patches(entries: list[dict]) -> list[str]:
+    """Every local patch must identify exactly one declared upstream skill."""
+    declarations: dict[str, int] = defaultdict(int)
+    for entry in entries:
+        for name in entry["names"]:
+            declarations[name] += 1
+    problems = []
+    for patch in sorted((ROOT / "scripts" / "agent-skill-patches").glob("*.patch")):
+        count = declarations[patch.stem]
+        if count != 1:
+            problems.append(f"{rel(patch)}: expected one skill declaration, found {count}")
     return problems
 
 
@@ -214,8 +219,7 @@ def main() -> int:
     parser.add_argument(
         "--home",
         action="store_true",
-        help="also scan ~/.claude/skills and ~/.agents/skills for directories"
-        " this repo does not manage",
+        help="also scan ~/.claude/skills and ~/.agents/skills for directories this repo does not manage",
     )
     args = parser.parse_args()
     entries = tomllib.loads(DATA_FILE.read_text(encoding="utf-8"))["agent_skills"]
@@ -227,6 +231,7 @@ def main() -> int:
         ("frontmatter", check_frontmatter(targets)),
         ("agents/openai.yaml", check_openai_yaml()),
         ("agent_skills entries", check_agent_skills(entries)),
+        ("third-party skill patches", check_patches(entries)),
     ]
     if args.home:
         sections.append(("unmanaged directories", check_unmanaged(entries)))

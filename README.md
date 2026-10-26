@@ -173,6 +173,30 @@ Every push to `main` and every pull request runs [`.github/workflows/check.yml`]
 
 The hooks, permission lists and skills for Claude Code, Codex CLI, opencode and Antigravity live in this repo ([`dot_claude/`](dot_claude), [`dot_codex/`](dot_codex), [`dot_agents/`](dot_agents), [`private_dot_config/opencode/`](private_dot_config/opencode), [`dot_gemini/`](dot_gemini)) and are generated from single sources under [`.chezmoitemplates/`](.chezmoitemplates) and [`.chezmoidata/`](.chezmoidata). [`AGENTS.md`](AGENTS.md) documents the layout and the rules.
 
+### Customizing third-party skills
+
+Third-party skills stay pinned in [`.chezmoidata/agent-skills.toml`](.chezmoidata/agent-skills.toml). Local changes live in [`scripts/agent-skill-patches/`](scripts/agent-skill-patches) as one unified diff per skill: `<skill-name>.patch`, with paths relative to the skill root (`a/SKILL.md`, `b/SKILL.md`, or paths under `references/` and `scripts/`). The same patch feeds every declared agent store; do not edit the installed copies.
+
+The external template automatically enables [`filter_agent_skill.py`](scripts/filter_agent_skill.py) for skills with a patch. The filter reads the pinned GitHub archive, extracts only the selected skill into a temporary directory, runs `git apply --check` and then `git apply`, and returns the modified archive to chezmoi. Other skills and binary assets are preserved. This requires Git and `uv` with Python 3.11+ available; the filter uses only the Python standard library and does not download an interpreter.
+
+- **Add or edit a customization:** create a patch against the declared upstream rev, using normal context lines. Preview and apply each affected target, for example:
+
+  ```sh
+  chezmoi diff ~/.agents/skills/bro/SKILL.md
+  chezmoi apply -v ~/.agents/skills/bro/SKILL.md
+  chezmoi apply -v ~/.claude/skills/bro/SKILL.md
+  ```
+
+  If a patch touches other files, apply the skill directory instead. Patches are source-only files, not installed targets.
+- **Remove a customization:** delete its patch, then apply the affected skill targets to restore the pinned upstream contents. If the patch added files, remove those now-obsolete files from the destination as well: archive externals are not exact directories.
+- **Update upstream:** `dots skills-update` validates patches against all selected candidate revs before writing or committing any rev. A conflict or download failure leaves all selected pins unchanged. Review the upstream diff, adapt the patch, and retry. `--no-commit` still validates; `skills-check` remains a freshness-only check.
+- **Conflicts:** the filter fails rather than using three-way merges, rejected hunks, or unpatched fallback contents. `chezmoi diff`, `apply` and `verify` all use the patched target state. An apply of multiple targets is not a transaction.
+- **Checks:** `dots skills-lint` rejects patches with missing or ambiguous skill declarations. `tests/filter_agent_skill.py` exercises real Git and isolated chezmoi apply/diff/verify without network access; `ci-render` itself still excludes externals.
+
+The included patches make `ponytail-review` and `ponytail-audit` report in Japanese, replace agent-browser's `npx` tool permission with `bunx`, and extend `/bro` with `/bro --file <path>`. Bro already supports pasted text upstream. Agent-browser's dynamically loaded `agent-browser skills get ...` output is outside the downloaded archive, so these patches do not rewrite that runtime content.
+
+Archive paths cannot escape the temporary directory; links and special files inside the selected skill are rejected. On Windows, existing archive permissions are preserved and new files receive mode `0644`; use content patches rather than executable-bit changes there.
+
 ## Managing OS-specific files
 
 Edit [`.chezmoiignore.tmpl`](.chezmoiignore.tmpl).

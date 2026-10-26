@@ -201,6 +201,7 @@ test:
     '{{ just_executable() }}' --justfile '{{ justfile() }}' lint || status=1
     bun run tests/textlint-rule-ja-ai-phrasing.js || status=1
     {{ uv_script }} tests/update_agent_skills.py || status=1
+    {{ uv_script }} tests/filter_agent_skill.py || status=1
     bash tests/writing-style.sh || status=1
     bun run tests/opencode-guards.js || status=1
     {{ uv_script }} tests/hooks.py || status=1
