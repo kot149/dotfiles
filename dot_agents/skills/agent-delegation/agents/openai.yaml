@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Delegation"
+  short_description: "Delegate bounded work to other CLI agents and verify the results."
+  default_prompt: "Delegate the investigation to another agent and verify the findings."
