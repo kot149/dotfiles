@@ -78,11 +78,7 @@ If there are 0 candidate commits, stop and present the following to the user in 
 
 ### 4. Determine the owning commit for each change
 
-**Target both staged and unstaged changes.** However, a mix is hard to analyze, so tidy up the state first:
-
-- If both staged and unstaged changes exist, treat both together as fixup candidates. Stage the unstaged portion with an explicit `git add <FILES...>` on the target files before proceeding with analysis (do not use `git add -A` / `git add .`). Present the following to the user in Japanese (fill in the file list): `"未ステージの変更をステージしました: <FILES>"`
-
-Once the target range is fixed, infer the owning commit for each change as follows:
+**Analyze staged and unstaged changes without changing the index.** Read both diffs separately when they coexist; method B must snapshot the original staging state before any `git add` / `git reset`. Stage the selected changes only in step 7.
 
 #### 4-1. Coarse per-file inference
 
@@ -177,7 +173,7 @@ With method B, present the following trailing lines to the user in Japanese inst
 ```
 方法: B / git history fixup（履歴を直接書き換え）
 - 対象コミットより後の子孫コミットはSHAが変わります
-- 書き換え前にバックアップブランチを作成します
+- 書き換え前に専用refへ元のHEADと作業内容（ステージ状態・未追跡ファイルを含む）を保存します
 - 完了後は force push（--force-with-lease）が必要になります
 ```
 
@@ -225,16 +221,31 @@ At each step, check `git status --short` and verify no unexpected files slipped 
 
 `git history fixup <commit>` absorbs **changes staged in the index** directly into the target commit and replays descendant commits. Commit messages and authors are preserved.
 
-#### B-1. Take a backup
+#### B-1. Save a recovery checkpoint
 
-Always create a backup branch before rewriting.
+Before changing the index or history, save HEAD and the original staged / unstaged / untracked changes under dedicated refs. Do not create a backup branch. Stop if a rebase / merge / cherry-pick is in progress or a submodule has uncommitted changes: the superproject snapshot does not preserve a submodule's working tree.
+
+Run sequentially, checking each command succeeds before continuing:
 
 ```bash
-git rev-parse HEAD
-git branch backup/fixup-$(date +%Y%m%d-%H%M%S)
+BACKUP_ROOT="refs/backup/fixup/$(date +%Y%m%d-%H%M%S)"
+BACKUP_REF="${BACKUP_ROOT}/head"
+WORKTREE_REF="${BACKUP_ROOT}/worktree"
+ORIGINAL_SHA=$(git rev-parse HEAD)
+git update-ref "$BACKUP_REF" "$ORIGINAL_SHA" ""
+git stash push --include-untracked -m "$BACKUP_ROOT"
+SNAPSHOT_SHA=$(git rev-parse refs/stash)
+git update-ref "$WORKTREE_REF" "$SNAPSHOT_SHA" ""
+git stash apply --index "$WORKTREE_REF"
 ```
 
-Tell the user the created branch name and the original HEAD SHA. Present the following to the user in Japanese (fill in names): `"バックアップブランチ <BRANCH> を作成しました。元のHEADは <ORIGINAL_SHA> です。"`
+Require `stash push` to create a **new** entry (record the previous `refs/stash` SHA, if present, and compare); never reuse an older stash. Empty old-value arguments to `update-ref` require that the destination does not exist. On a name collision, choose a fresh root; never overwrite a checkpoint. If saving the worktree ref fails after stashing, leave the new stash intact and report its SHA; do not proceed.
+
+After successful apply, confirm both refs resolve to the recorded SHAs and the original staged / unstaged / untracked state is restored. Drop only the temporary stash entry whose SHA equals `SNAPSHOT_SHA`: check `git rev-parse 'stash@{0}'` first, and use `git stash drop 'stash@{0}'` only if it matches. If it does not match, leave the entry and report it. Do not run concurrent stash operations. On apply failure, retain the stash and refs, report the partial restoration, and stop without reset / clean / retry.
+
+The worktree ref pins the stash object (including its index and untracked parents) after the temporary stash entry is dropped. Ignored files and submodule working trees are not captured. Leave both refs until the user explicitly decides to delete them.
+
+Tell the user both exact ref names and the original HEAD SHA in Japanese: `"復元用refを保存しました: <BACKUP_REF>（元のHEAD: <ORIGINAL_SHA>）、<WORKTREE_REF>（ステージ状態・未追跡ファイルを含む作業内容）。"`
 
 #### B-2. Decide the application order
 
@@ -261,7 +272,7 @@ Repeat the following for each target commit:
 #### B-4. Handling the options
 
 - Attach `--empty=abort` by default. It prevents a target or descendant commit that becomes empty after the fixup from silently disappearing. On abort, present the following to the user in Japanese and confirm whether to use `--empty=drop` (the command default) if dropping it is really intended: `"対象または子孫コミットが空になるため中断しました。本当に破棄する場合は --empty=drop を使いますか？"`
-- Attach `--update-refs=head` by default. The default `--update-refs=branches` would rewrite **all local branches** descending from the target commit (including the backup branch created in B-1). The backup must keep pointing at the pre-rewrite SHA, so never use `branches`; always specify `head`. Only use `--update-refs=branches` after confirming with the user when there is a clear intent to rewrite other local branches too.
+- Attach `--update-refs=head` by default. The default `--update-refs=branches` also rewrites other local branches descending from the target commit. Dedicated backup refs are outside `refs/heads`, but that does not authorize changing other branches. Only use `branches` after explicit user confirmation.
 - Do not use `--reedit-message`. To change a message, separately suggest `git history reword`.
 
 #### B-5. On failure
@@ -272,7 +283,7 @@ When `git history fixup` hits a conflict it aborts and history is left unchanged
 - If the change simply cannot be absorbed, present the following to the user in Japanese to offer switching to method A (`git commit --fixup`) or making a regular commit: `"この変更は直接取り込めません。方法A（fixupコミットを積む）か通常のコミットに切り替えますか？"`
 - **Do not silently re-fixup into a different commit.** Re-examine the candidates and re-present them to the user. Present the following to the user in Japanese: `"別のコミットへの付け替えは独断で行いません。候補を確認してください。"`
 
-If you judge history to be broken, do not attempt recovery yourself; present the B-1 backup branch name and the original HEAD SHA and explain the recovery (`git reset --hard <ORIGINAL_SHA>`). Present the following to the user in Japanese (fill in names): `"履歴が壊れた可能性があります。自分では復旧せず、バックアップブランチ <BRANCH> と元のHEAD <ORIGINAL_SHA> から git reset --hard <ORIGINAL_SHA> で復旧できます。"`
+If history appears broken, stop and report both B-1 refs and the original HEAD SHA. Never recover destructively on your own. After user approval, first preserve any work created since the checkpoint (including untracked files) and appropriately end any in-progress operation. Restore with `git reset --hard "<BACKUP_REF>"` followed by `git stash apply --index "<WORKTREE_REF>"`. Reset alone loses the original uncommitted changes; the apply restores their staging state and untracked files. Require a clean destination with no untracked-path collisions; never run `git clean` to make it fit. On apply failure, stop and keep both refs; do not retry onto a partially restored tree.
 
 ### 8. Verify the result
 
@@ -291,11 +302,11 @@ For method B:
 - No `fixup!` commits are stacked (they should be absorbed into history)
 - The commit count matches the backup point (it should not have shrunk, since `--empty=abort` is attached)
 - The intended changes are in the target commit: `git show --stat <new SHA>`
-- The backup branch and the working tree contents match:
+- Compare the saved HEAD with the rewritten HEAD:
   ```bash
-  git diff <BACKUP_BRANCH> HEAD
+  git diff "<BACKUP_REF>" HEAD
   ```
-  The expectation is that only the fixuped changes show up as the diff. If there is any other diff, present the following to the user in Japanese (fill in the diff summary) and **do not fix it yourself**: `"想定外の差分があります: <DIFF>。こちらでは修正しませんので確認してください。"`
+  Only the intended fixup changes should appear. Compare the final tracked tree with the saved worktree tree as well (`git diff "<WORKTREE_REF>^{tree}" HEAD --`); it must match when all tracked changes were included. Account separately for any agreed leftovers and newly committed untracked files. On an unexpected diff, report it in Japanese and **do not fix it yourself**: `"想定外の差分があります: <DIFF>。こちらでは修正しませんので確認してください。"`
 
 ### 9. Completion report
 
@@ -309,16 +320,19 @@ For method A, present the following report template to the user in Japanese (fil
 pushはご自身でお願いします（このスキルではpushしません。autosquash後は force push が必要になります）。
 ```
 
-For method B, present the following report template to the user in Japanese (fill in log, branch, SHA):
+For method B, present the following report template to the user in Japanese (fill in log, refs, SHA):
 
 ```
 書き換え後の履歴（git log --oneline <MB>..HEAD）:
 <LOG>
 
-バックアップブランチ: <BRANCH>（元のHEAD: <ORIGINAL_SHA>）
+復元用HEAD ref: <BACKUP_REF>（元のHEAD: <ORIGINAL_SHA>）
+復元用作業内容ref: <WORKTREE_REF>（元のステージ状態・未追跡ファイルを含む）
 SHAが変わったため、pushには git push --force-with-lease が必要です。pushはご自身でお願いします（このスキルではpushしません）。
-問題なければバックアップブランチはご自身で削除できます。
+復元用refは削除せず残しています。復元にはHEADのresetに加えて作業内容のapplyが必要です（B-5参照）。
 ```
+
+List checkpoints with `git for-each-ref --format='%(refname) %(objectname:short)' refs/backup/fixup/`. Once the user no longer needs this checkpoint, delete its two exact refs with `git update-ref -d "<WORKTREE_REF>"` and `git update-ref -d "<BACKUP_REF>"`. Never delete them automatically or suggest `git stash pop` for the dedicated ref.
 
 ### 10. With `--autosquash`: continue with autosquash
 
@@ -343,7 +357,7 @@ SHAが変わったため force push が必要になります。pushはご自身�
 - **Always verify staged content after splitting per hunk.** Splitting via patch can sweep in the wrong hunk, so confirm with `git diff --cached` that only the intended hunks are staged before committing.
 - **Do not use `git add -A` / `git add .`.** Always specify files explicitly (prevents accidental commits of files like `.env`).
 - **Do not force-push.** Pushing after autosquash / history rewrite is the user's responsibility.
-- **Method B rewrites history destructively.** Always create a backup branch before running, and confirm with `--dry-run`. It cannot be used on history containing merge commits, so stop and ask the user whether to switch to method A when `git log --merges <MB>..HEAD` returns hits (see Arguments).
-- **Method B uses `--update-refs=head` by default.** With the default `--update-refs=branches`, the backup branch created in B-1 points at the same SHA as the target commit, so the backup itself would be rewritten and recovery would become impossible. Always specify `--update-refs=head` to protect the backup.
+- **Method B rewrites history destructively.** Always save both recovery refs before changing the index, and confirm with `--dry-run`. It cannot be used on history containing merge commits, so stop and ask the user whether to switch to method A when `git log --merges <MB>..HEAD` returns hits (see Arguments).
+- **Method B uses `--update-refs=head` by default.** Dedicated recovery refs do not grant permission to rewrite other local branches.
 - **With method A, split fixup commits by unit of meaning even for the same owning commit.** One commit per review comment (see 4-4).
 - For changes whose owner is genuinely unknown, always leave the "make a new commit" option open. Do not force them into an existing commit.

@@ -1,6 +1,6 @@
 ---
 name: reorganize-commits
-description: Skill for reorganizing a branch's commit history into easy-to-review logical units. Splits oversized commits, combines fix-up iterations, and separates move refactors and generated artifacts. Use when the user asks things like "organize the commit history", "split this commit", "combine the commits", "make it review-friendly", "reorganize commits", "split commit", 「コミット履歴を整理して」「このコミットを分割して」「レビューしやすい単位にまとめて」, or any similar phrasing in English or Japanese. Always create a backup branch before touching history and verify zero tree diff against the backup afterwards. If there is a diff, always report it to the user and never fix it on your own.
+description: Reorganize a branch's commit history into review-friendly logical units by splitting oversized commits, combining follow-ups, and separating moves and generated artifacts. Use for "reorganize commits", "split commit", "combine commits", 「コミット履歴を整理して」「このコミットを分割して」「レビューしやすい単位にまとめて」. Save a dedicated recovery ref before rewriting and verify zero tree diff afterwards. Report any mismatch without fixing it independently.
 ---
 
 # reorganize-commits
@@ -11,7 +11,7 @@ Skill for reorganizing the commit history in the `<MB>..HEAD` range into **easy-
 - **Combine**: when follow-ups on the same concern (typo fixes, review feedback, WIP) left the history fragmented, merge them into one
 - **Reorder**: swap the order so the review reads naturally (prerequisite changes first)
 
-Because this rewrites history destructively, **always create a backup branch** before starting and **verify the final tree matches the backup** afterwards. Never change the code content itself.
+Because this rewrites history destructively, **always save a dedicated recovery ref** before starting and **verify the final tree matches the saved tree** afterwards. Never change the code content itself.
 
 ## Asking the user to choose
 
@@ -141,20 +141,19 @@ At approval time, also decide which of the two execution methods to use:
 
 When unsure, use a selection prompt to have the user choose (present the choice to the user in Japanese, e.g. `方式A（全面組み直し）と方式B（部分書き換え）のどちらで進めますか?`).
 
-### 5. Create a backup branch (mandatory)
+### 5. Save a recovery ref (mandatory)
 
-Before touching history, **always** create a backup branch.
+Before touching history, save HEAD outside `refs/heads` so it is retained without creating a branch:
 
 ```bash
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-BACKUP_BRANCH="backup/${CURRENT_BRANCH}-reorg-${TIMESTAMP}"
-git branch "${BACKUP_BRANCH}"
+BACKUP_REF="refs/backup/reorganize-commits/$(date +%Y%m%d-%H%M%S)/head"
+ORIGINAL_SHA=$(git rev-parse HEAD)
+git update-ref "$BACKUP_REF" "$ORIGINAL_SHA" ""
 ```
 
-After creating it, confirm it exists with `git branch --list "${BACKUP_BRANCH}"` before moving on. Note the backup's HEAD SHA (`git rev-parse "${BACKUP_BRANCH}"`) for later verification.
+Check each command succeeds. The empty old-value argument requires a new ref: on collision, choose a fresh name, never overwrite an existing checkpoint. Confirm `git rev-parse "$BACKUP_REF"` equals `ORIGINAL_SHA` before proceeding.
 
-Show the backup branch name to the user in Japanese (e.g. `バックアップブランチを作成しました: <BACKUP_BRANCH> (元の HEAD: <SHA>)`).
+Report the exact ref and SHA in Japanese: `復元用refを保存しました: <BACKUP_REF> (元の HEAD: <SHA>)`. Keep the ref until the user explicitly decides to remove it.
 
 ### 6-A. Method A: full rebuild
 
@@ -230,11 +229,11 @@ For Method B, `git rebase --continue` here. On conflicts with later commits, **d
 
 ### 8. Verify against the backup (mandatory)
 
-Verify the reorganized HEAD tree **exactly matches** the backup branch tree. This is the heart of this skill.
+Verify the reorganized HEAD tree **exactly matches** the saved recovery ref tree. This is the heart of this skill.
 
 ```bash
-git diff "${BACKUP_BRANCH}" HEAD
-git diff "${BACKUP_BRANCH}" HEAD --stat
+git diff "${BACKUP_REF}" HEAD
+git diff "${BACKUP_REF}" HEAD --stat
 ```
 
 - Empty output means OK (identical trees = the final product is unchanged by the reorganization)
@@ -243,7 +242,7 @@ git diff "${BACKUP_BRANCH}" HEAD --stat
 Double-check by comparing tree hashes:
 
 ```bash
-BACKUP_TREE=$(git rev-parse "${BACKUP_BRANCH}^{tree}")
+BACKUP_TREE=$(git rev-parse "${BACKUP_REF}^{tree}")
 HEAD_TREE=$(git rev-parse "HEAD^{tree}")
 [ "${BACKUP_TREE}" = "${HEAD_TREE}" ] && echo "TREE_MATCH" || echo "TREE_MISMATCH"
 ```
@@ -251,14 +250,14 @@ HEAD_TREE=$(git rev-parse "HEAD^{tree}")
 - `TREE_MATCH` means success. Present the following to the user in Japanese:
 
   ```
-  検証結果: ツリー一致 (TREE_MATCH)。最終内容はバックアップ <BACKUP_BRANCH> と同一です。
+  検証結果: ツリー一致 (TREE_MATCH)。最終内容は復元用ref <BACKUP_REF> と同一です。
   ```
 
-- On `TREE_MISMATCH`, present the following to the user in Japanese and confirm the recovery plan. Do not run destructive operations such as `git reset --hard "${BACKUP_BRANCH}"` on your own judgment (running them after user approval is fine):
+- On `TREE_MISMATCH`, report it in Japanese and ask for the recovery plan. Never run `git reset --hard "${BACKUP_REF}"` without approval. Before an approved recovery, preserve any current uncommitted / untracked work and appropriately end any in-progress rebase / merge / cherry-pick; reset alone is not a safe way to abort an operation:
 
   ```
   検証結果: ツリー不一致 (TREE_MISMATCH) を検出しました。履歴の書き換え中に内容が変わっている可能性があります。
-  バックアップブランチ: <BACKUP_BRANCH> (元の HEAD: <SHA>)
+  復元用ref: <BACKUP_REF> (元の HEAD: <SHA>)
   復元方法の判断をお知らせください。こちらで勝手に復元は行いません。
   ```
 
@@ -266,34 +265,40 @@ This does not verify that each commit builds and tests cleanly. When needed, poi
 
 ### 9. Report the results
 
-Present the following to the user in Japanese (fill in the branch names, SHAs, and verification result):
+Present the following to the user in Japanese (fill in refs, SHAs, and verification result):
 
 ```
 整理が完了しました。
-- バックアップブランチ: <BACKUP_BRANCH> (そのまま残しています。削除は後日の判断にお任せします)
-- 整理前: `git log --oneline <MB>..<BACKUP_BRANCH>` / 整理後: `git log --oneline <MB>..HEAD`
+- 復元用ref: <BACKUP_REF> (そのまま残しています。削除は後日の判断にお任せします)
+- 整理前: `git log --oneline <MB>..<BACKUP_REF>` / 整理後: `git log --oneline <MB>..HEAD`
 - 検証結果: <ツリー一致 (TREE_MATCH) / ツリー不一致 (TREE_MISMATCH。ステップ8の結果を記載)>
 - force push が必要です。`git push --force-with-lease origin HEAD` はユーザー自身で実行してください (AI側では実行しません)。
-- 戻す場合: `git reset --hard "<BACKUP_BRANCH>"`
+- 戻す場合: 現在の作業内容を退避し、進行中の操作を適切に終了してから、承認のうえ `git reset --hard "<BACKUP_REF>"`
 ```
 
-- The backup branch name (`${BACKUP_BRANCH}`) and that it stays as-is (deletion is the user's later call)
-- The before/after history comparison (`git log --oneline <MB>..${BACKUP_BRANCH}` vs `git log --oneline <MB>..HEAD`)
+- The recovery ref (`${BACKUP_REF}`) and that it stays as-is (deletion is the user's later call)
+- The before/after history comparison (`git log --oneline <MB>..${BACKUP_REF}` vs `git log --oneline <MB>..HEAD`)
 - The tree-diff verification result (MATCH / MISMATCH)
 - That a force push is needed, and that **the AI does not force push** (`git push --force-with-lease origin HEAD` is for the user to run)
-- How to recover (`git reset --hard "${BACKUP_BRANCH}"`)
+- How to recover safely (step 8 prerequisites, then `git reset --hard "${BACKUP_REF}"`)
 
-### 10. Backup branch cleanup
+### 10. Recovery ref cleanup
 
-Do not delete it automatically from the AI side. Guide the user to delete it by hand once the force push and behavior checks pass:
+Do not delete refs automatically. List saved checkpoints with:
 
 ```bash
-git branch -D "${BACKUP_BRANCH}"
+git for-each-ref --format='%(refname) %(objectname:short)' refs/backup/reorganize-commits/
+```
+
+Once force push and behavior checks pass and the user explicitly chooses deletion, remove only the exact checkpoint ref:
+
+```bash
+git update-ref -d "${BACKUP_REF}"
 ```
 
 ## Notes
 
-- **Never skip creating the backup branch.** Never proceed to rewriting without Step 5
+- **Never skip saving the recovery ref.** Never proceed to rewriting without Step 5
 - **Never skip the tree-diff verification.** Never report completion without confirming `TREE_MATCH` in Step 8
 - **Never run on a protected branch**
 - **Never touch commits before `<MB>`**

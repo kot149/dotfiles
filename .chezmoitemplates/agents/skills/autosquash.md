@@ -65,7 +65,7 @@ autosquash 対象のコミットはありません (fixup! / squash! コミッ�
 
 ### 4. Present the rebase plan to the user (no approval gate)
 
-Show which commits autosquash will fold where, excerpted from the `git log` output. Do not block waiting for approval; proceed to the next steps right after presenting (a backup branch is created before execution, so recovery from the backup is possible if the result differs from expectations). Present the plan to the user in Japanese.
+Show which commits autosquash will fold where, excerpted from `git log`. Do not block waiting for approval; proceed after presenting the plan (a dedicated recovery ref is saved before execution). Present the plan in Japanese.
 
 Example (present the following to the user in Japanese):
 ```
@@ -73,21 +73,23 @@ Example (present the following to the user in Japanese):
 - <sha> fixup! feat: add X → <sha> feat: add X に結合
 - <sha> squash! fix: Y → <sha> fix: Y に結合
 ベース: origin/<BASE> (開始点: <MB> = ブランチの分岐点)
-実行前にバックアップブランチを作成するので、結果が想定と異なる場合はバックアップから復元できます。
+実行前に専用refへ元のHEADを保存するので、結果が想定と異なる場合は復元できます。
 ```
 
-### 5. Create a backup branch (mandatory)
+### 5. Save a recovery ref (mandatory)
 
-Before touching history, **always** create a backup branch.
+Before touching history, save HEAD outside `refs/heads`:
 
 ```bash
-git branch "backup/$(git rev-parse --abbrev-ref HEAD)-autosquash-$(date +%Y%m%d-%H%M%S)"
+BACKUP_REF="refs/backup/autosquash/$(date +%Y%m%d-%H%M%S)/head"
+ORIGINAL_SHA=$(git rev-parse HEAD)
+git update-ref "$BACKUP_REF" "$ORIGINAL_SHA" ""
 ```
 
-Note the created branch name (`<BACKUP_BRANCH>`) and the current HEAD SHA, verify the branch exists with `git branch --list "<BACKUP_BRANCH>"` before moving on, and present the following to the user in Japanese.
+Check each command succeeds and `git rev-parse "$BACKUP_REF"` equals `ORIGINAL_SHA` before continuing. The empty old-value argument prevents overwriting an existing ref; on collision, choose a fresh name. Report the exact ref and original SHA in Japanese:
 
 ```
-バックアップブランチを作成しました: <BACKUP_BRANCH> (元の HEAD: <SHA>)
+復元用refを保存しました: <BACKUP_REF> (元の HEAD: <SHA>)
 ```
 
 ### 6. Run autosquash
@@ -121,23 +123,23 @@ Verify that the fixup!/squash! commits are gone and folded into their correspond
 Autosquash only folds the fixup!/squash! contents into their base commits, so the expectation is that **the final tree exactly matches the backup**. Any mismatch means the contents were altered during the history rewrite.
 
 ```bash
-git diff "<BACKUP_BRANCH>" HEAD
-git diff "<BACKUP_BRANCH>" HEAD --stat
+git diff "<BACKUP_REF>" HEAD
+git diff "<BACKUP_REF>" HEAD --stat
 ```
 
 In addition to an empty diff, also verify that the tree SHAs match:
 
 ```bash
-BACKUP_TREE=$(git rev-parse "<BACKUP_BRANCH>^{tree}")
+BACKUP_TREE=$(git rev-parse "<BACKUP_REF>^{tree}")
 HEAD_TREE=$(git rev-parse HEAD^{tree})
 [ "${BACKUP_TREE}" = "${HEAD_TREE}" ] && echo "TREE_MATCH" || echo "TREE_MISMATCH"
 ```
 
-On `TREE_MISMATCH`, or if `git diff` shows any diff, present the following to the user in Japanese. Do not perform destructive recovery such as `git reset --hard "<BACKUP_BRANCH>"` on your own judgment. Include the backup branch name and the original HEAD SHA needed for recovery, and leave the decision to the user. The history has already been rewritten here, so anything stashed in step 1 may conflict on `git stash pop`: leave it in the stash and report the entry name instead of popping it.
+On `TREE_MISMATCH` or a nonempty diff, report the following in Japanese. Never run `git reset --hard "<BACKUP_REF>"` independently. Report the exact ref and original HEAD SHA and let the user choose recovery. Before any approved reset, preserve current uncommitted / untracked work and appropriately end any in-progress operation. Since history is already rewritten, step 1's stash may conflict on `git stash pop`: leave it intact and report its entry instead.
 
 ```
 検証結果: ツリー不一致 (TREE_MISMATCH) を検出しました。履歴の書き換え中に内容が変わっている可能性があります。
-バックアップブランチ: <BACKUP_BRANCH> (元の HEAD: <SHA>)
+復元用ref: <BACKUP_REF> (元の HEAD: <SHA>)
 <IF_STASHED_IN_STEP_1: スタッシュは <STASH_ENTRY> に残したままです。復元方法と併せてご判断ください。>
 復元方法の判断をお知らせください。こちらで勝手に復元は行いません。
 ```
@@ -145,7 +147,7 @@ On `TREE_MISMATCH`, or if `git diff` shows any diff, present the following to th
 On `TREE_MATCH` (empty diff and matching tree SHAs), present the following to the user in Japanese.
 
 ```
-検証結果: ツリー一致 (TREE_MATCH)。最終内容はバックアップ <BACKUP_BRANCH> と同一です。
+検証結果: ツリー一致 (TREE_MATCH)。最終内容は復元用ref <BACKUP_REF> と同一です。
 ```
 
 If conflicts were resolved manually, the tree may legitimately differ by the resolution; present that diff to the user in Japanese. Present the following to the user in Japanese, followed by the diff, and check it matches the resolution intent.
@@ -162,8 +164,8 @@ When autosquash completes, first restore anything stashed in step 1 with `git st
 
 ```
 autosquash が完了しました。
-バックアップブランチ: <BACKUP_BRANCH> (元の HEAD: <SHA>)
-バックアップは削除せずに残しています。不要になった場合はご自身の判断で削除してください。
+復元用ref: <BACKUP_REF> (元の HEAD: <SHA>)
+復元用refは削除せずに残しています。不要になった場合はご自身の判断で削除してください。
 検証結果: <VERIFICATION_RESULT_FROM_STEP_8>
 <IF_STASHED_IN_STEP_1: スタッシュを `git stash pop` で戻しました。>
 必要であれば、ユーザー自身で `git push --force-with-lease origin HEAD` を実行してください (--force-with-lease を推奨します)。
@@ -172,16 +174,18 @@ autosquash が完了しました。
 The report must cover only the following points:
 
 - That autosquash is complete
-- The backup branch name and the original HEAD SHA (for recovery). Do not delete the backup on your own; leave deletion to the user's later judgment
+- The recovery ref and original HEAD SHA. Keep the ref until the user explicitly chooses deletion.
 - The step 8 verification result (whether the trees match)
 - If anything was stashed in step 1, that it has been restored
 - Ask them to run `git push --force-with-lease origin HEAD` themselves if needed (only mention that `--force-with-lease` is recommended)
 
 Do not run any `git push` commands inside this skill.
 
+List checkpoints with `git for-each-ref --format='%(refname) %(objectname:short)' refs/backup/autosquash/`. After preserving current work and appropriately ending any in-progress operation, approved recovery uses `git reset --hard "<BACKUP_REF>"`; account separately for any stash from step 1. Delete only the chosen checkpoint with `git update-ref -d "<BACKUP_REF>"` when the user explicitly decides it is no longer needed.
+
 ## Notes
 
-- **History is rewritten destructively, so always create a backup branch before executing.** Never start the rebase before creating one.
+- **Always save a dedicated recovery ref before rewriting history.** Never start the rebase before saving and verifying it.
 - **After execution, always verify the tree matches the backup.** On mismatch, only report it; do not fix or recover on your own.
 - **On any path that ends without completing the rebase, account for the stash from step 1.** On a clean abort, pop it. After the history was already rewritten, leave it and report the entry name.
 - Do not run destructive recovery beyond the step 6 `git rebase --abort` on your own judgment (no `reset --hard`, no retry with different options).
