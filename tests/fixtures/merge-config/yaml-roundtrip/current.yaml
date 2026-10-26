@@ -1,0 +1,6 @@
+setupVersion: 2
+modelRoles:
+  default: old-default
+  slow: openai-codex/gpt-6.1-sol:medium
+composer:
+  shape: field

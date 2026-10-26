@@ -1,0 +1,17 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Configuration for oh-my-pi (omp) at ~/.omp/agent/config.yml. */ -}}
+{{- /* Managed keys win, so omp-owned keys (setupVersion and anything omp's setup flow rewrites) are NOT managed; they survive every apply. */ -}}
+{{- /* modelRoles.default is the fallback when omp is started without the ompx overlay (see dot_zshrc / Microsoft.PowerShell_profile.ps1). */ -}}
+{{- $managed := `{
+  "modelRoles": {
+    "default": "openai-codex/gpt-6-luna"
+  },
+  "symbolPreset": "nerd",
+  "composer": {
+    "shape": "field"
+  },
+  "theme": {
+    "dark": "anthracite"
+  }
+}` -}}
+{{ includeTemplate "agents/merge-config.tmpl" (dict "current" .chezmoi.stdin "managed" $managed "format" "yaml") -}}

@@ -18,6 +18,11 @@
 {{-     if trim .current -}}
 {{-       $current = .current | fromToml -}}
 {{-     end -}}
+{{-   else if eq .format "yaml" -}}
+{{-     $managed = .managed | fromYaml -}}
+{{-     if trim .current -}}
+{{-       $current = .current | fromYaml -}}
+{{-     end -}}
 {{-   else -}}
 {{-     $managed = .managed | fromJsonc -}}
 {{-     if trim .current -}}
@@ -78,7 +83,9 @@
 
 {{-   if eq .format "toml" -}}
 {{      toToml $current }}
-{{    else -}}
+{{-   else if eq .format "yaml" -}}
+{{      toYaml $current }}
+{{-   else -}}
 {{      toPrettyJson $current }}
-{{    end -}}
+{{-   end -}}
 {{- end -}}

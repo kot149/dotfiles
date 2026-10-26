@@ -8,11 +8,14 @@ Fixture tests for .chezmoitemplates/agents/merge-config.tmpl.
   uv run --no-python-downloads --script tests/merge_config.py
 
 Each directory under tests/fixtures/merge-config/ is one case: managed + current
--> expected, all .json or all .toml. The template is called with "hooks" true
+-> expected, all .json, .toml or .yaml. The template is called with "hooks" true
 unless the case holds an empty no-hooks file. Every case is rendered a second
 time with expected as current, which must give expected again (a re-apply
 changes nothing). Outputs are compared as parsed objects serialized with sorted
-keys, so key order does not matter but list order and value types do.
+keys, so key order does not matter but list order and value types do. YAML is
+parsed (and serialized) through chezmoi's own fromYaml/toYaml via
+execute-template, so the comparison sees exactly what the template sees without
+adding a PyYAML dependency.
 """
 import difflib
 import json
@@ -39,6 +42,24 @@ def check(label: str, ok: bool, detail: str) -> None:
 
 
 def parse(text: str, fmt: str) -> object:
+    if fmt == "yaml":
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "in.yaml"
+            path.write_text(text, encoding="utf-8")
+            driver = Path(tmp) / "driver.tmpl"
+            driver.write_text(
+                f'{{{{ (include "{path.as_posix()}") | fromYaml | toJson }}}}',
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                ["chezmoi", "execute-template", "-f", driver.as_posix()],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+        if result.returncode != 0:
+            raise RuntimeError(f"exit status {result.returncode}: {result.stderr.strip()}")
+        return json.loads(result.stdout)
     return tomllib.loads(text) if fmt == "toml" else json.loads(text)
 
 
@@ -81,7 +102,7 @@ def compare(label: str, expected: object, actual: object) -> None:
 
 
 for case in sorted(p for p in FIXTURES.iterdir() if p.is_dir()):
-    fmt = "toml" if (case / "managed.toml").exists() else "json"
+    fmt = "toml" if (case / "managed.toml").exists() else "yaml" if (case / "managed.yaml").exists() else "json"
     expected_path = case / f"expected.{fmt}"
     try:
         expected = parse(expected_path.read_text(encoding="utf-8"), fmt)

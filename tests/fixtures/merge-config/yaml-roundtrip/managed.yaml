@@ -1,0 +1,3 @@
+modelRoles:
+  default: openai-codex/gpt-6-luna
+symbolPreset: nerd

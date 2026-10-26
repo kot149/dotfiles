@@ -1,0 +1,7 @@
+modelRoles:
+  default: openai-codex/gpt-6-luna
+  slow: openai-codex/gpt-6.1-sol:medium
+setupVersion: 2
+symbolPreset: nerd
+composer:
+  shape: field

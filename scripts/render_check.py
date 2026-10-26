@@ -24,6 +24,7 @@ import json
 import shutil
 import subprocess
 import sys
+import tempfile
 import tomllib
 from pathlib import Path
 
@@ -33,8 +34,10 @@ TARGETS = [
     (".codex/hooks.json", "json"),
     (".codex/config.toml", "toml"),
     (".config/opencode/opencode.json", "json"),
+    (".config/opencode/auto-approve.json", "json"),
     (".config/opencode/cli.json", "json"),
     (".gemini/antigravity-cli/settings.json", "json"),
+    (".omp/agent/config.yml", "yaml"),
     (".config/home-manager/flake.nix", "nix"),
     (".config/home-manager/common.nix", "nix"),
     (".config/nix-darwin/flake.nix", "nix"),
@@ -84,6 +87,17 @@ def parse_error(text: str, kind: str) -> str | None:
         r = run(["nix-instantiate", "--parse", "-"], input=text)
         if r.returncode != 0:
             return f"nix parse error: {r.stderr.strip()}"
+    if kind == "yaml":
+        # No PyYAML on purpose: parse through chezmoi's own fromYaml, the same
+        # function the merge-config template uses, via a throwaway driver.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "in.yaml"
+            path.write_text(text, encoding="utf-8")
+            driver = Path(tmp) / "driver.tmpl"
+            driver.write_text(f'{{{{ (include "{path.as_posix()}") | fromYaml | toJson }}}}', encoding="utf-8")
+            r = run(["chezmoi", "execute-template", "-f", driver.as_posix()])
+        if r.returncode != 0:
+            return f"yaml parse error: {r.stderr.strip()}"
     return None
 
 
