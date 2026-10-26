@@ -16,8 +16,11 @@ reports anything; formatting differences from `ruff format --check` and
 
 Usage:
   uv run --script scripts/lint.py
+  uv run --script scripts/lint.py --only python
+  uv run --script scripts/lint.py scripts/lint.py tests/
 """
 
+import argparse
 import json
 import re
 import shutil
@@ -78,19 +81,26 @@ RENDER_OS = {
 
 
 class Renderer:
-    def __init__(self, tmp: Path):
+    def __init__(self, tmp: Path, paths: list[Path]):
         self.tmp = tmp
+        self.paths = paths
+        self.matched: set[Path] = set()
         self.ok = True
         self.chezmoi = shutil.which("chezmoi") is not None
         if not self.chezmoi:
             print("SKIP templates: chezmoi not installed", flush=True)
+
+    def select(self, files: list[Path]) -> list[Path]:
+        selected = [f for f in files if not self.paths or any(f == p or f.is_relative_to(p) for p in self.paths)]
+        self.matched.update(selected)
+        return selected
 
     def render(self, patterns: list[str]) -> list[Path]:
         """Render each template for every OS; skip empty and duplicate output."""
         if not self.chezmoi:
             return []
         out = []
-        for template in glob(patterns):
+        for template in self.select(glob(patterns)):
             seen = set()
             for os_name, data in RENDER_OS.items():
                 r = run(
@@ -165,22 +175,31 @@ def report(
 
 
 def lint_shell(rd: Renderer) -> bool:
+    sources = rd.select(shell_sources())
+    libs = rd.select([ROOT / p for p in SHELL_LIBS])
+    templates = rd.select(glob(SHELL_TEMPLATES))
+    if not (sources or libs or templates):
+        return True
     if not available("shellcheck"):
         return True
     # No --rcfile: the preinstalled shellcheck on ubuntu-latest (0.9.x) rejects
     # it. Every shellcheck run executes with cwd=ROOT, so ./.shellcheckrc is
     # picked up from the working directory anyway.
     rc = ["-S", "warning"]
-    files = [*map(rel, shell_sources()), *map(str, rd.render(SHELL_TEMPLATES))]
-    results = [run(["shellcheck", *rc, *files]), run(["shellcheck", *rc, "-s", "bash", *SHELL_LIBS])]
+    files = [*map(rel, sources), *map(str, rd.render(SHELL_TEMPLATES))]
+    results = []
+    if files:
+        results.append(run(["shellcheck", *rc, *files]))
+    if libs:
+        results.append(run(["shellcheck", *rc, "-s", "bash", *map(rel, libs)]))
     n = sum(count(r.stdout, r"\^[-^]* SC\d{4} ") for r in results)
     return report(rd, "shellcheck", results, n)
 
 
 def lint_python(rd: Renderer) -> bool:
-    if not available("ruff"):
+    files = [rel(p) for p in rd.select(glob(PYTHON_FILES))]
+    if not files or not available("ruff"):
         return True
-    files = [rel(p) for p in glob(PYTHON_FILES)]
     r = run(["ruff", "check", "--output-format", "concise", *files])
     ok = report(rd, "ruff check", [r], count(r.stdout, r"^\S+:\d+:\d+: "))
     r = run(["ruff", "format", "--check", *files])
@@ -190,10 +209,14 @@ def lint_python(rd: Renderer) -> bool:
 
 
 def lint_nix(rd: Renderer) -> bool:
+    sources = rd.select(glob(NIX_FILES))
+    templates = rd.select(glob(NIX_TEMPLATES))
+    if not (sources or templates):
+        return True
     if not available("nixfmt"):
         return True
     unformatted = broken = 0
-    for f in [*glob(NIX_FILES), *rd.render(NIX_TEMPLATES)]:
+    for f in [*sources, *rd.render(NIX_TEMPLATES)]:
         r = run(["nixfmt", "--check", rel(f) if f.is_relative_to(ROOT) else str(f)])
         if r.returncode == 0:
             continue
@@ -208,20 +231,36 @@ def lint_nix(rd: Renderer) -> bool:
 
 
 def lint_js(rd: Renderer) -> bool:
+    sources = rd.select(glob(JS_FILES))
+    templates = rd.select(glob(JS_TEMPLATES))
+    if not (sources or templates):
+        return True
     if not available("oxlint"):
         return True
-    files = [*map(rel, glob(JS_FILES)), *map(str, rd.render(JS_TEMPLATES))]
+    files = [*map(rel, sources), *map(str, rd.render(JS_TEMPLATES))]
     r = run(["oxlint", "-f", "unix", "--deny-warnings", *files])
     return report(rd, "oxlint", [r], count(r.stdout, r"^\S+:\d+:\d+: "))
 
 
 def main() -> int:
+    linters = {"shell": lint_shell, "python": lint_python, "nix": lint_nix, "js": lint_js}
+    parser = argparse.ArgumentParser(description="Lint the repo or selected source files/directories.")
+    parser.add_argument("--only", choices=linters, action="append", help="run only this language (repeatable)")
+    parser.add_argument("paths", nargs="*", help="source files/directories relative to the repo root")
+    args = parser.parse_args()
+    paths = [(ROOT / p).resolve() for p in args.paths]
+    for path in paths:
+        if not path.exists() or not path.is_relative_to(ROOT):
+            parser.error(f"path must exist inside the repo: {path}")
     with tempfile.TemporaryDirectory() as d:
-        rd = Renderer(Path(d))
-        ok = lint_shell(rd)
-        ok &= lint_python(rd)
-        ok &= lint_nix(rd)
-        ok &= lint_js(rd)
+        rd = Renderer(Path(d), paths)
+        ok = True
+        for name in dict.fromkeys(args.only or linters):
+            ok &= linters[name](rd)
+        if paths:
+            for path in paths:
+                if not any(f == path or f.is_relative_to(path) for f in rd.matched):
+                    parser.error(f"no lint sources matched the selected language(s): {path}")
         ok &= rd.ok
     return 0 if ok else 1
 

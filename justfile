@@ -147,10 +147,12 @@ apt-upgrade:
 render-check:
     {{ uv_script }} scripts/render_check.py
 
-# Run shellcheck, ruff, nixfmt and oxlint over the repo (templates are rendered first)
+# Lint everything, or select languages/files (e.g. lint --only python scripts/)
 [group('dev')]
-lint:
-    {{ uv_script }} scripts/lint.py
+[positional-arguments]
+lint *args:
+    #!/usr/bin/env bash
+    exec {{ uv_script }} scripts/lint.py "$@"
 
 # Install a POSIX hook compatible with the global Git hook dispatcher
 [group('dev')]
@@ -199,13 +201,57 @@ test:
     '{{ just_executable() }}' --justfile '{{ justfile() }}' hooks-lint || status=1
     '{{ just_executable() }}' --justfile '{{ justfile() }}' render-check || status=1
     '{{ just_executable() }}' --justfile '{{ justfile() }}' lint || status=1
-    bun run tests/textlint-rule-ja-ai-phrasing.js || status=1
-    {{ uv_script }} tests/update_agent_skills.py || status=1
-    {{ uv_script }} tests/filter_agent_skill.py || status=1
-    bash tests/writing-style.sh || status=1
-    bun run tests/opencode-guards.js || status=1
-    {{ uv_script }} tests/hooks.py || status=1
-    {{ uv_script }} tests/file_suggestion.py || status=1
-    {{ uv_script }} tests/merge_config.py || status=1
-    {{ uv_script }} tests/permissions.py || status=1
+    for recipe in test-textlint test-skills-update test-skills-filter test-writing-style test-opencode-guards test-hooks test-file-suggestion test-merge-config test-permissions test-lint; do
+        '{{ just_executable() }}' --justfile '{{ justfile() }}' "$recipe" || status=1
+    done
     exit $status
+
+# Test the Japanese writing-style rule
+[group('test')]
+test-textlint:
+    bun run tests/textlint-rule-ja-ai-phrasing.js
+
+# Test third-party skill rev updates
+[group('test')]
+test-skills-update:
+    {{ uv_script }} tests/update_agent_skills.py
+
+# Test skill archive filtering
+[group('test')]
+test-skills-filter:
+    {{ uv_script }} tests/filter_agent_skill.py
+
+# Test writing-style hook patch parsing
+[group('test')]
+test-writing-style:
+    bash tests/writing-style.sh
+
+# Test opencode tool guards
+[group('test')]
+test-opencode-guards:
+    bun run tests/opencode-guards.js
+
+# Test shell hooks
+[group('test')]
+test-hooks:
+    {{ uv_script }} tests/hooks.py
+
+# Test file suggestions
+[group('test')]
+test-file-suggestion:
+    {{ uv_script }} tests/file_suggestion.py
+
+# Test agent config merging
+[group('test')]
+test-merge-config:
+    {{ uv_script }} tests/merge_config.py
+
+# Test agent permission rules
+[group('test')]
+test-permissions:
+    {{ uv_script }} tests/permissions.py
+
+# Test lint source selection
+[group('test')]
+test-lint:
+    {{ uv_script }} tests/lint.py

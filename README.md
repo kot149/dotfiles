@@ -17,6 +17,32 @@ The hooks use `ruff`, `nixfmt`, `shellcheck`, `oxlint`, `chezmoi`, `uv` and
 The installed POSIX hook also works when the global `core.hooksPath` hook
 delegates to `.git/hooks/pre-commit` using `sh`.
 
+### Focused checks
+
+Use focused checks while editing; reserve `just test` for the full check before
+finishing. With no arguments, `just test` still runs all checks sequentially and
+collects failures; `just lint` still checks the whole repository.
+
+```sh
+just test-hooks
+just test-permissions
+just test-merge-config
+just lint --only python
+just lint scripts/lint.py tests/lint.py
+just lint --only js private_dot_config/opencode/plugins/
+```
+
+`just --list` lists every `test-*` recipe. Each runs one test script without
+the full-suite lint/render prerequisites. `just skills-lint`, `just hooks-lint`
+and `just render-check` also remain independently runnable.
+
+Lint accepts source files or directories relative to the repository root (or
+absolute paths inside it), including `.tmpl` source paths. Selected templates
+are still rendered for both macOS and Linux, with identical output checked once.
+Use `--only shell|python|nix|js` to select a language; repeat `--only` to combine
+languages. A missing path or a path with no matching lint sources is an error,
+not a successful no-op. Linters that are not installed are still skipped.
+
 ## Prerequisites
 
 ### Windows
