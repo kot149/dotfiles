@@ -1,25 +1,12 @@
 {{- /* chezmoi:modify-template */ -}}
-{{- /* Writes .chezmoitemplates/opencode/opencode.json.tmpl as rendered, because opencode matches permission.bash in file order and a fromJson/toJson round trip would sort it. */ -}}
-{{- /* Top-level keys the template does not set are carried over from the current file. */ -}}
-{{- $managedText := includeTemplate "opencode/opencode.json.tmpl" . | trim -}}
-{{- $managed := $managedText | fromJson -}}
-
-{{- $current := dict -}}
+{{- /* Merges .chezmoitemplates/opencode/opencode.json.tmpl into the live file: managed keys win at any depth, arrays are replaced. */ -}}
+{{- /* Since v2 the opencode rules are one ordered array, which fromJson/toPrettyJson preserves, so the file can round-trip. */ -}}
+{{- /* The pre-v2 "permission" object was fully managed by the template, so it is dropped after the merge. */ -}}
+{{- $managed := includeTemplate "opencode/opencode.json.tmpl" . | trim -}}
+{{- $current := "" -}}
 {{- if trim .chezmoi.stdin -}}
-{{-   $current = .chezmoi.stdin | fromJsonc -}}
+{{-   $current = trim .chezmoi.stdin -}}
 {{- end -}}
-
-{{- $extra := list -}}
-{{- range $key, $value := $current -}}
-{{-   if not (hasKey $managed $key) -}}
-{{-     $extra = append $extra (printf "%s: %s" (toJson $key) ($value | toPrettyJson | indent 2 | trim)) -}}
-{{-   end -}}
-{{- end -}}
-
-{{- if $extra -}}
-{{ $managedText | trimSuffix "}" | trim }},
-  {{ join ",\n  " $extra }}
-}
-{{ else -}}
-{{ $managedText }}
-{{ end -}}
+{{- $merged := trim (includeTemplate "agents/merge-config.tmpl" (dict "managed" $managed "current" $current "format" "json")) | fromJson -}}
+{{- $_ := unset $merged "permission" -}}
+{{ toPrettyJson $merged }}

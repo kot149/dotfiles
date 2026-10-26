@@ -1,0 +1,10 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Configuration for the opencode-auto-approve plugin (see `plugins` in .chezmoitemplates/opencode/opencode.json.tmpl). */ -}}
+{{- /* Managed keys win, so the plugin-owned keys (judge, judge2, and `enabled` changed by /auto-approve) are NOT managed; they survive every apply. */ -}}
+{{- /* hardDeny / environment / rules are deliberately absent: an explicit "hardDeny": [] would replace the plugin's built-in exfiltration and credential-probing boundaries with none. */ -}}
+{{- $managed := `{"twoStage": true, "subagents": "classify"}` | fromJson -}}
+{{- $current := "" -}}
+{{- if trim .chezmoi.stdin -}}
+{{-   $current = trim .chezmoi.stdin -}}
+{{- end -}}
+{{ trim (includeTemplate "agents/merge-config.tmpl" (dict "managed" ($managed | toJson) "current" $current "format" "json")) }}

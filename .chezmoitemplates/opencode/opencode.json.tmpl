@@ -1,59 +1,34 @@
-{{- /* opencode matches each parsed sub-command of a compound command against
-       these patterns, in file order, last match wins. Allows are emitted first
-       and denies last so a deny always overrides the allow it narrows.
-       A pattern ending in " *" is rewritten to "( .*)?" by opencode, so it
-       already covers the bare command.
-       `gh api graphql` stays at "ask": Claude Code and Codex catch GraphQL
-       mutations with check-github-api-write.sh, which opencode does not run. */ -}}
+{{- /* opencode v2 permission rules: the last matching rule wins, so the broad
+       allows come first and the shared deny list comes last. A shell pattern
+       ending in " *" also matches the command without arguments.
+       v2 defaults to allow for every action, and the auto-approve plugin (see
+       `plugins`) sends every resolved-allow call except read/glob/grep/
+       question/execute through its LLM judge, so only the rules the judge must
+       never override stay static here: the shared deny list (absolute
+       boundaries) and the read rules below. */ -}}
 {{- $perms := includeTemplate "agents/shell-permissions.tmpl" . | fromJson -}}
-{{- $allowPatterns := list -}}
-{{- range concat $perms.allow $perms.allowWrite -}}
-  {{- if not (hasPrefix "gh api graphql" (trimPrefix "rtk " (trimPrefix "rtk proxy " .))) -}}
-    {{- $allowPatterns = append $allowPatterns . -}}
+{{- $rules := list
+  (dict "action" "shell" "resource" "*" "effect" "allow")
+  (dict "action" "edit" "resource" "*" "effect" "allow")
+  (dict "action" "external_directory" "resource" "*" "effect" "allow")
+  (dict "action" "read" "resource" "*.env" "effect" "ask")
+  (dict "action" "read" "resource" "*.env.*" "effect" "ask")
+  (dict "action" "read" "resource" "*.env.example" "effect" "allow")
+  (dict "action" "read" "resource" "*/.ssh/*" "effect" "deny")
+-}}
+{{- /* The plugin never sees a `deny` rule, so secrets files cannot be read by
+       reasoning a judge into allowing it. `*.env.example` must come after
+       `*.env.*` because an allow would otherwise be overridden. */ -}}
+{{- $seen := dict -}}
+{{- range $pattern := $perms.deny -}}
+  {{- if not (hasKey $seen $pattern) -}}
+    {{- $_ := set $seen $pattern true -}}
+    {{- $rules = append $rules (dict "action" "shell" "resource" $pattern "effect" "deny") -}}
   {{- end -}}
-{{- end -}}
-{{- $denyPatterns := $perms.deny -}}
-{{- $seen := dict "*" true -}}
-{{- range $denyPatterns -}}
-  {{- $_ := set $seen . true -}}
-{{- end -}}
-{{- $bashLines := list "\"*\": \"ask\"" -}}
-{{- range $allowPatterns -}}
-  {{- if not (hasKey $seen .) -}}
-    {{- $_ := set $seen . true -}}
-    {{- $bashLines = append $bashLines (printf "%s: \"allow\"" (toJson .)) -}}
-  {{- end -}}
-{{- end -}}
-{{- $emitted := dict -}}
-{{- range $denyPatterns -}}
-  {{- if not (hasKey $emitted .) -}}
-    {{- $_ := set $emitted . true -}}
-    {{- $bashLines = append $bashLines (printf "%s: \"deny\"" (toJson .)) -}}
-  {{- end -}}
-{{- end -}}
-{{- $externalDirs := list "~/.cargo/*" "~/.rustup/*" "~/.portless/*" "~/.local/share/opencode/*" -}}
-{{- if eq .chezmoi.os "windows" -}}
-  {{- $externalDirs = concat $externalDirs (list "~/AppData/Local/Temp/*" "~/AppData/Local/rtk/*") -}}
-{{- else -}}
-  {{- $externalDirs = concat $externalDirs (list "/tmp/*") -}}
-{{- end -}}
-{{- $dirLines := list -}}
-{{- range $externalDirs -}}
-  {{- $dirLines = append $dirLines (printf "%s: \"allow\"" (toJson .)) -}}
 {{- end -}}
 {
   "$schema": "https://opencode.ai/config.json",
   "autoupdate": false,
-  "permission": {
-    "bash": {
-      {{ join ",\n      " $bashLines }}
-    },
-    "external_directory": {
-      "*": "ask",
-      {{ join ",\n      " $dirLines }}
-    },
-    "edit": "allow",
-    "websearch": "allow",
-    "webfetch": "allow"
-  }
+  "plugins": ["./plugins/auto-approve"],
+  "permissions": {{ $rules | toJson }}
 }

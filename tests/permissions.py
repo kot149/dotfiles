@@ -13,8 +13,8 @@ included). Approximates Claude Code's matcher; it does not model its prefix rule
 
 Also renders the Codex rules and matches commands against their prefix_rule
 patterns as argv prefixes, checking that Codex never blocks or allows more than
-the Claude rules do, and renders the opencode bash rules for the checks
-that differ there.
+the Claude rules do, and evaluates the opencode v2 permission array for the
+checks that differ there.
 """
 import json
 import re
@@ -63,21 +63,28 @@ for line in render(CODEX_TEMPLATE).splitlines():
 
 
 def opencode_regex(pattern: str) -> re.Pattern[str]:
-    """opencode's wildcard match: `*` is any run of characters, a trailing ` *` is `( .*)?`."""
+    """opencode v2 wildcard match: `*` is any run of characters, `?` is exactly
+    one character, and a trailing ` *` (shell resources) is `( .*)?`."""
     optional = pattern.endswith(" *")
-    body = ".*".join(re.escape(part) for part in pattern.removesuffix(" *").split("*"))
-    return re.compile("^" + body + ("( .*)?" if optional else "") + "$", re.DOTALL)
+    parts = [re.sub(r"\?", ".", re.escape(part)) for part in pattern.removesuffix(" *").split("*")]
+    return re.compile("^" + ".*".join(parts) + ("( .*)?" if optional else "") + "$", re.DOTALL)
 
 
 OPENCODE_RULES = [
-    (opencode_regex(pattern), action)
-    for pattern, action in json.loads(render(OPENCODE_TEMPLATE))["permission"]["bash"].items()
+    (rule["action"], opencode_regex(rule["resource"]), rule["effect"])
+    for rule in json.loads(render(OPENCODE_TEMPLATE))["permissions"]
 ]
 
 
-def opencode_action(cmd: str) -> str:
-    """opencode's decision for a single command: the last matching rule wins."""
-    return [action for regex, action in OPENCODE_RULES if regex.match(cmd)][-1]
+def opencode_action(action: str, resource: str) -> str:
+    """opencode's decision for one resource: the last matching rule wins, and
+    opencode's built-in base policy resolves anything unmatched to allow."""
+    matching = [
+        effect
+        for rule_action, regex, effect in OPENCODE_RULES
+        if rule_action == action and regex.match(resource)
+    ]
+    return matching[-1] if matching else "allow"
 
 
 def denied(cmd: str) -> bool:
@@ -399,18 +406,37 @@ for group, check, cases, expected in (
         if check(cmd) is not expected:
             failures.append(f"{group}: {cmd}")
 
-# opencode runs no github-api-write guard, so GraphQL calls must prompt there.
-for cmd, expected in (
-    ("gh api graphql -f query='mutation { x }'", "ask"),
-    ("rtk gh api graphql -f query='mutation { x }'", "ask"),
-    ("rtk proxy gh api graphql -f query='mutation { x }'", "ask"),
-    ("gh api graphql", "ask"),
-    ("gh api rate_limit", "allow"),
-    ("git status", "allow"),
+# opencode v2: every action defaults to allow and the auto-approve plugin's LLM
+# judge decides, so the only hand-written rules are the shared deny list and
+# the read rules below; GraphQL mutations are judged, not prompted.
+for action, resource, expected in (
+    ("shell", "git status", "allow"),
+    ("shell", "gh api rate_limit", "allow"),
+    ("shell", "gh api graphql -f query='mutation { x }'", "allow"),
+    ("shell", "nox cast-all", "allow"),
+    ("read", "x/.env", "ask"),
+    ("read", "x/.env.local", "ask"),
+    ("read", "x/.env.example", "allow"),
+    ("read", "/home/x/.ssh/config", "deny"),
+    ("edit", "src/main.py", "allow"),
+    ("external_directory", "/tmp/foo", "allow"),
 ):
     checks += 1
-    if opencode_action(cmd) != expected:
-        failures.append(f"opencode: {cmd}: expected {expected}, got {opencode_action(cmd)}")
+    if opencode_action(action, resource) != expected:
+        failures.append(f"opencode: {action} {resource}: expected {expected}, got {opencode_action(action, resource)}")
+
+# The shared deny list is emitted as opencode shell rules and must still deny.
+for cmd in DENIED:
+    checks += 1
+    if opencode_action("shell", cmd) != "deny":
+        failures.append(f"opencode deny: {cmd}: expected deny, got {opencode_action('shell', cmd)}")
+
+# Commands that may prompt elsewhere must not be hard-blocked there: with the
+# plugin judging, "allow" is not silent anyway.
+for cmd in NOT_DENIED:
+    checks += 1
+    if opencode_action("shell", cmd) == "deny":
+        failures.append(f"opencode deny: {cmd}: unexpected deny")
 
 for name, offenders in codex_rule_offenders().items():
     checks += 1
