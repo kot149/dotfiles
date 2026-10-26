@@ -5,14 +5,19 @@
 """Exercise real git patches and chezmoi externals without network or HOME writes."""
 
 import difflib
+import functools
+import http.server
 import io
+import os
 import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
+import threading
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -66,6 +71,18 @@ class FilterTests(unittest.TestCase):
         expected = contents(data)
         expected["repo/skills/demo/SKILL.md"] = ("日本語\n".encode(), 0o644)
         self.assertEqual(actual, expected)
+
+    def test_host_git_line_endings_do_not_change_archive_contents(self):
+        config = {
+            "GIT_CONFIG_COUNT": "2",
+            "GIT_CONFIG_KEY_0": "core.autocrlf",
+            "GIT_CONFIG_VALUE_0": "true",
+            "GIT_CONFIG_KEY_1": "core.eol",
+            "GIT_CONFIG_VALUE_1": "crlf",
+        }
+        with patch.dict(os.environ, config):
+            actual = contents(filter_archive(archive({"repo/SKILL.md": b"English\n"}), "", self.patch))
+        self.assertEqual(actual, {"repo/SKILL.md": ("日本語\n".encode(), 0o644)})
 
     def test_flat_skill_adds_and_deletes_files(self):
         self.patch.write_text(
@@ -141,10 +158,18 @@ class FilterTests(unittest.TestCase):
         shutil.copyfile(self.patch, installed_patch)
         upstream = self.root / "upstream.tar.gz"
         upstream.write_bytes(archive({"repo/skills/demo/SKILL.md": b"English\n"}))
+        server = http.server.ThreadingHTTPServer(
+            ("127.0.0.1", 0),
+            functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(self.root)),
+        )
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
         template = (ROOT / ".chezmoiexternal.toml.tmpl").read_text(encoding="utf-8")
         template = template.replace(
             "https://github.com/{{ $skill.repo }}/archive/{{ $skill.rev }}.tar.gz",
-            upstream.as_uri(),
+            f"http://127.0.0.1:{server.server_port}/upstream.tar.gz",
         )
         (source / ".chezmoiexternal.toml.tmpl").write_text(template, encoding="utf-8")
         (source / ".chezmoiignore").write_text("scripts/\nDocuments/**\n", encoding="utf-8")

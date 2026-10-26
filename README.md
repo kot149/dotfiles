@@ -232,11 +232,11 @@ The external template automatically enables [`filter_agent_skill.py`](scripts/fi
 - **Remove a customization:** delete its patch, then apply the affected skill targets to restore the pinned upstream contents. If the patch added files, remove those now-obsolete files from the destination as well: archive externals are not exact directories.
 - **Update upstream:** `dots skills-update` validates patches against all selected candidate revs before writing or committing any rev. A conflict or download failure leaves all selected pins unchanged. Review the upstream diff, adapt the patch, and retry. `--no-commit` still validates; `skills-check` remains a freshness-only check.
 - **Conflicts:** the filter fails rather than using three-way merges, rejected hunks, or unpatched fallback contents. `chezmoi diff`, `apply` and `verify` all use the patched target state. An apply of multiple targets is not a transaction.
-- **Checks:** `dots skills-lint` rejects patches with missing or ambiguous skill declarations. `tests/filter_agent_skill.py` exercises real Git and isolated chezmoi apply/diff/verify without network access; `ci-render` itself still excludes externals.
+- **Checks:** `dots skills-lint` rejects patches with missing or ambiguous skill declarations. `tests/filter_agent_skill.py` exercises real Git and isolated chezmoi apply/diff/verify against a loopback HTTP archive, without external network access; `ci-render` itself still excludes externals.
 
 The included patches make `ponytail-review` and `ponytail-audit` report in Japanese, replace agent-browser's `npx` tool permission with `bunx`, and extend `/bro` with `/bro --file <path>`. Bro already supports pasted text upstream. Agent-browser's dynamically loaded `agent-browser skills get ...` output is outside the downloaded archive, so these patches do not rewrite that runtime content.
 
-Archive paths cannot escape the temporary directory; links and special files inside the selected skill are rejected. On Windows, existing archive permissions are preserved and new files receive mode `0644`; use content patches rather than executable-bit changes there.
+Archive paths cannot escape the temporary directory; links and special files inside the selected skill are rejected. Git's automatic line-ending conversion is disabled during patch application, regardless of host settings. On Windows, existing archive permissions are preserved and new files receive mode `0644`; use content patches rather than executable-bit changes there.
 
 ## Managing OS-specific files
 

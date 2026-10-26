@@ -74,7 +74,7 @@ def filter_archive(data: bytes, skill_path: str, patch: Path) -> bytes:
             patch_data = patch.read_bytes().replace(b"\r\n", b"\n")
             for options in (["--check"], []):
                 result = subprocess.run(
-                    ["git", "apply", "--no-index", *options, "-"],
+                    ["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "apply", "--no-index", *options, "-"],
                     cwd=directory,
                     input=patch_data,
                     capture_output=True,
