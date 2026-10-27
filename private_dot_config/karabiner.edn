@@ -656,7 +656,9 @@
                  [{:description "Win+L -> Sleep"
                    :from {:key_code "l"
                           :modifiers {:mandatory ["control"]}}
-                   :to [{:shell_command "pmset sleepnow"}]
+                   :to [{:software_function
+                         {:iokit_power_management_sleep_system
+                          {:delay_milliseconds 750}}}]
                    :type "basic"}]
                  [{:description "Win+Shift+S -> Screenshot selection to clipboard"
                    :from {:key_code "s"
