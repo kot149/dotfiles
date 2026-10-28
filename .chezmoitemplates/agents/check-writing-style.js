@@ -511,10 +511,10 @@ async function main() {
         `${i + 1}. 該当: 「${hit}」\n   原文: 「${line}」\n   対応: ${advice}`,
     )
     .join("\n\n");
-  const parts = ["[言い回しの矯正]\n"];
+  const parts = [];
   if (findings.length > 0) {
     parts.push(
-      "曖昧・翻訳調な表現が含まれています。読み手が具体的な動作を想像できる書き方に直してください。\n",
+      "曖昧な表現が含まれています。読み手が具体的な動作を想像できる書き方に直してください。\n",
       `${detail}\n`,
     );
   }
