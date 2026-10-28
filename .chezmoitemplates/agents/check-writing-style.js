@@ -2,8 +2,9 @@
 /**
  * Block Claude-flavored Japanese phrasing before it lands in a document, a ticket, or a PR.
  *
- * Covers Markdown and plain-text writes, Jira / Confluence create-update-comment
- * calls, and the `gh` commands that post issue / PR / release bodies and comments.
+ * Covers Markdown and plain-text writes, the Japanese string values of JSON writes,
+ * Jira / Confluence create-update-comment calls, and the `gh` commands that post
+ * issue / PR / release bodies and comments.
  *
  * Every hit is denied rather than handed to the permission prompt, so the advice
  * always reaches the model. Repeating the identical call is the way to override a
@@ -35,6 +36,12 @@ const PATCH_FILE = /^\*{3} (?:Add|Update) File: (.+)$/;
 const PATCH_MOVE = /^\*{3} Move to: (.+)$/;
 
 const PROSE_SUFFIXES = [".md", ".markdown", ".mdx", ".txt"];
+// A JSON file is often a body staged for `gh api --input`, so its string values are prose.
+const JSON_SUFFIX = ".json";
+// A JSON string literal, for a fragment such as an Edit's new_string that does not parse alone.
+const JSON_STRING = /"(?:[^"\\\n]|\\.)*"/g;
+// The rule only looks at Japanese, and a lockfile holds thousands of strings that carry none.
+const JAPANESE = /[぀-ヿ㐀-鿿]/;
 
 // How much of the offending line to quote back.
 const LINE_EXCERPT = 120;
@@ -76,6 +83,8 @@ function splitWords(command) {
     if (c === "'" || c === '"') {
       quote = c;
       word ??= "";
+    } else if (c === "\\" && command[i + 1] === "\n") {
+      i += 1;
     } else if (c === "\\" && i + 1 < command.length) {
       word = (word ?? "") + command[++i];
     } else if (/\s/.test(c)) {
@@ -123,6 +132,83 @@ function stripHeredocBodies(command) {
   return kept.join("\n");
 }
 
+// A word that ends one shell command, either standing alone or glued to the end of a word.
+const COMMAND_END = /^(?:\|\|?|&&?|;|\))$/;
+const TRAILING_END = /[;|&)]+$/;
+const JQ_FILE_OPTIONS = new Set(["--slurpfile", "--rawfile", "--argfile"]);
+const JQ_TWO_ARG_OPTIONS = new Set(["--arg", "--argjson", ...JQ_FILE_OPTIONS]);
+const JQ_ONE_ARG_OPTIONS = new Set(["--indent", "-L", "-f", "--from-file"]);
+
+/** The arguments of each `<name> ...` command in words, up to the end of that command. */
+function commandArgs(words, name) {
+  const runs = [];
+  words.forEach((word, start) => {
+    if (word !== name && !word.endsWith(`/${name}`)) return;
+    const args = [];
+    for (const raw of words.slice(start + 1)) {
+      if (COMMAND_END.test(raw) || /^\d?[<>]/.test(raw)) break;
+      const arg = raw.replace(TRAILING_END, "");
+      if (arg) args.push(arg);
+      if (arg !== raw) break;
+    }
+    runs.push(args);
+  });
+  return runs;
+}
+
+/** The files a jq call reads: --slurpfile / --rawfile values and the inputs after the filter. */
+function jqFiles(args) {
+  const files = [];
+  let filterSeen = false;
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (JQ_TWO_ARG_OPTIONS.has(arg)) {
+      if (JQ_FILE_OPTIONS.has(arg)) files.push(args[i + 2]);
+      i += 2;
+    } else if (JQ_ONE_ARG_OPTIONS.has(arg)) {
+      if (arg === "-f" || arg === "--from-file") filterSeen = true;
+      i += 1;
+    } else if (arg.startsWith("-")) {
+      // A flag without a value.
+    } else if (filterSeen) {
+      files.push(arg);
+    } else {
+      filterSeen = true;
+    }
+  }
+  return files;
+}
+
+/**
+ * The files whose content can reach gh on stdin: what jq and cat read and what is
+ * redirected in with `<`. A body passed as `--input -` is built from these.
+ */
+function stdinPaths(words) {
+  const paths = commandArgs(words, "jq").flatMap(jqFiles);
+  for (const args of commandArgs(words, "cat")) paths.push(...args.filter((a) => !a.startsWith("-")));
+  words.forEach((word, i) => {
+    if (word === "<") paths.push(words[i + 1]);
+    else if (/^<[^<(&]/.test(word)) paths.push(word.slice(1));
+  });
+  return paths;
+}
+
+const readsStdin = (words) =>
+  words.some(
+    (_, i) =>
+      FILE_FLAGS.some((flag) => flagValue(words, i, flag) === "-") ||
+      FIELD_FLAGS.some((flag) => fieldFile(flagValue(words, i, flag)) === "-"),
+  );
+
+/** Paths the command itself writes with `>`, which hold fetched data rather than authored prose. */
+function writtenPaths(words) {
+  return words.flatMap((word, i) => {
+    const match = word.match(/^\d?>>?(.*)$/);
+    if (!match) return [];
+    return [match[1] || words[i + 1]].filter(Boolean);
+  });
+}
+
 /** Every path this command could be reading a body from. Duplicates and nulls are fine. */
 function bodyPaths(rawCommand) {
   const command = stripHeredocBodies(rawCommand);
@@ -133,9 +219,13 @@ function bodyPaths(rawCommand) {
     ...FIELD_FLAGS.map((flag) => fieldFile(flagValue(words, i, flag))),
   ]);
   for (const match of command.matchAll(SUBSTITUTED_PATH)) paths.push(match[1] ?? match[2]);
+  if (readsStdin(words)) paths.push(...stdinPaths(words));
+  const written = new Set(writtenPaths(words));
   return paths
     .map((target) => target && unquote(target))
-    .filter((target) => target && target !== "-" && !FIELD_SPEC.test(target));
+    .filter(
+      (target) => target && target !== "-" && !FIELD_SPEC.test(target) && !written.has(target),
+    );
 }
 
 function shellVariables(command) {
@@ -224,6 +314,32 @@ function bodyProse(text) {
   return [text];
 }
 
+/** The Japanese string values of a JSON file, or of a fragment of one. */
+function jsonProse(text) {
+  let strings;
+  try {
+    strings = collectStrings(JSON.parse(text));
+  } catch {
+    strings = [...text.matchAll(JSON_STRING)].flatMap(([literal]) => {
+      try {
+        return [JSON.parse(literal)];
+      } catch {
+        return [];
+      }
+    });
+  }
+  return strings.filter((s) => JAPANESE.test(s));
+}
+
+/** The prose a write to filePath carries, or nothing when the file is not prose. */
+function fileProse(filePath, text) {
+  const lower = filePath.toLowerCase();
+  if (!text) return [];
+  if (PROSE_SUFFIXES.some((suffix) => lower.endsWith(suffix))) return [text];
+  if (lower.endsWith(JSON_SUFFIX)) return jsonProse(text);
+  return [];
+}
+
 /**
  * Return the texts worth scanning for this call, and the body paths that could not be
  * read. Both are empty when the tool is out of scope.
@@ -244,10 +360,8 @@ function targetTexts(toolName, toolInput, cwd) {
   }
 
   if (toolName === "Write" || toolName === "Edit") {
-    const filePath = (toolInput.file_path ?? "").toLowerCase();
-    if (!PROSE_SUFFIXES.some((suffix) => filePath.endsWith(suffix))) return scan([]);
     const text = toolInput.content || toolInput.new_string || "";
-    return scan(text ? asMarkdown([text]) : []);
+    return scan(asMarkdown(fileProse(toolInput.file_path ?? "", text)));
   }
 
   if (MCP_ATLASSIAN.test(toolName) && MCP_WRITE_OP.test(toolName)) {
@@ -260,10 +374,7 @@ function targetTexts(toolName, toolInput, cwd) {
     let currentFile = null;
     let currentText = "";
     const flush = () => {
-      const filePath = (currentFile ?? "").toLowerCase();
-      if (currentText && PROSE_SUFFIXES.some((suffix) => filePath.endsWith(suffix))) {
-        targets.push({ text: currentText, ext: ".md" });
-      }
+      targets.push(...asMarkdown(fileProse(currentFile ?? "", currentText)));
       currentFile = null;
       currentText = "";
     };

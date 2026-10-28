@@ -221,7 +221,7 @@ test-skills-update:
 test-skills-filter:
     {{ uv_script }} tests/filter_agent_skill.py
 
-# Test writing-style hook patch parsing
+# Test writing-style hook target extraction
 [group('test')]
 test-writing-style:
     bash tests/writing-style.sh
