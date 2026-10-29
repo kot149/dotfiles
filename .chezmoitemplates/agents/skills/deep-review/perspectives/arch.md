@@ -32,4 +32,4 @@ When you find a difference, check primary sources (in-code comments, design docs
 ## Perspective Notes
 
 - Architecture findings need measured evidence: import searches with counts, sibling placement examples, caller counts. "Violates clean architecture" with no local evidence is generic advice, which the catalog forbids
-- A pattern violation that manifests as a concrete reachable bug belongs to security/quality; keep your finding at the structural level
+- A pattern violation that manifests as a concrete reachable bug belongs to security/maintainability; keep your finding at the structural level

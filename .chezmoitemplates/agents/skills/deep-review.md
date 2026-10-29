@@ -1,6 +1,6 @@
 ---
 name: deep-review
-description: In-depth code review that runs multiple perspective-specific reviewer subagents in parallel, has judge subagents verify each finding against the real code, then fixes the valid findings. Reviews in 10 independent perspectives (security/quality/naming/comment/perf/a11y/test/arch/meta/spec), also fetching spec documents such as Jira/Confluence from the PR body to check spec consistency. Use when the user asks for "deep review", "review this PR", "review the diff from multiple angles", "review and fix", 「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」, or requests a review with a PR number or diff range in English or Japanese. Findings can also be posted as pending PR review comments. The `--fix` flag skips the approach selection prompt and auto-fixes, and `--post` similarly proceeds to pending review comment posting (only valid for PR targets).
+description: In-depth code review that runs multiple perspective-specific reviewer subagents in parallel, has judge subagents verify each finding against the real code, then fixes the valid findings. Reviews in 10 independent perspectives (security/maintainability/naming/comment/perf/a11y/test/arch/meta/spec), also fetching spec documents such as Jira/Confluence from the PR body to check spec consistency. Use when the user asks for "deep review", "review this PR", "review the diff from multiple angles", "review and fix", 「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」, or requests a review with a PR number or diff range in English or Japanese. Findings can also be posted as pending PR review comments. The `--fix` flag skips the approach selection prompt and auto-fixes, and `--post` similarly proceeds to pending review comment posting (only valid for PR targets).
 argument-hint: "[<PR number|PR URL|base...head|paths>] [--fix] [--post]"
 ---
 
@@ -61,7 +61,7 @@ There are 10 perspectives. Each label's detailed checklist is in `perspectives/<
 | Label | Perspective |
 |---|---|
 | security | Injection, authn/authz, secret exposure, input validation, XSS/CSRF, crypto |
-| quality | Readability, error handling, silent degradation and observability, recoverability, DRY, immutability |
+| maintainability | Readability, error handling, silent degradation and observability, recoverability, DRY, immutability |
 | naming | Truthful names, collisions with existing code, consistent wording, scope-appropriate detail, counterpart symmetry |
 | comment | Redundant/missing comments per [[trim-comments]], meta-comments, statement-vs-reality consistency |
 | perf | N+1, complexity, memory, re-renders, bundle size, caching, blocking I/O |
@@ -300,7 +300,7 @@ The judge's SEVERITY is a per-finding recommendation made without seeing the oth
 | Stale prose where a misunderstanding breaks nothing (e.g. outdated line-number references) | LOW |
 | Not caused by this PR, or issues on unchanged lines | LOW |
 
-- **Findings rooted in design/naming/architecture must not be CRITICAL** (cap at HIGH). If it manifests as a reachable defect, it is not a design discussion; security / quality should have raised it as a correctness issue
+- **Findings rooted in design/naming/architecture must not be CRITICAL** (cap at HIGH). If it manifests as a reachable defect, it is not a design discussion; security / maintainability should have raised it as a correctness issue
 - **When torn between two severities, pick the lower.** Mass-produced CRITICALs destroy the priority order itself
 - A judge's `EVIDENCE: UNVERIFIED` finding never goes above the reviewer's declared severity
 

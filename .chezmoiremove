@@ -21,6 +21,10 @@
 .local/share/herdr-plugins/next-agent-go
 .local/share/herdr-plugins/copy-output-py
 
+# deep-review perspective renamed to maintainability.
+.claude/skills/deep-review/perspectives/quality.md
+.agents/skills/deep-review/perspectives/quality.md
+
 # A path listed in .chezmoiignore.tmpl never reaches this list: ignoring it
 # drops it from the target state, so chezmoi neither creates nor removes it.
 # An OS-gated target left over from before the gate has to be deleted by hand.
