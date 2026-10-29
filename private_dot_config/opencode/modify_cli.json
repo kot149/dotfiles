@@ -7,7 +7,8 @@
     "app.exit": "ctrl+c,ctrl+d,<leader>q",
     "session.interrupt": "escape",
     "input.line.home": "home",
-    "input.line.end": "end"
+    "input.line.end": "end",
+    "input.select.all": "ctrl+a,super+a"
   }
 }` -}}
 {{- includeTemplate "agents/merge-config.tmpl" (dict "current" .chezmoi.stdin "managed" $managed "format" "json") -}}
