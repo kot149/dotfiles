@@ -26,7 +26,7 @@ Each finding needs at minimum a **file path, line, and body**. Do not post findi
 
 - **Always create in pending state**. POST to the reviews API with **no `event` field at all**. A review is created as PENDING only when `event` is omitted. Specifying `event: COMMENT` / `APPROVE` / `REQUEST_CHANGES` is forbidden
 - **Never perform submit operations**: `gh pr review --comment/--approve/--request-changes` and `POST .../reviews/{id}/events` are forbidden. The user submits by hand
-- **Make every finding an inline comment**: each finding goes in the `comments` array with `path` + `line` anchored to the relevant line. Keep the review body empty; never write findings or a summary in the body
+- **Make every finding an inline comment**: each finding (or finding group from step 5) goes in the `comments` array with `path` + `line` anchored to the relevant line. Keep the review body empty; never write findings or a summary in the body
 - **Never delete an existing pending review on your own**: discarding one requires the user's explicit approval first
 - **Never post a finding that duplicates an existing comment**: fetch existing review comments in step 3 and drop anything already raised at the same place with the same point. Treat resolved and outdated threads as "already raised"
 - **Never invent finding content**: do not create findings that are not in the input. Conversely, always report the ones you could not post
@@ -120,9 +120,27 @@ Compare the diff against each finding's line:
 
 Paths must be **relative to the repository root** and match what appears in the diff exactly.
 
-### 5. Compose comment bodies
+### 5. Group findings
 
-One comment per finding. Never pack multiple findings into one comment.
+When 6 or more findings remain after steps 3 and 4, merge findings of the same kind into one comment so the PR is not flooded. With 5 or fewer, skip this step and post each finding on its own.
+
+Merge when the findings share a kind and the reader does not need each one pinned to its own line:
+
+- Missing test cases or test coverage gaps for the same change
+- The same naming, comment or style issue repeated across places
+- Missing documentation or type annotations of the same sort
+
+Keep a finding as its own comment when:
+
+- Its point depends on the exact line (a bug, a security issue, a boundary condition in one expression)
+- It carries a `suggestion` block
+- No other finding is of the same kind
+
+A merged comment is anchored to the most representative in-diff line (e.g. the function the missing tests are for) and lists each item with its location, so no item is lost. Do not merge across different kinds just to cut the count.
+
+### 6. Compose comment bodies
+
+One comment per finding, or per group from step 5. Do not pack unrelated findings into one comment.
 
 ```
 **[<kind> / <grade>] <finding title>**
@@ -136,6 +154,15 @@ One comment per finding. Never pack multiple findings into one comment.
 - `<grade>` is how the caller ranked or judged it: a severity (`HIGH`), a verdict (`PARTIALLY_VALID`), or any single token of that kind
 - If the input has no `<kind>` or no `<grade>`, drop the label line and use just the title
 - Do not add generator-name labels like `[deep-review]`, `[meta-review]` or `[Claude]`. A reader of the PR cares what the finding is, not which tool wrote it
+- A merged comment uses the highest `<grade>` among its items and lists the items instead of a single description:
+
+  ```
+  **[<kind> / <grade>] <group title>**
+
+  - `<path>:<line>` <what is wrong>. <how to fix it>
+  - ...
+  ```
+
 - When showing fixed code, you may use a GitHub suggestion block:
 
   ````
@@ -146,7 +173,7 @@ One comment per finding. Never pack multiple findings into one comment.
 
   A suggestion replaces the whole `line` (or `start_line` to `line` range), so match the line count and content against the diff exactly.
 
-### 6. Post
+### 7. Post
 
 Write the payload to a file and POST it (no `event` included):
 
@@ -166,7 +193,7 @@ gh api repos/{owner}/{repo}/pulls/{number}/reviews --input payload.json
 
 `commit_id` may be omitted (the PR's latest commit is used). Specify it only when you want to pin a particular commit.
 
-### 7. Verify results and report
+### 8. Verify results and report
 
 Confirm the response `state` is `PENDING`. Anything else means it was published, so present the following to the user in Japanese immediately:
 
@@ -179,6 +206,7 @@ Present the report to the user in Japanese with the following contents (fill in 
 ```
 <N>件投稿しました:
 - `<ファイル>:<行>` — <指摘の要約>
+- `<ファイル>:<行>` — <グループ名> (<M>件をまとめて投稿)
 - ...
 
 投稿できなかった指摘:
