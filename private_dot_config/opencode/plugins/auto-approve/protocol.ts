@@ -1,8 +1,8 @@
 /**
  * Wire contract between the gate (server plugin) and the surfaces (TUI plugin).
  *
- * The TUI reads status and the decision log, flips the gate, pins judge
- * models, and refreshes from the `decision` and `config` events. Every change
+ * The TUI reads status, the model catalog and the decision log, flips the
+ * gate, pins judge models, and refreshes from the `decision` and `config` events. Every change
  * goes through the global options file, which the gate re-reads before each
  * judged call, so nothing here needs a restart.
  *
@@ -16,6 +16,11 @@ import { Rpc } from "@opencode/plugin/rpc"
 export interface ModelRef {
   readonly providerID: string
   readonly id: string
+}
+
+/** One entry of the model catalog offered by the judge picker. */
+export interface CatalogModel extends ModelRef {
+  readonly name: string
 }
 
 /** Effective configuration as seen by the gate. */
@@ -161,6 +166,27 @@ const clearOut: Obj = {
   additionalProperties: false,
 }
 
+const modelsOut: Obj = {
+  type: "object",
+  properties: {
+    models: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          providerID: { type: "string" },
+          id: { type: "string" },
+          name: { type: "string" },
+        },
+        required: ["providerID", "id", "name"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["models"],
+  additionalProperties: false,
+}
+
 const configureIn: Obj = {
   type: "object",
   properties: {
@@ -199,6 +225,7 @@ export const Gate = Rpc.define({
     toggle: { input: toggleIn, output: toggleOut },
     setJudge: { input: model, output: judgeOut },
     setJudge2: { input: model, output: judgeOut },
+    models: { input: nothing, output: modelsOut },
     configure: { input: configureIn, output: configureOut },
     decisions: { input: decisionsIn, output: decisionsOut },
     clear: { input: nothing, output: clearOut },

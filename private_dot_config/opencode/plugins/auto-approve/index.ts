@@ -34,7 +34,14 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFil
 import { homedir } from "node:os"
 import path from "node:path"
 import { Plugin } from "@opencode/plugin"
-import { Gate, type GateDecision, type GateStatus, type ModelRef, type PinResult } from "./protocol.js"
+import {
+  type CatalogModel,
+  Gate,
+  type GateDecision,
+  type GateStatus,
+  type ModelRef,
+  type PinResult,
+} from "./protocol.js"
 
 const PLUGIN_TAG = "auto-approve"
 const DEFAULT_SKIPPED = ["read", "glob", "grep", "question", "execute"]
@@ -427,21 +434,30 @@ export default Plugin.define({
       return { verdict: secondVerdict, reason: reasonOf(second) || reasonOf(first) }
     }
 
+    /** The model catalog, or undefined when this build exposes none. */
+    const listModels = async (): Promise<CatalogModel[] | undefined> => {
+      if (domain === undefined) return undefined
+      const listed = await domain.list()
+      const models: unknown[] | undefined = Array.isArray(listed)
+        ? listed
+        : asArray(asRecord(listed).data) ?? asArray(asRecord(listed).models)
+      return (models ?? []).flatMap((item) => {
+        const entry = asRecord(item)
+        const providerID = word(entry.providerID)
+        const id = word(entry.id) ?? word(entry.modelID)
+        if (providerID === undefined || id === undefined) return []
+        return [{ providerID, id, name: word(entry.name) ?? id }]
+      })
+    }
+
     /** Validates and stores a judge model reference, or explains the refusal. */
     const pinJudge = async (raw: unknown, slot: "judge" | "judge2"): Promise<PinResult> => {
       const wanted = parseModel(raw)
       if (wanted === undefined) return { ok: false, tag: "bad_ref", message: `${slot} needs providerID and id` }
       try {
-        if (domain !== undefined) {
-          const listed = await domain.list()
-          const models: unknown[] | undefined = Array.isArray(listed)
-            ? listed
-            : asArray(asRecord(listed).data) ?? asArray(asRecord(listed).models)
-          const known = (models ?? []).some(
-            (item) =>
-              asRecord(item).providerID === wanted.providerID &&
-              (asRecord(item).id === wanted.id || asRecord(item).modelID === wanted.id),
-          )
+        const models = await listModels()
+        if (models !== undefined) {
+          const known = models.some((item) => item.providerID === wanted.providerID && item.id === wanted.id)
           if (!known) return { ok: false, tag: "bad_ref", message: `unknown model ${wanted.providerID}/${wanted.id}` }
         }
       } catch {
@@ -489,6 +505,7 @@ export default Plugin.define({
       },
       setJudge: async (raw) => pinJudge(raw, "judge"),
       setJudge2: async (raw) => pinJudge(raw, "judge2"),
+      models: async () => ({ models: (await listModels()) ?? [] }),
       configure: async (raw) => {
         const input = asRecord(raw)
         const current = resolveOptions()

@@ -8,7 +8,14 @@
  * (@opencode/plugin — keymap layers, slots, panels, toasts, RPC client).
  */
 import { Plugin } from "@opencode/plugin/tui"
-import { Gate, type GateDecision, type GateStatus, type ModelRef, type PinResult } from "./protocol.js"
+import {
+  type CatalogModel,
+  Gate,
+  type GateDecision,
+  type GateStatus,
+  type ModelRef,
+  type PinResult,
+} from "./protocol.js"
 import { createEffect, createSignal } from "solid-js"
 
 const TONE: Record<string, string> = {
@@ -30,7 +37,7 @@ const fmtMs = (ms: number): string => (ms >= 1000 ? `${(ms / 1000).toFixed(1)}s`
 const shortModel = (judge: ModelRef | null): string | null =>
   judge === null ? null : judge.id.split("/").pop() ?? judge.id
 
-const HELP_TEXT = "usage: on | off | status | log | two | judge <provider/model> | judge2 <provider/model> | clear"
+const HELP_TEXT = "usage: on | off | status | log | two | judge [provider/model] | judge2 [provider/model] | clear"
 
 export default Plugin.define({
   id: "auto-approve",
@@ -41,6 +48,7 @@ export default Plugin.define({
         toggle(input: { enabled?: boolean }): Promise<{ enabled: boolean }>
         setJudge(input: ModelRef): Promise<PinResult>
         setJudge2(input: ModelRef): Promise<PinResult>
+        models(input?: object): Promise<{ models: CatalogModel[] }>
         configure(input: { twoStage?: boolean }): Promise<{ twoStage: boolean }>
         clear(input?: object): Promise<{ removed: number }>
         decisions(input?: { sessionID?: string; limit?: number }): Promise<{ decisions: GateDecision[] }>
@@ -78,10 +86,33 @@ export default Plugin.define({
       toast(`gate ${next.enabled ? "on" : "off"}`, next.enabled ? "success" : "info")
     }
 
-    const pin = async (slot: "judge" | "judge2", raw?: string): Promise<void> => {
-      const at = (raw ?? "").indexOf("/")
-      const providerID = at > 0 ? raw!.slice(0, at) : ""
-      const id = at > 0 ? raw!.slice(at + 1) : ""
+    /** Opens a searchable model list; resolves to `provider/model`, or undefined on cancel. */
+    const pickModel = async (slot: "judge" | "judge2"): Promise<string | undefined> => {
+      const { models } = await rpc.models({})
+      if (models.length === 0) {
+        toast("no models in the catalog; pass <provider/model> instead", "warning")
+        return undefined
+      }
+      const current = state()?.[slot]
+      return context.ui.dialog.select({
+        title: `auto-approve: ${slot} model`,
+        placeholder: "Search",
+        current: current == null ? undefined : `${current.providerID}/${current.id}`,
+        options: models.map((model) => ({
+          title: model.name,
+          value: `${model.providerID}/${model.id}`,
+          category: model.providerID,
+          searchText: `${model.providerID}/${model.id}`,
+        })),
+      })
+    }
+
+    const pin = async (slot: "judge" | "judge2", typed?: string): Promise<void> => {
+      const raw = typed === undefined || typed === "" ? await pickModel(slot) : typed
+      if (raw === undefined) return
+      const at = raw.indexOf("/")
+      const providerID = at > 0 ? raw.slice(0, at) : ""
+      const id = at > 0 ? raw.slice(at + 1) : ""
       if (providerID === "" || id === "") {
         toast(`${HELP_TEXT}`, "warning")
         return
@@ -101,7 +132,11 @@ export default Plugin.define({
       try {
         if (head === "") return void toggle().catch(() => toast("the gate did not answer", "error"))
         if (head === "on" || head === "off") return void toggle(head === "on")
-        if (head === "judge" || head === "judge2") return void pin(head, parts.slice(1).join(""))
+        if (head === "judge" || head === "judge2") {
+          return void pin(head, parts.slice(1).join("")).catch((problem) =>
+            toast(clip(problem instanceof Error ? problem.message : String(problem), 160), "error"),
+          )
+        }
         if (head === "two") {
           const next = await rpc.configure({ twoStage: !(state()?.twoStage ?? true) })
           void refreshStatus()
