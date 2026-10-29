@@ -22,7 +22,7 @@ An LLM gate for opencode v2's auto-approved actions. Our own implementation, wri
 ## TUI
 
 - A `prompt.footer` badge, and toasts for non-allow verdicts.
-- The `/auto-approve` slash command (alias `/aa`), registered through a global keymap layer: `on|off|status|log|two|judge|judge2|clear`. `judge` / `judge2` without a `provider/model` argument open a searchable model picker fed by the gate's `models` RPC.
+- The `/auto-approve` slash command, registered through a global keymap layer: `on|off|status|log|two|judge|judge2|clear`. `judge` / `judge2` without a `provider/model` argument open a searchable model picker fed by the gate's `models` RPC.
 - `log` opens the decision log as a session panel.
 
 ## Options

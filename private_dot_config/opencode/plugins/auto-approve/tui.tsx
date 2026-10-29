@@ -1,6 +1,6 @@
 /**
  * auto-approve — the TUI half: a footer badge that reacts to gate decisions,
- * a `/auto-approve` slash command (alias `/aa`) for status, switching, judge
+ * a `/auto-approve` slash command for status, switching, judge
  * pinning, two-stage review, and a session panel listing the decision log,
  * plus toasts whenever the gate raises a call to the human.
  *
@@ -244,7 +244,7 @@ export default Plugin.define({
           id: "auto-approve.command",
           title: "auto-approve: gate status and controls",
           group: "auto-approve",
-          slash: { name: "auto-approve", aliases: ["aa"], arguments: true },
+          slash: { name: "auto-approve", arguments: true },
           run: runCommand,
         },
       ],
