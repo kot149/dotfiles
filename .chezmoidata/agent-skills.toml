@@ -81,7 +81,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "mattpocock/skills"
-rev = "b0618bc436ad893b3c5e84e55fba86586d34a404"
+rev = "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
 prefix = "skills/productivity"
 names = ["grilling"]
 agents = ["claude", "agents"]
@@ -90,7 +90,7 @@ agents = ["claude", "agents"]
 # domain-modeling も併せて入れる。
 [[agent_skills]]
 repo = "mattpocock/skills"
-rev = "b0618bc436ad893b3c5e84e55fba86586d34a404"
+rev = "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
 prefix = "skills/engineering"
 names = ["grill-with-docs", "domain-modeling"]
 agents = ["claude", "agents"]
@@ -122,7 +122,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "nanaism/yomiyasu"
-rev = "5b7cacc7749e9195338d7305635c06871fc6daf1"
+rev = "29d67ccb05e370b5958d72920a9cd1aa829dee80"
 prefix = "skills"
 names = ["yomiyasu"]
 agents = ["claude", "agents"]
@@ -132,7 +132,7 @@ agents = ["claude", "agents"]
 # needs them materialized.
 [[agent_skills]]
 repo = "cloudflare/skills"
-rev = "86505e44f87d801aa1864a3c4109e9a8ae5c409f"
+rev = "ed2d6ba89033ba8015591005ed9382cef550417f"
 prefix = "skills"
 names = [
   "agents-sdk",
@@ -164,7 +164,7 @@ agents = ["claude", "agents"]
 # mobile device/simulator and are left out too.
 [[agent_skills]]
 repo = "stablyai/orca"
-rev = "5dc197e5ec11528afee6bdfb289f44fdba2b8872"
+rev = "15a81ddb858ae7fe175a9d239b2352fe3f72734a"
 prefix = "skills"
 names = [
   "computer-use",
