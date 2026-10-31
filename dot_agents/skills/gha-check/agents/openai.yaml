@@ -1,0 +1,4 @@
+interface:
+  display_name: "GHA Check"
+  short_description: "Check GitHub Actions with actionlint, zizmor and pinact."
+  default_prompt: "Check this repository's GitHub Actions workflows."
