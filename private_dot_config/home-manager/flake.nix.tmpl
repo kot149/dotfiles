@@ -63,7 +63,30 @@
           llmAgents = llm-agents.packages.${system};
           nixTerraform = nixpkgs-terraform.packages.${system}."terraform-1.14";
           {{- if eq .chezmoi.os "linux" }}
-          nixglPackages = nixgl.packages.${system};
+          # Same set as nixgl.packages, but nixGL.nix still takes the removed
+          # pcre for pcregrep, so it gets a pcre2grep shim instead.
+          # Drop once nix-community/nixGL#227 is merged.
+          nixglPackages =
+            let
+              pkgs = nixpkgs.legacyPackages.${system};
+              isIntelX86 = system == "x86_64-linux";
+              pcregrep = pkgs.runCommand "pcregrep-shim" { } ''
+                mkdir -p $out/bin
+                ln -s ${pkgs.pcre2.bin}/bin/pcre2grep $out/bin/pcregrep
+              '';
+              nixGL = pkgs.callPackage "${nixgl}/nixGL.nix" (
+                { pcre = pcregrep; enable32bits = isIntelX86; }
+                // (if isIntelX86 then { } else { intel-media-driver = null; })
+              );
+            in {
+              default = nixGL.auto.nixGLDefault;
+              nixGLDefault = nixGL.auto.nixGLDefault;
+              nixGLNvidia = nixGL.auto.nixGLNvidia;
+              nixGLNvidiaBumblebee = nixGL.auto.nixGLNvidiaBumblebee;
+              nixGLIntel = nixGL.nixGLIntel;
+              nixVulkanNvidia = nixGL.auto.nixVulkanNvidia;
+              nixVulkanIntel = nixGL.nixVulkanIntel;
+            };
           {{- end }}
           {{- if $wsl }}
           isWsl = true;
