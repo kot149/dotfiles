@@ -164,7 +164,7 @@ agents = ["claude", "agents"]
 # mobile device/simulator and are left out too.
 [[agent_skills]]
 repo = "stablyai/orca"
-rev = "c378e78d5a4c6dfe76230d981e050560a6bb6221"
+rev = "ae09815770c1d6c8b83a35f99c0021d35273608a"
 prefix = "skills"
 names = [
   "computer-use",
