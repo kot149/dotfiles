@@ -132,7 +132,7 @@ agents = ["claude", "agents"]
 # needs them materialized.
 [[agent_skills]]
 repo = "cloudflare/skills"
-rev = "ed2d6ba89033ba8015591005ed9382cef550417f"
+rev = "e44f580f9c4fa3bf268e284ae7706c7954ba31fd"
 prefix = "skills"
 names = [
   "agents-sdk",
@@ -164,7 +164,7 @@ agents = ["claude", "agents"]
 # mobile device/simulator and are left out too.
 [[agent_skills]]
 repo = "stablyai/orca"
-rev = "15a81ddb858ae7fe175a9d239b2352fe3f72734a"
+rev = "c378e78d5a4c6dfe76230d981e050560a6bb6221"
 prefix = "skills"
 names = [
   "computer-use",
