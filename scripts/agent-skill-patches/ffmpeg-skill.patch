@@ -1,0 +1,21 @@
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -8,6 +8,7 @@
+ ## Quick start
+ 
+ Run `python3 <skill-dir>/scripts/<name>.py`; the table below routes requests, `--help` lists every flag.
++If `ffmpeg`/`ffprobe` are not on PATH, run the script inside `nix shell nixpkgs#ffmpeg-full -c python3 <skill-dir>/scripts/<name>.py`, which puts both on PATH.
+ MCP `tools/list` shows the core 12; the other 30 of the 42 tools stay callable by name.
+ 
+ Shared flags (the rest, codec defaults and `--hw`: `references/flags.md`):
+--- a/scripts/_contract.py
++++ b/scripts/_contract.py
+@@ -1951,7 +1951,7 @@
+         if args.json:
+             print(json.dumps(d, indent=2, sort_keys=True))
+         else:
+-            print(f"ffmpeg-skill {d['version']} (this installed copy; re-run `npx ffmpeg-skill` to refresh it -- copies are not updated automatically)")
++            print(f"ffmpeg-skill {d['version']} (this installed copy; re-run `bunx ffmpeg-skill` to refresh it -- copies are not updated automatically)")
+             print(f"python {d['python']}; ffmpeg {d['ffmpeg'] or 'MISSING'}; ffprobe {d['ffprobe'] or 'MISSING'}")
+             for name in ("ffmpeg", "ffprobe"):
+                 if d[f"{name}_source"] == "homebrew-ffmpeg-full":

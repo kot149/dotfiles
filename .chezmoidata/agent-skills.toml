@@ -175,3 +175,12 @@ names = [
   "orchestration",
 ]
 agents = ["claude", "agents"]
+
+# SKILL.md sits at the repo root, so there is no per-skill subdirectory.
+[[agent_skills]]
+repo = "kajisho5/ffmpeg-skill"
+rev = "1ce2c186bf1dba96132d87274eee46df4f537e0e"
+prefix = ""
+names = ["ffmpeg-skill"]
+agents = ["claude", "agents"]
+flat = true
