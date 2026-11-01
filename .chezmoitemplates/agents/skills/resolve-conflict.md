@@ -34,11 +34,7 @@ The two paths through this skill differ from here on, so settle which one applie
 
 The next two guards apply to the starting path only. Joining a conflict that is already in progress is always allowed: refusing it would leave the user stuck mid-operation.
 
-**Never start a new rebase or merge on a protected branch such as `main` / `master`.** If the current branch is one of these, stop and present the following to the user in Japanese.
-
-```
-現在のブランチ <BRANCH> は保護ブランチのため、このスキルでは実行できません。
-```
+**Starting a new rebase or merge on a protected branch requires explicit user authorization.** On `main` / `master` / `develop` or a similar protected branch, proceed only if the user explicitly authorized it on that branch. A request to run this skill alone is not authorization. Otherwise, ask the user to choose whether to proceed or cancel, warning that a rebase rewrites history; stop if they decline.
 
 If `git status --porcelain` is not empty, stop and take the choice with a selection prompt (stash them, commit them first, or abort). Present the following to the user in Japanese.
 
@@ -111,7 +107,7 @@ Confirm the working tree is clean with `git status`. The report must cover only 
 
 - Never invent changes whose intent is unclear; always confirm with the user
 - Only run `--abort` (`git rebase --abort` / `git merge --abort`) when the user explicitly asks for it
-- **Never start a new rebase or merge on a protected branch.** Joining a conflict that is already in progress on any branch is fine; starting one is not
+- **Starting a new rebase or merge on a protected branch requires explicit user authorization.** Ask before proceeding on `main` / `master` / `develop` or similar; otherwise stop. Joining a conflict that is already in progress on any branch is fine
 - **Always create a backup branch before starting a rebase or merge.** Do not delete it on your own; leave deletion to the user's later judgment
 - Do not use hook-disabling flags such as `--no-verify`
 - This skill never pushes

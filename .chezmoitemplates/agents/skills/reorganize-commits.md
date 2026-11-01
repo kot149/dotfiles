@@ -21,7 +21,7 @@ Because this rewrites history destructively, **always save a dedicated recovery 
 
 - The working directory is inside a Git repository
 - The `origin` remote is configured (so the base can be determined locally). `gh` is only a fallback for when the base call is ambiguous
-- The current branch is not a protected branch (`main` / `master` / `develop`, etc.)
+- On a protected branch (`main` / `master` / `develop`, etc.), the user must explicitly authorize reorganizing that branch
 - No uncommitted changes (if there are any, agree on how to handle them with the user first)
 - No rebase / merge / cherry-pick in progress
 
@@ -68,7 +68,9 @@ If there are uncommitted changes, stop and present the following to the user in 
 未コミットの変更があります。どう扱うか指示してください (コミットする / 変更を破棄する / 中止する)。
 ```
 
-Stop on a protected branch, detached HEAD, or a rebase/merge in progress.
+Stop on a detached HEAD or a rebase/merge in progress.
+
+On a protected branch such as `main` / `master` / `develop`, proceed only if the user explicitly authorized reorganizing that branch. A request to run this skill alone is not authorization. Otherwise, ask the user to choose whether to proceed or cancel, warning that reorganizing rewrites history; stop if they decline.
 
 ### 2. Determine the merge-target branch (base) and the start commit
 
@@ -300,7 +302,7 @@ git update-ref -d "${BACKUP_REF}"
 
 - **Never skip saving the recovery ref.** Never proceed to rewriting without Step 5
 - **Never skip the tree-diff verification.** Never report completion without confirming `TREE_MATCH` in Step 8
-- **Never run on a protected branch**
+- **Protected branches require explicit user authorization.** Ask before proceeding on `main` / `master` / `develop` or similar; otherwise stop
 - **Never touch commits before `<MB>`**
 - **Do not incorporate the base in this skill.** Always pin the start to the merge-base (`<MB>`) so nothing changes besides the history reorganization
 - **Never `--abort` / `--skip` on conflicts on your own.** Ask the user to decide
