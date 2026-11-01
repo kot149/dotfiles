@@ -26,13 +26,9 @@ Run the following in parallel to understand the current state:
 - `git rev-parse --abbrev-ref HEAD` — current branch name
 - `git log --oneline -30` — recent commit history (how many fixup!/squash! commits exist)
 
-**Never run on protected branches such as `main` / `master`.** If the current branch is one of these, stop and present the following to the user in Japanese (check the branch being rebased, i.e. the HEAD side, not the PR base).
+**Protected branches require explicit user authorization.** Check the branch being rebased (the HEAD side, not the PR base). On `main` / `master` / `develop` or a similar protected branch, proceed only if the user explicitly authorized autosquash on that branch, including authorization passed from fixup. A request to run autosquash alone is not authorization. Otherwise, ask the user to choose whether to proceed or cancel, warning that autosquash rewrites history; stop if they decline.
 
-```
-現在のブランチ <BRANCH> は保護ブランチのため、このスキルでは実行できません。
-```
-
-**Do not run on shared branches others are working on.** Only rebase your own branch. If the branch appears shared, stop and present the following to the user in Japanese.
+**Do not run on shared branches others are working on**, except a protected branch for which the user explicitly authorized autosquash above. For other branches, only rebase your own branch. If the branch appears shared, stop and present the following to the user in Japanese.
 
 ```
 このブランチは他の人も作業している共有ブランチの可能性があります。自分のブランチでのみ実行してください。

@@ -39,7 +39,7 @@ With no arguments, only present the plan in step 6 and do not run autosquash (if
 ## Prerequisites
 
 - The working directory is inside a Git repository
-- The current branch is not a protected branch (`main` / `master` / `develop`, etc.)
+- On a protected branch (`main` / `master` / `develop`, etc.), the user must explicitly authorize the requested operation on that branch
 - When choosing method B, git 2.55 or later is required (check with `git --version`)
 
 ## Steps
@@ -56,7 +56,7 @@ Run the following in parallel to understand the current state:
 
 If there are no uncommitted changes, present the following to the user in Japanese: `"fixup対象の変更がありません"` and stop.
 
-If the current branch is a protected branch such as `main` / `master` / `develop`, stop and present the following to the user in Japanese (fill in the branch name): `"現在のブランチ <BRANCH> は保護ブランチのため、このスキルは実行できません。"`
+If the current branch is a protected branch such as `main` / `master` / `develop`, proceed only if the user has explicitly authorized this operation on that branch. A request to run fixup alone is not authorization. Otherwise, ask the user to choose whether to proceed or cancel, warning that method B or autosquash rewrites history; stop if they decline. When `--autosquash` is requested, the authorization must cover both fixup and autosquash and is passed to the autosquash skill.
 
 ### 2. Determine the merge-target branch (base) and the fork point
 
@@ -351,7 +351,7 @@ SHAが変わったため force push が必要になります。pushはご自身�
 
 ## Notes
 
-- **Do not run on a protected branch.** Stop if the current branch is `main` / `master` / `develop` or similar.
+- **Protected branches require explicit user authorization.** Ask before proceeding on `main` / `master` / `develop` or similar; otherwise stop.
 - **Do not fixup into commits older than the base.** The range outside <MB>..HEAD is other people's history, so leave it alone. For changes whose only owning commit is outside the range, suggest making a regular commit to the user.
 - **Do not fixup into existing `fixup!` / `squash!` commits.** They are themselves tied to an original commit, so double fixup only causes confusion.
 - **Always verify staged content after splitting per hunk.** Splitting via patch can sweep in the wrong hunk, so confirm with `git diff --cached` that only the intended hunks are staged before committing.
