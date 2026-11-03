@@ -44,7 +44,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "vercel-labs/agent-browser"
-rev = "099e84ea23ee995422dc94d02c9c2309e34d3e02"
+rev = "d081bcddbec5917de997d49212a9ee1ef272c4c4"
 prefix = "skills"
 names = ["agent-browser"]
 agents = ["claude", "agents"]
