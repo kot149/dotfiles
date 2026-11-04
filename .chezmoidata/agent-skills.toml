@@ -52,7 +52,7 @@ agents = ["claude", "agents"]
 # Needs the `agent-desktop` CLI on PATH.
 [[agent_skills]]
 repo = "vercel-labs/agent-desktop"
-rev = "93ae89e86fb849eeb5fc265b0b8e37eca56aaf72"
+rev = "6660fbac768dc7e7332837b90ed465684859afa3"
 prefix = "skills"
 names = ["agent-desktop", "agent-desktop-linux", "agent-desktop-macos", "agent-desktop-windows"]
 agents = ["claude", "agents"]
