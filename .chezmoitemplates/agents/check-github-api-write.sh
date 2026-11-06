@@ -70,18 +70,76 @@ VALUE_FLAGS = ("-H", "--header", "--jq", "-q", "-t", "--template", "--hostname",
 # Short options whose value may be attached or follow, also at the end of a cluster like -iX.
 SHORT_VALUE_FLAGS = "XfFHqtp"
 
-SPLIT = r"(?:&&|\|\||[;|]|\n)"
-
 # gh subcommands that post comments or create / modify pull requests and issues.
 WRITE_SUBCOMMANDS = {
     "pr": {"create", "comment", "edit", "review", "ready", "merge", "close", "reopen"},
     "issue": {"create", "comment", "edit", "close", "reopen", "delete"},
 }
 
+SPLIT = r"(?:&&|\|\||[;|]|\n)"
+HEREDOC = re.compile(r"<<-?[ \t]*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+
+
+def split_unquoted(text):
+    """Split at ; & | ( ) and newlines outside quotes and comments, skipping heredoc bodies.
+
+    A quoted multi-line argument stays in one segment.
+    """
+    parts, buf, quote, comment, heredocs, i = [], "", None, False, [], 0
+    while i < len(text):
+        c = text[i]
+        if quote:
+            buf += c
+            if c == "\\" and quote == '"' and i + 1 < len(text):
+                buf += text[i + 1]
+                i += 1
+            elif c == quote:
+                quote = None
+        elif comment and c != "\n":
+            buf += c
+        elif c == "\\" and i + 1 < len(text):
+            # A backslash-newline continues the line.
+            buf += " " if text[i + 1] == "\n" else text[i : i + 2]
+            i += 1
+        elif c in "'\"":
+            quote = c
+            buf += c
+        elif c == "#" and (not buf or buf[-1] in " \t"):
+            comment = True
+            buf += c
+        elif text.startswith("<<", i) and not text.startswith("<<<", i) and not buf.endswith("<"):
+            match = HEREDOC.match(text, i)
+            if match:
+                heredocs.append(match.group(2))
+                buf += match.group(0)
+                i = match.end()
+                continue
+            buf += c
+        elif c in ";|()\n" or (c == "&" and not buf.endswith((">", "<")) and not text.startswith(">", i + 1)):
+            parts.append(buf)
+            buf = ""
+            if c == "\n":
+                comment = False
+                while heredocs and i < len(text):
+                    end = text.find("\n", i + 1)
+                    end = len(text) if end == -1 else end
+                    if text[i + 1 : end].lstrip("\t") == heredocs[0]:
+                        heredocs.pop(0)
+                    i = end
+        else:
+            buf += c
+        i += 1
+    parts.append(buf)
+    return parts
+
 
 def segments(command):
-    """Yield each command segment, plus the contents of every $( ) and backtick substitution in it."""
-    for segment in re.split(SPLIT, command):
+    """Yield each command segment, plus the contents of every $( ) and backtick substitution in it.
+
+    The plain line split runs too, so a quote, comment or heredoc read differently
+    from bash can only add matches, never hide one.
+    """
+    for segment in split_unquoted(command) + re.split(SPLIT, command):
         yield segment
         for match in re.finditer(r"\$\(([^()]*)\)|`([^`]*)`", segment):
             yield match.group(1) if match.group(1) is not None else match.group(2)
@@ -112,6 +170,7 @@ for segment in segments(command):
         args = words[gh_index + 2 :]
         method = None
         has_body = False
+        has_input = False
         values = []
         endpoint = None
         index = 0
@@ -147,6 +206,7 @@ for segment in segments(command):
             )
             if value is not None:
                 has_body = True
+                has_input = has_input or arg.startswith("--input")
                 values.append(value)
                 index += consumed + 1
                 continue
@@ -168,7 +228,8 @@ for segment in segments(command):
             continue
 
         if api_path(endpoint) == "graphql":
-            if is_graphql_write(values):
+            # An --input body comes from a file or stdin, so its query cannot be read here.
+            if has_input or is_graphql_write(values):
                 targets.append(f"gh api {method} {endpoint}")
         elif is_target_endpoint(endpoint):
             targets.append(f"gh api {method} {endpoint}")

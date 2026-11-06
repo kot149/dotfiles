@@ -56,6 +56,14 @@ CASES: list[tuple[str, str, None | tuple[str, str]]] = [
     (PUSH, "echo `git push`", PUSH_ASK),
     (PUSH, "(git stash push)", None),
     (PUSH, "out=$(git log)", None),
+    (PUSH, "git push \\\n  --force origin main", FORCE_ASK),
+    (PUSH, "git -c core.x='a;b' push --force", FORCE_ASK),
+    (PUSH, "git push origin main 2>&1", PUSH_ASK),
+    (PUSH, "git commit -m 'a\nb' && git push", PUSH_ASK),
+    (PUSH, "cat <<EOF > notes.txt\ndon't\nEOF\ngit push", PUSH_ASK),
+    (PUSH, "echo '<<EOF'\ngit push --force\nEOF", FORCE_ASK),
+    (PUSH, "# <<EOF\ngit push\nEOF", PUSH_ASK),
+    (PUSH, "# don't\ngit -c core.x='a;b' push --force", FORCE_ASK),
     (GH_API, "gh api repos/o/r/pulls -f title=x", GH_ASK),
     (GH_API, "gh api -X POST repos/o/r/issues/1/comments -f body=x", GH_ASK),
     (
@@ -99,6 +107,19 @@ CASES: list[tuple[str, str, None | tuple[str, str]]] = [
     (GH_API, "gh pr checks 1", None),
     (GH_API, "gh issue view 1 --comments", None),
     (GH_API, 'echo "gh pr comment 1"', None),
+    (
+        GH_API,
+        "gh api graphql -f query='\n  mutation {\n"
+        "    resolveReviewThread(input: {threadId: \"x\"}) { thread { id } }\n  }\n'",
+        GH_ASK,
+    ),
+    (GH_API, "gh api graphql \\\n  -f query='mutation { addComment(input:{}) { clientMutationId } }'", GH_ASK),
+    (GH_API, "gh pr create --title x --body \"$(cat <<'EOF'\nIt's done; see notes.\nEOF\n)\"", GH_ASK),
+    (GH_API, "gh api graphql --input - <<'EOF'\n{\"query\": \"mutation { x }\"}\nEOF", GH_ASK),
+    (GH_API, "gh api graphql -f query='\n  query {\n    viewer { login }\n  }\n'", None),
+    (GH_API, "echo '<<EOF'\ngh api graphql -f query='\n  mutation { x }\n'\nEOF", GH_ASK),
+    (GH_API, "# <<EOF\ngh api graphql -f query='\n  mutation { x }\n'\nEOF", GH_ASK),
+    (GH_API, "# don't\ngh api graphql -f query='\n  mutation { x }\n'", GH_ASK),
 ]
 
 # (command, expected updatedInput.command): None means the hook leaves it as is.
