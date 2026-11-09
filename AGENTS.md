@@ -1,6 +1,6 @@
 ## Repository purpose
 
-These are personal dotfiles managed by **chezmoi** (source of truth for files in `$HOME`) and **Nix Home Manager** (declarative package set). On macOS, **nix-darwin** is also used for system-level settings (source: `private_dot_config/nix-darwin/`, applied by `.chezmoiscripts/run_onchange_after_nix-darwin.sh.tmpl`). The repo targets macOS, Linux (including WSL), and Windows from a single source tree.
+These are personal dotfiles managed by **chezmoi** (source of truth for files in `$HOME`) and **Nix Home Manager** (declarative package set). On macOS, **nix-darwin** is also used for system-level settings (source: `private_dot_config/nix-darwin/`, applied by `.chezmoiscripts/run_onchange_after_nix-darwin.sh.tmpl`). On Linux, **System Manager** (numtide/system-manager) does the same for systemd units and `/etc` files (source: `private_dot_config/system-manager/`, applied by `.chezmoiscripts/run_onchange_after_system-manager.sh.tmpl`). The repo targets macOS, Linux (including WSL), and Windows from a single source tree.
 
 ## How files map to `$HOME`
 
@@ -11,7 +11,7 @@ chezmoi rewrites filenames on apply. Key prefixes used in this repo:
 - `readonly_foo` → read-only on apply
 - `executable_foo` → `+x`
 - `*.tmpl` → rendered through chezmoi's Go template engine (`.chezmoi.os`, `.chezmoi.arch`, `.chezmoi.username`, etc.); the `.tmpl` suffix is stripped
-- `.chezmoiscripts/run_onchange_*` → re-run when their content hash changes (hashes of dependencies are embedded as comments at the top; `run_onchange_after_00_home-manager.sh.tmpl` and `run_onchange_after_nix-darwin.sh.tmpl` hash every file under their source directory through `glob`, so adding or editing any file there re-triggers the switch and no hash list needs editing; the other scripts list their dependencies by hand). Scripts start with `#!/bin/bash` and `set -euo pipefail`; bodies shared by several scripts live in `.chezmoitemplates/scripts/` and are pulled in with `includeTemplate` and a `dict` of per-script values.
+- `.chezmoiscripts/run_onchange_*` → re-run when their content hash changes (hashes of dependencies are embedded as comments at the top; `run_onchange_after_00_home-manager.sh.tmpl`, `run_onchange_after_nix-darwin.sh.tmpl` and `run_onchange_after_system-manager.sh.tmpl` hash every file under their source directory through `glob`, so adding or editing any file there re-triggers the switch and no hash list needs editing; the other scripts list their dependencies by hand). Scripts start with `#!/bin/bash` and `set -euo pipefail`; bodies shared by several scripts live in `.chezmoitemplates/scripts/` and are pulled in with `includeTemplate` and a `dict` of per-script values.
 - `.chezmoitemplates/` → shared template snippets included via `{{ include "..." }}` (verbatim) or `{{ includeTemplate "..." }}` (rendered)
 
 Per-OS file selection is controlled by `.chezmoiignore.tmpl` (gates `Library/**`, `AppData/**`, `winget.json`, etc. on `.chezmoi.os`).
@@ -48,6 +48,11 @@ just hm-switch
 
 # nix-darwin (after applying ~/.config/nix-darwin/<file>; needs sudo, may prompt the user)
 nh darwin switch ~/.config/nix-darwin -H "$(hostname -s)"
+```
+
+```sh
+# System Manager on Linux (after applying ~/.config/system-manager/<file>; runs sudo, may prompt the user)
+nix run --inputs-from ~/.config/system-manager system-manager -- switch --flake ~/.config/system-manager --sudo
 ```
 
 The run_onchange scripts fall back to `nix run home-manager/master` / `nix run github:nix-darwin/nix-darwin#darwin-rebuild` when `nh` is not installed yet (first switch on a fresh machine).
@@ -93,6 +98,8 @@ nh darwin switch ~/.config/nix-darwin -H "$(hostname -s)"
 ```
 
 The nix-darwin flake lives at `private_dot_config/nix-darwin/` (rendered to `~/.config/nix-darwin/`). Edit `darwin-configuration.nix.tmpl` for macOS system settings (`system.defaults.*`, `system.startup.*`, etc.) and `custom-user-preferences.nix` for Rectangle, DockDoor and AltTab preferences. **Home Manager** owns packages and user-level dotfile programs; **nix-darwin** owns macOS system settings and these app preferences.
+
+System Manager (Linux systemd units and `/etc` files; invoked automatically by `.chezmoiscripts/run_onchange_after_system-manager.sh.tmpl`) lives at `private_dot_config/system-manager/` (rendered to `~/.config/system-manager/`). `system.nix.tmpl` applies to every Linux machine and disables userborn, so users and groups stay with the distro; `wsl.nix` is added on WSL and runs avahi plus nss-mdns for `.local` resolution, since the WSL DNS tunnel does not answer mDNS for other hosts. nss-mdns is registered in `/etc/ld.so.conf.d/` for the distro glibc, so Nix-built programs (which use Nix's glibc) still cannot resolve `.local`.
 
 Windows package list lives in `winget.json`: `winget export -o winget.json` / `winget import winget.json`.
 

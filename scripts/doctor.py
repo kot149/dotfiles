@@ -37,6 +37,10 @@ HASH_GLOBS = [
         'glob (joinPath .chezmoi.sourceDir "private_dot_config/home-manager/**")',
     ),
     ("run_onchange_after_nix-darwin.sh.tmpl", 'glob (joinPath .chezmoi.sourceDir "private_dot_config/nix-darwin/**")'),
+    (
+        "run_onchange_after_system-manager.sh.tmpl",
+        'glob (joinPath .chezmoi.sourceDir "private_dot_config/system-manager/**")',
+    ),
 ]
 TOOLS = ["uv", "bun", "rtk", "just", "jq", "chezmoi"]
 GIT_BASH_DEFAULT = "C:/Program Files/Git/bin/bash.exe"

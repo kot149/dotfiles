@@ -1,0 +1,9 @@
+{
+  {{- $nixArch := .chezmoi.arch }}
+  {{- if eq .chezmoi.arch "amd64" }}{{ $nixArch = "x86_64" }}{{ end }}
+  {{- if eq .chezmoi.arch "arm64" }}{{ $nixArch = "aarch64" }}{{ end }}
+  nixpkgs.hostPlatform = "{{ $nixArch }}-linux";
+
+  # Users and groups stay with the distro: userborn's NixOS default GIDs differ from Ubuntu's
+  services.userborn.enable = false;
+}

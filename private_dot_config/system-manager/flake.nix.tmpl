@@ -1,0 +1,23 @@
+{
+  description = "System Manager configuration";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    system-manager = {
+      url = "github:numtide/system-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = { system-manager, ... }:
+    {
+      systemConfigs.default = system-manager.lib.makeSystemConfig {
+        modules = [
+          ./system.nix
+          {{- if contains "microsoft" (lower .chezmoi.kernel.osrelease) }}
+          ./wsl.nix
+          {{- end }}
+        ];
+      };
+    };
+}

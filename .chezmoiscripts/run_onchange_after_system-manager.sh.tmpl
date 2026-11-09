@@ -1,0 +1,22 @@
+{{ if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+set -euo pipefail
+# Apply System Manager configuration
+
+{{- $src := printf "%s/" .chezmoi.sourceDir }}
+{{- range sortAlpha (glob (joinPath .chezmoi.sourceDir "private_dot_config/system-manager/**")) }}
+{{- $name := base . }}
+{{- if not (or (stat .).isDir (hasPrefix "." $name) (hasSuffix "~" $name) (hasSuffix ".swp" $name)) }}
+# {{ trimPrefix $src . }} hash: {{ include . | sha256sum }}
+{{- end }}
+{{- end }}
+# data: arch={{ .chezmoi.arch }} osrelease={{ .chezmoi.kernel.osrelease }}
+
+SYSTEM_MANAGER_DIR="$HOME/.config/system-manager"
+
+echo "Applying System Manager configuration..."
+# Run the system-manager CLI locked in this flake so the CLI and the modules stay on one rev.
+# stdin is /dev/null so nix skips the flake nixConfig prompt (the cache is already in nix.conf); sudo reads /dev/tty.
+nix --extra-experimental-features 'nix-command flakes' run --inputs-from "$SYSTEM_MANAGER_DIR" system-manager -- \
+  switch --flake "$SYSTEM_MANAGER_DIR" --sudo </dev/null
+{{- end -}}
