@@ -52,7 +52,7 @@ agents = ["claude", "agents"]
 # Needs the `agent-desktop` CLI on PATH.
 [[agent_skills]]
 repo = "vercel-labs/agent-desktop"
-rev = "6660fbac768dc7e7332837b90ed465684859afa3"
+rev = "b43ac4f6e892ef608f8851428613c4009f0e84c7"
 prefix = "skills"
 names = ["agent-desktop", "agent-desktop-linux", "agent-desktop-macos", "agent-desktop-windows"]
 agents = ["claude", "agents"]
@@ -140,7 +140,7 @@ agents = ["claude", "agents"]
 # needs them materialized.
 [[agent_skills]]
 repo = "cloudflare/skills"
-rev = "e44f580f9c4fa3bf268e284ae7706c7954ba31fd"
+rev = "6eb6c781aa9b6438e0c7307bd102788a75fe1a6d"
 prefix = "skills"
 names = [
   "agents-sdk",
@@ -187,7 +187,7 @@ agents = ["claude", "agents"]
 # SKILL.md sits at the repo root, so there is no per-skill subdirectory.
 [[agent_skills]]
 repo = "kajisho5/ffmpeg-skill"
-rev = "1ce2c186bf1dba96132d87274eee46df4f537e0e"
+rev = "6e42a79247909659b3d80833120b272fb5e46aba"
 prefix = ""
 names = ["ffmpeg-skill"]
 agents = ["claude", "agents"]
