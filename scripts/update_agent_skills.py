@@ -29,12 +29,12 @@ import re
 import subprocess
 import sys
 import tarfile
+import tempfile
 import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from urllib.request import urlopen
 
-from filter_agent_skill import filter_archive, patch_path
+from install_agent_skills import download, patch_path, stage
 
 DATA_FILE = Path(__file__).resolve().parent.parent / ".chezmoidata" / "agent-skills.toml"
 BLOCK_HEADER = "[[agent_skills]]"
@@ -247,11 +247,13 @@ def validate_patches(updates: list[dict], entries: list[dict]) -> None:
             continue
         candidate = f"{update['repo']}@{update['new']}"
         try:
-            with urlopen(f"https://github.com/{update['repo']}/archive/{update['new']}.tar.gz", timeout=60) as response:
-                archive = response.read()
-            for name, path, patch in patched:
-                print(f"   checking patch: {candidate} {name}", flush=True)
-                filter_archive(archive, path, patch)
+            with tempfile.TemporaryDirectory(prefix="agent-skills-") as temporary:
+                archive = Path(temporary) / "archive.tar.gz"
+                download(f"https://github.com/{update['repo']}/archive/{update['new']}.tar.gz", archive)
+                for name, path, patch in patched:
+                    print(f"   checking patch: {candidate} {name}", flush=True)
+                    (Path(temporary) / name).mkdir()
+                    stage(archive, {path: patch}, Path(temporary) / name)
         except (OSError, ValueError, tarfile.TarError) as error:
             raise ValueError(f"Patch validation failed for {candidate}: {error}") from error
 

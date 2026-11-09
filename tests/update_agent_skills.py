@@ -11,6 +11,7 @@ No network: list_files is replaced where check_entry needs it.
 """
 
 import contextlib
+import functools
 import importlib.util
 import io
 import sys
@@ -113,6 +114,11 @@ check(
     {"index": 0, "label": "o/shared (one)", "repo": "o/shared", "missing": True},
 )
 
+
+def write_archive(body: bytes, _url: str, target: Path) -> None:
+    target.write_bytes(body)
+
+
 # Candidate archives are patched with real git apply before main mutates the pin.
 with tempfile.TemporaryDirectory(prefix="skill-update-preflight-") as temporary:
     directory = Path(temporary)
@@ -142,7 +148,7 @@ with tempfile.TemporaryDirectory(prefix="skill-update-preflight-") as temporary:
             patch.object(module, "DATA_FILE", data_file),
             patch.object(module, "find_updates", return_value=[candidate]),
             patch.object(module, "patch_path", return_value=local_patch),
-            patch.object(module, "urlopen", return_value=io.BytesIO(archive.getvalue())),
+            patch.object(module, "download", side_effect=functools.partial(write_archive, archive.getvalue())),
             patch.object(module, "git", side_effect=AssertionError("Git must not run on validation failure")),
             patch.object(sys, "argv", ["update_agent_skills.py", "--yes"]),
             contextlib.redirect_stdout(io.TextIOWrapper(io.BytesIO(), encoding="utf-8")),

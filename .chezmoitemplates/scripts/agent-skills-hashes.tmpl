@@ -1,0 +1,6 @@
+{{- $src := printf "%s/" .chezmoi.sourceDir -}}
+{{- $files := list (joinPath .chezmoi.sourceDir ".chezmoidata/agent-skills.toml") (joinPath .chezmoi.sourceDir "scripts/install_agent_skills.py") -}}
+{{- $files = concat $files (sortAlpha (glob (joinPath .chezmoi.sourceDir "scripts/agent-skill-patches/*.patch"))) -}}
+{{- range $files }}
+# {{ trimPrefix $src . }} hash: {{ include . | sha256sum }}
+{{- end }}

@@ -61,7 +61,12 @@ skills-check:
 [group('skills')]
 skills-update *args:
     {{ uv_script }} scripts/update_agent_skills.py {{ args }}
-    chezmoi apply ~/.claude/skills ~/.agents/skills
+    {{ uv_script }} scripts/install_agent_skills.py
+
+# Install the third-party agent skills into ~/.claude/skills and ~/.agents/skills
+[group('skills')]
+skills-install:
+    {{ uv_script }} scripts/install_agent_skills.py
 
 # Check the agent-skill tree: wrappers, store parity, frontmatter, agent_skills
 [group('skills')]
@@ -201,7 +206,7 @@ test:
     '{{ just_executable() }}' --justfile '{{ justfile() }}' hooks-lint || status=1
     '{{ just_executable() }}' --justfile '{{ justfile() }}' render-check || status=1
     '{{ just_executable() }}' --justfile '{{ justfile() }}' lint || status=1
-    for recipe in test-textlint test-skills-update test-skills-filter test-writing-style test-opencode-guards test-hooks test-file-suggestion test-merge-config test-permissions test-lint; do
+    for recipe in test-textlint test-skills-update test-skills-install test-writing-style test-opencode-guards test-hooks test-file-suggestion test-merge-config test-permissions test-lint; do
         '{{ just_executable() }}' --justfile '{{ justfile() }}' "$recipe" || status=1
     done
     exit $status
@@ -216,10 +221,10 @@ test-textlint:
 test-skills-update:
     {{ uv_script }} tests/update_agent_skills.py
 
-# Test skill archive filtering
+# Test third-party skill installation
 [group('test')]
-test-skills-filter:
-    {{ uv_script }} tests/filter_agent_skill.py
+test-skills-install:
+    {{ uv_script }} tests/install_agent_skills.py
 
 # Test writing-style hook target extraction
 [group('test')]

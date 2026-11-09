@@ -1,5 +1,5 @@
-# Third-party agent skills, materialized by .chezmoiexternal.toml.tmpl as archive
-# externals (works on every OS, Windows included -- no symlinks, no Nix).
+# Third-party agent skills, installed by scripts/install_agent_skills.py from
+# pinned GitHub tarballs (works on every OS, Windows included -- no symlinks, no Nix).
 #
 #   repo    GitHub owner/name
 #   rev     commit SHA to pin (bump with scripts/update_agent_skills.py)

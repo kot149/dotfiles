@@ -1,0 +1,7 @@
+{{- if eq .chezmoi.os "windows" -}}
+$ErrorActionPreference = "Stop"
+{{ includeTemplate "scripts/agent-skills-hashes.tmpl" . }}
+
+uv run --no-python-downloads --script "{{ .chezmoi.sourceDir }}/scripts/install_agent_skills.py"
+exit $LASTEXITCODE
+{{- end -}}
