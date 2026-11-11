@@ -340,7 +340,7 @@ function dots { just --justfile "$HOME\.local\share\chezmoi\justfile" @args }
 
 function sonnet { claude --model claude-sonnet-5-5 @args }
 function opus { claude --model 'claude-opus-5-5[1m]' @args }
-function fable { claude --model claude-fable-5-1 @args }
+function fable { claude --model claude-fable-5-2 @args }
 
 function luna { codex -m gpt-6-luna -c model_reasoning_effort="xhigh" @args }
 function sol { codex -m gpt-6.1-sol -c model_reasoning_effort="medium" @args }
