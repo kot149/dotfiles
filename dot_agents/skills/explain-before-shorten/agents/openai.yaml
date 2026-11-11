@@ -1,0 +1,4 @@
+interface:
+  display_name: "Explain Before Shorten"
+  short_description: "Rewrite Japanese explanations as spoken, then shorten them."
+  default_prompt: "この説明を口頭で伝わる文章にしてから短くして。"
