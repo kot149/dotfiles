@@ -235,10 +235,15 @@ def lint_js(rd: Renderer) -> bool:
     templates = rd.select(glob(JS_TEMPLATES))
     if not (sources or templates):
         return True
-    if not available("oxlint"):
+    # Not in Home Manager: nixpkgs often lacks a cached darwin build of oxlint.
+    if shutil.which("oxlint"):
+        oxlint = ["oxlint"]
+    elif available("bun"):
+        oxlint = ["bun", "x", "oxlint"]
+    else:
         return True
     files = [*map(rel, sources), *map(str, rd.render(JS_TEMPLATES))]
-    r = run(["oxlint", "-f", "unix", "--deny-warnings", *files])
+    r = run([*oxlint, "-f", "unix", "--deny-warnings", *files])
     return report(rd, "oxlint", [r], count(r.stdout, r"^\S+:\d+:\d+: "))
 
 
