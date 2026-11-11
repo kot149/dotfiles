@@ -189,6 +189,7 @@ for segment in segments(command):
                     method = value.upper()
                 elif flag in "fF":
                     has_body = True
+                    has_input = has_input or (flag == "F" and "=@" in value)
                     values.append(value)
                 index += consumed + 1
                 continue
@@ -206,7 +207,12 @@ for segment in segments(command):
             )
             if value is not None:
                 has_body = True
-                has_input = has_input or arg.startswith("--input")
+                # -F key=@file reads the value from a file, like --input.
+                has_input = (
+                    has_input
+                    or arg.startswith("--input")
+                    or (arg.startswith(("-F", "--field")) and "=@" in value)
+                )
                 values.append(value)
                 index += consumed + 1
                 continue
@@ -228,7 +234,7 @@ for segment in segments(command):
             continue
 
         if api_path(endpoint) == "graphql":
-            # An --input body comes from a file or stdin, so its query cannot be read here.
+            # An --input or -F key=@file body comes from a file or stdin, so its query cannot be read here.
             if has_input or is_graphql_write(values):
                 targets.append(f"gh api {method} {endpoint}")
         elif is_target_endpoint(endpoint):

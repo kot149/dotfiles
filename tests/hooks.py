@@ -64,6 +64,8 @@ CASES: list[tuple[str, str, None | tuple[str, str]]] = [
     (PUSH, "echo '<<EOF'\ngit push --force\nEOF", FORCE_ASK),
     (PUSH, "# <<EOF\ngit push\nEOF", PUSH_ASK),
     (PUSH, "# don't\ngit -c core.x='a;b' push --force", FORCE_ASK),
+    (PUSH, "git push origin main && git push --force origin other", FORCE_ASK),
+    (PUSH, "echo \"$(git push)\" && git push -f", FORCE_ASK),
     (GH_API, "gh api repos/o/r/pulls -f title=x", GH_ASK),
     (GH_API, "gh api -X POST repos/o/r/issues/1/comments -f body=x", GH_ASK),
     (
@@ -120,6 +122,10 @@ CASES: list[tuple[str, str, None | tuple[str, str]]] = [
     (GH_API, "echo '<<EOF'\ngh api graphql -f query='\n  mutation { x }\n'\nEOF", GH_ASK),
     (GH_API, "# <<EOF\ngh api graphql -f query='\n  mutation { x }\n'\nEOF", GH_ASK),
     (GH_API, "# don't\ngh api graphql -f query='\n  mutation { x }\n'", GH_ASK),
+    (GH_API, "gh api graphql -F query=@q.graphql", GH_ASK),
+    (GH_API, "gh api graphql --field query=@-", GH_ASK),
+    (GH_API, "gh api graphql -Fquery=@q.graphql", GH_ASK),
+    (GH_API, "gh api graphql -f query=@q.graphql", None),
 ]
 
 # (command, expected updatedInput.command): None means the hook leaves it as is.

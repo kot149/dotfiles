@@ -94,6 +94,8 @@ def segments(command):
 # Push aliases defined in dot_gitconfig.tmpl.
 ALIASES = {"publish": ["push", "--set-upstream"]}
 
+pushes = []
+
 for segment in segments(command):
     try:
         words = shlex.split(segment)
@@ -144,9 +146,12 @@ for segment in segments(command):
         or (len(arg) > 1 and arg.startswith("+"))
         for arg in push_args
     )
-    kind = "force" if force else "normal"
-    print(kind + "\tgit push " + " ".join(push_args))
-    sys.exit(0)
+    pushes.append(("force" if force else "normal", "git push " + " ".join(push_args)))
+
+if pushes:
+    # The first line is "force" when any push in the command forces.
+    print("force" if any(kind == "force" for kind, _ in pushes) else "normal")
+    print("\n".join(dict.fromkeys(text for _, text in pushes)))
 PYEOF
 DETECTED=$("${PYTHON[@]}" "$PARSE_TMP" "$COMMAND") || exit 0
 # A Windows-native Python translates \n to \r\n on stdout.
@@ -154,13 +159,14 @@ DETECTED=${DETECTED//$'\r'/}
 
 [[ -z "$DETECTED" ]] && exit 0
 
-IFS=$'\t' read -r PUSH_KIND TARGET <<< "$DETECTED"
+PUSH_KIND=${DETECTED%%$'\n'*}
+TARGET=$(printf '%s\n' "${DETECTED#*$'\n'}" | sed 's/^/  /')
 if [[ "$PUSH_KIND" == "force" ]]; then
     # printf instead of $(cat <<EOF): a heredoc inside $( ) fails to parse on
     # bash 3.2 (macOS /bin/bash).
     REASON=$(printf '[Force push requires confirmation]
 
-  Command: %s
+%s
 
 Force-pushing can discard commits on the remote branch. Confirm this operation
 explicitly if you intend to rewrite the remote history.
@@ -168,7 +174,7 @@ explicitly if you intend to rewrite the remote history.
 else
     REASON=$(printf '[Git push requires confirmation]
 
-  Command: %s
+%s
 
 This command publishes commits to a remote repository. Confirm the operation
 explicitly if you intend to update the remote branch.
