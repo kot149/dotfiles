@@ -44,6 +44,13 @@ sudo tee "$PLIST" >/dev/null <<EOF
 EOF
 
 sudo launchctl bootout system/"$LABEL" 2>/dev/null || true
+# bootout returns before the job is gone; bootstrapping it then fails with
+# "5: Input/output error".
+i=0
+while launchctl print system/"$LABEL" >/dev/null 2>&1 && [ "$i" -lt 50 ]; do
+    sleep 0.2
+    i=$((i + 1))
+done
 sudo launchctl bootstrap system "$PLIST"
 
 STATUS=$(tailscale status --json 2>/dev/null || true)
