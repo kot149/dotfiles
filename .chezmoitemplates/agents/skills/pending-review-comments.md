@@ -154,6 +154,7 @@ One comment per finding, or per group from step 5. Do not pack unrelated finding
 - `<grade>` is how the caller ranked or judged it: a severity (`HIGH`), a verdict (`PARTIALLY_VALID`), or any single token of that kind
 - If the input has no `<kind>` or no `<grade>`, drop the label line and use just the title
 - Do not add generator-name labels like `[deep-review]`, `[double-check]` or `[Claude]`. A reader of the PR cares what the finding is, not which tool wrote it
+- Write the suggestion (`**Suggestion:**` and the fix half of a merged item) as a plain statement of the fix, not a request: in Japanese, end with the dictionary form (「〜する」「〜に変更する」), never 「〜してください」「〜しましょう」「〜すべき」. Rewrite input suggestions that use those endings
 - A merged comment uses the highest `<grade>` among its items and lists the items instead of a single description:
 
   ```
