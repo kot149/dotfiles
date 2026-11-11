@@ -1,0 +1,4 @@
+interface:
+  display_name: "Double Check"
+  short_description: "Verify review findings, investigation results or drafts against primary sources."
+  default_prompt: "Double-check this."

@@ -153,7 +153,7 @@ One comment per finding, or per group from step 5. Do not pack unrelated finding
 - `<kind>` is what sort of finding it is, as the caller classified it: a review perspective (`maintainability`, `security`), a finding category, or whatever taxonomy the caller uses. It is never the name of the skill or model that produced it
 - `<grade>` is how the caller ranked or judged it: a severity (`HIGH`), a verdict (`PARTIALLY_VALID`), or any single token of that kind
 - If the input has no `<kind>` or no `<grade>`, drop the label line and use just the title
-- Do not add generator-name labels like `[deep-review]`, `[meta-review]` or `[Claude]`. A reader of the PR cares what the finding is, not which tool wrote it
+- Do not add generator-name labels like `[deep-review]`, `[double-check]` or `[Claude]`. A reader of the PR cares what the finding is, not which tool wrote it
 - A merged comment uses the highest `<grade>` among its items and lists the items instead of a single description:
 
   ```
