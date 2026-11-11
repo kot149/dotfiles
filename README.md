@@ -1,48 +1,5 @@
 These dotfiles are managed by [chezmoi](https://www.chezmoi.io) and [Nix Home Manager](https://github.com/nix-community/home-manager).
 
-## Development
-
-Install the commit hooks after cloning:
-
-```sh
-just hooks-install
-```
-
-The hooks autoformat staged Python and Nix files, then run `just lint`.
-Restage formatting changes and retry the commit. Nix templates are checked
-after rendering by `just lint`; format their source manually.
-The hooks use `ruff`, `nixfmt`, `shellcheck`, `oxlint`, `chezmoi`, `uv` and
-`just` from PATH. `just lint` skips unavailable linters.
-
-The installed POSIX hook also works when the global `core.hooksPath` hook
-delegates to `.git/hooks/pre-commit` using `sh`.
-
-### Focused checks
-
-Use focused checks while editing; reserve `just test` for the full check before
-finishing. With no arguments, `just test` still runs all checks sequentially and
-collects failures; `just lint` still checks the whole repository.
-
-```sh
-just test-hooks
-just test-permissions
-just test-merge-config
-just lint --only python
-just lint scripts/lint.py tests/lint.py
-just lint --only js private_dot_config/opencode/plugins/
-```
-
-`just --list` lists every `test-*` recipe. Each runs one test script without
-the full-suite lint/render prerequisites. `just skills-lint`, `just hooks-lint`
-and `just render-check` also remain independently runnable.
-
-Lint accepts source files or directories relative to the repository root (or
-absolute paths inside it), including `.tmpl` source paths. Selected templates
-are still rendered for both macOS and Linux, with identical output checked once.
-Use `--only shell|python|nix|js` to select a language; repeat `--only` to combine
-languages. A missing path or a path with no matching lint sources is an error,
-not a successful no-op. Linters that are not installed are still skipped.
-
 ## Prerequisites
 
 ### Windows
@@ -144,12 +101,12 @@ nix --extra-experimental-features "flakes nix-command" run nixpkgs#chezmoi -- in
 Besides rendering the managed files into `$HOME`, the first apply:
 
 - downloads the pinned third-party agent skills into `~/.claude/skills` and `~/.agents/skills` (every OS);
-- macOS / Linux: on Determinate Nix, writes `/etc/nix/nix.custom.conf` (`sudo`), then runs the Home Manager switch through `nh home switch` (falls back to `nix run home-manager/master` when `nh` is not installed yet, as on the very first apply). The first switch builds the whole package set and takes minutes;
-- macOS: also runs the nix-darwin switch (`nh darwin switch`, or `nix run github:nix-darwin/nix-darwin#darwin-rebuild` before `nh` exists; prompts for the `sudo` password), including Rectangle, DockDoor and AltTab preferences, and the Karabiner script, and installs the tailscaled LaunchDaemon (`sudo`) when tailscaled is installed;
+- macOS / Linux: on Determinate Nix, writes `/etc/nix/nix.custom.conf` (`sudo`), then runs the Home Manager switch. The first switch builds the whole package set and takes minutes;
+- macOS: also runs the nix-darwin switch (prompts for the `sudo` password) and installs the tailscaled LaunchDaemon (`sudo`) when tailscaled is installed;
 - Linux: on Nix installs without `nix.custom.conf`, edits `/etc/nix/nix.conf` (`sudo`);
 - Windows: no Nix step; clones the PowerShell / AutoHotkey libraries.
 
-To preview first, clone without applying and check the diff (`chezmoi apply --dry-run -v` prints the same without changing anything):
+To preview first, clone without applying and check the diff:
 
 ```sh
 chezmoi init kot149
@@ -158,92 +115,41 @@ chezmoi diff
 
 Then run `chezmoi apply -v`.
 
-## Maintenance (`dots`)
+## Maintenance
 
-The `dots` alias ([`dot_zshrc`](dot_zshrc), and a function in the [PowerShell profile](readonly_Documents/PowerShell/Microsoft.PowerShell_profile.ps1)) runs the repo [`justfile`](justfile) from anywhere. `dots` alone lists the tasks, `dots update` pulls the repo and applies it, `dots update --all` (or `--full`) also updates everything for the current OS (`update-full`), and `dots test` runs the repo checks.
+The `dots` alias runs the repo [`justfile`](justfile) from anywhere.
 
-| Task | What it does |
+| Command | What it does |
 |---|---|
-| `update-full` | Pull the dotfiles repo and apply it, then update agent skills, Nix, tools and global packages (the task list differs per OS) |
-| `apply *args` | Apply the source state to `$HOME` (extra args go to `chezmoi apply`) |
-| `update *flags` | Pull the dotfiles repo and apply it; with `--all` or `--full`, run `update-full` instead |
-| `pull` | Pull the dotfiles repo without applying it |
-| `diff *args` | Show what apply would change |
-| `status` | List targets that differ from the source state |
-| `skills-check` | Report third-party agent skills whose pinned rev is behind upstream |
-| `skills-update *args` | Review, bump and commit third-party agent skill revs, then install them |
-| `skills-install` | Install the third-party agent skills into `~/.claude/skills` and `~/.agents/skills` |
-| `skills-lint` | Check the agent-skill tree: wrappers, store parity, frontmatter, `agent_skills` |
-| `skills-drift` | Report skill directories in `~/.claude/skills` and `~/.agents/skills` that this repo does not manage |
-| `hm-switch` (macOS / Linux) | Rebuild the Home Manager generation without updating flake inputs |
-| `hm-update` (macOS / Linux) | Update the Home Manager flake inputs and rebuild |
-| `darwin-update` (macOS) | Update the nix-darwin flake inputs and rebuild |
-| `nix-clean` (macOS / Linux) | Delete Nix generations older than 30 days, keeping the latest one |
-| `sheldon-update` (macOS / Linux) | Update zsh plugins |
-| `mise-upgrade` (macOS / Linux) | Upgrade the tools in the global mise config |
-| `pkgs-list *managers` | List globally installed bun / npm / pnpm / uv / cargo / go packages |
-| `pkgs-update *managers` | Update globally installed bun / npm / pnpm / uv / cargo / go packages |
-| `pkgs-dupes` | Find commands installed by both bun / npm / pnpm / uv / cargo / go and Nix / apt / winget / others |
-| `gh-ext-upgrade` | Upgrade gh CLI extensions |
-| `winget-upgrade` (Windows) | Upgrade winget packages (run by hand; not part of `update-full`) |
-| `apt-upgrade` (Linux) | Upgrade apt packages (run by hand; not part of `update-full`) |
-| `render-check` | Render the agent config templates and check that the output parses |
-| `lint` | Run shellcheck, ruff, nixfmt and oxlint over the repo |
-| `doctor *args` | Report stale ignore entries, missing Nix hash globs, missing tools, Codex hooks with no trust entry or possibly stale trust, and unmanaged skill directories (run last by `update-full`; `--no-home` skips the `$HOME` checks) |
-| `ci-render *args` | Apply the source tree into a scratch directory without scripts and externals, then parse the agent configs (extra args go to `chezmoi`) |
-| `hooks-lint` | Check `.chezmoidata/agent-hooks.toml` against the hook files in `dot_claude/hooks` and `dot_codex/hooks` |
-| `test` | Run `skills-lint`, `hooks-lint`, `render-check`, `lint` and the tests under [`tests/`](tests) |
+| `dots` | List the tasks |
+| `dots update` | Pull the repo and apply it |
+| `dots update --all` | Also update agent skills, Nix, tools and global packages for the current OS |
+| `dots skills-update` | Review and bump third-party agent skill revs, then install them |
+| `dots doctor` | Report stale ignore entries, missing tools, untrusted Codex hooks and unmanaged skills |
+| `dots test` | Run the repo checks |
 
-Every push to `main` and every pull request runs [`.github/workflows/check.yml`](.github/workflows/check.yml), which runs `ci-render`, `test` and `doctor --no-home` on Ubuntu, macOS and Windows.
+`dots` also lists the other tasks (`hm-switch`, `nix-clean`, `pkgs-update`, `winget-upgrade`, ...).
 
 ## AI agent configuration
 
-The hooks, permission lists and skills for Claude Code, Codex CLI, opencode and Antigravity live in this repo ([`dot_claude/`](dot_claude), [`dot_codex/`](dot_codex), [`dot_agents/`](dot_agents), [`private_dot_config/opencode/`](private_dot_config/opencode), [`dot_gemini/`](dot_gemini)) and are generated from single sources under [`.chezmoitemplates/`](.chezmoitemplates) and [`.chezmoidata/`](.chezmoidata). [`AGENTS.md`](AGENTS.md) documents the layout and the rules.
-
-### Delegated commits
-
-Use `/commit-delegate` for the separate lightweight-worker workflow; `/commit`
-keeps its existing behavior. The worker reads status, diffs and history, proposes
-three messages, obtains your selection, then stages explicit paths and commits.
-Claude Code selects Haiku; GPT runtimes must expose a write-capable Luna
-(`gpt-6-luna`) model or role. If the runtime cannot select a lightweight worker,
-the skill stops rather than running the workflow on the main model.
-
-Only message choices (when the worker cannot ask directly), scope warnings and
-the final result reach the main agent. Raw Git output stays in the worker;
-coordination still uses some main-agent context. The shared body and worker
-reference install into both `~/.claude/skills/commit-delegate` and
-`~/.agents/skills/commit-delegate`.
+The hooks, permission lists and skills for Claude Code, Codex CLI, opencode and Antigravity are generated from single sources under [`.chezmoitemplates/`](.chezmoitemplates) and [`.chezmoidata/`](.chezmoidata). [`AGENTS.md`](AGENTS.md) documents the layout and the rules.
 
 ### Customizing third-party skills
 
-Third-party skills stay pinned in [`.chezmoidata/agent-skills.toml`](.chezmoidata/agent-skills.toml). Local changes live in [`scripts/agent-skill-patches/`](scripts/agent-skill-patches) as one unified diff per skill: `<skill-name>.patch`, with paths relative to the skill root (`a/SKILL.md`, `b/SKILL.md`, or paths under `references/` and `scripts/`). The same patch feeds every declared agent store; do not edit the installed copies.
+Third-party skills are pinned in [`.chezmoidata/agent-skills.toml`](.chezmoidata/agent-skills.toml). To change one, put a unified diff against the pinned rev in [`scripts/agent-skill-patches/`](scripts/agent-skill-patches) as `<skill-name>.patch` (paths relative to the skill root, e.g. `a/SKILL.md`), then run `dots skills-install`. Do not edit the installed copies.
 
-[`install_agent_skills.py`](scripts/install_agent_skills.py) extracts each skill from the pinned GitHub archive into a temporary directory, runs `git apply --check` and then `git apply` for skills with a patch, and only then replaces the installed directory. Binary assets and file modes are preserved. This requires Git and `uv` with Python 3.11+ available; the installer uses only the Python standard library and does not download an interpreter.
-
-- **Add, edit or remove a customization:** create, change or delete the patch (made against the declared upstream rev, with normal context lines), then run `dots skills-install`. A `chezmoi apply` runs the installer as well, since the run_onchange script hashes the patches. The whole skill directory is replaced, so files a removed patch had added disappear too. Patches are source-only files, not installed targets.
-- **Update upstream:** `dots skills-update` validates patches against all selected candidate revs before writing or committing any rev. A conflict or download failure leaves all selected pins unchanged. Review the upstream diff, adapt the patch, and retry. `--no-commit` still validates; `skills-check` remains a freshness-only check.
-- **Conflicts:** the installer fails for that repo rather than using three-way merges, rejected hunks, or unpatched fallback contents, and leaves its installed skills as they were. Other repos are still installed.
-- **Checks:** `dots skills-lint` rejects patches with missing or ambiguous skill declarations. `tests/install_agent_skills.py` exercises real Git and the installer against a loopback HTTP archive, without external network access.
-
-The included patches make `ponytail-review` and `ponytail-audit` report in Japanese, replace agent-browser's `npx` tool permission with `bunx`, and extend `/bro` with `/bro --file <path>`. Bro already supports pasted text upstream. Agent-browser's dynamically loaded `agent-browser skills get ...` output is outside the downloaded archive, so these patches do not rewrite that runtime content.
-
-Archive paths cannot escape the temporary directory; links and special files inside the selected skill are rejected. Git's automatic line-ending conversion is disabled during patch application, regardless of host settings. On Windows, existing archive permissions are preserved and new files receive mode `0644`; use content patches rather than executable-bit changes there.
+If a patch no longer applies, the installer and `dots skills-update` fail for that repo and leave its installed skills and pins unchanged. Adapt the patch to the new upstream and retry.
 
 ## Managing OS-specific files
 
 Edit [`.chezmoiignore.tmpl`](.chezmoiignore.tmpl).
 
-## Git (shared + per-machine)
+## Git config
 
-Global Git is split so portable settings live in the repo and machine-specific values (account, signing paths, `core.editor`, extra sections you add to the template) stay overridable per host:
+- Shared: [`dot_gitconfig.tmpl`](dot_gitconfig.tmpl), which includes `~/.config/git/config.machine`.
+- Per-machine: [`private_dot_config/git/create_config.machine.tmpl`](private_dot_config/git/create_config.machine.tmpl) creates `~/.config/git/config.machine` only when it is absent. Edit that local file afterwards to change machine-only settings.
 
-- Shared: [`dot_gitconfig.tmpl`](dot_gitconfig.tmpl) (includes `~/.config/git/config.machine`, hunk, LFS, optional `safe.directory` from `git_safe_directories` in data).
-- Bootstrap: [`private_dot_config/git/create_config.machine.tmpl`](private_dot_config/git/create_config.machine.tmpl) creates `~/.config/git/config.machine` only when the target is absent. Existing local files are preserved. The template defaults target the **kot149** GitHub profile; override the initial values in `~/.config/chezmoi/chezmoi.toml` on work PCs, etc.
-
-Defaults live in [`.chezmoidata/git.toml`](.chezmoidata/git.toml) (**kot149** + GitHub noreply email). If `git_signing_key` / `git_allowed_signers` are left empty, [`create_config.machine.tmpl`](private_dot_config/git/create_config.machine.tmpl) falls back to `$HOME/.ssh/id_ed25519_github_kot149.pub` and `$HOME/.ssh/allowed_signers`. **`~/.config/chezmoi/chezmoi.toml`** `[data]` overrides `.chezmoidata/git.toml`, so a work machine can point at different keys without editing the repo.
-
-Example override for a work machine:
+Defaults live in [`.chezmoidata/git.toml`](.chezmoidata/git.toml) (**kot149** + GitHub noreply email; signing key `$HOME/.ssh/id_ed25519_github_kot149.pub`). `chezmoi init` prompts for the values and writes them to `~/.config/chezmoi/chezmoi.toml`, whose `[data]` overrides the defaults. Example for a work machine:
 
 ```toml
 [data]
@@ -258,8 +164,6 @@ git_safe_directories = [
 ]
 ```
 
-On a new machine, `chezmoi init` runs [`.chezmoi.toml.tmpl`](.chezmoi.toml.tmpl) and prompts with **kot149-oriented defaults**; answers are written to `~/.config/chezmoi/chezmoi.toml`. To change machine-only Git settings after initial creation, edit local `~/.config/git/config.machine`; changes to the source template affect only the bootstrap content.
-
 ## Managing Winget packages
 
 Export:
@@ -273,4 +177,23 @@ winget export -o winget.json
 Import:
 ```sh
 winget import winget.json
+```
+
+## Development
+
+Install the commit hooks after cloning:
+
+```sh
+just hooks-install
+```
+
+The hook formats staged Python and Nix files and runs `just lint`. Restage the formatting changes and retry the commit.
+
+`just test` runs every check (also run by CI on Ubuntu, macOS and Windows). While editing, run one part:
+
+```sh
+just test-hooks
+just test-permissions
+just lint --only python
+just lint private_dot_config/opencode/plugins/
 ```
