@@ -82,3 +82,4 @@ Your reply is parsed by the orchestrator and pasted into a judge's prompt; every
 - Return only the `FINDING` blocks and the `CHECKLIST`. No preamble, summary, or restatement of the diff or your checklist
 - Quote only the lines the evidence needs; never paste whole functions or file contents
 - `DESCRIPTION` states what breaks and how; `SUGGESTION` states the fix. Neither repeats the other or the title
+- Write `SUGGESTION` as a plain statement of the fix, not a request: in Japanese, end with the dictionary form (「〜する」「〜に変更する」), never 「〜してください」「〜しましょう」「〜すべき」

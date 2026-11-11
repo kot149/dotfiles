@@ -67,7 +67,7 @@ REASON: <verdict reason, concretely which code structure makes it VALID/INVALID>
 FIX_TARGET: <CODE|SPEC|EITHER|N/A>  # spec findings only
 FILE: <path>  # only when the reviewer's FILE/LINE was wrong; give the corrected location
 LINE: <line>  # same
-SUGGESTION: <fix proposal>  # only when the reviewer's suggestion is wrong or missing; otherwise omit
+SUGGESTION: <fix proposal>  # only when the reviewer's suggestion is wrong or missing; otherwise omit. Plain statement, e.g. 「〜に変更する」, not 「〜してください」
 DUPLICATE_OF: #M  # DUPLICATE only
 ---
 ```
