@@ -15,6 +15,8 @@ expect_deny() { total=$((total + 1)); local out; out=$(run "$2"); denied "$out" 
 expect_pass() { total=$((total + 1)); local out; out=$(run "$2"); [[ -z "$out" ]] || { echo "  x $1 was flagged: $out"; fail=1; }; }
 
 dir=$(mktemp -d)
+# Git Bash on Windows returns an MSYS path (/tmp/...) that the native bun cannot open.
+if command -v cygpath >/dev/null; then dir=$(cygpath -m "$dir"); fi
 trap 'rm -rf "$dir"' EXIT
 printf '{"a":"判断は安全側に倒す。"}' > "$dir/ja.json"
 printf '{"a":"この薬はよく効く。"}' > "$dir/ok.json"
