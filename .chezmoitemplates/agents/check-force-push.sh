@@ -91,6 +91,22 @@ def segments(command):
             yield match.group(1) if match.group(1) is not None else match.group(2)
 
 
+def is_help(args):
+    """--help or -h before a -- terminator only prints usage.
+
+    It does not count right after an option without =, which may take it as its value,
+    nor after a redirection, control operator or comment, where it is not passed to the command.
+    """
+    previous = ""
+    for arg in args:
+        if arg == "--" or re.search(r"[<>&|;]|^#", arg):
+            return False
+        if arg in ("--help", "-h") and not (previous.startswith("-") and "=" not in previous):
+            return True
+        previous = arg
+    return False
+
+
 # Push aliases defined in dot_gitconfig.tmpl.
 ALIASES = {"publish": ["push", "--set-upstream"]}
 
@@ -138,6 +154,8 @@ for segment in segments(command):
         continue
 
     push_args = args[cursor + 1 :]
+    if is_help(push_args):
+        continue
     force = any(
         arg == "-f"
         or (arg.startswith("-") and not arg.startswith("--") and "f" in arg[1:])

@@ -76,6 +76,22 @@ WRITE_SUBCOMMANDS = {
     "issue": {"create", "comment", "edit", "close", "reopen", "delete"},
 }
 
+def is_help(args):
+    """--help or -h before a -- terminator only prints usage.
+
+    It does not count right after an option without =, which may take it as its value,
+    nor after a redirection, control operator or comment, where it is not passed to the command.
+    """
+    previous = ""
+    for arg in args:
+        if arg == "--" or re.search(r"[<>&|;]|^#", arg):
+            return False
+        if arg in ("--help", "-h") and not (previous.startswith("-") and "=" not in previous):
+            return True
+        previous = arg
+    return False
+
+
 SPLIT = r"(?:&&|\|\||[;|]|\n)"
 HEREDOC = re.compile(r"<<-?[ \t]*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
 
@@ -161,13 +177,19 @@ for segment in segments(command):
             continue
         group = words[gh_index + 1]
         if group in WRITE_SUBCOMMANDS:
-            if gh_index + 2 < len(words) and words[gh_index + 2] in WRITE_SUBCOMMANDS[group]:
+            if (
+                gh_index + 2 < len(words)
+                and words[gh_index + 2] in WRITE_SUBCOMMANDS[group]
+                and not is_help(words[gh_index + 3 :])
+            ):
                 targets.append(f"gh {group} {words[gh_index + 2]}")
             continue
         if group != "api":
             continue
 
         args = words[gh_index + 2 :]
+        if is_help(args):
+            continue
         method = None
         has_body = False
         has_input = False
