@@ -1,0 +1,4 @@
+interface:
+  display_name: "GH Attach"
+  short_description: "Attach images and videos to issues, PRs and comments with gh --attach."
+  default_prompt: "Attach this screenshot to the PR."
