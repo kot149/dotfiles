@@ -394,7 +394,19 @@ Run only when option E applies (user choice or `--post`; PR targets only, so nev
 As deep-review-side preconditions, prepare the inputs to the skill as follows:
 
 - **Only judge-VALIDated findings**. Never pass INVALID/UNCERTAIN ones
-- Pass each finding with `FILE` / `LINE` / title / `DESCRIPTION` / `SUGGESTION` / `<reviewer>` / `<SEVERITY>` aligned (judge-corrected file/line/suggestion where present). Pass `<reviewer>` as `<kind>` and `<SEVERITY>` as `<grade>`; the comment head format belongs to [[pending-review-comments]]
+- Pass each finding with `FILE` / `LINE` / title / `DESCRIPTION` / `SUGGESTION` / `<reviewer>` / `<label>` aligned (judge-corrected file/line/suggestion where present). Pass `<reviewer>` as `<kind>` and `<label>` as `<grade>`; the comment head format belongs to [[pending-review-comments]]
+- `<label>` tells the PR author what is asked of them, converted from the calibrated severity. The first matching row wins:
+
+  | Finding | label |
+  |---|---|
+  | `EVIDENCE: UNVERIFIED` | `ask` |
+  | meta (approach finding) | `imo` |
+  | LOW noted "not caused by this PR" | `optional` |
+  | CRITICAL / HIGH | `must` |
+  | MEDIUM | `should` |
+  | LOW | `nits` |
+
+  For an `ask` finding, phrase the description as a question to confirm rather than a statement. When findings are merged into one comment, rank labels `must` > `should` > `ask` > `imo` > `nits` > `optional`
 - Include the evidence (convention-document quotes, measured breakdowns) in the comment body for findings that have it
 
 After posting, report the result in Japanese (e.g. `pendingコメントを投稿しました`) and finish.
