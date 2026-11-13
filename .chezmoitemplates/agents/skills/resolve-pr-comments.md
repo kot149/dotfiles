@@ -1,6 +1,6 @@
 ---
 name: resolve-pr-comments
-description: Skill for checking GitHub PR review comments (review threads) and resolving the addressed ones. Use when the user asks things like "resolve the review comments", "mark the addressed findings as resolved", "resolve PR comments", 「レビューコメントをresolveして」「対応済みの指摘を解決済みにして」, or any similar phrasing in English or Japanese. Only resolve, react to, or reply to threads you started; treat threads started by others as reference-only. Never resolve a thread when in doubt. With `--wait`, keeps polling the PR and re-checking until every thread you started is resolved.
+description: Skill for checking GitHub PR review comments (review threads) and resolving the addressed ones. Use when the user asks things like "resolve the review comments", "mark the addressed findings as resolved", "resolve PR comments", 「レビューコメントをresolveして」「対応済みの指摘を解決済みにして」, or any similar phrasing in English or Japanese. Only resolve, react to, or reply to threads you started; treat threads started by others as reference-only. Never resolve a thread when in doubt. Always show reply text to the user for approval before posting. With `--wait`, keeps polling the PR and re-checking until every thread you started is resolved.
 argument-hint: "[<PR number|PR URL>] [--wait[=<duration>]]"
 ---
 
@@ -9,9 +9,14 @@ argument-hint: "[<PR number|PR URL>] [--wait[=<duration>]]"
 ## Goal
 
 Check the review comments (review threads) on the given PR and resolve the
-addressed ones among the threads you started. Leave a reply when needed. Treat
-threads started by others as reference-only: never resolve, react, or reply to
-them. Finally, report the still-unresolved comments.
+addressed ones among the threads you started. Leave a reply when needed, only
+after the user approves its text. Treat threads started by others as
+reference-only: never resolve, react, or reply to them. Finally, report the
+still-unresolved comments.
+
+## Asking the user to choose
+
+{{ includeTemplate "agents/skills/_shared/user-choice.md" . }}
 
 ## Target PR
 
@@ -32,7 +37,8 @@ message, never one call per message. Agents batch their approval prompt per
 message, so issuing them one at a time forces the user through one prompt per
 command. This applies to Step 1 and Step 2/2b (all read-only fetches together)
 and to Step 5 (every reaction, reply, and resolve for every target thread
-together, after the judgment in Step 4b is finished). Split into a second
+together, after the judgment in Step 4b and the reply approval in Step 5 are
+finished). Split into a second
 message only when a command genuinely needs an earlier one's output.
 
 Step 1: **Identify the PR** — take the PR number or URL from the arguments. When
@@ -133,9 +139,11 @@ follows:
 
 Step 5: **Resolve the addressed threads** — for each of your own threads judged
 addressed in Step 4b (threads started by others are out of scope). Decide 5a-5c
-for every target thread first, then issue all of those commands in one message
-as parallel tool calls; the reaction, the reply, and the resolve are independent
-API calls and none of them needs another's output.
+for every target thread first. When any thread gets a reply, get the user's
+approval of the reply text before issuing anything (see "Reply approval"
+below). Then issue all of those commands in one message as parallel tool calls;
+the reaction, the reply, and the resolve are independent API calls and none of
+them needs another's output.
 
 5a. Add a 👍 reaction to the thread's latest reviewer comment (the latest
 comment written by someone other than you). Take the target comment ID from the
@@ -182,11 +190,39 @@ Reply/reaction guidelines:
   no reply
 - Fix involving a code change with code already fixed: reply with a one-line
   note on what changed, then resolve
-- Suggestion/nits-level comments where addressing is optional: do not resolve;
-  leave the decision to the user
+- Someone else in the thread already described the fix (e.g. the PR author
+  replied with what they changed): resolve only, no reply, so the same content
+  is not repeated
 - Comments needing discussion: do not resolve; leave the decision to the user
 - **When in doubt, do not resolve** — reporting it unresolved is safer than
   resolving it by mistake
+
+Reply approval: never post a reply the user has not approved. Before issuing
+any Step 5 command, present every drafted reply to the user in Japanese, one
+block per thread:
+
+```
+対象: `<ファイル>:<行>` — <指摘の要約>
+返信文(全文):
+<reply body, in the same language as the finding>
+```
+
+Then ask the user to choose:
+
+```
+返信案は以上です。どうしますか?
+1. 投稿する
+2. 文面を修正する
+3. 一部のみ投稿する
+4. 中止する
+```
+
+- 投稿する: issue every Step 5 command as planned
+- 文面を修正する: revise the text as instructed and present it again
+- 一部のみ投稿する: a thread whose reply the user drops gets no reply, no
+  reaction, and no resolve; report it as unresolved in Step 6
+- 中止する: issue no Step 5 command at all, including for threads without a
+  reply
 
 Step 6: **Report the results** — present the following to the user in Japanese:
 
@@ -235,7 +271,8 @@ Step 7: **Wait for the rest (`--wait` only)** — skip this step without
    head commit, and the comment count and resolved state of your threads, and
    returns as soon as any of them changes or after about 9 minutes. Run it in
    the foreground with a command timeout of at least 10 minutes.
-4. On `changed`, re-run Steps 2 to 5 (all judgment rules apply unchanged) and
+4. On `changed`, re-run Steps 2 to 5 (all judgment rules and the reply
+   approval apply unchanged) and
    tell the user in one line what was resolved this round. On `no change`, go
    back to 1.
 
