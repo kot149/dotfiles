@@ -569,13 +569,23 @@ if command -v mise &> /dev/null; then
     eval "$(command mise hook-env -s zsh "$@")"
   }
 
-  typeset -g _mise_hook_cache="${XDG_CACHE_HOME:-$HOME/.cache}/mise/hook-env-$$.zsh"
-  mkdir -p "${_mise_hook_cache:h}"
-  (umask 077; command mise hook-env -s zsh --reason precmd >| "${_mise_hook_cache}.tmp" &&
-    mv -f "${_mise_hook_cache}.tmp" "$_mise_hook_cache") &!
-  typeset -g _mise_hook_pid=$!
+  # Called at the end of this file, after every PATH edit, so the snapshot matches the PATH the first command sees.
+  # The cached output exports an absolute PATH, so it is only valid while PATH and cwd are unchanged (direnv edits PATH in precmd)
+  _mise_hook_start_cache() {
+    typeset -g _mise_hook_cache="${XDG_CACHE_HOME:-$HOME/.cache}/mise/hook-env-$$.zsh"
+    typeset -g _mise_hook_cache_key="$PWD"$'\n'"$PATH"
+    mkdir -p "${_mise_hook_cache:h}"
+    (umask 077; command mise hook-env -s zsh --reason precmd >| "${_mise_hook_cache}.tmp" &&
+      mv -f "${_mise_hook_cache}.tmp" "$_mise_hook_cache") &!
+    typeset -g _mise_hook_pid=$!
+  }
 
   _mise_hook_preexec() {
+    if [[ -n ${_mise_hook_cache:-} && "$PWD"$'\n'"$PATH" != $_mise_hook_cache_key ]]; then
+      kill $_mise_hook_pid 2>/dev/null
+      command rm -f -- "$_mise_hook_cache" "${_mise_hook_cache}.tmp"
+      unset _mise_hook_cache _mise_hook_pid _mise_hook_cache_key
+    fi
     if [[ -n ${_mise_hook_cache:-} ]]; then
       zmodload zsh/zselect
       while [[ ! -r $_mise_hook_cache ]] && kill -0 $_mise_hook_pid 2>/dev/null; do
@@ -587,7 +597,7 @@ if command -v mise &> /dev/null; then
         _mise_hook --reason precmd
       fi
       command rm -f -- "$_mise_hook_cache" "${_mise_hook_cache}.tmp"
-      unset _mise_hook_cache _mise_hook_pid
+      unset _mise_hook_cache _mise_hook_pid _mise_hook_cache_key
     else
       _mise_hook --reason precmd
     fi
@@ -847,3 +857,5 @@ print(s.recv(4096).decode().strip())
 }
 
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+(( $+functions[_mise_hook_start_cache] )) && _mise_hook_start_cache
