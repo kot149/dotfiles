@@ -44,7 +44,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "vercel-labs/agent-browser"
-rev = "d081bcddbec5917de997d49212a9ee1ef272c4c4"
+rev = "f18b8bb5275ea2be22fca5e6856886827468f41e"
 prefix = "skills"
 names = ["agent-browser"]
 agents = ["claude", "agents"]
@@ -52,7 +52,7 @@ agents = ["claude", "agents"]
 # Needs the `agent-desktop` CLI on PATH.
 [[agent_skills]]
 repo = "vercel-labs/agent-desktop"
-rev = "54855b6225aec00da4ac65e2d0362fd41cd9fcb3"
+rev = "46d2adf885002633b77d5a9956c9464b24f61431"
 prefix = "skills"
 names = ["agent-desktop", "agent-desktop-linux", "agent-desktop-macos", "agent-desktop-windows"]
 agents = ["claude", "agents"]
@@ -130,7 +130,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "nanaism/yomiyasu"
-rev = "2318a6d0820a58d3f8cfadc75af86978bb739185"
+rev = "db78b9bc5e868549b517a037df7a4d1c93edac23"
 prefix = "skills"
 names = ["yomiyasu"]
 agents = ["claude", "agents"]
@@ -187,7 +187,7 @@ agents = ["claude", "agents"]
 # SKILL.md sits at the repo root, so there is no per-skill subdirectory.
 [[agent_skills]]
 repo = "kajisho5/ffmpeg-skill"
-rev = "532cbe38cbcc018f45c5f400e570abd82b37fc93"
+rev = "e805a2ec03b48f4c2318c9804d6630a20a388abf"
 prefix = ""
 names = ["ffmpeg-skill"]
 agents = ["claude", "agents"]
