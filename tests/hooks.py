@@ -367,11 +367,18 @@ def stop_hook(hook_dir: Path, hook: str, prompt: str, reply: str, active: bool =
     result = subprocess.run(
         [*runner, str(hook_dir / hook)],
         input=json.dumps(
-            {"transcript_path": str(transcript), "last_assistant_message": reply, "stop_hook_active": active}
+            {
+                "session_id": "test-session",
+                "transcript_path": str(transcript),
+                "last_assistant_message": reply,
+                "stop_hook_active": active,
+            }
         ),
         capture_output=True,
         text=True,
         encoding="utf-8",
+        # The block markers go under the temp dir, kept inside the test's own directory.
+        env={**os.environ, "TMPDIR": str(hook_dir)},
     )
     blocked = bool(result.stdout.strip()) and json.loads(result.stdout).get("decision") == "block"
     return result.returncode, result.stderr, blocked
@@ -401,11 +408,27 @@ with tempfile.TemporaryDirectory() as tmp:
                 continue
             check(label, actual == expected, f"expected block: {expected}\n      actual:   {actual}")
 
-    # The stop after a block passes, so Claude can report what blocks the remaining checks.
-    status, stderr, actual = stop_hook(
-        hook_dir, "check-unverified-reply.py", "直して", "実機での動作は未確認です。", active=True
-    )
-    check("check-unverified-reply.py: stop_hook_active", status == 0 and not actual, f"blocked: {actual}")
+    # Each hook blocks once per chain: the stop after its own block passes, so Claude can report what blocks the remaining checks, while a stop after another hook's block is still checked.
+    unverified = ("check-unverified-reply.py", "直して", "実機での動作は未確認です。")
+    english = ("check-japanese-reply.sh", "READMEを更新して", ENGLISH_REPLY)
+    italic = ("check-reply-format.js", "調べて", "*原因*\n\n設定です。")
+    chain = [
+        (unverified, False, True),
+        (english, True, True),
+        (italic, True, True),
+        (unverified, True, False),
+        (english, True, False),
+        (italic, True, False),
+        # A new prompt starts a new chain.
+        (unverified, False, True),
+    ]
+    for (hook, prompt, reply), active, expected in chain:
+        status, stderr, actual = stop_hook(hook_dir, hook, prompt, reply, active=active)
+        check(
+            f"{hook}: stop_hook_active={active} in a chain",
+            status == 0 and not stderr and actual == expected,
+            f"expected block: {expected}, actual: {actual}, stderr: {stderr.strip()!r}",
+        )
 
 print(f"{checks - len(failures)}/{checks} passed")
 for failure in failures:

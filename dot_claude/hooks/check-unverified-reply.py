@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["fugashi==1.5.2", "unidic-lite==1.0.8"]
 # ///
-"""Stop hook: when the final reply says something is still unverified (「未確認です」「まだ確かめていません」 "not tested yet" ...), block the stop once and ask Claude to verify whatever it can check by itself. The next stop passes (stop_hook_active), which is where Claude reports the items it could not check and what blocks them.
+"""Stop hook: when the final reply says something is still unverified (「未確認です」「まだ確かめていません」 "not tested yet" ...), block the stop once and ask Claude to verify whatever it can check by itself. The next stop passes, which is where Claude reports the items it could not check and what blocks them. Other Stop hooks still check that stop, since only the hook that blocked leaves a marker for the session.
 
 Japanese is split into morphemes with fugashi (UniDic), so a note is a verification word followed by a negated predicate chain (確認/は/まだ/し/て/い/ませ/ん), or 未 + a verification noun that ends the noun phrase. Code blocks, inline code, blockquotes and quoted spans are removed first. These pass:
 - compound nouns (「未確認事項」「未確認報告」), passive forms (「実行されていません」) and plain refusals (「確認しません」)
@@ -15,12 +15,20 @@ import json
 import os
 import re
 import sys
+import tempfile
+from pathlib import Path
 
 import fugashi
 
 data = json.load(sys.stdin)
-if data.get("stop_hook_active"):
+
+# Set when this hook blocked a stop; stop_hook_active alone is also true after another hook's block.
+MARKER = (
+    Path(tempfile.gettempdir()) / "claude-stop-hooks" / f"{data.get('session_id') or 'unknown'}.check-unverified-reply"
+)
+if data.get("stop_hook_active") and MARKER.exists():
     sys.exit()
+MARKER.unlink(missing_ok=True)
 
 
 def text_of(content):
@@ -223,6 +231,8 @@ for m_start, m_end in sorted(spans):
 if not hits:
     sys.exit()
 
+MARKER.parent.mkdir(parents=True, exist_ok=True)
+MARKER.touch()
 print(json.dumps({
     "decision": "block",
     "reason": (

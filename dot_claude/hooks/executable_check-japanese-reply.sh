@@ -5,16 +5,22 @@
 
 INPUT=$(cat)
 
-[[ "$(echo "$INPUT" | jq -r '.stop_hook_active // false')" == "true" ]] && exit 0
-
 source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
 
 HOOK_INPUT="$INPUT" "${PYTHON[@]}" - <<'PYEOF'
 import json
 import os
 import re
+import tempfile
+from pathlib import Path
 
 data = json.loads(os.environ["HOOK_INPUT"])
+
+# Set when this hook blocked a stop; stop_hook_active alone is also true after another hook's block.
+MARKER = Path(tempfile.gettempdir()) / "claude-stop-hooks" / f"{data.get('session_id') or 'unknown'}.check-japanese-reply"
+if data.get("stop_hook_active") and MARKER.exists():
+    raise SystemExit
+MARKER.unlink(missing_ok=True)
 
 
 def text_of(content):
@@ -78,6 +84,8 @@ words = re.findall(r"[A-Za-z]{2,}(?:'[a-z]+)?", prose)
 if len(words) < 12:
     raise SystemExit
 
+MARKER.parent.mkdir(parents=True, exist_ok=True)
+MARKER.touch()
 print(json.dumps({
     "decision": "block",
     "reason": (

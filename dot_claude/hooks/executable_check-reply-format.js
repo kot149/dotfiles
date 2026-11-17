@@ -7,6 +7,8 @@
 import { TextlintKernel } from "@textlint/kernel@15.8.0";
 import markdownPlugin from "@textlint/textlint-plugin-markdown@15.8.0";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import parallelListRule from "./textlint-rules/textlint-rule-ja-parallel-list.js";
 import italicRule from "./textlint-rules/textlint-rule-no-italic.js";
 
@@ -45,7 +47,10 @@ try {
 } catch {
   process.exit(0);
 }
-if (payload.stop_hook_active) process.exit(0);
+// Set when this hook blocked a stop; stop_hook_active alone is also true after another hook's block.
+const marker = path.join(os.tmpdir(), "claude-stop-hooks", `${payload.session_id || "unknown"}.check-reply-format`);
+if (payload.stop_hook_active && fs.existsSync(marker)) process.exit(0);
+fs.rmSync(marker, { force: true });
 
 const reply = payload.last_assistant_message || lastReply(payload.transcript_path ?? "");
 if (!reply.trim()) process.exit(0);
@@ -59,6 +64,9 @@ const { messages } = await new TextlintKernel().lintText(reply, {
   ],
 });
 if (messages.length === 0) process.exit(0);
+
+fs.mkdirSync(path.dirname(marker), { recursive: true });
+fs.writeFileSync(marker, "");
 
 const findings = messages
   .map((m, i) => `${i + 1}. 該当: 「${reply.slice(...m.range)}」\n   対応: ${m.message}`)
