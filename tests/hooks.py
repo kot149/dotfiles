@@ -270,6 +270,14 @@ UNVERIFIED_REPLY_CASES += [
     ("調べて", "設定画面のタブだけは未実施です。", False),
 ]
 
+# (user prompt, last reply, expected block): the rule itself is covered by tests/textlint-rule-no-italic.js.
+ITALIC_REPLY_CASES: list[tuple[str, str, bool]] = [
+    ("調べて", "*原因*\n\n設定ファイルの読み込み順です。", True),
+    ("調べて", "## 原因\n\n設定ファイルの *読み込み順* です。", True),
+    ("調べて", "## 原因\n\n設定ファイルの**読み込み順**です。", False),
+    ("translate", "Done. The *order* matters.", False),
+]
+
 failures: list[str] = []
 checks = 0
 
@@ -351,7 +359,8 @@ def stop_hook(hook_dir: Path, hook: str, prompt: str, reply: str, active: bool =
         json.dumps({"type": "user", "message": {"role": "user", "content": prompt}}) + "\n",
         encoding="utf-8",
     )
-    runner = ["uv", "run", "--quiet", "--no-python-downloads", "--script"] if hook.endswith(".py") else [BASH]
+    runners = {".py": ["uv", "run", "--quiet", "--no-python-downloads", "--script"], ".js": ["bun", "run"]}
+    runner = runners.get(Path(hook).suffix, [BASH])
     result = subprocess.run(
         [*runner, str(hook_dir / hook)],
         input=json.dumps(
@@ -368,11 +377,13 @@ def stop_hook(hook_dir: Path, hook: str, prompt: str, reply: str, active: bool =
 STOP_HOOK_CASES = [
     ("check-japanese-reply.sh", JAPANESE_REPLY_CASES),
     ("check-unverified-reply.py", UNVERIFIED_REPLY_CASES),
+    ("check-italic-reply.js", ITALIC_REPLY_CASES),
 ]
 
 with tempfile.TemporaryDirectory() as tmp:
     hook_dir = Path(tmp)
     shutil.copy(HOOKS / "python-runner.sh", hook_dir / "python-runner.sh")
+    shutil.copytree(HOOKS / "textlint-rules", hook_dir / "textlint-rules")
 
     for hook, cases in STOP_HOOK_CASES:
         source = ROOT / "dot_claude" / "hooks" / hook

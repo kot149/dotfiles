@@ -89,6 +89,12 @@ runner = "uv-script"
 claude = { event = "Stop" }
 
 [[agent_hooks]]
+name = "check-italic-reply"
+file = "check-italic-reply.js"
+runner = "bun"
+claude = { event = "Stop" }
+
+[[agent_hooks]]
 name = "keep-cache-warm"
 file = "keep-cache-warm.sh"
 runner = "bash"

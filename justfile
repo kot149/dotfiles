@@ -210,10 +210,11 @@ test:
     done
     exit $status
 
-# Test the Japanese writing-style rule
+# Test the writing-style textlint rules
 [group('test')]
 test-textlint:
     bun run tests/textlint-rule-ja-ai-phrasing.js
+    bun run tests/textlint-rule-no-italic.js
 
 # Test third-party skill rev updates
 [group('test')]

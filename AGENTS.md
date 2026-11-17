@@ -143,9 +143,9 @@ opencode's matcher differs from Claude Code's in ways the template depends on:
 
 Every hook registration is one `[[agent_hooks]]` entry in `.chezmoidata/agent-hooks.toml`: the script `file`, its `runner` (`bash`, `uv-script`, `bun`, or `command` for a verbatim command such as `rtk hook claude`), optional `args`, and a `claude` / `codex` table per agent that registers it, holding the event, the optional matcher and any extra handler keys (`timeout`, `statusMessage`, `asyncRewake`). An `opencode = { tools = [...] }` table also runs a PreToolUse guard in opencode (see below). `.chezmoitemplates/agents/hooks.tmpl` turns the entries into each agent's `hooks` object, grouping them by event and matcher in entry order, so both registrations are rendered from the one list. `just hooks-lint` (`scripts/check_agent_hooks.py`, also run by `just test`) checks that every entry's script exists for each agent, that a hook registered for both agents is a one-line include of its body, and that every file in `dot_claude/hooks/` and `dot_codex/hooks/` is registered, except `python-runner.sh`.
 
-A hook registered for both agents has its body in `.chezmoitemplates/agents/` and a one-line `{{ include ... }}` wrapper in `dot_claude/hooks/` and `dot_codex/hooks/`, so there is a single implementation per script. A Claude Code only hook (`rewrite-git-c.sh`, `remind-stop-background.sh`, `check-japanese-reply.sh`, `check-unverified-reply.py`, `keep-cache-warm.sh`) is a plain file in `dot_claude/hooks/`. Two support files are shared the same way but not registered:
+A hook registered for both agents has its body in `.chezmoitemplates/agents/` and a one-line `{{ include ... }}` wrapper in `dot_claude/hooks/` and `dot_codex/hooks/`, so there is a single implementation per script. A Claude Code only hook (`rewrite-git-c.sh`, `remind-stop-background.sh`, `check-japanese-reply.sh`, `check-unverified-reply.py`, `check-italic-reply.js`, `keep-cache-warm.sh`) is a plain file in `dot_claude/hooks/`. These support files are shared the same way but not registered:
 
-- `textlint-rules/textlint-rule-ja-ai-phrasing.js` (the textlint rule `check-writing-style.js` imports) → `~/.claude/hooks/textlint-rules/` and `~/.codex/hooks/textlint-rules/`
+- `textlint-rules/textlint-rule-ja-ai-phrasing.js` and `textlint-rules/textlint-rule-no-italic.js` (the textlint rules `check-writing-style.js` imports; `check-italic-reply.js` applies the second one to the final reply) → `~/.claude/hooks/textlint-rules/` and `~/.codex/hooks/textlint-rules/`
 - `python-runner.sh` (resolves the interpreter for the inline Python parsers: `uv run --script` with `UV_PYTHON_DOWNLOADS=never`, then `python3`, then `python`; with none, it exits 0 so the hook passes the command through; `source`d by the bash hooks) → `~/.claude/hooks/` and `~/.codex/hooks/`
 
 Both registrations are rendered from `.chezmoidata/agent-hooks.toml` by `.chezmoitemplates/agents/hooks.tmpl`, which `.chezmoitemplates/claude/settings.json.tmpl` and `.chezmoitemplates/codex/hooks.json.tmpl` call. Agent-specific details:
@@ -159,10 +159,11 @@ Other tools (e.g. Orca IDE) also write hooks and settings into these files, so t
 `tests/` holds tests for the hooks, the permission lists, the config merge template and the skill rev updater, the parts that carry enough logic to regress. They are plain Bun scripts (not `bun test` files, because `bun test` cannot resolve the versioned import specifiers the hooks pin their dependencies with), a Bash script that pipes Codex `apply_patch`, JSON write and stdin-fed `gh` payloads into `check-writing-style.js`, and plain PEP 723 Python scripts that run the Bash hooks and `chezmoi execute-template` as subprocesses or import the script under test:
 
 ```sh
-bun run tests/textlint-rule-ja-ai-phrasing.js   # the rule behind check-writing-style.js
+bun run tests/textlint-rule-ja-ai-phrasing.js   # the phrasing rule behind check-writing-style.js
+bun run tests/textlint-rule-no-italic.js   # the italic rule behind check-writing-style.js and check-italic-reply.js
 bash tests/writing-style.sh   # apply_patch parsing, JSON writes and gh --input - bodies in check-writing-style.js
 bun run tests/opencode-guards.js   # opencode tool mapping and rtk prefix handling in guards.ts
-uv run --no-python-downloads --script tests/hooks.py   # check-force-push.sh, check-github-api-write.sh, rewrite-git-c.sh, check-japanese-reply.sh and check-unverified-reply.py
+uv run --no-python-downloads --script tests/hooks.py   # check-force-push.sh, check-github-api-write.sh, rewrite-git-c.sh, check-japanese-reply.sh, check-unverified-reply.py and check-italic-reply.js
 uv run --no-python-downloads --script tests/permissions.py   # rendered Claude allow / deny rules, Codex prefix rules and opencode gh api graphql rules
 uv run --no-python-downloads --script tests/merge_config.py   # merge-config.tmpl fixtures
 uv run --no-python-downloads --script tests/update_agent_skills.py   # rev rewrite and grouping in update_agent_skills.py

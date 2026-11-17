@@ -20,6 +20,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import rule from "./textlint-rules/textlint-rule-ja-ai-phrasing.js";
+import italicRule from "./textlint-rules/textlint-rule-no-italic.js";
 
 // Codex edits files by emitting a patch document instead of Claude's Write / Edit calls. Prose lives in the added lines, one "+ text" line per line under a *** Add File / *** Update File header; removed "- text" lines never land, so they are not checked.
 const PATCH_FILE = /^\*{3} (?:Add|Update) File: (.+)$/;
@@ -388,7 +389,10 @@ const lintOptions = (ext) => ({
     { pluginId: "markdown", plugin: markdownPlugin.default ?? markdownPlugin },
     { pluginId: "text", plugin: textPlugin.default ?? textPlugin },
   ],
-  rules: [{ ruleId: "ja-ai-phrasing", rule: rule.linter, options: true }],
+  rules: [
+    { ruleId: "ja-ai-phrasing", rule: rule.linter, options: true },
+    { ruleId: "no-italic", rule: italicRule.linter, options: true },
+  ],
 });
 
 async function findIssues(targets) {
@@ -491,7 +495,7 @@ async function main() {
   const parts = [];
   if (findings.length > 0) {
     parts.push(
-      "曖昧な表現が含まれています。読み手が具体的な動作を想像できる書き方に直してください。\n",
+      "曖昧な表現や紛らわしい書式が含まれています。読み手が具体的な動作を想像できる書き方に直してください。\n",
       `${detail}\n`,
     );
   }
