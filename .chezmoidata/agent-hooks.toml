@@ -89,8 +89,8 @@ runner = "uv-script"
 claude = { event = "Stop" }
 
 [[agent_hooks]]
-name = "check-italic-reply"
-file = "check-italic-reply.js"
+name = "check-reply-format"
+file = "check-reply-format.js"
 runner = "bun"
 claude = { event = "Stop" }
 

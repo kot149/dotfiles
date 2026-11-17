@@ -29,6 +29,12 @@
 .claude/skills/meta-review
 .agents/skills/meta-review
 
+# Reply format Stop hook and italic rule renamed.
+.claude/hooks/check-italic-reply.js
+.claude/hooks/check-italic-heading-reply.js
+.claude/hooks/textlint-rules/textlint-rule-no-italic-heading.js
+.codex/hooks/textlint-rules/textlint-rule-no-italic-heading.js
+
 # A path listed in .chezmoiignore.tmpl never reaches this list: ignoring it
 # drops it from the target state, so chezmoi neither creates nor removes it.
 # An OS-gated target left over from before the gate has to be deleted by hand.

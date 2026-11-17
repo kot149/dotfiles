@@ -270,12 +270,15 @@ UNVERIFIED_REPLY_CASES += [
     ("調べて", "設定画面のタブだけは未実施です。", False),
 ]
 
-# (user prompt, last reply, expected block): the rule itself is covered by tests/textlint-rule-no-italic.js.
-ITALIC_REPLY_CASES: list[tuple[str, str, bool]] = [
+# (user prompt, last reply, expected block): the rules themselves are covered by tests/textlint-rule-no-italic.js and tests/textlint-rule-ja-parallel-list.js.
+REPLY_FORMAT_CASES: list[tuple[str, str, bool]] = [
     ("調べて", "*原因*\n\n設定ファイルの読み込み順です。", True),
     ("調べて", "## 原因\n\n設定ファイルの *読み込み順* です。", True),
     ("調べて", "## 原因\n\n設定ファイルの**読み込み順**です。", False),
     ("translate", "Done. The *order* matters.", False),
+    ("調べて", "- 設定が読まれていません。\n- そのため、再起動しても直りません。", True),
+    ("調べて", "- 設定を追加しました。\n- テストを直しました。\n- READMEの更新", True),
+    ("調べて", "- 設定を追加しました。\n- テストを直しました。", False),
 ]
 
 failures: list[str] = []
@@ -377,7 +380,7 @@ def stop_hook(hook_dir: Path, hook: str, prompt: str, reply: str, active: bool =
 STOP_HOOK_CASES = [
     ("check-japanese-reply.sh", JAPANESE_REPLY_CASES),
     ("check-unverified-reply.py", UNVERIFIED_REPLY_CASES),
-    ("check-italic-reply.js", ITALIC_REPLY_CASES),
+    ("check-reply-format.js", REPLY_FORMAT_CASES),
 ]
 
 with tempfile.TemporaryDirectory() as tmp:

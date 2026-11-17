@@ -20,6 +20,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import rule from "./textlint-rules/textlint-rule-ja-ai-phrasing.js";
+import parallelListRule from "./textlint-rules/textlint-rule-ja-parallel-list.js";
 import italicRule from "./textlint-rules/textlint-rule-no-italic.js";
 
 // Codex edits files by emitting a patch document instead of Claude's Write / Edit calls. Prose lives in the added lines, one "+ text" line per line under a *** Add File / *** Update File header; removed "- text" lines never land, so they are not checked.
@@ -392,6 +393,7 @@ const lintOptions = (ext) => ({
   rules: [
     { ruleId: "ja-ai-phrasing", rule: rule.linter, options: true },
     { ruleId: "no-italic", rule: italicRule.linter, options: true },
+    { ruleId: "ja-parallel-list", rule: parallelListRule.linter, options: true },
   ],
 });
 

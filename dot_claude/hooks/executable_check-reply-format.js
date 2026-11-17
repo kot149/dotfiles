@@ -1,13 +1,14 @@
 #!/usr/bin/env bun
 /**
- * Stop hook: when the final Japanese reply uses italic text anywhere, block the stop and ask Claude to rewrite it without italics.
+ * Stop hook: when the final Japanese reply uses italics or a bullet list whose items are not parallel, block the stop and ask Claude to rewrite the reply.
  *
- * The detection is the textlint rule check-writing-style.js applies to written documents, so replies and files follow the same rule.
+ * The checks are textlint rules check-writing-style.js also applies to written documents, so replies and files follow the same rules.
  */
 import { TextlintKernel } from "@textlint/kernel@15.8.0";
 import markdownPlugin from "@textlint/textlint-plugin-markdown@15.8.0";
 import fs from "node:fs";
-import rule from "./textlint-rules/textlint-rule-no-italic.js";
+import parallelListRule from "./textlint-rules/textlint-rule-ja-parallel-list.js";
+import italicRule from "./textlint-rules/textlint-rule-no-italic.js";
 
 const textOf = (content) => {
   if (typeof content === "string") return content;
@@ -52,18 +53,22 @@ if (!reply.trim()) process.exit(0);
 const { messages } = await new TextlintKernel().lintText(reply, {
   ext: ".md",
   plugins: [{ pluginId: "markdown", plugin: markdownPlugin.default ?? markdownPlugin }],
-  rules: [{ ruleId: "no-italic", rule: rule.linter, options: true }],
+  rules: [
+    { ruleId: "no-italic", rule: italicRule.linter, options: true },
+    { ruleId: "ja-parallel-list", rule: parallelListRule.linter, options: true },
+  ],
 });
 if (messages.length === 0) process.exit(0);
 
-const lines = messages.map((m) => `- 「${reply.slice(...m.range)}」`).join("\n");
+const findings = messages
+  .map((m, i) => `${i + 1}. 該当: 「${reply.slice(...m.range)}」\n   対応: ${m.message}`)
+  .join("\n");
 console.log(
   JSON.stringify({
     decision: "block",
     reason:
-      "直前の返信でイタリックを使っています。日本語の文章ではイタリックを使いません。\n" +
-      `${lines}\n` +
-      "見出しなら `##` などの見出し記法、強調なら太字にするか強調をやめて文で書き、同じ返信を書き直してください。" +
-      "作業やツール呼び出しはやり直さないでください。",
+      "直前の返信の書式に指摘があります。\n" +
+      `${findings}\n` +
+      "指摘に従って同じ返信を書き直してください。作業やツール呼び出しはやり直さないでください。",
   }),
 );

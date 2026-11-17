@@ -215,6 +215,7 @@ test:
 test-textlint:
     bun run tests/textlint-rule-ja-ai-phrasing.js
     bun run tests/textlint-rule-no-italic.js
+    bun run tests/textlint-rule-ja-parallel-list.js
 
 # Test third-party skill rev updates
 [group('test')]
