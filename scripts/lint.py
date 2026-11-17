@@ -5,14 +5,7 @@
 """
 Run shellcheck, ruff, nixfmt and oxlint over the repo.
 
-Templates (.chezmoiscripts/*.sh.tmpl, *.nix.tmpl, the opencode plugin
-*.ts.tmpl) are rendered with `chezmoi execute-template` once per OS in
-RENDER_OS into a temporary directory first; a render identical to an earlier
-OS's is checked once. Rendered paths show as `[<os>]/<source path minus
-.tmpl>`. A tool that is missing or whose `--version` fails is skipped. Exits 1 if a template fails to
-render, nixfmt cannot parse a file, or shellcheck, `ruff check` or oxlint
-reports anything; formatting differences from `ruff format --check` and
-`nixfmt --check` only report.
+Templates (.chezmoiscripts/*.sh.tmpl, *.nix.tmpl, the opencode plugin *.ts.tmpl) are rendered with `chezmoi execute-template` once per OS in RENDER_OS into a temporary directory first; a render identical to an earlier OS's is checked once. Rendered paths show as `[<os>]/<source path minus .tmpl>`. A tool that is missing or whose `--version` fails is skipped. Exits 1 if a template fails to render, nixfmt cannot parse a file, or shellcheck, `ruff check` or oxlint reports anything; formatting differences from `ruff format --check` and `nixfmt --check` only report.
 
 Usage:
   uv run --script scripts/lint.py
@@ -72,8 +65,7 @@ JS_FILES = [
 ]
 JS_TEMPLATES = ["private_dot_config/opencode/plugins/*.ts.tmpl"]
 
-# chezmoi data overrides per rendered OS. kernel.osrelease is set because the
-# templates read it on Linux (WSL detection) and macOS has no such key.
+# chezmoi data overrides per rendered OS. kernel.osrelease is set because the templates read it on Linux (WSL detection) and macOS has no such key.
 RENDER_OS = {
     "darwin": {"chezmoi": {"os": "darwin"}},
     "linux": {"chezmoi": {"os": "linux", "kernel": {"osrelease": "generic"}}},
@@ -182,9 +174,7 @@ def lint_shell(rd: Renderer) -> bool:
         return True
     if not available("shellcheck"):
         return True
-    # No --rcfile: the preinstalled shellcheck on ubuntu-latest (0.9.x) rejects
-    # it. Every shellcheck run executes with cwd=ROOT, so ./.shellcheckrc is
-    # picked up from the working directory anyway.
+    # No --rcfile: the preinstalled shellcheck on ubuntu-latest (0.9.x) rejects it. Every shellcheck run executes with cwd=ROOT, so ./.shellcheckrc is picked up from the working directory anyway.
     rc = ["-S", "warning"]
     files = [*map(rel, sources), *map(str, rd.render(SHELL_TEMPLATES))]
     results = []

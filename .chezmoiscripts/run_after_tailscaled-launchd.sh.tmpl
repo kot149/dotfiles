@@ -2,13 +2,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Self-healing tailscaled LaunchDaemon: runs on every `chezmoi apply`.
-# Fast, sudo-free no-op when the daemon is already healthy; otherwise falls
-# through to scripts/macos-launchd/tailscaled.sh, which rebuilds the plist,
-# (re)bootstraps the job and applies the prefs. This covers the cases the
-# previous run_onchange version missed: a job that was never (re)loaded
-# (e.g. macOS upgrades move the plist back after launchd's boot scan) and
-# a loaded job whose daemon fails to stay up.
+# Self-healing tailscaled LaunchDaemon: runs on every `chezmoi apply`. Fast, sudo-free no-op when the daemon is already healthy; otherwise falls through to scripts/macos-launchd/tailscaled.sh, which rebuilds the plist, (re)bootstraps the job and applies the prefs. This covers the cases the previous run_onchange version missed: a job that was never (re)loaded (e.g. macOS upgrades move the plist back after launchd's boot scan) and a loaded job whose daemon fails to stay up.
 
 PLIST=/Library/LaunchDaemons/com.tailscale.tailscaled.plist
 LABEL=com.tailscale.tailscaled
@@ -22,8 +16,7 @@ if ! command -v tailscaled >/dev/null 2>&1; then
     exit 0
 fi
 
-# Resolve to a root-readable executable, mirroring
-# scripts/macos-launchd/tailscaled.sh.
+# Resolve to a root-readable executable, mirroring scripts/macos-launchd/tailscaled.sh.
 TAILSCALED=$(readlink -f "$(command -v tailscaled)")
 TAILSCALED_DIR=${TAILSCALED%/*}
 if [ -x "$TAILSCALED_DIR/.tailscaled-wrapped" ]; then

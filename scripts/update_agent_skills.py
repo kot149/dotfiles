@@ -5,15 +5,7 @@
 """
 Bump the pinned revs in .chezmoidata/agent-skills.toml.
 
-An entry counts as outdated only when one of its skill directories differs
-between the pinned rev and the upstream default branch HEAD (compared by blob
-SHA), so commits that touch other parts of the repo are ignored.
-Entries that share a `repo` are bumped together, so one repository stays at one
-rev. An entry whose skills are gone at HEAD keeps its rev; `just skills-lint`
-then reports the repo as pinned at several revs until the entry is removed.
-Accepted bumps are committed as one commit touching only the data file.
-Accepted candidates with local skill patches are validated before any rev is written.
-Requires the `gh` CLI, plus Git when patches are present.
+An entry counts as outdated only when one of its skill directories differs between the pinned rev and the upstream default branch HEAD (compared by blob SHA), so commits that touch other parts of the repo are ignored. Entries that share a `repo` are bumped together, so one repository stays at one rev. An entry whose skills are gone at HEAD keeps its rev; `just skills-lint` then reports the repo as pinned at several revs until the entry is removed. Accepted bumps are committed as one commit touching only the data file. Accepted candidates with local skill patches are validated before any rev is written. Requires the `gh` CLI, plus Git when patches are present.
 
 Usage:
   uv run --script scripts/update_agent_skills.py               # review, apply and commit interactively
@@ -122,9 +114,7 @@ def check_entry(index: int, entry: dict, head: str) -> tuple[str, dict | None]:
 
 
 def group_by_repo(updates: list[dict], entries: list[dict], missing: list[dict] | None = None) -> list[dict]:
-    """Merge the updates of one repo into a single update covering every entry
-    of that repo that still exists at HEAD. Entries in missing keep their rev,
-    so accepting such an update leaves the repo pinned at several revs."""
+    """Merge the updates of one repo into a single update covering every entry of that repo that still exists at HEAD. Entries in missing keep their rev, so accepting such an update leaves the repo pinned at several revs."""
     grouped: dict[str, dict] = {}
     for update in updates:
         group = grouped.get(update["repo"])

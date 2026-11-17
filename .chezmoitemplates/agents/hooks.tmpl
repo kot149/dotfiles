@@ -1,10 +1,4 @@
-{{- /* Renders the "hooks" object (event -> [{matcher, hooks: [...]}]) for one agent
-       from .hooks (the .chezmoidata/agent-hooks.toml entries). Called with
-       (dict "agent" "claude"|"codex" "hooks" .agent_hooks "home" <forward-slash home>
-       "git_bash_path" <forward-slash Git Bash, codex only>).
-       Codex handlers also get commandWindows; on Windows (cmd.exe) the bash hooks
-       run through Git Bash (.git_bash_path, default C:/Program Files/Git/bin/bash.exe,
-       overridable per machine in chezmoi.toml [data]). */ -}}
+{{- /* Renders the "hooks" object (event -> [{matcher, hooks: [...]}]) for one agent from .hooks (the .chezmoidata/agent-hooks.toml entries). Called with (dict "agent" "claude"|"codex" "hooks" .agent_hooks "home" <forward-slash home> "git_bash_path" <forward-slash Git Bash, codex only>). Codex handlers also get commandWindows; on Windows (cmd.exe) the bash hooks run through Git Bash (.git_bash_path, default C:/Program Files/Git/bin/bash.exe, overridable per machine in chezmoi.toml [data]). */ -}}
 {{- $agent := .agent -}}
 {{- $gitBash := "C:/Program Files/Git/bin/bash.exe" -}}
 {{- if hasKey . "git_bash_path" -}}

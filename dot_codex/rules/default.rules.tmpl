@@ -1,11 +1,4 @@
-{{- /* Codex prefix_rule patterns match the leading argv tokens exactly. A shared
-       pattern becomes the prefix obtained by reading every `*` as empty, which
-       matches only commands the pattern matches too. Patterns with no trailing
-       `*` (exact commands) and patterns with a lone `*` before the last token
-       have no such prefix and are skipped, so Codex prompts for them.
-       A deny pattern other than `<literal tokens> *` blocks more than its
-       prefix rule does, so an allow prefix that overlaps the deny's literal
-       head (either one starts with the other) is skipped as well. */ -}}
+{{- /* Codex prefix_rule patterns match the leading argv tokens exactly. A shared pattern becomes the prefix obtained by reading every `*` as empty, which matches only commands the pattern matches too. Patterns with no trailing `*` (exact commands) and patterns with a lone `*` before the last token have no such prefix and are skipped, so Codex prompts for them. A deny pattern other than `<literal tokens> *` blocks more than its prefix rule does, so an allow prefix that overlaps the deny's literal head (either one starts with the other) is skipped as well. */ -}}
 {{- $perms := includeTemplate "agents/shell-permissions.tmpl" . | fromJson -}}
 {{- $shadows := dict -}}
 {{- range $perms.deny -}}

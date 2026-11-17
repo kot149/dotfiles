@@ -1,7 +1,6 @@
 { lib, stdenv, fetchFromGitHub, gnumake, zlib }:
 
-# Not in nixpkgs. Build phases mirror the flake.nix upstream ships; bumping the
-# version requires refreshing the hash below.
+# Not in nixpkgs. Build phases mirror the flake.nix upstream ships; bumping the version requires refreshing the hash below.
 stdenv.mkDerivation (finalAttrs: {
   pname = "codebase-memory-mcp";
   version = "0.10.8";
@@ -16,9 +15,7 @@ stdenv.mkDerivation (finalAttrs: {
   nativeBuildInputs = [ gnumake ];
   buildInputs = [ zlib ];
 
-  # scripts/build.sh verifies the compiler with `file`, which fails on Nix
-  # because CC is a bash wrapper. Call make directly; the stdenv already
-  # guarantees the right compiler and target architecture.
+  # scripts/build.sh verifies the compiler with `file`, which fails on Nix because CC is a bash wrapper. Call make directly; the stdenv already guarantees the right compiler and target architecture.
   buildPhase = ''
     runHook preBuild
     make -j$NIX_BUILD_CORES -f Makefile.cbm cbm

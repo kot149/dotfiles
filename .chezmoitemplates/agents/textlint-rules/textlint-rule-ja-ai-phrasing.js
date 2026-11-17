@@ -1,9 +1,7 @@
 /**
- * Flag Claude-flavored Japanese phrasing: vague verbs, test red/green metaphors,
- * English "pin" used as a Japanese verb, and parenthetical notes tacked onto a heading.
+ * Flag Claude-flavored Japanese phrasing: vague verbs, test red/green metaphors, English "pin" used as a Japanese verb, and parenthetical notes tacked onto a heading.
  *
- * Matching is done on the part of speech and the dictionary form of each token,
- * so every conjugation is covered and same-kanji nouns (採用, 転倒) are not.
+ * Matching is done on the part of speech and the dictionary form of each token, so every conjugation is covered and same-kanji nouns (採用, 転倒) are not.
  */
 import { tokenize } from "kuromojin@3.0.1";
 
@@ -57,8 +55,7 @@ const INSUFFICIENT_ADVICE =
   " (例: 「単体テストだけでは足りない」→「単体テストだけではDB接続の失敗を検出できない」)";
 
 /**
- * 「〜では足りない」「〜じゃ足りない」の形。「お金が足りない」のように不足するものを
- * 名指しする形と「取るに足らない」は対象外。
+ * 「〜では足りない」「〜じゃ足りない」の形。「お金が足りない」のように不足するものを名指しする形と「取るに足らない」は対象外。
  */
 const isInsufficient = (tokens, i) => {
   const before = neighbor(tokens, i, -1).surface_form;
@@ -100,8 +97,7 @@ const VERB_RULES = {
       " /「この方針で通す」→「新規ファイルでも同じ命名規則を使う」)",
   },
   壊れる: {
-    // 「ファイルが壊れる」「HDDが壊れる」は字義どおりなので、抽象的な係り元と、
-    // 対象を名指ししない「壊れるもの」「壊れるのは」の形だけを拾う。
+    // 「ファイルが壊れる」「HDDが壊れる」は字義どおりなので、抽象的な係り元と、対象を名指ししない「壊れるもの」「壊れるのは」の形だけを拾う。
     skip: (tokens, i) => !hasVagueSubject(tokens, i) && !isNominalized(tokens, i),
     advice:
       "「壊れる」→ 何がどうなるのかを具体的に書く" +
@@ -151,8 +147,7 @@ const VERB_RULES = {
 };
 
 /**
- * 「要る」の活用形を「必要」に書き換える置換。後ろの助動詞ごと置き換える形は fixEnd を返す。
- * 「要った」のように言い換えが一つに決まらない形は undefined で、指摘だけにする。
+ * 「要る」の活用形を「必要」に書き換える置換。後ろの助動詞ごと置き換える形は fixEnd を返す。「要った」のように言い換えが一つに決まらない形は undefined で、指摘だけにする。
  */
 const fixNeeded = (tokens, i) => {
   const surface = tokens[i].surface_form;
@@ -220,8 +215,7 @@ const NOUN_RULES = {
   },
 };
 
-// 五段動詞の可能形は kuromoji が別の基本形を立てる (採れる, 倒せる) ため、辞書引きの前に
-// 元の動詞へ戻す。一段動詞の可能形は「られる」が別トークンになるので、ここには要らない。
+// 五段動詞の可能形は kuromoji が別の基本形を立てる (採れる, 倒せる) ため、辞書引きの前に元の動詞へ戻す。一段動詞の可能形は「られる」が別トークンになるので、ここには要らない。
 const POTENTIAL_FORMS = {
   採れる: "採る",
   倒せる: "倒す",
@@ -388,8 +382,7 @@ const isLatinCompound = (tokens, i) =>
   [-1, 1].some((step) => LATIN_WORD.test(neighbor(tokens, i, step).surface_form ?? ""));
 
 /**
- * テストの成否を色で言い換えた表現。「グリーン」「レッド」は単独でも拾い、
- * 「緑」「赤」は前にテストの主語があるか後ろに状態の述語が続くときだけ拾う。
+ * テストの成否を色で言い換えた表現。「グリーン」「レッド」は単独でも拾い、「緑」「赤」は前にテストの主語があるか後ろに状態の述語が続くときだけ拾う。
  */
 const isTestColor = (tokens, i) => {
   const token = tokens[i];
@@ -397,8 +390,7 @@ const isTestColor = (tokens, i) => {
   const form = dictionaryForm(token);
   const isMetaphor = COLOR_METAPHORS.has(form.toLowerCase());
   if (!isMetaphor && !COLOR_BASES.has(form)) return false;
-  // 「グリーンのアイコン」「Red Hat」のような色そのもの / 固有名詞の用法を外すため、
-  // 連体修飾と英単語の複合語だけは文脈を見る。
+  // 「グリーンのアイコン」「Red Hat」のような色そのもの / 固有名詞の用法を外すため、連体修飾と英単語の複合語だけは文脈を見る。
   if (isMetaphor && !isAttributive(tokens, i) && !isLatinCompound(tokens, i)) return true;
   const before = tokens.slice(Math.max(0, i - COLOR_SUBJECT_WINDOW), i);
   const after = tokens.slice(i + 1, i + 1 + COLOR_WINDOW);
@@ -416,9 +408,7 @@ const leaningBase = (tokens, i) => {
 };
 
 /**
- * 名詞以外に付く「寄り」。「安全寄り」「「見送り」寄り」のような名詞に付く形は
- * 語として定着しているので対象外で、用言や文を受ける形だけを指摘する。
- * 「歩み寄り」「左寄り」「寄り道」は一語にまとまるので surface が一致しない。
+ * 名詞以外に付く「寄り」。「安全寄り」「「見送り」寄り」のような名詞に付く形は語として定着しているので対象外で、用言や文を受ける形だけを指摘する。「歩み寄り」「左寄り」「寄り道」は一語にまとまるので surface が一致しない。
  */
 const isLeaning = (tokens, i) => {
   if (tokens[i].pos !== "名詞" || tokens[i].surface_form !== "寄り") return false;
@@ -436,8 +426,7 @@ const isQuietAdverb = (tokens, i) => {
 };
 
 /**
- * 「静かに」「黙って」が係る用言の基本形。名詞 + する は名詞側を返す。
- * 目的語や読点を挟む形も拾えるよう、同じ文の中を前から探して最初の一つだけを見る。
+ * 「静かに」「黙って」が係る用言の基本形。名詞 + する は名詞側を返す。目的語や読点を挟む形も拾えるよう、同じ文の中を前から探して最初の一つだけを見る。
  */
 const quietTarget = (tokens, i) => {
   const particle = neighborIndex(tokens, i, 1);

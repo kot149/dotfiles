@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# After a tool starts background work, remind Claude to stop it once its
-# result is no longer needed, so late completion notifications do not keep
-# triggering turns that only repeat the answer.
+# After a tool starts background work, remind Claude to stop it once its result is no longer needed, so late completion notifications do not keep triggering turns that only repeat the answer.
 
 INPUT=$(cat)
 TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""')

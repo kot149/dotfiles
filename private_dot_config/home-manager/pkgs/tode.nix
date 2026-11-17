@@ -23,9 +23,7 @@
 , xorg
 }:
 
-# Not in nixpkgs; upstream ships prebuilt tarballs only (Electron runtime is
-# vendored inside, so a source build is not practical).
-# Bumping the version requires refreshing every hash below.
+# Not in nixpkgs; upstream ships prebuilt tarballs only (Electron runtime is vendored inside, so a source build is not practical). Bumping the version requires refreshing every hash below.
 let
   version = "0.1.13";
 
@@ -87,8 +85,7 @@ stdenv.mkDerivation {
     xorg.libxcb
   ];
 
-  # The vendored Electron keeps its own rpath-less layout; patching the ELF
-  # interpreter is enough, and stripping breaks the ASAR-adjacent binaries.
+  # The vendored Electron keeps its own rpath-less layout; patching the ELF interpreter is enough, and stripping breaks the ASAR-adjacent binaries.
   dontStrip = true;
   autoPatchelfIgnoreMissingDeps = true;
 

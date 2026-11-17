@@ -15,8 +15,7 @@ set -euo pipefail
 SYSTEM_MANAGER_DIR="$HOME/.config/system-manager"
 
 echo "Applying System Manager configuration..."
-# Run the system-manager CLI locked in this flake so the CLI and the modules stay on one rev.
-# stdin is /dev/null so nix skips the flake nixConfig prompt (the cache is already in nix.conf); sudo reads /dev/tty.
+# Run the system-manager CLI locked in this flake so the CLI and the modules stay on one rev. stdin is /dev/null so nix skips the flake nixConfig prompt (the cache is already in nix.conf); sudo reads /dev/tty.
 nix --extra-experimental-features 'nix-command flakes' run --inputs-from "$SYSTEM_MANAGER_DIR" system-manager -- \
   switch --flake "$SYSTEM_MANAGER_DIR" --sudo </dev/null
 {{- end -}}

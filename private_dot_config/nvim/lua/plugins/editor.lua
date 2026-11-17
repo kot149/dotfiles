@@ -23,8 +23,7 @@ return {
       })
     end,
     config = function(_, opts)
-      -- Ghostty が物理 Ctrl+V をブラケットペーストに変換するため、
-      -- neo-tree バッファ上ではブラケットペーストを paste_from_clipboard に転送
+      -- Ghostty が物理 Ctrl+V をブラケットペーストに変換するため、neo-tree バッファ上ではブラケットペーストを paste_from_clipboard に転送
       local orig_paste = vim.paste
       vim.paste = function(lines, phase)
         if vim.bo.filetype == "neo-tree" then

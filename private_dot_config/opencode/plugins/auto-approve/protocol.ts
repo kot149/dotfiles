@@ -1,14 +1,9 @@
 /**
  * Wire contract between the gate (server plugin) and the surfaces (TUI plugin).
  *
- * The TUI reads status, the model catalog and the decision log, flips the
- * gate, pins judge models, and refreshes from the `decision` and `config` events. Every change
- * goes through the global options file, which the gate re-reads before each
- * judged call, so nothing here needs a restart.
+ * The TUI reads status, the model catalog and the decision log, flips the gate, pins judge models, and refreshes from the `decision` and `config` events. Every change goes through the global options file, which the gate re-reads before each judged call, so nothing here needs a restart.
  *
- * Judge model pinning returns a discriminated union: either the stored
- * provider/model pair, or the refusal reason. Keeping the refusal inside the
- * method's own output shape avoids a separate error channel entirely.
+ * Judge model pinning returns a discriminated union: either the stored provider/model pair, or the refusal reason. Keeping the refusal inside the method's own output shape avoids a separate error channel entirely.
  */
 import { Rpc } from "@opencode/plugin/rpc"
 
@@ -38,8 +33,7 @@ export interface GateStatus {
 }
 
 /**
- * One judged call. `unreachable` means the judge could not be consulted and
- * the gate fell back to a human approval prompt instead.
+ * One judged call. `unreachable` means the judge could not be consulted and the gate fell back to a human approval prompt instead.
  */
 export interface GateDecision {
   readonly at: string

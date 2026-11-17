@@ -3,11 +3,7 @@
  *
  *   bun run tests/textlint-rule-ja-ai-phrasing.js
  *
- * The rule is driven through the same TextlintKernel the hook uses, so a passing
- * run means the hook behaves the same way. Assertions are hand-rolled because
- * `bun test` cannot resolve the versioned import specifiers this repo pins
- * dependencies with, and dependencies are installed on demand by Bun, so there
- * is no node_modules to keep in sync.
+ * The rule is driven through the same TextlintKernel the hook uses, so a passing run means the hook behaves the same way. Assertions are hand-rolled because `bun test` cannot resolve the versioned import specifiers this repo pins dependencies with, and dependencies are installed on demand by Bun, so there is no node_modules to keep in sync.
  */
 import { TextlintKernel } from "@textlint/kernel@15.8.0";
 import markdownPlugin from "@textlint/textlint-plugin-markdown@15.8.0";

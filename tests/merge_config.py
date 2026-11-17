@@ -7,15 +7,7 @@ Fixture tests for .chezmoitemplates/agents/merge-config.tmpl.
 
   uv run --no-python-downloads --script tests/merge_config.py
 
-Each directory under tests/fixtures/merge-config/ is one case: managed + current
--> expected, all .json, .toml or .yaml. The template is called with "hooks" true
-unless the case holds an empty no-hooks file. Every case is rendered a second
-time with expected as current, which must give expected again (a re-apply
-changes nothing). Outputs are compared as parsed objects serialized with sorted
-keys, so key order does not matter but list order and value types do. YAML is
-parsed (and serialized) through chezmoi's own fromYaml/toYaml via
-execute-template, so the comparison sees exactly what the template sees without
-adding a PyYAML dependency.
+Each directory under tests/fixtures/merge-config/ is one case: managed + current -> expected, all .json, .toml or .yaml. The template is called with "hooks" true unless the case holds an empty no-hooks file. Every case is rendered a second time with expected as current, which must give expected again (a re-apply changes nothing). Outputs are compared as parsed objects serialized with sorted keys, so key order does not matter but list order and value types do. YAML is parsed (and serialized) through chezmoi's own fromYaml/toYaml via execute-template, so the comparison sees exactly what the template sees without adding a PyYAML dependency.
 """
 import difflib
 import json

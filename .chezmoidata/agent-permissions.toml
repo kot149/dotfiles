@@ -766,9 +766,7 @@ agent_shell_allow = [
   "agent-browser *",
 ]
 
-# package.json / deno.json script names to allow across every JS package manager.
-# The template expands each entry into variants for npm/pnpm/yarn/bun/deno task,
-# including short forms where supported (e.g. `bun test` for `bun run test`).
+# package.json / deno.json script names to allow across every JS package manager. The template expands each entry into variants for npm/pnpm/yarn/bun/deno task, including short forms where supported (e.g. `bun test` for `bun run test`).
 agent_shell_allow_js_scripts = [
   "build",
   "test",
@@ -781,10 +779,7 @@ agent_shell_allow_js_scripts = [
   "typecheck",
 ]
 
-# node_modules `.bin` executables to allow via any JS package runner.
-# The template expands each entry into variants for
-# npx / bunx / bun x / pnpm exec / pnpm dlx / yarn exec / yarn dlx, plus PM
-# shortcuts (e.g. `pnpm vitest`, `bun jest`) and the bare command itself.
+# node_modules `.bin` executables to allow via any JS package runner. The template expands each entry into variants for npx / bunx / bun x / pnpm exec / pnpm dlx / yarn exec / yarn dlx, plus PM shortcuts (e.g. `pnpm vitest`, `bun jest`) and the bare command itself.
 agent_shell_allow_js_bins = [
   "jest",
   "vitest",
@@ -797,9 +792,7 @@ agent_shell_allow_js_bins = [
   "lefthook",
 ]
 
-# Commands with side effects, allowed only where the agent is trusted to run
-# them unattended. Consumed by the opencode template only; Claude Code and
-# Codex keep prompting for these.
+# Commands with side effects, allowed only where the agent is trusted to run them unattended. Consumed by the opencode template only; Claude Code and Codex keep prompting for these.
 agent_shell_allow_write = [
   "herdr agent *",
   "herdr pane split *",
@@ -829,8 +822,7 @@ agent_shell_allow_write = [
   "git stash show *",
 ]
 
-# Allowed commands that should NOT get an auto-generated `rtk <cmd>` variant
-# (e.g. rtk itself — wrapping rtk in rtk is meaningless).
+# Allowed commands that should NOT get an auto-generated `rtk <cmd>` variant (e.g. rtk itself — wrapping rtk in rtk is meaningless).
 agent_shell_allow_no_rtk = [
   "command -v rtk",
   "rtk --help",

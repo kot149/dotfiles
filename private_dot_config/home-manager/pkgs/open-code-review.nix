@@ -1,7 +1,6 @@
 { lib, buildGoModule, fetchFromGitHub, git }:
 
-# Not in nixpkgs; upstream ships an npm wrapper and release binaries only.
-# Bumping the version requires refreshing both hashes below.
+# Not in nixpkgs; upstream ships an npm wrapper and release binaries only. Bumping the version requires refreshing both hashes below.
 buildGoModule (finalAttrs: {
   pname = "open-code-review";
   version = "1.12.0";

@@ -5,11 +5,7 @@
 # ///
 """Copy the whole output of a command run in a Herdr pane to the clipboard.
 
-Herdr carries no shell-integration command marks: OSC 133 is consumed by the
-terminal emulator and does not survive `herdr pane read`. Command blocks are
-therefore delimited by the shell prompt itself. A prompt line that still has
-text after the marker is a command that ran, and its output reaches to the
-next prompt line.
+Herdr carries no shell-integration command marks: OSC 133 is consumed by the terminal emulator and does not survive `herdr pane read`. Command blocks are therefore delimited by the shell prompt itself. A prompt line that still has text after the marker is a command that ran, and its output reaches to the next prompt line.
 """
 
 from __future__ import annotations
@@ -146,8 +142,7 @@ def target_pane() -> str:
 
 def read_blocks(binary: str, pane: str, config: Config) -> list[Block]:
     """Return every command block visible in the pane, oldest first."""
-    # recent-unwrapped reaches into the scrollback and rejoins soft-wrapped
-    # rows, so an output taller or wider than the pane is copied intact.
+    # recent-unwrapped reaches into the scrollback and rejoins soft-wrapped rows, so an output taller or wider than the pane is copied intact.
     stdout = run_herdr(
         binary, "pane", "read", pane,
         "--source", "recent-unwrapped", "--lines", str(config.max_lines), "--format", "text",
@@ -160,8 +155,7 @@ def read_blocks(binary: str, pane: str, config: Config) -> list[Block]:
     blocks = []
     for position, start in enumerate(prompts):
         command = prompt.sub("", lines[start], count=1).strip()
-        # A bare prompt line is the idle prompt waiting for input, not a
-        # command that ran.
+        # A bare prompt line is the idle prompt waiting for input, not a command that ran.
         if not command:
             continue
         end = prompts[position + 1] if position + 1 < len(prompts) else len(lines)
@@ -207,9 +201,7 @@ def copy_command(binary: str, config: Config, nth: int) -> None:
 def pick_command(binary: str) -> None:
     """Open the picker in an overlay pane over the pane being read."""
     pane = target_pane()
-    # Overlay panes always cover the active pane and reject --placement and
-    # --workspace; the manifest sets the placement and the pane to read
-    # travels in the environment.
+    # Overlay panes always cover the active pane and reject --placement and --workspace; the manifest sets the placement and the pane to read travels in the environment.
     run_herdr(
         binary, "plugin", "pane", "open",
         "--plugin", plugin_id(), "--entrypoint", PICKER_PANE_ID,

@@ -2,21 +2,15 @@
 /**
  * Block Claude-flavored Japanese phrasing before it lands in a document, a ticket, or a PR.
  *
- * Covers Markdown and plain-text writes, the Japanese string values of JSON writes,
- * Jira / Confluence create-update-comment calls, and the `gh` commands that post
- * issue / PR / release bodies and comments.
+ * Covers Markdown and plain-text writes, the Japanese string values of JSON writes, Jira / Confluence create-update-comment calls, and the `gh` commands that post issue / PR / release bodies and comments.
  *
- * Every hit is denied rather than handed to the permission prompt, so the advice
- * always reaches the model. Repeating the identical call is the way to override a
- * hit that is a false positive or a deliberate choice.
+ * Every hit is denied rather than handed to the permission prompt, so the advice always reaches the model. Repeating the identical call is the way to override a hit that is a false positive or a deliberate choice.
  *
- * The rules themselves live in ./textlint-rules/ as a plain textlint rule, so the
- * same checks run from the CLI:
+ * The rules themselves live in ./textlint-rules/ as a plain textlint rule, so the same checks run from the CLI:
  *
  *   bunx --bun textlint --no-textlintrc --rulesdir ~/.claude/hooks/textlint-rules doc.md
  *
- * Dependencies are pinned in the import specifiers and installed on demand by
- * Bun, so there is no node_modules to keep in sync.
+ * Dependencies are pinned in the import specifiers and installed on demand by Bun, so there is no node_modules to keep in sync.
  */
 import { TextlintKernel } from "@textlint/kernel@15.8.0";
 import markdownPlugin from "@textlint/textlint-plugin-markdown@15.8.0";
@@ -27,10 +21,7 @@ import os from "node:os";
 import path from "node:path";
 import rule from "./textlint-rules/textlint-rule-ja-ai-phrasing.js";
 
-// Codex edits files by emitting a patch document instead of Claude's Write / Edit
-// calls. Prose lives in the added lines, one "+ text" line per line under a
-// *** Add File / *** Update File header; removed "- text" lines never land, so
-// they are not checked.
+// Codex edits files by emitting a patch document instead of Claude's Write / Edit calls. Prose lives in the added lines, one "+ text" line per line under a *** Add File / *** Update File header; removed "- text" lines never land, so they are not checked.
 const PATCH_FILE = /^\*{3} (?:Add|Update) File: (.+)$/;
 // A renamed file is judged by its destination path.
 const PATCH_MOVE = /^\*{3} Move to: (.+)$/;
@@ -57,8 +48,7 @@ const MCP_WRITE_OP = /(?:create|edit|update|add|post|comment)/i;
 const FILE_FLAGS = ["--body-file", "-F", "--input"];
 // gh fields take name=value, and read the value from a file when it is written name=@path.
 const FIELD_FLAGS = ["-f", "-F", "--field", "--raw-field"];
-// `-f body="$(cat reply.md)"` hands gh the prose without ever putting it on the command line,
-// so the path inside the substitution is the only thing left to scan.
+// `-f body="$(cat reply.md)"` hands gh the prose without ever putting it on the command line, so the path inside the substitution is the only thing left to scan.
 const SUBSTITUTED_PATH = /\$\(\s*(?:cat\s+|<\s*)([^)]+?)\s*\)|`\s*cat\s+([^`]+?)\s*`/g;
 // Leading VAR=value assignments, so a path built from one can still be resolved.
 const ASSIGNMENT = /(?:^|[\s;&|])([A-Za-z_]\w*)=("[^"]*"|'[^']*'|[^\s;&|]*)/g;
@@ -109,13 +99,11 @@ const flagValue = (words, i, flag) => {
 /** The path in a `name=@path` field value, which gh reads the field from. */
 const fieldFile = (value) => value?.match(/^[^=]*=@(.+)$/)?.[1] ?? null;
 
-// `-F key=value` is a field for gh api and a file for gh pr / issue; the `key=@path`
-// form is already resolved by fieldFile, so a leftover name=value is never a path.
+// `-F key=value` is a field for gh api and a file for gh pr / issue; the `key=@path` form is already resolved by fieldFile, so a leftover name=value is never a path.
 const FIELD_SPEC = /^[A-Za-z_][\w.[\]-]*=/;
 
 /**
- * Drop heredoc bodies. A heredoc carries data, not command words: a script written with
- * one can mention `--body-file path` without this call ever reading that path.
+ * Drop heredoc bodies. A heredoc carries data, not command words: a script written with one can mention `--body-file path` without this call ever reading that path.
  */
 function stripHeredocBodies(command) {
   const kept = [];
@@ -180,8 +168,7 @@ function jqFiles(args) {
 }
 
 /**
- * The files whose content can reach gh on stdin: what jq and cat read and what is
- * redirected in with `<`. A body passed as `--input -` is built from these.
+ * The files whose content can reach gh on stdin: what jq and cat read and what is redirected in with `<`. A body passed as `--input -` is built from these.
  */
 function stdinPaths(words) {
   const paths = commandArgs(words, "jq").flatMap(jqFiles);
@@ -270,9 +257,7 @@ const readFrom = (bases, target) => {
 };
 
 /**
- * Pull in bodies passed by path, looking each path up in every directory the command
- * runs in. Paths that stay unreadable are reported so the call can be denied instead
- * of passing unchecked.
+ * Pull in bodies passed by path, looking each path up in every directory the command runs in. Paths that stay unreadable are reported so the call can be denied instead of passing unchecked.
  */
 function readBodyFiles(command, cwd) {
   const variables = shellVariables(command);
@@ -298,11 +283,7 @@ function collectStrings(value) {
 /**
  * The prose a body file carries, as separate texts.
  *
- * A JSON body holds its prose in string values, and the punctuation around them belongs
- * to the format rather than to the author. Read as one Markdown document, those braces
- * and quotes pair up with the backticks inside the prose, and a review payload of a few
- * hundred lines hides most of its sentences in phantom code spans. Splitting on the
- * string values gives every sentence a scope of its own.
+ * A JSON body holds its prose in string values, and the punctuation around them belongs to the format rather than to the author. Read as one Markdown document, those braces and quotes pair up with the backticks inside the prose, and a review payload of a few hundred lines hides most of its sentences in phantom code spans. Splitting on the string values gives every sentence a scope of its own.
  */
 function bodyProse(text) {
   try {
@@ -341,8 +322,7 @@ function fileProse(filePath, text) {
 }
 
 /**
- * Return the texts worth scanning for this call, and the body paths that could not be
- * read. Both are empty when the tool is out of scope.
+ * Return the texts worth scanning for this call, and the body paths that could not be read. Both are empty when the tool is out of scope.
  */
 function targetTexts(toolName, toolInput, cwd) {
   const asMarkdown = (texts) => texts.map((text) => ({ text, ext: ".md" }));
@@ -368,8 +348,7 @@ function targetTexts(toolName, toolInput, cwd) {
     return scan(asMarkdown(collectStrings(toolInput)));
   }
   if (toolName === "apply_patch") {
-    // Codex edits files by emitting a patch document instead of Claude's Write /
-    // Edit calls. Prose lives in the added lines under a file header.
+    // Codex edits files by emitting a patch document instead of Claude's Write / Edit calls. Prose lives in the added lines under a file header.
     const targets = [];
     let currentFile = null;
     let currentText = "";
@@ -431,9 +410,7 @@ async function findIssues(targets) {
   return findings;
 }
 
-// A denied call arms a one-shot pass keyed on its exact content, so repeating the
-// same call goes through. That keeps the advice reaching the model on the first
-// try while leaving a way past a false positive.
+// A denied call arms a one-shot pass keyed on its exact content, so repeating the same call goes through. That keeps the advice reaching the model on the first try while leaving a way past a false positive.
 const OVERRIDE_DIR = path.join(os.homedir(), ".cache", "claude-writing-style");
 const OVERRIDE_TTL_MS = 600_000;
 

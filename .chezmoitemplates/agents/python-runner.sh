@@ -1,6 +1,4 @@
-# Resolve the Python used to run the inline parsers, as a PYTHON array.
-# A parser whose output is captured runs from a temporary file, because a
-# heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash):
+# Resolve the Python used to run the inline parsers, as a PYTHON array. A parser whose output is captured runs from a temporary file, because a heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash):
 #   PARSE_TMP=$(mktemp)
 #   trap 'rm -f "$PARSE_TMP"' EXIT
 #   cat >"$PARSE_TMP" <<'PYEOF'
@@ -10,16 +8,9 @@
 # A parser at the top level (output not captured) keeps reading from stdin:
 #   "${PYTHON[@]}" - "$ARG" <<'PYEOF'
 #
-# uv comes first for portability: Windows has no /usr/bin/python3, and a bare
-# python3 there may be absent or a Store stub. --script runs a standalone stdin
-# script, so uv never looks for a surrounding project and never triggers an
-# implicit sync. UV_PYTHON_DOWNLOADS=never keeps a missing interpreter from
-# turning into a multi-minute download inside a hook that runs on every command.
-# --python-preference only-system would do the same but costs ~0.2s per launch,
-# which is more than the parser itself.
+# uv comes first for portability: Windows has no /usr/bin/python3, and a bare python3 there may be absent or a Store stub. --script runs a standalone stdin script, so uv never looks for a surrounding project and never triggers an implicit sync. UV_PYTHON_DOWNLOADS=never keeps a missing interpreter from turning into a multi-minute download inside a hook that runs on every command. --python-preference only-system would do the same but costs ~0.2s per launch, which is more than the parser itself.
 #
-# Sourcing this exits the calling hook when no interpreter is available, which
-# lets the hook pass the command through instead of blocking it.
+# Sourcing this exits the calling hook when no interpreter is available, which lets the hook pass the command through instead of blocking it.
 
 # shellcheck disable=SC2034 # PYTHON is used by the sourcing hook
 if command -v uv >/dev/null 2>&1 &&

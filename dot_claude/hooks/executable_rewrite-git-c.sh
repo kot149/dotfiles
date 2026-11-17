@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# Rewrite `git -C <path> <args>` into `(cd <path> && git <args>)` so the
-# permission rules for plain `git <args>` apply, then hand the result to rtk.
-# Wildcard rules like `git -C * status*` would also approve `-c`/`--exec-path`
-# inserted after the path, so they are deliberately not in the allow list.
+# Rewrite `git -C <path> <args>` into `(cd <path> && git <args>)` so the permission rules for plain `git <args>` apply, then hand the result to rtk. Wildcard rules like `git -C * status*` would also approve `-c`/`--exec-path` inserted after the path, so they are deliberately not in the allow list.
 
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
@@ -19,8 +16,7 @@ fi
 
 source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
 
-# A heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash), so the
-# parser runs from a temporary file written by a top-level heredoc instead.
+# A heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash), so the parser runs from a temporary file written by a top-level heredoc instead.
 PARSE_TMP=$(mktemp)
 trap 'rm -f "$PARSE_TMP"' EXIT
 cat >"$PARSE_TMP" <<'PYEOF'
@@ -35,8 +31,7 @@ if "`" in command or "$(" in command or "<<" in command:
 
 OPS = ("&&", "||", "|&", ";", "|", "&", "\n", "(", ")")
 
-# Split at top-level operators, recording whether each segment has an
-# unquoted redirect (a redirect target would resolve under the new cwd).
+# Split at top-level operators, recording whether each segment has an unquoted redirect (a redirect target would resolve under the new cwd).
 parts = []
 buf, redirect, quote, i = "", False, None, 0
 while i < len(command):

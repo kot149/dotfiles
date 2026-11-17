@@ -186,19 +186,11 @@ in
       };
     };
 
-    # nixpkgs' rustup patchelf's every toolchain binary under ~/.rustup to a Nix
-    # glibc loader, and wraps lld in a script that calls back into the rustup
-    # package which installed it. Those paths live outside the store, so nothing
-    # keeps them alive once the generation that referenced them is gone
-    # (programs.nh.clean keeps only 30d / 1 generation), and then cargo fails
-    # with "No such file or directory" or "ld-wrapper.sh: No such file or
-    # directory". Repair both on every activation.
+    # nixpkgs' rustup patchelf's every toolchain binary under ~/.rustup to a Nix glibc loader, and wraps lld in a script that calls back into the rustup package which installed it. Those paths live outside the store, so nothing keeps them alive once the generation that referenced them is gone (programs.nh.clean keeps only 30d / 1 generation), and then cargo fails with "No such file or directory" or "ld-wrapper.sh: No such file or directory". Repair both on every activation.
     home.activation.repairRustupToolchains = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
       lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         if [ -d "$HOME/.rustup/toolchains" ]; then
-          # Missing interpreter: use the system loader, which cannot be
-          # collected. A Nix loader only works through the rustup proxy, since
-          # the toolchain also needs zlib from Nix.
+          # Missing interpreter: use the system loader, which cannot be collected. A Nix loader only works through the rustup proxy, since the toolchain also needs zlib from Nix.
           loader=/lib64/ld-linux-x86-64.so.2
           [ -e "$loader" ] || loader=${pkgs.stdenv.cc.bintools.dynamicLinker}
           ${pkgs.findutils}/bin/find "$HOME/.rustup/toolchains" -type f -perm -u+x |

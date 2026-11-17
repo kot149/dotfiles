@@ -5,14 +5,9 @@
 """
 Render the agent config templates and check that the output parses.
 
-Each target is rendered with `chezmoi cat` (modify_ templates merge the live
-file in $HOME) and parsed as JSON / TOML / Nix. Exits 1 if any target fails
-to render or parse. Read-only: it never writes to the repository or to $HOME.
+Each target is rendered with `chezmoi cat` (modify_ templates merge the live file in $HOME) and parsed as JSON / TOML / Nix. Exits 1 if any target fails to render or parse. Read-only: it never writes to the repository or to $HOME.
 
-With --destination, the targets are read from a directory chezmoi already
-applied into (see `just ci-render`) instead, for the OS given with --os; a
-missing target fails unless .chezmoiignore drops it on that OS, and the
-non-target templates are not checked.
+With --destination, the targets are read from a directory chezmoi already applied into (see `just ci-render`) instead, for the OS given with --os; a missing target fails unless .chezmoiignore drops it on that OS, and the non-target templates are not checked.
 
 Usage:
   uv run --script scripts/render_check.py
@@ -88,8 +83,7 @@ def parse_error(text: str, kind: str) -> str | None:
         if r.returncode != 0:
             return f"nix parse error: {r.stderr.strip()}"
     if kind == "yaml":
-        # No PyYAML on purpose: parse through chezmoi's own fromYaml, the same
-        # function the merge-config template uses, via a throwaway driver.
+        # No PyYAML on purpose: parse through chezmoi's own fromYaml, the same function the merge-config template uses, via a throwaway driver.
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "in.yaml"
             path.write_text(text, encoding="utf-8")
@@ -151,8 +145,7 @@ def main() -> int:
         if reason:
             print(f"SKIP {target}: {reason}")
             continue
-        # Decide by exit code only: chezmoi warns on stderr with exit 0 when
-        # the config template is newer than the generated config.
+        # Decide by exit code only: chezmoi warns on stderr with exit 0 when the config template is newer than the generated config.
         r = run([*chezmoi, "cat", str(home / target)])
         error = r.stderr.strip() if r.returncode != 0 else parse_error(r.stdout, kind)
         ok &= report(target, error)

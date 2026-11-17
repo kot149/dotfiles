@@ -7,8 +7,7 @@ Tests for dot_claude/executable_file-suggestion.sh, Claude Code's @-mention pick
 
   uv run --no-python-downloads --script tests/file_suggestion.py
 
-Runs the script in a scratch tree with its own $HOME and cache. Skipped when fd,
-fzf or jq is missing.
+Runs the script in a scratch tree with its own $HOME and cache. Skipped when fd, fzf or jq is missing.
 """
 import json
 import os

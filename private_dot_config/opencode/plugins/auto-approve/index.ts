@@ -1,34 +1,21 @@
 /**
  * auto-approve — an LLM gate for OpenCode v2's auto-approved actions.
  *
- * OpenCode v2 resolves every action its static permission rules allow; this
- * server plugin hooks the `permission.evaluate` event and sends each such
- * call to a judge model before it can run:
+ * OpenCode v2 resolves every action its static permission rules allow; this server plugin hooks the `permission.evaluate` event and sends each such call to a judge model before it can run:
  *
  * - judge allow → the call proceeds silently
  * - judge block → the agent sees a tool error and must change course
  * - judge unreachable → the gate opens a prompt for the human (fail closed)
  *
- * This is our own implementation, written against the documented plugin
- * interfaces (the permission evaluate hook, the model domain, server RPC,
- * and the one-shot session generate endpoint). It is not derived from any
- * other plugin's code.
+ * This is our own implementation, written against the documented plugin interfaces (the permission evaluate hook, the model domain, server RPC, and the one-shot session generate endpoint). It is not derived from any other plugin's code.
  *
  * How judging works:
- * - The judge sees only the pending call plus the human user's own messages,
- *   never agent reasoning or tool output, so nothing sensitive moves beyond
- *   the transcript filter.
- * - Two stages by default: a fast first pass, and a re-examination only for
- *   calls the first pass wants to block.
- * - Identical call+resources pairs reuse the turn's first verdict, so a
- *   stubborn retry loop does not spend a judgement per attempt. A new user
- *   message resets the turn: cache, block counters, everything.
- * - Every block bumps the turn counters; passing either configured threshold
- *   reopens a human prompt instead of blocking blind.
+ * - The judge sees only the pending call plus the human user's own messages, never agent reasoning or tool output, so nothing sensitive moves beyond the transcript filter.
+ * - Two stages by default: a fast first pass, and a re-examination only for calls the first pass wants to block.
+ * - Identical call+resources pairs reuse the turn's first verdict, so a stubborn retry loop does not spend a judgement per attempt. A new user message resets the turn: cache, block counters, everything.
+ * - Every block bumps the turn counters; passing either configured threshold reopens a human prompt instead of blocking blind.
  *
- * Options are read before every judged call from `auto-approve.json` (global
- * and per-project), so edits and TUI commands take effect immediately.
- * `judge` / `judge2` unset means the session's default model.
+ * Options are read before every judged call from `auto-approve.json` (global and per-project), so edits and TUI commands take effect immediately. `judge` / `judge2` unset means the session's default model.
  */
 import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { homedir } from "node:os"
@@ -247,12 +234,7 @@ VERDICT: allow   (or VERDICT: block)${stageNote}`
 }
 
 /**
- * Judge generate calls run through the server's one-shot `/generate`
- * endpoint. `ctx.generate.text` reaches the provider with the bare model key
- * and the opencode zen public lane answers FreeUsageLimitError 429 even
- * while session-driven calls work; this route rides the same provider client
- * as regular turns. Basic auth, username `opencode`, password from the
- * service registration file.
+ * Judge generate calls run through the server's one-shot `/generate` endpoint. `ctx.generate.text` reaches the provider with the bare model key and the opencode zen public lane answers FreeUsageLimitError 429 even while session-driven calls work; this route rides the same provider client as regular turns. Basic auth, username `opencode`, password from the service registration file.
  */
 async function judgeGenerate(
   sessionID: string,
@@ -358,9 +340,7 @@ export default Plugin.define({
 
     const recent: GateDecision[] = []
     /**
-     * Decision records must outlive the instance that judged them: plugin
-     * instances are location-scoped, so the TUI's decisions query can land on
-     * a different one. The shared state file is the source of truth.
+     * Decision records must outlive the instance that judged them: plugin instances are location-scoped, so the TUI's decisions query can land on a different one. The shared state file is the source of truth.
      */
     const stateDir = path.join(process.env.XDG_STATE_HOME ?? path.join(homedir(), ".local", "state"), "opencode", "auto-approve")
     const decisionsFile = path.join(stateDir, "decisions.jsonl")
@@ -560,8 +540,7 @@ export default Plugin.define({
       }
 
       try {
-        // Subagent task prompts are written by the model, so nothing inside a
-        // subagent session can authorize destructive work.
+        // Subagent task prompts are written by the model, so nothing inside a subagent session can authorize destructive work.
         if (options.subagents === "ask") {
           const session = asRecord(await anyCtx.session.get({ sessionID: review.sessionID })) as SessionRecord
           if (session.parentID !== undefined) {

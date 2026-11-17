@@ -7,14 +7,9 @@ Tests for the Bash allow / deny rules rendered from .chezmoidata/agent-permissio
 
   uv run --no-python-downloads --script tests/permissions.py
 
-Renders the Claude Code settings template and matches commands against its
-Bash(...) rules, treating `*` as any run of characters (spaces and newlines
-included). Approximates Claude Code's matcher; it does not model its prefix rules.
+Renders the Claude Code settings template and matches commands against its Bash(...) rules, treating `*` as any run of characters (spaces and newlines included). Approximates Claude Code's matcher; it does not model its prefix rules.
 
-Also renders the Codex rules and matches commands against their prefix_rule
-patterns as argv prefixes, checking that Codex never blocks or allows more than
-the Claude rules do, and evaluates the opencode v2 permission array for the
-checks that differ there.
+Also renders the Codex rules and matches commands against their prefix_rule patterns as argv prefixes, checking that Codex never blocks or allows more than the Claude rules do, and evaluates the opencode v2 permission array for the checks that differ there.
 """
 import json
 import re
@@ -63,8 +58,7 @@ for line in render(CODEX_TEMPLATE).splitlines():
 
 
 def opencode_regex(pattern: str) -> re.Pattern[str]:
-    """opencode v2 wildcard match: `*` is any run of characters, `?` is exactly
-    one character, and a trailing ` *` (shell resources) is `( .*)?`."""
+    """opencode v2 wildcard match: `*` is any run of characters, `?` is exactly one character, and a trailing ` *` (shell resources) is `( .*)?`."""
     optional = pattern.endswith(" *")
     parts = [re.sub(r"\?", ".", re.escape(part)) for part in pattern.removesuffix(" *").split("*")]
     return re.compile("^" + ".*".join(parts) + ("( .*)?" if optional else "") + "$", re.DOTALL)
@@ -77,8 +71,7 @@ OPENCODE_RULES = [
 
 
 def opencode_action(action: str, resource: str) -> str:
-    """opencode's decision for one resource: the last matching rule wins, and
-    opencode's built-in base policy resolves anything unmatched to allow."""
+    """opencode's decision for one resource: the last matching rule wins, and opencode's built-in base policy resolves anything unmatched to allow."""
     matching = [
         effect
         for rule_action, regex, effect in OPENCODE_RULES
@@ -193,8 +186,7 @@ NOT_ALLOWED = [
     "xxd f out",
 ]
 
-# Commands Claude denies through a mid-pattern `*`, which Codex cannot block,
-# so it must not auto-approve them either.
+# Commands Claude denies through a mid-pattern `*`, which Codex cannot block, so it must not auto-approve them either.
 CODEX_NOT_ALLOWED = [
     "find . -exec rm {} \\;",
     "find . -delete",
@@ -406,9 +398,7 @@ for group, check, cases, expected in (
         if check(cmd) is not expected:
             failures.append(f"{group}: {cmd}")
 
-# opencode v2: every action defaults to allow and the auto-approve plugin's LLM
-# judge decides, so the only hand-written rules are the shared deny list and
-# the read rules below; GraphQL mutations are judged, not prompted.
+# opencode v2: every action defaults to allow and the auto-approve plugin's LLM judge decides, so the only hand-written rules are the shared deny list and the read rules below; GraphQL mutations are judged, not prompted.
 for action, resource, expected in (
     ("shell", "git status", "allow"),
     ("shell", "gh api rate_limit", "allow"),
@@ -431,8 +421,7 @@ for cmd in DENIED:
     if opencode_action("shell", cmd) != "deny":
         failures.append(f"opencode deny: {cmd}: expected deny, got {opencode_action('shell', cmd)}")
 
-# Commands that may prompt elsewhere must not be hard-blocked there: with the
-# plugin judging, "allow" is not silent anyway.
+# Commands that may prompt elsewhere must not be hard-blocked there: with the plugin judging, "allow" is not silent anyway.
 for cmd in NOT_DENIED:
     checks += 1
     if opencode_action("shell", cmd) == "deny":

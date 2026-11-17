@@ -3,13 +3,9 @@
 # dependencies = []
 # ///
 """
-Report drift this repo cannot catch on apply: ignore entries with no source
-file, run_onchange scripts that stopped hashing their Nix sources, missing
-tools, Codex hooks with no trust entry or possibly stale trust, and
-unmanaged skill directories.
+Report drift this repo cannot catch on apply: ignore entries with no source file, run_onchange scripts that stopped hashing their Nix sources, missing tools, Codex hooks with no trust entry or possibly stale trust, and unmanaged skill directories.
 
-Prints one OK / WARN / FAIL line per finding and exits 1 if any line is FAIL.
-Read-only: it never writes to the repository or to $HOME.
+Prints one OK / WARN / FAIL line per finding and exits 1 if any line is FAIL. Read-only: it never writes to the repository or to $HOME.
 
 Usage:
   uv run --script scripts/doctor.py
@@ -27,8 +23,7 @@ import tomllib
 from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parent.parent
-# Unprefixed root entries that are repo-only. chezmoi already skips source
-# entries starting with ".", so those need no listing here.
+# Unprefixed root entries that are repo-only. chezmoi already skips source entries starting with ".", so those need no listing here.
 REPO_ONLY = {".pre-commit-config.yaml", "README.md", "AGENTS.md", "scripts", "tests", "justfile", "ruff.toml"}
 # (run_onchange script, glob its hash comments must range over)
 HASH_GLOBS = [
@@ -234,8 +229,7 @@ def check_codex() -> None:
         )
     if disabled:
         report("WARN", "codex", f"disabled hooks: {', '.join(disabled)}")
-    # Codex hashes only the command for this OS, so a newer hooks.json may
-    # still be trusted (e.g. after a commandWindows-only edit).
+    # Codex hashes only the command for this OS, so a newer hooks.json may still be trusted (e.g. after a commandWindows-only edit).
     stale = config_path.exists() and hooks_path.stat().st_mtime > config_path.stat().st_mtime
     if stale:
         report("WARN", "codex", "hooks.json is newer than config.toml; Codex may ask to re-trust hooks on next launch")

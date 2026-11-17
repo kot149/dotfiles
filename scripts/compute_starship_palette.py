@@ -6,15 +6,12 @@ Design:
 - Dark-text segments (macos_bg): L=0.80, C=0.02.
 - Neutrals (cmd_bg, bun_bg): C=0.00, varying L.
 - Hue assignment driven by color-theory roles:
-    * Cool slate anchor (h=250) for system/utility (os, time, cmd_duration,
-      powershell, zsh, windows, python — Python brand is also blue).
-    * Warm complement (h=50-70) for directory and bash — opposite the slate
-      anchor across the wheel, creating dominant contrast axis.
+    * Cool slate anchor (h=250) for system/utility (os, time, cmd_duration, powershell, zsh, windows, python — Python brand is also blue).
+    * Warm complement (h=50-70) for directory and bash — opposite the slate anchor across the wheel, creating dominant contrast axis.
     * Bridge purple (h=300) for git — analogous between blue and red.
     * Green (h=145) for node — triadic w.r.t. the blue/orange axis.
     * Brand-locked hues for ubuntu (40), debian (20), rust (35), status (25).
-- Variants (powershell darker, bash darker, status more saturated) shift
-  L or C from the base while keeping hue.
+- Variants (powershell darker, bash darker, status more saturated) shift L or C from the base while keeping hue.
 """
 import math
 
@@ -60,10 +57,7 @@ L_NEUT = 0.52   # neutral gray utilities
 
 # (slot, L, C, hue, note)
 PALETTE = [
-    # Monochromatic blue palette — all hues confined to h ∈ [225, 280].
-    # Differentiation comes from L (lightness hierarchy) and small hue
-    # shifts within the blue family (cyan-blue 225 ↔ slate 250 ↔
-    # violet-blue 280).
+    # Monochromatic blue palette — all hues confined to h ∈ [225, 280]. Differentiation comes from L (lightness hierarchy) and small hue shifts within the blue family (cyan-blue 225 ↔ slate 250 ↔ violet-blue 280).
 
     # System anchor — near-neutral cool gray-blue
     ("os_bg",           L_TEXT, 0.03,   245,  "neutral cool gray-blue"),

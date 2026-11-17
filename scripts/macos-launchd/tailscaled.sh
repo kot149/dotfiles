@@ -3,8 +3,7 @@ set -eu
 
 PLIST=/Library/LaunchDaemons/com.tailscale.tailscaled.plist
 LABEL=com.tailscale.tailscaled
-# Resolve to a root-readable executable. ~/.nix-profile lives under the
-# FileVault-encrypted user home, and the Nix entrypoint is a shell wrapper.
+# Resolve to a root-readable executable. ~/.nix-profile lives under the FileVault-encrypted user home, and the Nix entrypoint is a shell wrapper.
 TAILSCALED=$(readlink -f "$(command -v tailscaled)")
 TAILSCALED_DIR=${TAILSCALED%/*}
 if [ -x "$TAILSCALED_DIR/.tailscaled-wrapped" ]; then
@@ -44,8 +43,7 @@ sudo tee "$PLIST" >/dev/null <<EOF
 EOF
 
 sudo launchctl bootout system/"$LABEL" 2>/dev/null || true
-# bootout returns before the job is gone; bootstrapping it then fails with
-# "5: Input/output error".
+# bootout returns before the job is gone; bootstrapping it then fails with "5: Input/output error".
 i=0
 while launchctl print system/"$LABEL" >/dev/null 2>&1 && [ "$i" -lt 50 ]; do
     sleep 0.2
@@ -60,8 +58,7 @@ else
     STATE=$(printf '%s' "$STATUS" | sed -n 's/.*"BackendState": *"\([^"]*\)".*/\1/p' | head -n 1)
 fi
 
-# tailscale up fails when other preferences differ from the defaults, so it is
-# only used for the first login; tailscale set changes just the named ones.
+# tailscale up fails when other preferences differ from the defaults, so it is only used for the first login; tailscale set changes just the named ones.
 if [ "$STATE" = NeedsLogin ]; then
     tailscale up --ssh --accept-routes
 else

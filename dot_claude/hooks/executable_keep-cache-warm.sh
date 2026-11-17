@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 # Keep the 1h prompt cache warm while the session sits idle.
 #
-# Stop (asyncRewake): wait KEEPALIVE_DELAY seconds in the background. If the
-# transcript has not grown in the meantime, exit 2 so Claude is woken with a
-# tiny prompt, which re-reads and refreshes the cache. Pings stop after
-# KEEPALIVE_MAX consecutive ones without user input.
-# UserPromptSubmit (`reset` argument): clear the ping counter.
+# Stop (asyncRewake): wait KEEPALIVE_DELAY seconds in the background. If the transcript has not grown in the meantime, exit 2 so Claude is woken with a tiny prompt, which re-reads and refreshes the cache. Pings stop after KEEPALIVE_MAX consecutive ones without user input. UserPromptSubmit (`reset` argument): clear the ping counter.
 
 DELAY=${KEEPALIVE_DELAY:-3000}
 MAX=${KEEPALIVE_MAX:-3}

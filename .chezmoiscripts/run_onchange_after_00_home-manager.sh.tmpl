@@ -18,12 +18,7 @@ set -euo pipefail
 {{- end }}
 
 echo "Applying Home Manager configuration..."
-# Substituters are declared in .chezmoidata.toml and rendered into the
-# user nix.conf by Home Manager itself. On the very first switch (and on
-# any switch that adds a new cache) the current nix.conf does not yet
-# contain them, so nix would build from source instead of pulling from
-# the caches this switch is about to install. Inject them via NIX_CONFIG
-# so the switch bootstraps its own caches.
+# Substituters are declared in .chezmoidata.toml and rendered into the user nix.conf by Home Manager itself. On the very first switch (and on any switch that adds a new cache) the current nix.conf does not yet contain them, so nix would build from source instead of pulling from the caches this switch is about to install. Inject them via NIX_CONFIG so the switch bootstraps its own caches.
 export NIX_CONFIG="extra-substituters = {{ range $i, $s := .nix_substituters }}{{ if $i }} {{ end }}{{ $s.url }}{{ end }}
 extra-trusted-public-keys = {{ range $i, $s := .nix_substituters }}{{ if $i }} {{ end }}{{ $s.key }}{{ end }}"
 

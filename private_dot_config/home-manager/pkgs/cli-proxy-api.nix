@@ -1,7 +1,6 @@
 { lib, buildGoModule, fetchFromGitHub }:
 
-# Not in nixpkgs; upstream ships Docker/binaries only.
-# Bumping the version requires refreshing both hashes below.
+# Not in nixpkgs; upstream ships Docker/binaries only. Bumping the version requires refreshing both hashes below.
 buildGoModule (finalAttrs: {
   pname = "cli-proxy-api";
   version = "7.2.127";

@@ -3,11 +3,7 @@
  *
  *   bun run tests/opencode-guards.js
  *
- * The template is rendered with `chezmoi execute-template`, its hook directory is
- * pointed at a temporary copy of .chezmoitemplates/agents/, and execute.before
- * is called with opencode-shaped tool calls. The hooks' own cases live in
- * tests/hooks.py and tests/writing-style.sh; these check the opencode mapping.
- * Skipped on Windows, where the plugin is not installed.
+ * The template is rendered with `chezmoi execute-template`, its hook directory is pointed at a temporary copy of .chezmoitemplates/agents/, and execute.before is called with opencode-shaped tool calls. The hooks' own cases live in tests/hooks.py and tests/writing-style.sh; these check the opencode mapping. Skipped on Windows, where the plugin is not installed.
  */
 import assert from "node:assert/strict";
 import { $ } from "bun";
@@ -23,8 +19,7 @@ if (process.platform === "win32") {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const bodies = path.join(root, ".chezmoitemplates", "agents");
-// realpathSync: on macOS os.tmpdir() is /var/folders/..., while a process started
-// there reports the resolved /private/var/folders/... from process.cwd().
+// realpathSync: on macOS os.tmpdir() is /var/folders/..., while a process started there reports the resolved /private/var/folders/... from process.cwd().
 const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "opencode-guards-")));
 // Runs on every exit path, including the early process.exit calls and a thrown error.
 process.on("exit", () => fs.rmSync(tmp, { recursive: true, force: true }));

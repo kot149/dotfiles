@@ -77,9 +77,7 @@ function Get-CachedShellInitPath {
 ###################################
 # Starship
 ###################################
-# Agent CLIs (Codex, Claude Code, ...) spawn pwsh with TERM=dumb and a sandbox that
-# denies writes to ~/.cache/starship, so starship prepends an error to every command's
-# output. Skip the prompt entirely for those shells.
+# Agent CLIs (Codex, Claude Code, ...) spawn pwsh with TERM=dumb and a sandbox that denies writes to ~/.cache/starship, so starship prepends an error to every command's output. Skip the prompt entirely for those shells.
 $script:IsAgentShell = ($env:TERM -eq 'dumb') -or [bool]$env:CODEX_SANDBOX -or [bool]$env:CLAUDECODE
 $script:PowerShellCommandLine = [Environment]::CommandLine
 $script:IsNonInteractive = $script:PowerShellCommandLine -match
@@ -346,9 +344,7 @@ function luna { codex -m gpt-6-luna -c model_reasoning_effort="xhigh" @args }
 function sol { codex -m gpt-6.1-sol -c model_reasoning_effort="medium" @args }
 function astra { codex -m gpt-6-astra -c model_reasoning_effort="low" @args }
 
-# Shared cli-proxy-api setup for claudex: a single proxy on port 8317 serves
-# Codex OAuth models (luna/sol/astra). The runtime config only rewrites the
-# port, keeping the managed config.yaml secret-free.
+# Shared cli-proxy-api setup for claudex: a single proxy on port 8317 serves Codex OAuth models (luna/sol/astra). The runtime config only rewrites the port, keeping the managed config.yaml secret-free.
 function Get-CliProxyMergedConfig {
     $port = 8317
     $cacheDir = Join-Path $HOME '.cache\cli-proxy-api'
@@ -453,8 +449,7 @@ function Invoke-ClaudeGpt {
         }
     } | ConvertTo-Json -Compress
 
-    # The auto mode classifier runs on the Sonnet alias, so it stays on the
-    # subagent model. The proxy cannot do Anthropic's server-side checks.
+    # The auto mode classifier runs on the Sonnet alias, so it stays on the subagent model. The proxy cannot do Anthropic's server-side checks.
     try {
         $env:ANTHROPIC_BASE_URL = 'http://127.0.0.1:8317'
         $env:ANTHROPIC_AUTH_TOKEN = 'sk-local-cliproxy'
@@ -499,8 +494,7 @@ function claudex {
     }
 }
 
-# DeepSeek Harness on the same proxy. The --patch overlay replaces the
-# llm-pi-ai config for this run, so providers saved in the profile are hidden.
+# DeepSeek Harness on the same proxy. The --patch overlay replaces the llm-pi-ai config for this run, so providers saved in the profile are hidden.
 function Get-DshGptPatch {
     param(
         [Parameter(Mandatory)][string]$Model,
@@ -569,8 +563,7 @@ function dshx {
     }
 }
 
-# oh-my-pi on its own ChatGPT OAuth (openai-codex, log in once with /login).
-# The --config overlay sets the model roles for this run only.
+# oh-my-pi on its own ChatGPT OAuth (openai-codex, log in once with /login). The --config overlay sets the model roles for this run only.
 function ompx {
     $variant = 'luna'
     $rest = @($args)
@@ -1038,8 +1031,7 @@ function hdr-init {
         return
     }
 
-    # herdr はUTF-8でJSONを返すので、コンソールがCP932だとパネル名などが壊れて
-    # ConvertFrom-Json が失敗する
+    # herdr はUTF-8でJSONを返すので、コンソールがCP932だとパネル名などが壊れてConvertFrom-Json が失敗する
     $prevEncoding = [Console]::OutputEncoding
     [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
     try {

@@ -2,10 +2,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Substituters requested through the user-level nix.conf are dropped by the Nix
-# daemon unless the user is in trusted-users, so the caches have to be declared
-# system-wide as well. Determinate Nix owns /etc/nix/nix.conf and pulls user
-# settings in from nix.custom.conf.
+# Substituters requested through the user-level nix.conf are dropped by the Nix daemon unless the user is in trusted-users, so the caches have to be declared system-wide as well. Determinate Nix owns /etc/nix/nix.conf and pulls user settings in from nix.custom.conf.
 #
 # substituters: {{ toJson .nix_substituters }}
 

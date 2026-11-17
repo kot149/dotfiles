@@ -5,8 +5,7 @@
 """
 Check the agent-skill tree for the invariants chezmoi cannot enforce.
 
-Reports every violation and exits 1 if there is any. Read-only: it never
-writes to the repository or to $HOME.
+Reports every violation and exits 1 if there is any. Read-only: it never writes to the repository or to $HOME.
 
 Usage:
   uv run --script scripts/check_agent_skills.py
@@ -28,14 +27,11 @@ DATA_FILE = ROOT / ".chezmoidata" / "agent-skills.toml"
 LOCAL_UNMANAGED_FILE = Path.home() / ".config" / "chezmoi" / "agent-skills-unmanaged.txt"
 WRAPPER_RE = re.compile(r'^\{\{ includeTemplate "(agents/skills/[^"]+)" \. -\}\}$')
 NAME_RE = re.compile(r"^name:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
-# An unquoted YAML scalar ends at " #": the rest of the description is parsed
-# as a comment and never reaches the agent.
+# An unquoted YAML scalar ends at " #": the rest of the description is parsed as a comment and never reaches the agent.
 YAML_COMMENT_RE = re.compile(r"^(name|description):[^\"'].* #")
 REV_RE = re.compile(r"^[0-9a-f]{40}$")
 VALID_AGENTS = {"claude", "agents"}
-# Directories in a store that this repo deliberately does not define.
-# "synced" is Claude Code's own first-party skill set, which it installs and
-# updates itself. Machine-local skills go in LOCAL_UNMANAGED_FILE instead.
+# Directories in a store that this repo deliberately does not define. "synced" is Claude Code's own first-party skill set, which it installs and updates itself. Machine-local skills go in LOCAL_UNMANAGED_FILE instead.
 UNMANAGED_OK = {"synced"}
 
 
@@ -112,8 +108,7 @@ def check_orphan_templates(targets: dict[Path, str]) -> list[str]:
 
 
 def check_frontmatter(targets: dict[Path, str]) -> list[str]:
-    """Invariant 5: the body's `name:` matches the skill directory name, and
-    neither frontmatter line is silently truncated by a YAML comment."""
+    """Invariant 5: the body's `name:` matches the skill directory name, and neither frontmatter line is silently truncated by a YAML comment."""
     problems = []
     for store in STORES.values():
         for directory in skill_dirs(store):

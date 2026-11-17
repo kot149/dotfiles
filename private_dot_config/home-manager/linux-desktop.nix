@@ -4,8 +4,7 @@
   xdg.enable = true;
   xdg.mime.enable = true;
 
-  # Non-NixOS: Nix-built Ghostty needs nixGL to use the host GPU drivers.
-  # On NixOS, disable targets.genericLinux or omit nixglPackages / nixGL.packages.
+  # Non-NixOS: Nix-built Ghostty needs nixGL to use the host GPU drivers. On NixOS, disable targets.genericLinux or omit nixglPackages / nixGL.packages.
   targets.genericLinux = {
     enable = true;
     nixGL.packages = nixglPackages;
@@ -22,10 +21,7 @@
     glib # for gsettings to read the extension schemas
   ];
 
-  # RunCat: GNOME Shell extension showing a running cat on CPU usage.
-  # Symlinked into ~/.local/share so GNOME Shell can find it: the HM profile's
-  # share dir is not in XDG_DATA_DIRS, and enabled-extensions does not resolve
-  # store paths on GNOME 50 — only UUIDs looked up in XDG data dirs.
+  # RunCat: GNOME Shell extension showing a running cat on CPU usage. Symlinked into ~/.local/share so GNOME Shell can find it: the HM profile's share dir is not in XDG_DATA_DIRS, and enabled-extensions does not resolve store paths on GNOME 50 — only UUIDs looked up in XDG data dirs.
   xdg.dataFile."gnome-shell/extensions/runcat@kolesnikov.se".source =
     "${pkgs.gnomeExtensions.runcat}/share/gnome-shell/extensions/runcat@kolesnikov.se";
   dconf.settings."org/gnome/shell".enabled-extensions = [ "runcat@kolesnikov.se" ];

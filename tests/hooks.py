@@ -3,13 +3,11 @@
 # dependencies = []
 # ///
 """
-Tests for the Bash permission hooks in .chezmoitemplates/agents/ and Claude
-Code's git -C rewrite and Japanese reply Stop hooks.
+Tests for the Bash permission hooks in .chezmoitemplates/agents/ and Claude Code's git -C rewrite and Japanese reply Stop hooks.
 
   uv run --no-python-downloads --script tests/hooks.py
 
-Each hook runs as a subprocess with the same stdin JSON the agents send, so a
-passing run means the installed hook behaves the same way.
+Each hook runs as a subprocess with the same stdin JSON the agents send, so a passing run means the installed hook behaves the same way.
 """
 import json
 import os
@@ -260,8 +258,7 @@ def rewrite(hook_dir: Path, command: str) -> tuple[int, str, None | str]:
     return result.returncode, result.stderr, updated
 
 
-# Lay the hook out as installed, next to python-runner.sh, with an rtk stub
-# first on PATH so a real rtk does not rewrite the command further.
+# Lay the hook out as installed, next to python-runner.sh, with an rtk stub first on PATH so a real rtk does not rewrite the command further.
 with tempfile.TemporaryDirectory() as tmp:
     hook_dir = Path(tmp)
     shutil.copy(ROOT / "dot_claude" / "hooks" / "executable_rewrite-git-c.sh", hook_dir / "rewrite-git-c.sh")

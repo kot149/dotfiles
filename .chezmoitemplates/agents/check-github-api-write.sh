@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# Ask before writing GitHub comments, issues or pull requests through gh api,
-# gh pr or gh issue.
-# Known limitations: a call inside a string passed to another shell (bash -c '...')
-# and a call after a background & in the same line are not seen.
+# Ask before writing GitHub comments, issues or pull requests through gh api, gh pr or gh issue. Known limitations: a call inside a string passed to another shell (bash -c '...') and a call after a background & in the same line are not seen.
 
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
@@ -11,8 +8,7 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
 
 source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
 
-# A heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash), so the
-# parser runs from a temporary file written by a top-level heredoc instead.
+# A heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash), so the parser runs from a temporary file written by a top-level heredoc instead.
 PARSE_TMP=$(mktemp)
 trap 'rm -f "$PARSE_TMP"' EXIT
 cat >"$PARSE_TMP" <<'PYEOF'
@@ -79,8 +75,7 @@ WRITE_SUBCOMMANDS = {
 def is_help(args):
     """--help or -h before a -- terminator only prints usage.
 
-    It does not count right after an option without =, which may take it as its value,
-    nor after a redirection, control operator or comment, where it is not passed to the command.
+    It does not count right after an option without =, which may take it as its value, nor after a redirection, control operator or comment, where it is not passed to the command.
     """
     previous = ""
     for arg in args:
@@ -152,8 +147,7 @@ def split_unquoted(text):
 def segments(command):
     """Yield each command segment, plus the contents of every $( ) and backtick substitution in it.
 
-    The plain line split runs too, so a quote, comment or heredoc read differently
-    from bash can only add matches, never hide one.
+    The plain line split runs too, so a quote, comment or heredoc read differently from bash can only add matches, never hide one.
     """
     for segment in split_unquoted(command) + re.split(SPLIT, command):
         yield segment
@@ -272,8 +266,7 @@ TARGET=${TARGET//$'\r'/}
 
 COMMANDS=$(printf '%s\n' "$TARGET" | sed 's/^/  /')
 
-# printf instead of $(cat <<EOF): a heredoc inside $( ) fails to parse on
-# bash 3.2 (macOS /bin/bash).
+# printf instead of $(cat <<EOF): a heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash).
 REASON=$(printf '[GitHub write requires confirmation]
 
 %s

@@ -1,10 +1,6 @@
-{{- /* Expands the shell lists in .chezmoidata/agent-permissions.toml into plain
-       patterns for every agent template:
+{{- /* Expands the shell lists in .chezmoidata/agent-permissions.toml into plain patterns for every agent template:
          {"allow": [...], "deny": [...], "allowWrite": [...]}
-       Each agent gets the full variant set (JS script and bin prefixes, /bin and
-       /usr/bin forms, `<tool> --help` / `--version`, rtk, rtk proxy, bare forms,
-       corepack) and only formats it. Codex turns the patterns into prefix rules
-       and skips those a prefix cannot express. */ -}}
+       Each agent gets the full variant set (JS script and bin prefixes, /bin and /usr/bin forms, `<tool> --help` / `--version`, rtk, rtk proxy, bare forms, corepack) and only formats it. Codex turns the patterns into prefix rules and skips those a prefix cannot express. */ -}}
 {{- $shellAllow := list -}}
 {{- range .agent_shell_allow -}}
   {{- $shellAllow = append $shellAllow . -}}
@@ -24,8 +20,7 @@
     {{- $shellAllow = append $shellAllow (printf "%s %s *" . $bin) -}}
   {{- end -}}
 {{- end -}}
-{{- /* Models occasionally call read-only tools by absolute path to dodge shell aliases.
-       Mirror the already-allowed bare form so it does not trigger a manual prompt. */ -}}
+{{- /* Models occasionally call read-only tools by absolute path to dodge shell aliases. Mirror the already-allowed bare form so it does not trigger a manual prompt. */ -}}
 {{- $absDirs := list "/bin" "/usr/bin" -}}
 {{- $absBins := list "ls" "cat" "find" "grep" "head" "tail" "wc" "stat" "file" "du" "df" "sort" "uniq" "cut" "basename" "dirname" "realpath" "date" "which" -}}
 {{- range $absBins -}}
@@ -36,8 +31,7 @@
     {{- end -}}
   {{- end -}}
 {{- end -}}
-{{- /* `<tool> --help` and `<tool> --version` for the first word of every allowed entry,
-       instead of leading-wildcard rules that would also match `npx <pkg> --version`. */ -}}
+{{- /* `<tool> --help` and `<tool> --version` for the first word of every allowed entry, instead of leading-wildcard rules that would also match `npx <pkg> --version`. */ -}}
 {{- $helpBins := list -}}
 {{- range $shellAllow -}}
   {{- $bin := first (splitList " " .) -}}

@@ -6,3 +6,5 @@ target-version = "py311"
 
 [lint]
 select = ["E", "F", "W", "I", "B", "UP"]
+# Comments and docstrings are not hard-wrapped; ruff format keeps code lines within line-length.
+ignore = ["E501"]

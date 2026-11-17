@@ -1,6 +1,4 @@
-// ctrl+c interrupts the session while it is running and otherwise falls through to
-// the default bindings (prompt.clear, then app.exit). Bound above the built-in layers
-// because session.interrupt consumes the key whenever a session is open, even idle.
+// ctrl+c interrupts the session while it is running and otherwise falls through to the default bindings (prompt.clear, then app.exit). Bound above the built-in layers because session.interrupt consumes the key whenever a session is open, even idle.
 
 export default {
   id: "ctrl-c-interrupt",

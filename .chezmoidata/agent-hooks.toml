@@ -1,6 +1,4 @@
-# Agent hooks, rendered into ~/.claude/settings.json and ~/.codex/hooks.json by
-# .chezmoitemplates/agents/hooks.tmpl. One entry per registration; entries keep
-# their order inside each (event, matcher) group.
+# Agent hooks, rendered into ~/.claude/settings.json and ~/.codex/hooks.json by .chezmoitemplates/agents/hooks.tmpl. One entry per registration; entries keep their order inside each (event, matcher) group.
 #
 #   name     label for `just hooks-lint` messages
 #   file     script name in ~/.<agent>/hooks/ (omitted for runner = "command")
@@ -11,9 +9,7 @@
 #                    ~/.config/opencode/plugins/guards.ts before the listed opencode
 #                    tools (bash, write, edit, apply_patch)
 #
-# A hook with both tables has its body in .chezmoitemplates/agents/<file> and a
-# one-line include wrapper in dot_claude/hooks/ and dot_codex/hooks/; a Claude
-# Code only hook is a plain file in dot_claude/hooks/.
+# A hook with both tables has its body in .chezmoitemplates/agents/<file> and a one-line include wrapper in dot_claude/hooks/ and dot_codex/hooks/; a Claude Code only hook is a plain file in dot_claude/hooks/.
 
 [[agent_hooks]]
 name = "check-force-push"

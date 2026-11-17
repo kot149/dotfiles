@@ -3,9 +3,7 @@
 # dependencies = []
 # ///
 """
-Find commands installed through a language package manager (bun, npm, pnpm, uv,
-cargo, go) that are also provided by another source on PATH, such as Nix, apt,
-winget or Homebrew, and show the version each source provides.
+Find commands installed through a language package manager (bun, npm, pnpm, uv, cargo, go) that are also provided by another source on PATH, such as Nix, apt, winget or Homebrew, and show the version each source provides.
 
 The first source on PATH is the one that runs; it is marked with "*".
 

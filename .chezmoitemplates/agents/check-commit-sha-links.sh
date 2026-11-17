@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
-# Keep commit SHAs auto-linkable in GitHub PR / issue / release bodies.
-# GitHub only linkifies a bare lowercase hex SHA delimited by whitespace or ASCII
-# punctuation, so a backtick-wrapped SHA, or one hugging a full-width character
-# such as （）, silently loses its link.
-# Block by default; set FORCE_SHA=1 to allow.
+# Keep commit SHAs auto-linkable in GitHub PR / issue / release bodies. GitHub only linkifies a bare lowercase hex SHA delimited by whitespace or ASCII punctuation, so a backtick-wrapped SHA, or one hugging a full-width character such as （）, silently loses its link. Block by default; set FORCE_SHA=1 to allow.
 
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
@@ -14,8 +10,7 @@ CWD=$(echo "$INPUT" | jq -r '.cwd // ""')
 
 source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
 
-# A heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash), so the
-# parser runs from a temporary file written by a top-level heredoc instead.
+# A heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash), so the parser runs from a temporary file written by a top-level heredoc instead.
 PARSE_TMP=$(mktemp)
 trap 'rm -f "$PARSE_TMP"' EXIT
 cat >"$PARSE_TMP" <<'PYEOF'
@@ -52,14 +47,7 @@ SHELL_SPLIT = re.compile(r"""[\s"'`()$;|&<>=,]+""")
 def path_candidates(cmd):
     """Every word that could name a body file.
 
-    Any word is a candidate, not just the one after a body flag: a body is just
-    as often piped in (`jq ... file.md | gh api --input -`), and there the path
-    only appears upstream of the pipe. shlex keeps a quoted path with spaces in
-    one piece; splitting the raw string on shell metacharacters additionally
-    reaches a path buried in a command substitution (`-f body="$(cat reply.md)"`),
-    which shlex hands back as one opaque word. Heredocs break shlex, so failures
-    are ignored. A gh field read from a file (`-F body=@reply.md`) leaves a
-    leading `@` on the path, so that is stripped too.
+    Any word is a candidate, not just the one after a body flag: a body is just as often piped in (`jq ... file.md | gh api --input -`), and there the path only appears upstream of the pipe. shlex keeps a quoted path with spaces in one piece; splitting the raw string on shell metacharacters additionally reaches a path buried in a command substitution (`-f body="$(cat reply.md)"`), which shlex hands back as one opaque word. Heredocs break shlex, so failures are ignored. A gh field read from a file (`-F body=@reply.md`) leaves a leading `@` on the path, so that is stripped too.
     """
     try:
         words = shlex.split(cmd, comments=False)
@@ -103,9 +91,7 @@ def strip_fenced_blocks(text):
 SHA = re.compile(r"(?<![0-9a-zA-Z_-])[0-9a-f]{7,40}(?![0-9a-zA-Z_-])")
 CODE_SPAN = re.compile(r"`([^`\n]+)`")
 URL = re.compile(r"\b(?:https?|git|ssh)://\S+")
-# Quotes count as boundaries because the raw command string is scanned as-is,
-# so a body that opens or closes on a SHA is not a violation. ASCII parens are
-# fine on both sides; their full-width counterparts are not.
+# Quotes count as boundaries because the raw command string is scanned as-is, so a body that opens or closes on a SHA is not a violation. ASCII parens are fine on both sides; their full-width counterparts are not.
 LEADING_OK = " \t\n\"'("
 TRAILING_OK = " \t\n\"'.,;:!?)"
 
@@ -184,8 +170,7 @@ if [[ "${FORCE_SHA:-}" == "1" ]] || echo "$COMMAND" | grep -q 'FORCE_SHA=1'; the
     exit 0
 fi
 
-# printf instead of $(cat <<EOF): a heredoc inside $( ) fails to parse on
-# bash 3.2 (macOS /bin/bash).
+# printf instead of $(cat <<EOF): a heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash).
 REASON=$(printf '[Commit SHA is not auto-linkable]
 
 GitHub only turns a commit SHA into a link when it is written bare and

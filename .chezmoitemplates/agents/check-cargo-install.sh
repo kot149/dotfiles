@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Prefer cargo-binstall over cargo install, which builds from source.
-# Only fires when cargo-binstall is actually available.
-# Block by default; set FORCE_CARGO_INSTALL=1 to allow.
+# Prefer cargo-binstall over cargo install, which builds from source. Only fires when cargo-binstall is actually available. Block by default; set FORCE_CARGO_INSTALL=1 to allow.
 
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
@@ -11,8 +9,7 @@ command -v cargo-binstall >/dev/null 2>&1 || exit 0
 
 source "$(dirname "${BASH_SOURCE[0]}")/python-runner.sh"
 
-# A heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash), so the
-# parser runs from a temporary file written by a top-level heredoc instead.
+# A heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash), so the parser runs from a temporary file written by a top-level heredoc instead.
 PARSE_TMP=$(mktemp)
 trap 'rm -f "$PARSE_TMP"' EXIT
 cat >"$PARSE_TMP" <<'PYEOF'
@@ -84,8 +81,7 @@ if [[ "${FORCE_CARGO_INSTALL:-}" == "1" ]] || echo "$COMMAND" | grep -q 'FORCE_C
     exit 0
 fi
 
-# printf instead of $(cat <<EOF): a heredoc inside $( ) fails to parse on
-# bash 3.2 (macOS /bin/bash).
+# printf instead of $(cat <<EOF): a heredoc inside $( ) fails to parse on bash 3.2 (macOS /bin/bash).
 REASON=$(printf '[Use cargo-binstall instead of cargo install]
 
   Crate(s): %s

@@ -1,6 +1,4 @@
-# Binary caches. Rendered into both the Home Manager user nix.conf
-# (private_dot_config/home-manager/common.nix.tmpl) and the system-wide
-# /etc/nix/nix.custom.conf (.chezmoiscripts/run_onchange_before_nix-custom-conf.sh.tmpl).
+# Binary caches. Rendered into both the Home Manager user nix.conf (private_dot_config/home-manager/common.nix.tmpl) and the system-wide /etc/nix/nix.custom.conf (.chezmoiscripts/run_onchange_before_nix-custom-conf.sh.tmpl).
 nix_substituters = [
   { url = "https://nix-community.cachix.org", key = "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=" },
   { url = "https://nixpkgs-terraform.cachix.org", key = "nixpkgs-terraform.cachix.org-1:8Sit092rIdAVENA3ZVeH9hzSiqI/jng6JiCrQ1Dmusw=" },

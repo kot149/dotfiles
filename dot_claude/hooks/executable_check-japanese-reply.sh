@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
-# Stop hook: when the final reply is written in English prose, block the stop
-# and ask Claude to answer again in Japanese.
+# Stop hook: when the final reply is written in English prose, block the stop and ask Claude to answer again in Japanese.
 #
-# Only the prose counts. Code blocks, inline code, blockquotes, URLs, paths and
-# quoted spans (including 「」『』) are removed first, so quoting text inside
-# them neither triggers it nor lets English prose pass. The reply passes as
-# long as its prose contains Japanese at all, which covers a Japanese lead-in
-# followed by an English translation or draft.
+# Only the prose counts. Code blocks, inline code, blockquotes, URLs, paths and quoted spans (including 「」『』) are removed first, so quoting text inside them neither triggers it nor lets English prose pass. The reply passes as long as its prose contains Japanese at all, which covers a Japanese lead-in followed by an English translation or draft.
 
 INPUT=$(cat)
 

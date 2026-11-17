@@ -1,11 +1,4 @@
-{{- /* opencode v2 permission rules: the last matching rule wins, so the broad
-       allows come first and the shared deny list comes last. A shell pattern
-       ending in " *" also matches the command without arguments.
-       v2 defaults to allow for every action, and the auto-approve plugin (see
-       `plugins`) sends every resolved-allow call except read/glob/grep/
-       question/execute through its LLM judge, so only the rules the judge must
-       never override stay static here: the shared deny list (absolute
-       boundaries) and the read rules below. */ -}}
+{{- /* opencode v2 permission rules: the last matching rule wins, so the broad allows come first and the shared deny list comes last. A shell pattern ending in " *" also matches the command without arguments. v2 defaults to allow for every action, and the auto-approve plugin (see `plugins`) sends every resolved-allow call except read/glob/grep/ question/execute through its LLM judge, so only the rules the judge must never override stay static here: the shared deny list (absolute boundaries) and the read rules below. */ -}}
 {{- $perms := includeTemplate "agents/shell-permissions.tmpl" . | fromJson -}}
 {{- $rules := list
   (dict "action" "shell" "resource" "*" "effect" "allow")
@@ -16,9 +9,7 @@
   (dict "action" "read" "resource" "*.env.example" "effect" "allow")
   (dict "action" "read" "resource" "*/.ssh/*" "effect" "deny")
 -}}
-{{- /* The plugin never sees a `deny` rule, so secrets files cannot be read by
-       reasoning a judge into allowing it. `*.env.example` must come after
-       `*.env.*` because an allow would otherwise be overridden. */ -}}
+{{- /* The plugin never sees a `deny` rule, so secrets files cannot be read by reasoning a judge into allowing it. `*.env.example` must come after `*.env.*` because an allow would otherwise be overridden. */ -}}
 {{- $seen := dict -}}
 {{- range $pattern := $perms.deny -}}
   {{- if not (hasKey $seen $pattern) -}}

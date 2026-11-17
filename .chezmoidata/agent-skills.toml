@@ -1,5 +1,4 @@
-# Third-party agent skills, installed by scripts/install_agent_skills.py from
-# pinned GitHub tarballs (works on every OS, Windows included -- no symlinks, no Nix).
+# Third-party agent skills, installed by scripts/install_agent_skills.py from pinned GitHub tarballs (works on every OS, Windows included -- no symlinks, no Nix).
 #
 #   repo    GitHub owner/name
 #   rev     commit SHA to pin (bump with scripts/update_agent_skills.py)
@@ -11,8 +10,7 @@
 #           most other agents read natively) and "claude" (~/.claude/skills, the
 #           only place Claude Code looks)
 #
-# Self-authored skills are not listed here; they are checked into dot_claude/skills
-# and dot_agents/skills (shared bodies live in .chezmoitemplates/agents/skills).
+# Self-authored skills are not listed here; they are checked into dot_claude/skills and dot_agents/skills (shared bodies live in .chezmoitemplates/agents/skills).
 
 [[agent_skills]]
 repo = "yusukebe/ax"
@@ -57,8 +55,7 @@ prefix = "skills"
 names = ["agent-desktop", "agent-desktop-linux", "agent-desktop-macos", "agent-desktop-windows"]
 agents = ["claude", "agents"]
 
-# Needs the `ocr` CLI on PATH; it comes from
-# private_dot_config/home-manager/pkgs/open-code-review.nix.
+# Needs the `ocr` CLI on PATH; it comes from private_dot_config/home-manager/pkgs/open-code-review.nix.
 [[agent_skills]]
 repo = "alibaba/open-code-review"
 rev = "35fc3e259da583b96cf0fb470d535da9dd5ad7b3"
@@ -94,8 +91,7 @@ prefix = "skills/productivity"
 names = ["grilling"]
 agents = ["claude", "agents"]
 
-# grill-with-docs は grilling と domain-modeling を呼び出すだけのスキルなので、
-# domain-modeling も併せて入れる。
+# grill-with-docs は grilling と domain-modeling を呼び出すだけのスキルなので、domain-modeling も併せて入れる。
 [[agent_skills]]
 repo = "mattpocock/skills"
 rev = "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
@@ -119,8 +115,7 @@ prefix = "skills"
 names = ["install-anti-slop"]
 agents = ["claude", "agents"]
 
-# The skill drives the separate `suiko` CLI; without it the skill falls back to
-# its bundled manual checklist.
+# The skill drives the separate `suiko` CLI; without it the skill falls back to its bundled manual checklist.
 [[agent_skills]]
 repo = "nwiizo/suiko"
 rev = "a088f585c01db4edbab060a3f43c1e626382297d"
@@ -135,9 +130,7 @@ prefix = "skills"
 names = ["yomiyasu"]
 agents = ["claude", "agents"]
 
-# Claude Code gets these from the enabled cloudflare@cloudflare plugin, so only
-# the shared store (read by Codex, which has no Claude Code plugin mechanism)
-# needs them materialized.
+# Claude Code gets these from the enabled cloudflare@cloudflare plugin, so only the shared store (read by Codex, which has no Claude Code plugin mechanism) needs them materialized.
 [[agent_skills]]
 repo = "cloudflare/skills"
 rev = "cbf893b954222276bf1af57e5f23379231e0efb9"
@@ -164,12 +157,7 @@ prefix = "skills"
 names = ["create-skill"]
 agents = ["claude", "agents"]
 
-# Orca ADE (https://www.onorca.dev). Orca scans ~/.claude/skills,
-# ~/.agents/skills and ~/.codex/skills itself, so the two stores above are
-# enough. `jira-tickets` / `linear-tickets` are the legacy names of `orca-jira`
-# / `orca-linear` and ship only to let existing installs converge, so they stay
-# out; a fresh install is not one of them. The `orca-emulator*` skills drive a
-# mobile device/simulator and are left out too.
+# Orca ADE (https://www.onorca.dev). Orca scans ~/.claude/skills, ~/.agents/skills and ~/.codex/skills itself, so the two stores above are enough. `jira-tickets` / `linear-tickets` are the legacy names of `orca-jira` / `orca-linear` and ship only to let existing installs converge, so they stay out; a fresh install is not one of them. The `orca-emulator*` skills drive a mobile device/simulator and are left out too.
 [[agent_skills]]
 repo = "stablyai/orca"
 rev = "ae09815770c1d6c8b83a35f99c0021d35273608a"

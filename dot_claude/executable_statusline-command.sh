@@ -24,10 +24,7 @@ seven_reset=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // ""')
 total_cost=$(echo "$input" | jq -r '.cost.total_cost_usd // ""')
 
 # Detect API billing mode
-# Cloud providers (Vertex AI / Bedrock) and direct API key are usage-billed → API mode.
-# Subscription (Team/Pro/Max) exposes rate_limits with numeric usage → subscription mode.
-# Note: subscription sessions also expose .cost.total_cost_usd as a number, so rate_limits
-# must take precedence to avoid falsely showing 💰$x.xx for subscription users.
+# Cloud providers (Vertex AI / Bedrock) and direct API key are usage-billed → API mode. Subscription (Team/Pro/Max) exposes rate_limits with numeric usage → subscription mode. Note: subscription sessions also expose .cost.total_cost_usd as a number, so rate_limits must take precedence to avoid falsely showing 💰$x.xx for subscription users.
 # Priority:
 #   1) CLAUDE_CODE_USE_VERTEX / CLAUDE_CODE_USE_BEDROCK env (cloud usage-billed) → api
 #   2) local ANTHROPIC_BASE_URL → api

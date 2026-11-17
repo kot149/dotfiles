@@ -1,9 +1,6 @@
 typeset -U path PATH
 
-# WSL の interop で引き継ぐ Windows 側の PATH は drvfs 上にあり走査が非常に遅い。
-# 存在しないコマンドの検索は PATH 全体を舐めるため 1 回あたり約 230ms かかり、
-# 起動処理中の command -v だけで 1 秒近くを消費する。起動中は退避しておき、
-# mise を読み込む直前 (元々 /mnt が並んでいた位置) で復元する。
+# WSL の interop で引き継ぐ Windows 側の PATH は drvfs 上にあり走査が非常に遅い。存在しないコマンドの検索は PATH 全体を舐めるため 1 回あたり約 230ms かかり、起動処理中の command -v だけで 1 秒近くを消費する。起動中は退避しておき、mise を読み込む直前 (元々 /mnt が並んでいた位置) で復元する。
 typeset -a _win_path
 _win_path=(${(M)path:#/mnt/*})
 path=(${path:#/mnt/*})
@@ -77,10 +74,7 @@ fpath=(~/.zsh/completion $fpath)
 
 source $ZSH/oh-my-zsh.sh
 
-# zsh-abbr (本体は sheldon が読み込む)。略語定義は下記ファイルに置いてあり、
-# zsh-abbr は読み込み時に 1 回それを読むだけなので .zshrc で abbr を都度呼ぶより速い。
-# パス既定値は ~/.config/zsh/abbreviations があればそちら、無ければこちらという
-# 分岐仕様なので明示的に固定する。設定は sheldon より前に済ませる必要がある。
+# zsh-abbr (本体は sheldon が読み込む)。略語定義は下記ファイルに置いてあり、zsh-abbr は読み込み時に 1 回それを読むだけなので .zshrc で abbr を都度呼ぶより速い。パス既定値は ~/.config/zsh/abbreviations があればそちら、無ければこちらという分岐仕様なので明示的に固定する。設定は sheldon より前に済ませる必要がある。
 export ABBR_USER_ABBREVIATIONS_FILE=${XDG_CONFIG_HOME:-$HOME/.config}/zsh-abbr/user-abbreviations
 ABBR_SET_EXPANSION_CURSOR=1
 if [[ ! -f $ABBR_USER_ABBREVIATIONS_FILE ]]; then
@@ -100,8 +94,7 @@ if (( ${#_win_path} )); then
 fi
 
 sheldon() {
-  # libgit2 (used by sheldon) doesn't understand ~/.ssh/config Host aliases,
-  # so run it under a fake HOME to bypass ~/.gitconfig's insteadOf rewrite.
+  # libgit2 (used by sheldon) doesn't understand ~/.ssh/config Host aliases, so run it under a fake HOME to bypass ~/.gitconfig's insteadOf rewrite.
   local fake_home="${XDG_CACHE_HOME:-$HOME/.cache}/sheldon-home"
   mkdir -p "$fake_home"
   [[ -L "$fake_home/.zsh" ]] || ln -sfn "$HOME/.zsh" "$fake_home/.zsh"
@@ -183,8 +176,7 @@ rm() {
 
 alias git-reset-all="git reset --hard && git clean -fd"
 
-# gh でマージ済みと分かるローカルブランチを、対応するワークツリーごと削除する。
-# マージされたPRのheadより後に追加コミットがあるブランチは対象から除外する。
+# gh でマージ済みと分かるローカルブランチを、対応するワークツリーごと削除する。マージされたPRのheadより後に追加コミットがあるブランチは対象から除外する。
 git-clean-merged() {
   if ! git rev-parse --git-dir >/dev/null 2>&1; then
     echo "fatal: not a git repository" >&2
@@ -314,11 +306,7 @@ alias luna='codex -m gpt-6-luna -c model_reasoning_effort="xhigh"'
 alias sol='codex -m gpt-6.1-sol -c model_reasoning_effort="medium"'
 alias astra='codex -m gpt-6-astra -c model_reasoning_effort="low"'
 
-# Shared cli-proxy-api setup for claudex and dshx: a single proxy serves Codex OAuth
-# models (luna/sol/astra). Port is 8319 on zsh (8317 is held outside WSL on
-# this machine; plain Linux/macOS work the same) and 8317 on PowerShell
-# (Windows). The runtime config only rewrites the port, keeping the managed
-# config.yaml secret-free.
+# Shared cli-proxy-api setup for claudex and dshx: a single proxy serves Codex OAuth models (luna/sol/astra). Port is 8319 on zsh (8317 is held outside WSL on this machine; plain Linux/macOS work the same) and 8317 on PowerShell (Windows). The runtime config only rewrites the port, keeping the managed config.yaml secret-free.
 _cli_proxy_merged_config() {
   local port=8319
   local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/cli-proxy-api"
@@ -380,8 +368,7 @@ _claude_gpt() {
 
   _cli_proxy_ensure || return 1
 
-  # The auto mode classifier runs on the Sonnet alias, so it stays on the
-  # subagent model. The proxy cannot do Anthropic's server-side checks.
+  # The auto mode classifier runs on the Sonnet alias, so it stays on the subagent model. The proxy cannot do Anthropic's server-side checks.
   ANTHROPIC_BASE_URL=http://127.0.0.1:8319 \
   ANTHROPIC_AUTH_TOKEN=sk-local-cliproxy \
   ANTHROPIC_DEFAULT_HAIKU_MODEL="${subagent_model}(${subagent_effort})" \
@@ -418,8 +405,7 @@ claudex() {
   esac
 }
 
-# DeepSeek Harness on the same proxy. The --patch overlay replaces the
-# llm-pi-ai config for this run, so providers saved in the profile are hidden.
+# DeepSeek Harness on the same proxy. The --patch overlay replaces the llm-pi-ai config for this run, so providers saved in the profile are hidden.
 _dsh_gpt_patch() {
   local model="$1"
   local effort="$2"
@@ -475,8 +461,7 @@ dshx() {
   CLIPROXY_API_KEY=sk-local-cliproxy dsh --patch "$patch" "$@"
 }
 
-# oh-my-pi on its own ChatGPT OAuth (openai-codex, log in once with /login).
-# The --config overlay sets the model roles for this run only.
+# oh-my-pi on its own ChatGPT OAuth (openai-codex, log in once with /login). The --config overlay sets the model roles for this run only.
 ompx() {
   local variant="luna"
   case "${1:-}" in
@@ -569,8 +554,7 @@ if command -v mise &> /dev/null; then
     eval "$(command mise hook-env -s zsh "$@")"
   }
 
-  # Called at the end of this file, after every PATH edit, so the snapshot matches the PATH the first command sees.
-  # The cached output exports an absolute PATH, so it is only valid while PATH and cwd are unchanged (direnv edits PATH in precmd)
+  # Called at the end of this file, after every PATH edit, so the snapshot matches the PATH the first command sees. The cached output exports an absolute PATH, so it is only valid while PATH and cwd are unchanged (direnv edits PATH in precmd)
   _mise_hook_start_cache() {
     typeset -g _mise_hook_cache="${XDG_CACHE_HOME:-$HOME/.cache}/mise/hook-env-$$.zsh"
     typeset -g _mise_hook_cache_key="$PWD"$'\n'"$PATH"

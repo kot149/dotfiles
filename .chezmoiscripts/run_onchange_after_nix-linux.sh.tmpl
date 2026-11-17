@@ -2,8 +2,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Legacy installs only: Determinate Nix includes nix.custom.conf, which
-# run_onchange_before_nix-custom-conf.sh manages instead.
+# Legacy installs only: Determinate Nix includes nix.custom.conf, which run_onchange_before_nix-custom-conf.sh manages instead.
 NIX_CONF="${NIX_CONF:-/etc/nix/nix.conf}"
 if grep -q '!include nix.custom.conf' "$NIX_CONF" 2>/dev/null; then
   exit 0
@@ -27,8 +26,7 @@ ensure_value() {
   changed=1
 }
 
-# ensure_in_list <key> <token>: add token to a space-separated list key, keeping
-# the other tokens and any inline comment
+# ensure_in_list <key> <token>: add token to a space-separated list key, keeping the other tokens and any inline comment
 ensure_in_list() {
   local key=$1 token=$2 stale
   local line="^[[:space:]]*${key}[[:space:]]*="

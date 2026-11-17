@@ -1,5 +1,4 @@
-# Maintenance tasks for these dotfiles. Run from anywhere through the `dots`
-# shell alias, which points just at this file; recipes run in this directory.
+# Maintenance tasks for these dotfiles. Run from anywhere through the `dots` shell alias, which points just at this file; recipes run in this directory.
 
 set windows-shell := ["pwsh", "-NoLogo", "-NoProfile", "-Command"]
 

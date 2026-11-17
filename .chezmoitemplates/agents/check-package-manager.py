@@ -2,16 +2,9 @@
 # requires-python = ">=3.9"
 # dependencies = []
 # ///
-"""Warn when using a package manager different from the one detected in the project,
-or when running a bare python outside the project's runner (uv run など).
-Block by default; set FORCE_PM=1 to allow.
+"""Warn when using a package manager different from the one detected in the project, or when running a bare python outside the project's runner (uv run など). Block by default; set FORCE_PM=1 to allow.
 
-Launched as `uv run --no-python-downloads --script`, so it runs the same way on
-every OS (Windows has no /usr/bin/python3 and a bare python3 there may be absent
-or a Store stub). --script reads a standalone script, so uv never looks for a
-surrounding project and never triggers an implicit sync; --no-python-downloads
-keeps a missing interpreter from turning into a multi-minute download inside a
-hook that runs on every command.
+Launched as `uv run --no-python-downloads --script`, so it runs the same way on every OS (Windows has no /usr/bin/python3 and a bare python3 there may be absent or a Store stub). --script reads a standalone script, so uv never looks for a surrounding project and never triggers an implicit sync; --no-python-downloads keeps a missing interpreter from turning into a multi-minute download inside a hook that runs on every command.
 """
 
 import json
@@ -82,8 +75,7 @@ def detect_used_pm(command):
 
 
 def find_project_pm(directory, used):
-    # Only look for lock files in the same language family as the used PM,
-    # otherwise a JS lock file in a parent dir can mask a Python project (or vice versa).
+    # Only look for lock files in the same language family as the used PM, otherwise a JS lock file in a parent dir can mask a Python project (or vice versa).
     if used in ("npm", "yarn", "pnpm", "bun"):
         locks = JS_LOCKS
     elif used in ("pip", "poetry", "pipenv", "pdm", "uv", "conda", "python"):

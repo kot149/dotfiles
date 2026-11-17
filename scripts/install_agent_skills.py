@@ -5,11 +5,7 @@
 """
 Install the third-party skills declared in .chezmoidata/agent-skills.toml.
 
-Each pinned GitHub tarball is read once, however many skills and stores use it.
-Skills with a patch in scripts/agent-skill-patches/ are patched with git apply.
-A state file records what each target was installed from, so unchanged targets
-are skipped without downloading or opening their archive, and targets dropped
-from the data file are removed.
+Each pinned GitHub tarball is read once, however many skills and stores use it. Skills with a patch in scripts/agent-skill-patches/ are patched with git apply. A state file records what each target was installed from, so unchanged targets are skipped without downloading or opening their archive, and targets dropped from the data file are removed.
 
 Usage:
   uv run --script scripts/install_agent_skills.py

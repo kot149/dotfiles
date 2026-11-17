@@ -47,8 +47,7 @@ jobs:
           enable-cache: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
-      # Plain chezmoi commands (render-check, doctor) find the checkout through
-      # this config; .chezmoidata supplies every data key the templates read.
+      # Plain chezmoi commands (render-check, doctor) find the checkout through this config; .chezmoidata supplies every data key the templates read.
       - name: Write chezmoi config
         run: |
           mkdir -p ~/.config/chezmoi

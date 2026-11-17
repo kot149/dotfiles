@@ -1,25 +1,15 @@
 #!/usr/bin/env bash
 # Custom @-mention file suggestions for Claude Code.
 #
-# The built-in picker indexes with `git ls-files --others --exclude-standard`, so
-# gitignored AI notes and plans never show up. This adds them back without giving up
-# .gitignore: pass 1 walks the tree normally, pass 2 re-walks only the note directories
-# listed in UNIGNORE_DIRS with VCS ignores disabled.
+# The built-in picker indexes with `git ls-files --others --exclude-standard`, so gitignored AI notes and plans never show up. This adds them back without giving up .gitignore: pass 1 walks the tree normally, pass 2 re-walks only the note directories listed in UNIGNORE_DIRS with VCS ignores disabled.
 #
-# Disabling .gitignore for the whole tree is not viable. In a workspace holding several
-# repos and their worktrees it yields ~1.2M paths in ~5.8s, past the 5s timeout Claude
-# Code allows this command, so every query returns nothing. Respecting .gitignore keeps
-# the same tree at ~38k paths in ~0.17s.
+# Disabling .gitignore for the whole tree is not viable. In a workspace holding several repos and their worktrees it yields ~1.2M paths in ~5.8s, past the 5s timeout Claude Code allows this command, so every query returns nothing. Respecting .gitignore keeps the same tree at ~38k paths in ~0.17s.
 #
-# Claude Code runs this on every keystroke, so the path list is cached per $PWD and
-# served from the cache while a background fd run refreshes it. New files show up from
-# the next query after the refresh. The first query in a directory waits for fd.
+# Claude Code runs this on every keystroke, so the path list is cached per $PWD and served from the cache while a background fd run refreshes it. New files show up from the next query after the refresh. The first query in a directory waits for fd.
 #
-# Input : JSON on stdin, with the current @ query in `.query`.
-# Output: newline-separated paths on stdout, best match first.
+# Input : JSON on stdin, with the current @ query in `.query`. Output: newline-separated paths on stdout, best match first.
 #
-# Troubleshooting: `touch ~/.claude/file-suggestion.debug` to log each invocation
-# to ~/.claude/file-suggestion.log. Remove the flag file to stop logging.
+# Troubleshooting: `touch ~/.claude/file-suggestion.debug` to log each invocation to ~/.claude/file-suggestion.log. Remove the flag file to stop logging.
 
 set -uo pipefail
 
@@ -27,14 +17,12 @@ readonly MAX_RESULTS=100
 readonly DEBUG_FLAG="$HOME/.claude/file-suggestion.debug"
 readonly DEBUG_LOG="$HOME/.claude/file-suggestion.log"
 readonly CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/claude-file-suggestion"
-# Seconds a cached list is served before a background refresh starts. Keeps fast
-# typing from running fd on every keystroke.
+# Seconds a cached list is served before a background refresh starts. Keeps fast typing from running fd on every keystroke.
 readonly REFRESH_INTERVAL=5
 # A refresh lock older than this many minutes belongs to a killed run.
 readonly STALE_LOCK_MINUTES=1
 
-# Gitignored directories to surface anyway, looked up at the top two levels so a
-# workspace of repos resolves both ./notes and ./<repo>/notes.
+# Gitignored directories to surface anyway, looked up at the top two levels so a workspace of repos resolves both ./notes and ./<repo>/notes.
 readonly UNIGNORE_DIRS=(
   notes note plans plan memo memos scratch drafts draft .ai
 )
@@ -84,8 +72,7 @@ escape_glob() {
   printf '%s' "$s"
 }
 
-# Pass 1 excludes the paths pass 2 lists, anchored to the search root, so no path is
-# printed twice and the output needs no dedup pass.
+# Pass 1 excludes the paths pass 2 lists, anchored to the search root, so no path is printed twice and the output needs no dedup pass.
 list_paths() {
   local name path unignored_dirs=() unignored_files=()
   for name in "${UNIGNORE_DIRS[@]}"; do
@@ -115,8 +102,7 @@ list_paths() {
   fi
 }
 
-# Rewrites the cache atomically. Returns 1 when another run holds the lock. Run it in
-# a subshell: the EXIT trap releases the lock, so lock and tmp are not local.
+# Rewrites the cache atomically. Returns 1 when another run holds the lock. Run it in a subshell: the EXIT trap releases the lock, so lock and tmp are not local.
 refresh_cache() {
   lock=$cache_file.lock
   if ! mkdir "$lock" 2>/dev/null; then
@@ -132,8 +118,7 @@ refresh_cache() {
   mv -f "$tmp" "$cache_file" && date +%s >"$cache_file.time"
 }
 
-# A path query (~/x, /x, ./x, ../x) lists the entries of its directory part, hidden
-# and ignored ones included, and fuzzy-matches the last component.
+# A path query (~/x, /x, ./x, ../x) lists the entries of its directory part, hidden and ignored ones included, and fuzzy-matches the last component.
 if [[ $query == \~/* || $query == /* || $query == ./* || $query == ../* ]]; then
   dir_part=${query%/*}/
   base_part=${query##*/}

@@ -3,12 +3,9 @@ import { existsSync } from "node:fs"
 import { homedir } from "node:os"
 import path from "node:path"
 
-// Runs the shared guard hooks installed in ~/.claude/hooks (or ~/.codex/hooks)
-// before opencode tool calls, with the same stdin JSON Claude Code sends. The
-// list comes from the `opencode` tables in .chezmoidata/agent-hooks.toml.
+// Runs the shared guard hooks installed in ~/.claude/hooks (or ~/.codex/hooks) before opencode tool calls, with the same stdin JSON Claude Code sends. The list comes from the `opencode` tables in .chezmoidata/agent-hooks.toml.
 //
-// This pre-tool bridge blocks "ask" like "deny" rather than opening a permission
-// prompt; a throw fails the tool call with the reason.
+// This pre-tool bridge blocks "ask" like "deny" rather than opening a permission prompt; a throw fails the tool call with the reason.
 
 type Hook = { name: string; file: string; runner: string; tools: string[] }
 type Block = { decision: string; reason: string }
@@ -30,9 +27,7 @@ const LAUNCHERS: Record<string, string[]> = {
 const HOOK_DIRS = [".claude/hooks", ".codex/hooks"].map((dir) => path.join(homedir(), dir))
 const TIMEOUT_MS = 30_000
 
-// rtk.ts may run first (opencode does not order plugins within a directory), and
-// some guards do not look past an `rtk` / `rtk proxy` prefix, so they get the
-// command without it.
+// rtk.ts may run first (opencode does not order plugins within a directory), and some guards do not look past an `rtk` / `rtk proxy` prefix, so they get the command without it.
 const RTK_PREFIX = /(^|[;&|(`\n]\s*|\$\(\s*)((?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*)rtk\s+(?:proxy\s+)?/g
 
 // Claude Code's tool name and tool_input for an opencode tool call.

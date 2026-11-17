@@ -7,15 +7,9 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Source of every AI CLI (claude-code, codex, herdr, hunk, ax, opencode,
-    # omp, rtk). Deliberately not following nixpkgs: the cache at
-    # cache.numtide.com is built against the pins in this flake, and its own
-    # nixpkgs still supports x86_64-darwin, which it evaluates for all systems.
+    # Source of every AI CLI (claude-code, codex, herdr, hunk, ax, opencode, omp, rtk). Deliberately not following nixpkgs: the cache at cache.numtide.com is built against the pins in this flake, and its own nixpkgs still supports x86_64-darwin, which it evaluates for all systems.
     llm-agents.url = "github:numtide/llm-agents.nix";
-    # Deliberately not following nixpkgs: the terraform builds cached at
-    # nixpkgs-terraform.cachix.org are made against the pins in this flake, so
-    # overriding nixpkgs changes the store path and forces a local Go build of
-    # an unfree package that cache.nixos.org will never carry.
+    # Deliberately not following nixpkgs: the terraform builds cached at nixpkgs-terraform.cachix.org are made against the pins in this flake, so overriding nixpkgs changes the store path and forces a local Go build of an unfree package that cache.nixos.org will never carry.
     nixpkgs-terraform.url = "github:stackbuilders/nixpkgs-terraform";
     {{- if eq .chezmoi.os "linux" }}
     nixgl = {
