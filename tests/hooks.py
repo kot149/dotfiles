@@ -3,7 +3,7 @@
 # dependencies = []
 # ///
 """
-Tests for the Bash permission hooks in .chezmoitemplates/agents/ and Claude Code's git -C rewrite and Japanese reply Stop hooks.
+Tests for the Bash permission hooks in .chezmoitemplates/agents/ and Claude Code's git -C rewrite, Japanese reply and unverified reply Stop hooks.
 
   uv run --no-python-downloads --script tests/hooks.py
 
@@ -203,6 +203,73 @@ JAPANESE_REPLY_CASES: list[tuple[str, str, bool]] = [
     ("英訳して", ENGLISH_REPLY, False),
 ]
 
+# (user prompt, last reply, expected block): the Stop hook should block unverified notes only.
+UNVERIFIED_REPLY_CASES: list[tuple[str, str, bool]] = [
+    ("直して", "修正しました。実機での動作はまだ確かめていません。", True),
+    ("直して", "修正しました。確かめられていません。", True),
+    ("直して", "修正しました。テストは未確認です。", True),
+    ("直して", "修正しました。動作確認はしていません。", True),
+    ("直して", "修正しました。ビルドは確認できていません。", True),
+    ("直して", "Fixed the parser. I haven't run the tests yet.", True),
+    ("直して", "Fixed the parser. This is untested.", True),
+    ("直して", "修正し、テストが通ることを確認しました。", False),
+    ("直して", "修正しました。未確認の点はありません。", False),
+    ("直して", "ログを確認していない場合は先に見てください。", False),
+    ("直して", "何を確認していないかと何が障害かを短く書かせます。", False),
+    ("直して", "ビルドが通るか確認していないかどうかを判定します。", False),
+    ("直して", "まだ確認していないかもしれません。", True),
+    ("直して", "「未確認です」で終わる返信を検出します。", False),
+    ("直して", "修正しました。\n\n```\n# not verified yet\n```", False),
+    ("直して", "Fixed it. If you haven't tested it, run `just test`.", False),
+    ("直して。確認は不要", "修正しました。動作は未確認です。", False),
+]
+
+# Final replies taken from real Claude Code sessions, with names, hosts and IDs replaced.
+UNVERIFIED_REPLY_CASES += [
+    # Unverified notes Claude could have checked itself.
+    ("調べて", "サーバーが中身を切り詰めていないか（モデルが全文を見ているか）は確かめていません。", True),
+    ("調べて", "インデックスは使われる形です。実行計画（EXPLAIN）も確認していません。", True),
+    ("調べて", "ロールのIDは私の記憶によるもので、APIで確かめてはいません。", True),
+    ("直して", "これはコードからの判断で、stgで書き込みは試していません。", True),
+    ("直して", "Chromeを再起動すれば戻ると思いますが、まだ確かめていません。", True),
+    ("調べて", "stagingは計測済みです。本番の確認はまだ終わっていません。", True),
+    ("書いて", "ドキュメントを更新しました。書いた後にファイルを読み直しての確認はしていません。", True),
+    ("直して", "テストはまだ実施していないので、PR本文のテスト欄は空のままにしてあります。", True),
+    ("直して", "#123はdev環境での動作確認をしていません。", True),
+    ("直して", "サーバーは起動しています。ブラウザで実際にダッシュボードを開く確認だけは、まだできていません。", True),
+    ("直して", "画面でのテストはまだ実施できていません。", True),
+    ("調べて", "通知スキームはMCPから確認できなかったので、ほかの宛先があるかは分かりません。", True),
+    ("調べて", "## 確認できなかったこと\n\n- 本番の設定値", True),
+    ("直して", "単体テストは通っています。Integration層は実行していません。", True),
+    # The blocker is already named, so the stop passes.
+    ("調べて", "トークン取得は、パスワードを取れないため実行していません。", False),
+    ("作って", "実際にログインできるかは、まだ試していません。仮パスワードはあなたの手元にしかないためです。", False),
+    ("調べて", "本番はマシンの性能も件数も確認できていません。本番DBに入る権限がないためです。", False),
+    ("進めて", "まだ次の3つは実行していません。進めてよければ指示してください。", False),
+    ("試して", "本番WAFのアラームが鳴る可能性があるため、まだ実行していません。必要であれば言ってください。", False),
+    ("調べて", "バケットのポリシーはまだ確認できていません。`aws sso login` で認証してもらえれば確認します。", False),
+    ("デプロイして", "このデプロイは共有のstagingを入れ替えるので、まだ実行していません。", False),
+    ("試して", "新しいユーザーを登録する部分は、自動判定で書き込めないため試していません。", False),
+    # Review findings about code, state descriptions and document terms.
+    ("レビューして", "| 1 | 保存が失敗したときの分岐を、どのテストも確かめていない | MEDIUM |", False),
+    ("レビューして", "1年と9999年の日付を正しい期間に入れるかを、テストが確かめていません。", False),
+    ("レビューして", "検索の API が、ページ番号の範囲を確かめていない。", False),
+    ("調べて", "最終更新は8月28日なので、2本目のPUTはまだ実行されていません。", False),
+    ("まとめて", "APIで入力値を確かめていない件は、まだ担当者に送っていません。", False),
+    ("見直して", "PdMに確認していないのに決定済みとして書いてある箇所がありました。", False),
+    ("追記して", "ドキュメントの未確認事項の1件目に回答を追記しました。", False),
+    ("調べて", "残りを読むと、ほとんどが本物の未確認報告です。", False),
+    ("比べて", "| 表の中の指摘 | 直せない。誰が確認していないのかは文脈で決まる |", False),
+    ("調べて", "返信を投稿したかどうかを、私が確かめられていないからです。", True),
+    ("調べて", "エラーにする経路は、環境変数を変えて起動しないと試せません。", True),
+    ("直して", "未確認リストの2件目を消しました。", False),
+    ("直して", "否定まで続く語の並びがあれば、未確認の報告とみなします。", False),
+    ("直して", "検証用ページの有無を含め、未確認の点がいくつか残っています。", True),
+    ("調べて", "親の画面とページがお互いのオリジンを確認できなくなり、通信できなくなります。", False),
+    ("調べて", "チームへのreview requestは、メンバーかを確認せずに通知します。", False),
+    ("調べて", "設定画面のタブだけは未実施です。", False),
+]
+
 failures: list[str] = []
 checks = 0
 
@@ -277,16 +344,19 @@ with tempfile.TemporaryDirectory() as tmp:
         check(label, actual == expected, f"expected: {expected!r}\n      actual:   {actual!r}")
 
 
-def japanese_reply(hook_dir: Path, prompt: str, reply: str) -> tuple[int, str, bool]:
+def stop_hook(hook_dir: Path, hook: str, prompt: str, reply: str, active: bool = False) -> tuple[int, str, bool]:
     """Return the Stop hook's exit status, stderr and whether it blocked."""
     transcript = hook_dir / "transcript.jsonl"
     transcript.write_text(
         json.dumps({"type": "user", "message": {"role": "user", "content": prompt}}) + "\n",
         encoding="utf-8",
     )
+    runner = ["uv", "run", "--quiet", "--no-python-downloads", "--script"] if hook.endswith(".py") else [BASH]
     result = subprocess.run(
-        [BASH, str(hook_dir / "check-japanese-reply.sh")],
-        input=json.dumps({"transcript_path": str(transcript), "last_assistant_message": reply}),
+        [*runner, str(hook_dir / hook)],
+        input=json.dumps(
+            {"transcript_path": str(transcript), "last_assistant_message": reply, "stop_hook_active": active}
+        ),
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -295,20 +365,33 @@ def japanese_reply(hook_dir: Path, prompt: str, reply: str) -> tuple[int, str, b
     return result.returncode, result.stderr, blocked
 
 
+STOP_HOOK_CASES = [
+    ("check-japanese-reply.sh", JAPANESE_REPLY_CASES),
+    ("check-unverified-reply.py", UNVERIFIED_REPLY_CASES),
+]
+
 with tempfile.TemporaryDirectory() as tmp:
     hook_dir = Path(tmp)
-    shutil.copy(
-        ROOT / "dot_claude" / "hooks" / "executable_check-japanese-reply.sh", hook_dir / "check-japanese-reply.sh"
-    )
     shutil.copy(HOOKS / "python-runner.sh", hook_dir / "python-runner.sh")
 
-    for prompt, reply, expected in JAPANESE_REPLY_CASES:
-        label = f"check-japanese-reply: {prompt} / {reply[:40]!r}"
-        status, stderr, actual = japanese_reply(hook_dir, prompt, reply)
-        if status != 0 or stderr:
-            check(label, False, f"exit status {status}, stderr: {stderr.strip()!r}")
-            continue
-        check(label, actual == expected, f"expected block: {expected}\n      actual:   {actual}")
+    for hook, cases in STOP_HOOK_CASES:
+        source = ROOT / "dot_claude" / "hooks" / hook
+        if not source.exists():
+            source = source.with_name(f"executable_{hook}")
+        shutil.copy(source, hook_dir / hook)
+        for prompt, reply, expected in cases:
+            label = f"{hook}: {prompt} / {reply[:40]!r}"
+            status, stderr, actual = stop_hook(hook_dir, hook, prompt, reply)
+            if status != 0 or stderr:
+                check(label, False, f"exit status {status}, stderr: {stderr.strip()!r}")
+                continue
+            check(label, actual == expected, f"expected block: {expected}\n      actual:   {actual}")
+
+    # The stop after a block passes, so Claude can report what blocks the remaining checks.
+    status, stderr, actual = stop_hook(
+        hook_dir, "check-unverified-reply.py", "直して", "実機での動作は未確認です。", active=True
+    )
+    check("check-unverified-reply.py: stop_hook_active", status == 0 and not actual, f"blocked: {actual}")
 
 print(f"{checks - len(failures)}/{checks} passed")
 for failure in failures:

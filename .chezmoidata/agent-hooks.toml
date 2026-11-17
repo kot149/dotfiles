@@ -83,6 +83,12 @@ runner = "bash"
 claude = { event = "Stop" }
 
 [[agent_hooks]]
+name = "check-unverified-reply"
+file = "check-unverified-reply.py"
+runner = "uv-script"
+claude = { event = "Stop" }
+
+[[agent_hooks]]
 name = "keep-cache-warm"
 file = "keep-cache-warm.sh"
 runner = "bash"
