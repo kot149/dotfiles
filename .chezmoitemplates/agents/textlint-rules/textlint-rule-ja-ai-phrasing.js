@@ -42,6 +42,8 @@ const VAGUE_SUBJECTS = new Set([
 const FINANCIAL_FAILURE = new Set(["経営", "財政", "家計", "ローン", "国家", "生活", "資金", "事業"]);
 const LANDING_PLACES = new Set(["両足", "足", "滑走路", "地面", "床", "マット", "ジャンプ", "空中"]);
 const CONTESTS = new Set(["試合", "勝負", "対戦", "決勝", "ゲーム", "選挙", "裁判", "訴訟"]);
+// 人が「断る」相手として字義どおりの語。
+const SOCIAL_OFFERS = new Set(["誘い", "お誘い", "招待", "縁談", "申し出", "オファー", "依頼", "頼み", "取材"]);
 // 「払う」の目的語として正しい語。金額やコストのほか、「注意を払う」などの慣用句と「埃を払う」。
 const PAYABLE =
   /(?:コスト|費用|代償|対価|犠牲|ツケ|ペナルティ|オーバーヘッド|注意|敬意|関心|努力|税|金|代|料|費|円|ドル|埃|ほこり|塵|雪)$/i;
@@ -136,6 +138,15 @@ const VERB_RULES = {
     // 足さない、足せば などは語尾の組み替えが必要なので指摘だけ。
     fix: { 足す: "追加する", 足し: "追加し" },
   },
+  断る: {
+    // 「断っておくと」は前置きの慣用句、誘いや依頼を人が断る形は字義どおりなので対象外。
+    skip: (tokens, i) =>
+      dictionaryForm(neighbor(tokens, neighborIndex(tokens, i, 1), 1)) === "おく" ||
+      SOCIAL_OFFERS.has(objectNoun(tokens, i)),
+    advice:
+      "「断る」→ システムが実際に何をするのかを書く" +
+      " (例: 「上限を超えると断る」→「上限を超えると集計せずに422を返す」)",
+  },
   足りる: {
     skip: (tokens, i) => !isInsufficient(tokens, i),
     advice: INSUFFICIENT_ADVICE,
@@ -223,6 +234,7 @@ const POTENTIAL_FORMS = {
   申し送れる: "申し送る",
   払える: "払う",
   足せる: "足す",
+  断れる: "断る",
 };
 
 // テストの成否の比喩でしか使わない語。単独で出ても指摘する。大文字小文字は問わない。
