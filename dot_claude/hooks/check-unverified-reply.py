@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.11"
+# requires-python = ">=3.11,<3.15"
 # dependencies = ["fugashi==1.5.2", "unidic-lite==1.0.8"]
 # ///
 """Stop hook: when the final reply says something is still unverified (「未確認です」「まだ確かめていません」 "not tested yet" ...), block the stop once and ask Claude to verify whatever it can check by itself. The next stop passes, which is where Claude reports the items it could not check and what blocks them. Other Stop hooks still check that stop, since only the hook that blocked leaves a marker for the session.
@@ -11,6 +11,7 @@ Japanese is split into morphemes with fugashi (UniDic), so a note is a verificat
 - a note whose sentence or the next one already names a blocker (permission, credentials, a request for the user's go-ahead)
 - a prompt that says verification is not needed
 """
+
 import json
 import os
 import re
@@ -36,9 +37,7 @@ def text_of(content):
         return content
     if isinstance(content, list):
         return "\n".join(
-            block.get("text", "")
-            for block in content
-            if isinstance(block, dict) and block.get("type") == "text"
+            block.get("text", "") for block in content if isinstance(block, dict) and block.get("type") == "text"
         )
     return ""
 
@@ -94,7 +93,23 @@ ABOUT_NOTES = {"報告", "表現", "言い回し", "文", "記述"}
 # 「確認できません」 without て; 「実行できません」 states an inability instead.
 CAN_NOT = {"確認", "検証", "テスト", "確かめる", "試す"}
 # Tokens allowed between the verification word and the negation.
-CHAIN = {"は", "も", "を", "が", "だけ", "まで", "、", "未だ", "実施", "実行", "為る", "出来る", "終わる", "居る", "ます"}
+CHAIN = {
+    "は",
+    "も",
+    "を",
+    "が",
+    "だけ",
+    "まで",
+    "、",
+    "未だ",
+    "実施",
+    "実行",
+    "為る",
+    "出来る",
+    "終わる",
+    "居る",
+    "ます",
+}
 POTENTIAL = {"出来る", "られる"}
 NEGATION = {"ない", "ず"}
 # After the negation: 「〜場合」「〜なら」「〜とき」「〜件」「〜のに」
@@ -158,20 +173,20 @@ def japanese_notes(toks):
             continue
         # 未 + 確認: a note unless a noun continues the compound (未確認事項).
         if lem in PREFIXED and i > 0 and toks[i - 1][2] == "未" and toks[i - 1][4] == "接頭辞":
-            nxt = [t[2] for t in toks[i + 1:i + 3]]
+            nxt = [t[2] for t in toks[i + 1 : i + 3]]
             if i + 1 < len(toks) and toks[i + 1][4] == "名詞":
                 continue
             # 「未確認の報告」 talks about such notes; 「未確認の点」 is one.
             if nxt[:1] == ["の"] and nxt[1:] and nxt[1] in ABOUT_NOTES:
                 continue
-            if NOTHING_LEFT.search(prose[end:end + 20]):
+            if NOTHING_LEFT.search(prose[end : end + 20]):
                 continue
             yield toks[i - 1][0], end
             continue
         te = False
         potential = surface == "試せ"
         prev = lem
-        for j, (_, t_end, t_surface, t_lem, t_pos1) in enumerate(toks[i + 1:i + 12], i + 1):
+        for j, (_, t_end, t_surface, t_lem, t_pos1) in enumerate(toks[i + 1 : i + 12], i + 1):
             if t_lem == "れる" and prev == "為る":
                 break  # passive: 実行されていません
             if t_lem in POTENTIAL:
@@ -179,7 +194,7 @@ def japanese_notes(toks):
             elif t_lem == "て" or t_lem == "てる":
                 te = True
             elif t_lem in NEGATION and t_pos1 == "助動詞":
-                follows = [t[2] for t in toks[j + 1:j + 4]]
+                follows = [t[2] for t in toks[j + 1 : j + 4]]
                 # 「確認しません」 is a choice; 「確認できない」「確認できなくなる」 are too often findings about code, so without て only ません/ず/なかった count.
                 if not te:
                     if not (potential and lem in CAN_NOT):
@@ -215,7 +230,7 @@ spans = [(s, e) for e, s in latest.items()]
 spans += [
     (m.start(), m.end())
     for m in ENGLISH.finditer(prose)
-    if not EN_CONDITIONAL.search(prose[sentence_start(m.start()):m.start()])
+    if not EN_CONDITIONAL.search(prose[sentence_start(m.start()) : m.start()])
 ]
 
 hits = []
@@ -223,30 +238,35 @@ for m_start, m_end in sorted(spans):
     start = sentence_start(m_start)
     if CODE_SUBJECT.search(prose[start:m_start]):
         continue
-    if BLOCKER.search(prose[start:following_end(m_end, 2)]):
+    if BLOCKER.search(prose[start : following_end(m_end, 2)]):
         continue
     end = following_end(m_end, 1)
-    hits.append(prose[max(start, m_start - 40):min(end, m_end + 30)].strip())
+    hits.append(prose[max(start, m_start - 40) : min(end, m_end + 30)].strip())
 
 if not hits:
     sys.exit()
 
 MARKER.parent.mkdir(parents=True, exist_ok=True)
 MARKER.touch()
-print(json.dumps({
-    "decision": "block",
-    "reason": (
-        "Your last reply says some things are not verified yet: "
-        + " / ".join(f"\"{h}\"" for h in list(dict.fromkeys(hits))[:3])
-        + ". Before stopping, verify everything you can check yourself with "
-        "the tools you have: run the tests, commands or scripts, read files and "
-        "logs, render or apply the change and inspect the result. Then report "
-        "the actual results instead of the unverified note. Leave an item "
-        "unverified only when something you cannot clear yourself blocks it: "
-        "it needs the user's permission (outward-facing, destructive or sudo "
-        "actions), credentials or access you lack, the user's device, GUI or "
-        "environment, or a costly run the user should approve. For each such "
-        "item, state concisely what was not checked and what blocks it. Do not "
-        "redo work that is already done."
-    ),
-}, ensure_ascii=False))
+print(
+    json.dumps(
+        {
+            "decision": "block",
+            "reason": (
+                "Your last reply says some things are not verified yet: "
+                + " / ".join(f'"{h}"' for h in list(dict.fromkeys(hits))[:3])
+                + ". Before stopping, verify everything you can check yourself with "
+                "the tools you have: run the tests, commands or scripts, read files and "
+                "logs, render or apply the change and inspect the result. Then report "
+                "the actual results instead of the unverified note. Leave an item "
+                "unverified only when something you cannot clear yourself blocks it: "
+                "it needs the user's permission (outward-facing, destructive or sudo "
+                "actions), credentials or access you lack, the user's device, GUI or "
+                "environment, or a costly run the user should approve. For each such "
+                "item, state concisely what was not checked and what blocks it. Do not "
+                "redo work that is already done."
+            ),
+        },
+        ensure_ascii=False,
+    )
+)
