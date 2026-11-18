@@ -66,7 +66,7 @@ codex = { event = "PreToolUse", matcher = "^(Bash|Shell)$", timeout = 15, status
 name = "check-writing-style"
 file = "check-writing-style.js"
 runner = "bun"
-claude = { event = "PreToolUse", matcher = "Bash|Write|Edit|mcp__.*(?i:jira|confluence|atlassian).*" }
+claude = { event = "PreToolUse", matcher = "Bash|Write|Edit|mcp__.*(?i:jira|confluence|atlassian).*", timeout = 30 }
 codex = { event = "PreToolUse", matcher = "^(Bash|Shell|apply_patch)$", timeout = 30, statusMessage = "Checking writing style" }
 opencode = { tools = ["bash", "write", "edit", "apply_patch"] }
 

@@ -19,10 +19,17 @@ type Block = { decision: string; reason: string }
 
 const HOOKS: Hook[] = {{ $hooks | toJson }}
 
+// A project's dev shell can put another Bun first on PATH, and Bun versions do not share a manifest cache format, so prefer the Home Manager Bun.
+const BUN =
+  [".nix-profile/bin/bun", ".local/state/nix/profiles/home-manager/home-path/bin/bun"]
+    .map((rel) => path.join(homedir(), rel))
+    .find((candidate) => existsSync(candidate)) ?? "bun"
+
 const LAUNCHERS: Record<string, string[]> = {
   bash: ["bash"],
   "uv-script": ["uv", "run", "--no-python-downloads", "--script"],
-  bun: ["bun", "run"],
+  // Without --prefer-offline, Bun's auto-install re-fetches stale npm manifests on every hook run.
+  bun: [BUN, "run", "--prefer-offline"],
 }
 const HOOK_DIRS = [".claude/hooks", ".codex/hooks"].map((dir) => path.join(homedir(), dir))
 const TIMEOUT_MS = 30_000

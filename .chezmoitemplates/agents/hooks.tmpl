@@ -8,7 +8,15 @@
 {{- if eq $agent "codex" -}}
 {{-   $dir = printf "%s/.codex/hooks" .home -}}
 {{- end -}}
-{{- $prefixes := dict "bash" "bash" "uv-script" "uv run --no-python-downloads --script" "bun" "bun run" -}}
+{{- /* Hooks run in the session's environment, where a project's dev shell can put another Bun first on PATH. Bun versions do not share a manifest cache format, so a different Bun re-fetches every dependency on each run. Use the Home Manager Bun when it exists. */ -}}
+{{- $bun := "bun" -}}
+{{- range $candidate := list ".nix-profile/bin/bun" ".local/state/nix/profiles/home-manager/home-path/bin/bun" -}}
+{{-   $candidatePath := joinPath (env "HOME" | default "/nonexistent") $candidate -}}
+{{-   if and (eq $bun "bun") (stat $candidatePath) -}}
+{{-     $bun = $candidatePath -}}
+{{-   end -}}
+{{- end -}}
+{{- $prefixes := dict "bash" "bash" "uv-script" "uv run --no-python-downloads --script" "bun" (printf "%s run --prefer-offline" $bun) -}}
 {{- $groups := list -}}
 {{- range $entry := .hooks -}}
 {{-   if hasKey $entry $agent -}}
