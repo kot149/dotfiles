@@ -40,6 +40,11 @@ Do not raise, or drop to the lowest severity, anything on these lines:
 8. **Design variance that reads as mid-migration** (old and new approaches coexisting in the same directory, with this PR mid-transition) -> report as LOW information, not a finding
 9. **Leftover `fixup!` / `squash!` commits** -> ignore entirely. They are working commits squashed at merge time, not review topics
 10. **Points already flagged or resolved in existing review comments** -> do not raise (cross-check against the existing comments you were given)
+11. **Speculative future-proofing** (abstraction layers, configurability, or support for requirements absent from `$PURPOSE` and the spec, such as "multi-currency may be needed later") -> do not raise. Speculative generality that the diff itself introduces is meta's YAGNI item
+
+## No Padding
+
+When nothing is wrong, a reviewer told to find problems tends to fill the reply with renames, wording tweaks, and future-proofing ideas. These cost the judges' time and bury the real defects. Raise a finding only when you can name who is hurt and how: a user getting a wrong result, a caller breaking, an operator unable to notice a failure, or a maintainer misled into a concrete bug. `LGTM` with a complete CHECKLIST is a complete answer.
 
 ## Output Format for Findings
 

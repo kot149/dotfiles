@@ -29,6 +29,10 @@ Split claims inside findings by type and verify each as follows. This is the min
 
 When you verify a number, also write its breakdown in EVIDENCE_NOTES. Trying to write it exposes miscounts.
 
+### Reproduce by Running
+
+Running the code settles a reproduction trace better than reading it. For findings whose evidence is a reproduction trace (correctness, security, perf), when the wrong result can be shown by a small script in the directory holding the context file that calls the target function or the same library code with the trace's input, run it. Do not run a build step, touch network or databases, or write repository files for it. Record the command and observed output in a `REPRODUCED` line. If the output contradicts the trace, the finding is INVALID. If the reproduction cannot run (needs a build, a service, or credentials), say so in EVIDENCE_NOTES and judge by reading.
+
 ## False-Positive Catalog
 
 Rule INVALID or drop to lowest severity on these lines:
@@ -41,6 +45,7 @@ Rule INVALID or drop to lowest severity on these lines:
 6. Design variance that reads as mid-migration, with this PR mid-transition -> LOW
 7. Leftover fixup! / squash! commits -> INVALID
 8. Points already flagged or resolved in existing review comments -> INVALID
+9. Speculative future-proofing (support for requirements absent from the change intent and the spec) -> INVALID
 
 But **do not over-apply the catalog**. Never drop something merely because "the author explained it". Dropping is allowed only when the decision is documented and its rationale does not contradict existing patterns or contracts. If the rationale conflicts with existing patterns, the explanation's existence itself supports the finding.
 
@@ -63,6 +68,7 @@ VERDICT: VALID|INVALID|DUPLICATE
 SEVERITY: CRITICAL|HIGH|MEDIUM|LOW
 EVIDENCE: VERIFIED|UNVERIFIED  # always state explicitly whether you read real code/spec text to judge
 EVIDENCE_NOTES: <files and line ranges read, key quoted code points, in 1-3 lines. Breakdowns for numeric claims>
+REPRODUCED: <command> -> <observed output>  # only when you ran a reproduction
 REASON: <verdict reason, concretely which code structure makes it VALID/INVALID>
 FIX_TARGET: <CODE|SPEC|EITHER|N/A>  # spec findings only
 FILE: <path>  # only when the reviewer's FILE/LINE was wrong; give the corrected location

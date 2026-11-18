@@ -1,6 +1,6 @@
 ---
 name: deep-review
-description: In-depth code review that runs multiple perspective-specific reviewer subagents in parallel, has judge subagents verify each finding against the real code, then fixes the valid findings. Reviews in 10 independent perspectives (security/maintainability/naming/comment/perf/a11y/test/arch/meta/spec), also fetching spec documents such as Jira/Confluence from the PR body to check spec consistency. Use when the user asks for "deep review", "review this PR", "review the diff from multiple angles", "review and fix", 「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」, or requests a review with a PR number or diff range in English or Japanese. Findings can also be posted as pending PR review comments. The `--fix` flag skips the approach selection prompt and auto-fixes, and `--post` similarly proceeds to pending review comment posting (only valid for PR targets).
+description: In-depth code review that runs multiple perspective-specific reviewer subagents in parallel, has judge subagents verify each finding against the real code, then fixes the valid findings. Reviews in 11 independent perspectives (security/correctness/maintainability/naming/comment/perf/a11y/test/arch/meta/spec), also fetching spec documents such as Jira/Confluence from the PR body to check spec consistency. Use when the user asks for "deep review", "review this PR", "review the diff from multiple angles", "review and fix", 「PRをレビュー」「差分を多角的にレビュー」「レビューして修正して」, or requests a review with a PR number or diff range in English or Japanese. Findings can also be posted as pending PR review comments. The `--fix` flag skips the approach selection prompt and auto-fixes, and `--post` similarly proceeds to pending review comment posting (only valid for PR targets).
 argument-hint: "[<PR number|PR URL|base...head|paths>] [--fix] [--post]"
 ---
 
@@ -16,7 +16,7 @@ Detailed instructions for reviewers and judges live in files next to this SKILL.
 
 ## Token Discipline
 
-The run launches up to 20 subagents. Everything you paste into a prompt is emitted once per subagent, and everything a subagent returns lands in your context. Hold to these rules throughout:
+The run launches up to 23 subagents. Everything you paste into a prompt is emitted once per subagent, and everything a subagent returns lands in your context. Hold to these rules throughout:
 
 - **Shared premises go into one context file** (`$CTX_PATH`, written once in Phase 0.6). Prompts carry only paths and the per-subagent payload. Never paste the diff, PR body, existing comments, or spec documents into a prompt
 - **Bulky fetch results go straight to files** (`gh ... > file`, `--jq` truncation) instead of through your context
@@ -56,11 +56,12 @@ Two things this skill adds on top:
 
 ## Reviewers
 
-There are 10 perspectives. Each label's detailed checklist is in `perspectives/<label>.md`. This table is only for aggregation.
+There are 11 perspectives. Each label's detailed checklist is in `perspectives/<label>.md`. This table is only for aggregation.
 
 | Label | Perspective |
 |---|---|
 | security | Injection, authn/authz, secret exposure, input validation, XSS/CSRF, crypto |
+| correctness | User-visible results traced with concrete inputs: boundaries, date/time/timezone, numbers, state and ordering, concurrency, existing flows |
 | maintainability | Readability, error handling, silent degradation and observability, recoverability, DRY, immutability |
 | naming | Truthful names, collisions with existing code, consistent wording, scope-appropriate detail, counterpart symmetry |
 | comment | Redundant/missing comments per [[trim-comments]], meta-comments, statement-vs-reality consistency |
@@ -204,7 +205,7 @@ PERMALINK: <format from 0.5> | none (file:line only)
 
 ## Phase 1: Parallel Detail Review
 
-Launch reviewer subagents for all 10 perspectives **in parallel**, all together in one batch. Avoid launching them one by one in sequence (it serializes and slows down). Each subagent has an independent context.
+Launch reviewer subagents for all 11 perspectives **in parallel**, all together in one batch. Avoid launching them one by one in sequence (it serializes and slows down). Each subagent has an independent context.
 
 Start each subagent as `<perspective> review` with this prompt, unchanged apart from the perspective name. No per-perspective additions: everything a perspective needs is in the context file.
 
@@ -248,7 +249,7 @@ Always split judges into **multiple parallel subagents**. Passing all findings t
 Pick the split policy from the aggregated finding count `N`. Launch **all judges in parallel** either way.
 
 1. **Split by perspective (default, N <= 24)**: one judge per reviewer label:
-   - Up to 10 parallel: `judge-<label>` per perspective
+   - Up to 11 parallel: `judge-<label>` per perspective
    - Do not launch judges whose label has 0 findings
    - Each judge examines only its own perspective's findings, so it is easy to focus on which code to read
 2. **Split by finding count (N > 24, or 10+ findings concentrated on one perspective)**: chunk the findings:
@@ -300,7 +301,7 @@ The judge's SEVERITY is a per-finding recommendation made without seeing the oth
 | Stale prose where a misunderstanding breaks nothing (e.g. outdated line-number references) | LOW |
 | Not caused by this PR, or issues on unchanged lines | LOW |
 
-- **Findings rooted in design/naming/architecture must not be CRITICAL** (cap at HIGH). If it manifests as a reachable defect, it is not a design discussion; security / maintainability should have raised it as a correctness issue
+- **Findings rooted in design/naming/architecture must not be CRITICAL** (cap at HIGH). If it manifests as a reachable defect, it is not a design discussion; correctness or security should have raised it as a defect
 - **When torn between two severities, pick the lower.** Mass-produced CRITICALs destroy the priority order itself
 - A judge's `EVIDENCE: UNVERIFIED` finding never goes above the reviewer's declared severity
 
@@ -324,6 +325,7 @@ This step is unconditional and ends the turn. Even with 0 VALID findings, explic
 1. The **complete list** of judge-VALIDated findings (number / reviewer / severity / file:line / title / description / suggestion in a table or bullets, omitting none) under the heading `## レビュー結果（VALID XX件）`
    - Keep the `#N` numbers assigned in Phase 2 so option B can refer to them; do not renumber after sorting
    - Mark `EVIDENCE: UNVERIFIED` ones explicitly with an "unverified" mark in Japanese (e.g. `未検証`)
+   - Mark findings with a judge `REPRODUCED` line as `再現済み`, with the command and observed output
    - Sort by severity (CRITICAL -> HIGH -> MEDIUM -> LOW)
    - For PR targets with a SHA available, attach permalinks (format from 0.5)
 2. Counts only (for reference) of findings excluded as INVALID/DUPLICATE, under the heading `## 除外件数`
@@ -383,9 +385,10 @@ Precondition for PR targets: the PR's `headRefName` must be checked out. If it i
    - Option B (individual): only the finding numbers the user specified
    - With M1 selected, include the meta findings
 2. The orchestrator (you) edits files directly to fix. Never let subagents rewrite
-3. Run the project's existing checks for the changed files: the linter, type checker, and the test files that exercise the changed modules, using the commands the repository already defines (package scripts, `Makefile`, `pyproject.toml`, CI definition). Do not add new tooling. Report failures verbatim in Japanese under `## 修正後チェック` and do not hide them; a check the repository does not define is reported as not run
-4. Leave the fixes uncommitted. Commit only when the user asks
-5. Report a summary of the fixes in Japanese and finish
+3. Before fixing a finding whose evidence is a reproduction trace, write a regression test for it with the project's existing test framework, next to the existing tests for that module, and run it on the current code. It must fail; a test that already passes does not reproduce the defect, so re-read the trace before fixing. After the fix, run it again and confirm it passes. When the project has no test framework, or the defect needs infrastructure its tests cannot set up, skip the test and report `回帰テストなし: <理由>`
+4. Run the project's existing checks for the changed files: the linter, type checker, and the test files that exercise the changed modules, using the commands the repository already defines (package scripts, `Makefile`, `pyproject.toml`, CI definition). Do not add new tooling. Report failures verbatim in Japanese under `## 修正後チェック` and do not hide them, together with each regression test's result before and after the fix; a check the repository does not define is reported as not run
+5. Leave the fixes uncommitted. Commit only when the user asks
+6. Report a summary of the fixes in Japanese and finish
 
 ## Phase 4b: Post Pending PR Review
 
@@ -407,7 +410,7 @@ As deep-review-side preconditions, prepare the inputs to the skill as follows:
   | LOW | `nits` |
 
   For an `ask` finding, phrase the description as a question to confirm rather than a statement. When findings are merged into one comment, rank labels `must` > `should` > `ask` > `imo` > `nits` > `optional`
-- Include the evidence (convention-document quotes, measured breakdowns) in the comment body for findings that have it
+- Include the evidence (convention-document quotes, measured breakdowns, the judge's reproduction command and output) in the comment body for findings that have it
 
 After posting, report the result in Japanese (e.g. `pendingコメントを投稿しました`) and finish.
 
