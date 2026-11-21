@@ -29,6 +29,11 @@ HISTFILE=$HOME/.zsh_history     # 履歴を保存するファイル
 HISTSIZE=100000                 # メモリ上に保存する履歴のサイズ
 SAVEHIST=1000000                # HISTFILEに保存する履歴のサイズ
 
+# 書き込み中のWSL終了などで混入したNULバイトを取り除く (corrupt history file対策)
+if [[ -r $HISTFILE && "$(<$HISTFILE)" == *$'\0'* ]]; then
+  cp -p $HISTFILE $HISTFILE.bak-nul && tr -d '\000' < $HISTFILE.bak-nul > $HISTFILE
+fi
+
 # share .zshhistory
 setopt inc_append_history       # 実行時に履歴をファイルにに追加していく
 setopt share_history            # 履歴を他のシェルとリアルタイム共有する
