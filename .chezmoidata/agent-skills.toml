@@ -50,7 +50,7 @@ agents = ["claude", "agents"]
 # Needs the `agent-desktop` CLI on PATH.
 [[agent_skills]]
 repo = "vercel-labs/agent-desktop"
-rev = "46d2adf885002633b77d5a9956c9464b24f61431"
+rev = "e8934a5e95e1d212c74ead95cd3e4701c04eca31"
 prefix = "skills"
 names = ["agent-desktop", "agent-desktop-linux", "agent-desktop-macos", "agent-desktop-windows"]
 agents = ["claude", "agents"]
@@ -58,7 +58,7 @@ agents = ["claude", "agents"]
 # Needs the `ocr` CLI on PATH; it comes from private_dot_config/home-manager/pkgs/open-code-review.nix.
 [[agent_skills]]
 repo = "alibaba/open-code-review"
-rev = "35fc3e259da583b96cf0fb470d535da9dd5ad7b3"
+rev = "39515dca6161fb7fd176d87704b2b10e5f7a0c36"
 prefix = "skills"
 names = ["open-code-review-delegate"]
 agents = ["claude", "agents"]
@@ -110,7 +110,7 @@ flat = true
 
 [[agent_skills]]
 repo = "dmmulroy/anti-slop"
-rev = "13909c9e07590f5a85d93c62712259fe14a883f7"
+rev = "63dbb09f73438e550a6991dc6d778f979ffbf183"
 prefix = "skills"
 names = ["install-anti-slop"]
 agents = ["claude", "agents"]
@@ -118,14 +118,14 @@ agents = ["claude", "agents"]
 # The skill drives the separate `suiko` CLI; without it the skill falls back to its bundled manual checklist.
 [[agent_skills]]
 repo = "nwiizo/suiko"
-rev = "a088f585c01db4edbab060a3f43c1e626382297d"
+rev = "fc32b83d6c5a949b1b1bb381fdecb558ea31f493"
 prefix = "skills"
 names = ["suiko"]
 agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "nanaism/yomiyasu"
-rev = "db78b9bc5e868549b517a037df7a4d1c93edac23"
+rev = "c49d5f1bee91258e33e1febc3569c6c87be7669e"
 prefix = "skills"
 names = ["yomiyasu"]
 agents = ["claude", "agents"]
