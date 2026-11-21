@@ -21,7 +21,8 @@ from pathlib import Path
 
 import fugashi
 
-data = json.load(sys.stdin)
+# Hook I/O is UTF-8; Windows would otherwise use the ANSI code page.
+data = json.load(sys.stdin.buffer)
 
 # Set when this hook blocked a stop; stop_hook_active alone is also true after another hook's block.
 MARKER = (
@@ -248,7 +249,7 @@ if not hits:
 
 MARKER.parent.mkdir(parents=True, exist_ok=True)
 MARKER.touch()
-print(
+sys.stdout.buffer.write(
     json.dumps(
         {
             "decision": "block",
@@ -268,5 +269,6 @@ print(
             ),
         },
         ensure_ascii=False,
-    )
+    ).encode()
+    + b"\n"
 )
