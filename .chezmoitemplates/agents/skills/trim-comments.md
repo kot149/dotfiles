@@ -58,6 +58,8 @@ For code files, classify each comment and docstring; for Markdown documents, eac
 - Trivial docstrings (getters/setters, helpers whose name says it all)
 - The investigation path or process ("checked N sources", "the port origin had no such logic", "where I looked without finding it"). Keep only the conclusion
 - Redefinitions of domain terms already covered by the terms used in the code
+- In usage docs (README, command instructions): handled edge cases, internal matching or decision rules, verification results, and defaults or automatic behavior the reader need not act on, typically left behind by bug fixes ("inputs whose frame does not match are rejected", "parsed separately to avoid mis-splitting", "you do not need to set X"). Keep what the reader must do or know to use the tool: commands, options, required steps, outputs they act on, and limitations that change how they use it
+- Change history outside history-keeping files: what was fixed, results before and after, and comparisons with earlier behavior ("previously", "now", "従来", "今回の変更で", "修正後"). Rewrite the sentence to state the current behavior, or delete it if that is not worth keeping either
 
 #### Shorten
 
@@ -83,6 +85,7 @@ For code files, classify each comment and docstring; for Markdown documents, eac
 | 2 or more claims in one paragraph ("A. And B...") | Split the paragraph. If one side is not a keeper, delete it |
 | Tracing branches in prose ("when X..., otherwise...") | Delete it. The code already has it |
 | One sentence appended per review comment | Remove the accretion marks and rewrite the paragraph |
+| A command's usage paragraph that grew a sentence per bug fix | Keep the usage sentences and delete the rest. If the code has no comment explaining a non-obvious rule, report it rather than moving it into the doc |
 | Long explanatory call conventions | Make it one prohibitive sentence ("Never pass a composite document") |
 
 ### 3. Things never to touch
