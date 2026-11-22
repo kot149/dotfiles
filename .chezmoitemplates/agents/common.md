@@ -23,6 +23,7 @@
 
 - When writing or updating documents (README, design docs, specs, wiki pages, etc.), keep only the latest correct state. Unless explicitly asked to record history, do not leave change logs, revision notes, or corrections such as "Correction: X was wrong", "Previously we used Y", "Updated on 2026-01-01", or "This section was rewritten". Rewrite the affected part so it simply describes how things are now.
 - Exceptions: files whose purpose is history (CHANGELOG, release notes, ADRs, meeting minutes, postmortems) and cases where the user explicitly asks to keep the old content.
+- A bug fix or behavior tweak does not by itself warrant a README or usage-doc update. Touch the docs only when what the reader must do or know to use the tool changes (commands, options, required steps, outputs they act on). Do not add, next to command instructions, the edge cases you just handled, internal matching or decision rules, verification results, defaults the reader need not set, or "you do not need to X" notes.
 
 ## Code editing
 
