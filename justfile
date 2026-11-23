@@ -77,6 +77,22 @@ skills-lint:
 skills-drift:
     {{ uv_script }} scripts/check_agent_skills.py --home
 
+# Write ~/.config/mozkey into Mozkey's config1.db and restart its server
+[group('mozkey')]
+mozkey-apply:
+    {{ uv_script }} scripts/mozkey_config.py apply
+
+# Copy the managed fields of Mozkey's config1.db back into private_dot_config/mozkey
+[group('mozkey')]
+mozkey-capture:
+    {{ uv_script }} scripts/mozkey_config.py capture
+    chezmoi apply -v ~/.config/mozkey
+
+# Print every field of Mozkey's config1.db as protobuf text format
+[group('mozkey')]
+mozkey-dump:
+    {{ uv_script }} scripts/mozkey_config.py dump
+
 # Rebuild the Home Manager generation without updating flake inputs
 [group('nix')]
 [unix]

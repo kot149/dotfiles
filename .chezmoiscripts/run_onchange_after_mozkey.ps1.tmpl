@@ -1,0 +1,7 @@
+{{- if eq .chezmoi.os "windows" -}}
+$ErrorActionPreference = "Stop"
+{{ includeTemplate "scripts/mozkey-hashes.tmpl" . }}
+
+uv run --no-python-downloads --script "{{ .chezmoi.sourceDir }}/scripts/mozkey_config.py" apply
+exit $LASTEXITCODE
+{{- end -}}

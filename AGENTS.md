@@ -101,6 +101,8 @@ The nix-darwin flake lives at `private_dot_config/nix-darwin/` (rendered to `~/.
 
 System Manager (Linux systemd units and `/etc` files; invoked automatically by `.chezmoiscripts/run_onchange_after_system-manager.sh.tmpl`) lives at `private_dot_config/system-manager/` (rendered to `~/.config/system-manager/`). `system.nix.tmpl` applies to every Linux machine and disables userborn, so users and groups stay with the distro; `wsl.nix` is added on WSL and runs avahi plus nss-mdns for `.local` resolution, since the WSL DNS tunnel does not answer mDNS for other hosts. nss-mdns is registered in `/etc/ld.so.conf.d/` for the distro glibc, so Nix-built programs (which use Nix's glibc) still cannot resolve `.local`.
 
+Mozkey (Mozc fork IME) keeps its settings in a binary protobuf, `config1.db` (`%USERPROFILE%\AppData\LocalLow\Mozc`, `~/Library/Application Support/Mozc`, or `~/.config/mozkey` on Linux). `private_dot_config/mozkey/` holds only the shared fields: `config.textproto` (protobuf text format against `scripts/mozkey/config.proto`, taken from Mozkey v1.1.0) and `roman.tsv` (`custom_roman_table`). `.chezmoiscripts/run_onchange_after_mozkey.*` runs `scripts/mozkey_config.py apply`, which replaces those fields in `config1.db` in place (keeping the Windows ACL), leaves the per-OS fields such as fonts, colors and keymap alone, and restarts the Mozkey server. After changing settings in Mozkey's GUI, `dots mozkey-capture` writes the listed fields back into the source; to manage another field, add it to `config.textproto` first (`dots mozkey-dump` prints every field).
+
 Windows package list lives in `winget.json`: `winget export -o winget.json` / `winget import winget.json`.
 
 ## Configuration layering (important)

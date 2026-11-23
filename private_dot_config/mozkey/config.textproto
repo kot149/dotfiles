@@ -1,0 +1,123 @@
+preedit_method: ROMAN
+punctuation_method: TOUTEN_KUTEN
+symbol_method: CORNER_BRACKET_MIDDLE_DOT
+space_character_form: FUNDAMENTAL_INPUT_MODE
+history_learning_level: DEFAULT_HISTORY
+selection_shortcut: SHORTCUT_123456789
+character_form_rules {
+  group: "ア"
+  preedit_character_form: FULL_WIDTH
+  conversion_character_form: FULL_WIDTH
+}
+character_form_rules {
+  group: "A"
+  preedit_character_form: HALF_WIDTH
+  conversion_character_form: HALF_WIDTH
+}
+character_form_rules {
+  group: "0"
+  preedit_character_form: HALF_WIDTH
+  conversion_character_form: HALF_WIDTH
+}
+character_form_rules {
+  group: "(){}[]"
+  preedit_character_form: HALF_WIDTH
+  conversion_character_form: HALF_WIDTH
+}
+character_form_rules {
+  group: ".,"
+  preedit_character_form: FULL_WIDTH
+  conversion_character_form: LAST_FORM
+}
+character_form_rules {
+  group: "。、"
+  preedit_character_form: HALF_WIDTH
+  conversion_character_form: HALF_WIDTH
+}
+character_form_rules {
+  group: "・「」"
+  preedit_character_form: FULL_WIDTH
+  conversion_character_form: FULL_WIDTH
+}
+character_form_rules {
+  group: "\"\'"
+  preedit_character_form: FULL_WIDTH
+  conversion_character_form: LAST_FORM
+}
+character_form_rules {
+  group: ":;"
+  preedit_character_form: HALF_WIDTH
+  conversion_character_form: HALF_WIDTH
+}
+character_form_rules {
+  group: "#%&@$^_|`\\"
+  preedit_character_form: HALF_WIDTH
+  conversion_character_form: HALF_WIDTH
+}
+character_form_rules {
+  group: "~"
+  preedit_character_form: FULL_WIDTH
+  conversion_character_form: FULL_WIDTH
+}
+character_form_rules {
+  group: "<>=+-/*"
+  preedit_character_form: HALF_WIDTH
+  conversion_character_form: HALF_WIDTH
+}
+character_form_rules {
+  group: "?!"
+  preedit_character_form: FULL_WIDTH
+  conversion_character_form: FULL_WIDTH
+}
+auto_switch_composition_mode: true
+shift_key_mode_switch: ASCII_INPUT_MODE
+numpad_character_form: NUMPAD_HALF_WIDTH
+use_auto_conversion: false
+auto_conversion_key: 0
+use_live_conversion: true
+live_conversion_delay_msec: 20
+live_conversion_min_key_length: 2
+show_candidate_window_on_initial_conversion: true
+use_date_conversion: true
+use_single_kanji_conversion: true
+use_symbol_conversion: true
+use_number_conversion: true
+use_emoticon_conversion: true
+use_calculator: true
+use_t13n_conversion: true
+use_zip_code_conversion: true
+use_spelling_correction: true
+use_emoji_conversion: true
+information_list_config {
+  use_local_usage_dictionary: true
+}
+use_history_suggest: true
+use_dictionary_suggest: true
+use_realtime_conversion: true
+suggestions_size: 3
+use_direct_commit: false
+direct_commit_key: 207
+use_zenz_live_correction: true
+zenz_live_correction_delay_msec: 100
+zenz_live_correction_min_key_length: 2
+use_zenz_feedback_learning: true
+zenz_live_correction_profile: ""
+zenz_live_correction_topic: ""
+zenz_live_correction_style: ""
+zenz_live_correction_settings: ""
+use_zenz_live_correction_right_context: true
+zenz_live_correction_right_context_length: 6
+use_zenz_auto_block_rejected_correction: true
+zenz_auto_block_reject_threshold: 1
+defer_live_conversion_display_until_zenz_result: false
+zenz_auto_block_minimum_reject_percentage: 50
+zenz_deferred_presentation_timeout_msec: 250
+dim_pending_roman_input: false
+pending_roman_dimness_percent: 85
+use_zenz_feedback_min_key_length: true
+zenz_feedback_min_key_length: 7
+use_zenz_feedback_recording: true
+use_zenz_feedback_reuse: true
+use_zenz_mozc_history_learning: true
+use_zenz_strict_reading_preservation: false
+allow_zenz_emoji_changes: false

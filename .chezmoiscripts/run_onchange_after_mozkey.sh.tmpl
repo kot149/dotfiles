@@ -1,0 +1,7 @@
+{{- if ne .chezmoi.os "windows" -}}
+#!/bin/bash
+set -euo pipefail
+{{ includeTemplate "scripts/mozkey-hashes.tmpl" . }}
+
+uv run --no-python-downloads --script "{{ .chezmoi.sourceDir }}/scripts/mozkey_config.py" apply
+{{- end -}}

@@ -1,0 +1,6 @@
+{{- $src := printf "%s/" .chezmoi.sourceDir -}}
+{{- $files := list (print $src "scripts/mozkey_config.py") (print $src "scripts/mozkey/config.proto") -}}
+{{- $files = concat $files (sortAlpha (glob (print $src "private_dot_config/mozkey/*"))) -}}
+{{- range $files }}
+# {{ trimPrefix $src . }} hash: {{ include . | sha256sum }}
+{{- end }}
