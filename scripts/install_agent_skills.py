@@ -134,7 +134,10 @@ def is_link(target: Path) -> bool:
         reparse_tag = getattr(os.lstat(target), "st_reparse_tag", 0)
     except OSError:
         return False
-    return target.is_symlink() or reparse_tag == stat.IO_REPARSE_TAG_MOUNT_POINT
+    if target.is_symlink():
+        return True
+    # stat defines the reparse tag constants only on Windows.
+    return sys.platform == "win32" and reparse_tag == stat.IO_REPARSE_TAG_MOUNT_POINT
 
 
 def remove(target: Path) -> None:
