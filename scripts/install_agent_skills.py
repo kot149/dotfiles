@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
@@ -127,8 +128,17 @@ def download(url: str, target: Path) -> None:
     partial.replace(target)
 
 
+def is_link(target: Path) -> bool:
+    """True for a symlink or a Windows directory junction, which rmtree refuses to follow."""
+    try:
+        reparse_tag = getattr(os.lstat(target), "st_reparse_tag", 0)
+    except OSError:
+        return False
+    return target.is_symlink() or reparse_tag == stat.IO_REPARSE_TAG_MOUNT_POINT
+
+
 def remove(target: Path) -> None:
-    if target.is_symlink() or target.is_file():
+    if is_link(target) or target.is_file():
         target.unlink()
     elif target.is_dir():
         shutil.rmtree(target)
