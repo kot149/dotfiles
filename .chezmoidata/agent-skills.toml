@@ -58,7 +58,7 @@ agents = ["claude", "agents"]
 # Needs the `ocr` CLI on PATH; it comes from private_dot_config/home-manager/pkgs/open-code-review.nix.
 [[agent_skills]]
 repo = "alibaba/open-code-review"
-rev = "39515dca6161fb7fd176d87704b2b10e5f7a0c36"
+rev = "e74f2c6bd4422bd1e12d257d1725bcce1d6b9ddd"
 prefix = "skills"
 names = ["open-code-review-delegate"]
 agents = ["claude", "agents"]
@@ -125,7 +125,7 @@ agents = ["claude", "agents"]
 
 [[agent_skills]]
 repo = "nanaism/yomiyasu"
-rev = "c49d5f1bee91258e33e1febc3569c6c87be7669e"
+rev = "ddf365b5d5b36a7aa4ffab798dce1b694dbb1afd"
 prefix = "skills"
 names = ["yomiyasu"]
 agents = ["claude", "agents"]
@@ -175,7 +175,7 @@ agents = ["claude", "agents"]
 # SKILL.md sits at the repo root, so there is no per-skill subdirectory.
 [[agent_skills]]
 repo = "kajisho5/ffmpeg-skill"
-rev = "1f974b2504ab6dd376cac53750057cc4254545f1"
+rev = "bad487c5c4c1d3db52893b27d5ff1278da5274a8"
 prefix = ""
 names = ["ffmpeg-skill"]
 agents = ["claude", "agents"]
