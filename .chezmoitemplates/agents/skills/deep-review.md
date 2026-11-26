@@ -397,7 +397,7 @@ Run only when option E applies (user choice or `--post`; PR targets only, so nev
 As deep-review-side preconditions, prepare the inputs to the skill as follows:
 
 - **Only judge-VALIDated findings**. Never pass INVALID/UNCERTAIN ones
-- Pass each finding with `FILE` / `LINE` / title / `DESCRIPTION` / `SUGGESTION` / `<reviewer>` / `<label>` aligned (judge-corrected file/line/suggestion where present). Pass `<reviewer>` as `<kind>` and `<label>` as `<grade>`; the comment head format belongs to [[pending-review-comments]]
+- Pass each finding with `FILE` / `LINE` / title / `DESCRIPTION` / `SUGGESTION` / `<label>` aligned (judge-corrected file/line/suggestion where present). Pass `<label>` as `<grade>` and do not pass the reviewer perspective; the comment head format belongs to [[pending-review-comments]]
 - `<label>` tells the PR author what is asked of them, converted from the calibrated severity. The first matching row wins:
 
   | Finding | label |

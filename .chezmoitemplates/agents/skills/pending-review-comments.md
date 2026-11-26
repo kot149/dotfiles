@@ -143,24 +143,25 @@ A merged comment is anchored to the most representative in-diff line (e.g. the f
 One comment per finding, or per group from step 5. Do not pack unrelated findings into one comment.
 
 ```
-**[<kind> / <grade>] <finding title>**
+**[<grade>] <finding title>**
 
 <what is wrong (1-3 lines)>
 
-**Suggestion:** <how to fix it>
+**提案:** <how to fix it>
 ```
 
-- `<kind>` is what sort of finding it is, as the caller classified it: a review perspective (`maintainability`, `security`), a finding category, or whatever taxonomy the caller uses. It is never the name of the skill or model that produced it
-- `<grade>` is how the caller ranked or judged it: a severity (`HIGH`), a verdict (`PARTIALLY_VALID`), or any single token of that kind
-- If the input has no `<kind>` or no `<grade>`, drop the label line and use just the title
-- Do not add generator-name labels like `[deep-review]`, `[double-check]` or `[Claude]`. A reader of the PR cares what the finding is, not which tool wrote it
-- Write the suggestion (`**Suggestion:**` and the fix half of a merged item) as a plain statement of the fix, not a request: in Japanese, end with the dictionary form (「〜する」「〜に変更する」), never 「〜してください」「〜しましょう」「〜すべき」. Rewrite input suggestions that use those endings
-- A merged comment uses the highest `<grade>` among its items and lists the items instead of a single description:
+Write the comment in the PR's language. The label is `**提案:**` in Japanese and `**Suggestion:**` in English.
+
+- `<grade>` is how the caller ranked or judged it: a request level (`must`, `should`, `imo`), a severity (`HIGH`), a verdict (`PARTIALLY_VALID`), or any single token of that kind. If the input has no `<grade>`, drop the brackets and use just the title
+- Do not add category or perspective labels (`[arch]`, `[comment]`, `[test]`, `[maintainability / should]`) or generator-name labels (`[deep-review]`, `[double-check]`, `[Claude]`). The bracket carries only `<grade>`, which tells the author what is asked of them
+- Write what is wrong as the current state of the code: in Japanese, use 「〜している」「〜になっている」 (「処理が重複している」), not the dictionary form (「処理が重複する」), which reads like a suggestion. Rewrite input descriptions that use it
+- Write the suggestion (`**提案:**` and the fix half of a merged item) as a plain statement of the fix, not a request: in Japanese, end with the dictionary form (「〜する」「〜に変更する」), never 「〜してください」「〜しましょう」「〜すべき」. Rewrite input suggestions that use those endings
+- A merged comment uses the highest `<grade>` among its items and lists the items instead of a single description. In each item, put `提案:` (`Suggestion:` in English) before the fix half so it does not run on from the description:
 
   ```
-  **[<kind> / <grade>] <group title>**
+  **[<grade>] <group title>**
 
-  - `<path>:<line>` <what is wrong>. <how to fix it>
+  - `<path>:<line>` <what is wrong>。提案: <how to fix it>
   - ...
   ```
 
