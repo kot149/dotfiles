@@ -78,6 +78,9 @@ fi
 # compinit は oh-my-zsh が 1 回だけ実行するので、補完関数の fpath はそれより前に追加する。zsh-completions は sheldon が後で読み込むため、src をここで先に追加する。
 fpath=(~/.zsh/completion $fpath "${XDG_DATA_HOME:-$HOME/.local/share}/sheldon/repos/github.com/zsh-users/zsh-completions/src")
 
+# oh-my-zsh はダンプ作成時と fpath が 1 文字でも違うとダンプを作り直す (約 2 秒)。fpath の順序は引き継いだ FPATH や NIX_PROFILES で変わり、新しいターミナルと Claude Code などから起動したシェルが同じダンプを交互に作り直すので、fpath とプラグイン構成ごとに別のダンプを使う。
+ZSH_COMPDUMP="$HOME/.zcompdump-${HOST%%.*}-${ZSH_VERSION}-${$(print -r -- "$fpath $plugins" | cksum)%% *}"
+
 source $ZSH/oh-my-zsh.sh
 
 # zsh-abbr (本体は sheldon が読み込む)。略語定義は下記ファイルに置いてあり、zsh-abbr は読み込み時に 1 回それを読むだけなので .zshrc で abbr を都度呼ぶより速い。パス既定値は ~/.config/zsh/abbreviations があればそちら、無ければこちらという分岐仕様なので明示的に固定する。設定は sheldon より前に済ませる必要がある。
