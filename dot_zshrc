@@ -1,4 +1,4 @@
-typeset -U path PATH
+typeset -U path PATH fpath
 
 # WSL の interop で引き継ぐ Windows 側の PATH は drvfs 上にあり走査が非常に遅い。存在しないコマンドの検索は PATH 全体を舐めるため 1 回あたり約 230ms かかり、起動処理中の command -v だけで 1 秒近くを消費する。起動中は退避しておき、mise を読み込む直前 (元々 /mnt が並んでいた位置) で復元する。
 typeset -a _win_path
@@ -75,7 +75,8 @@ if command -v docker &> /dev/null; then
   plugins+=(docker docker-compose)
 fi
 
-fpath=(~/.zsh/completion $fpath)
+# compinit は oh-my-zsh が 1 回だけ実行するので、補完関数の fpath はそれより前に追加する。zsh-completions は sheldon が後で読み込むため、src をここで先に追加する。
+fpath=(~/.zsh/completion $fpath "${XDG_DATA_HOME:-$HOME/.local/share}/sheldon/repos/github.com/zsh-users/zsh-completions/src")
 
 source $ZSH/oh-my-zsh.sh
 

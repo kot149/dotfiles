@@ -13,9 +13,6 @@ shell = "zsh"
 
 [plugins]
 
-[plugins.compinit]
-inline = 'autoload -Uz compinit && compinit -C'
-
 [plugins.abbr]
 github = "olets/zsh-abbr"
 use = ["zsh-abbr.plugin.zsh"]
@@ -35,4 +32,4 @@ git = "https://github.com/jirutka/zsh-shift-select"
 [plugins.zsh-bd]
 git = "https://github.com/Tarrasch/zsh-bd"
 
-# ~/.zsh/completion への fpath 追加は compinit より前に済ませる必要があるため .zshrc 側で行う。
+# compinit は oh-my-zsh が実行する。それより前に必要な fpath 追加 (~/.zsh/completion、zsh-completions の src) は .zshrc 側で行う。
