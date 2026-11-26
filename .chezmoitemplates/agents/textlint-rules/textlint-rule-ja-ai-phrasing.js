@@ -42,6 +42,32 @@ const VAGUE_SUBJECTS = new Set([
 const FINANCIAL_FAILURE = new Set(["経営", "財政", "家計", "ローン", "国家", "生活", "資金", "事業"]);
 const LANDING_PLACES = new Set(["両足", "足", "滑走路", "地面", "床", "マット", "ジャンプ", "空中"]);
 const CONTESTS = new Set(["試合", "勝負", "対戦", "決勝", "ゲーム", "選挙", "裁判", "訴訟"]);
+// 「入口」が建物や場所の出入りする所を指す字義どおりの係り元。
+const ENTRANCE_PLACES = new Set([
+  "駅",
+  "建物",
+  "ビル",
+  "店",
+  "店舗",
+  "家",
+  "部屋",
+  "会場",
+  "公園",
+  "病院",
+  "学校",
+  "校舎",
+  "駐車場",
+  "トンネル",
+  "洞窟",
+  "森",
+  "山",
+  "村",
+]);
+const ENTRANCE_ADVICE =
+  "「入口」「入り口」→ 何の入口なのかを具体的に書く" +
+  " (例: 「ログインの入口ごとに権限を変える」→「認証方式ごとに権限を変える」" +
+  " /「設定画面の入口を移す」→「設定画面を開くメニュー項目を移す」" +
+  " /「`main.ts` が入口です」→「処理は `main.ts` の `main()` から始まります」)";
 // 人が「断る」相手として字義どおりの語。
 const SOCIAL_OFFERS = new Set(["誘い", "お誘い", "招待", "縁談", "申し出", "オファー", "依頼", "頼み", "取材"]);
 // 「払う」の目的語として正しい語。金額やコストのほか、「注意を払う」などの慣用句と「埃を払う」。
@@ -289,6 +315,14 @@ const NOUN_RULES = {
   食い違い: {
     skip: (tokens, i) => precedingNouns(tokens, i, 4).some((n) => VIEWS.has(n)),
     advice: MISMATCH_ADVICE,
+  },
+  入口: {
+    skip: (tokens, i) => precedingNouns(tokens, i, 3).some((n) => ENTRANCE_PLACES.has(n)),
+    advice: ENTRANCE_ADVICE,
+  },
+  入り口: {
+    skip: (tokens, i) => precedingNouns(tokens, i, 3).some((n) => ENTRANCE_PLACES.has(n)),
+    advice: ENTRANCE_ADVICE,
   },
   帰結: {
     // 「〜に帰結する」という動詞用法は対象外で、「〜の帰結」「この帰結」「必然的帰結」を拾う。
