@@ -1,4 +1,5 @@
 preedit_method: ROMAN
+session_keymap: MSIME
 punctuation_method: TOUTEN_KUTEN
 symbol_method: CORNER_BRACKET_MIDDLE_DOT
 space_character_form: FUNDAMENTAL_INPUT_MODE
