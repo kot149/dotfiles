@@ -18,6 +18,13 @@
 
   system.startup.chime = false;
 
+  # compinit and the prompt are set up by ~/.zshrc (oh-my-zsh, starship). The /etc/zshrc compinit shares ~/.zcompdump between zsh versions and rebuilds it whenever their fpath differs.
+  programs.zsh = {
+    enableCompletion = false;
+    enableBashCompletion = false;
+    promptInit = "";
+  };
+
   system = {
     defaults = {
       NSGlobalDomain.AppleShowAllExtensions = true;
