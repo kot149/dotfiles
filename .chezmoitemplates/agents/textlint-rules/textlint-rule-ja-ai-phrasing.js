@@ -52,6 +52,68 @@ const CANON_ADVICE =
   "「正本」「正典」→ 何を基準にするのかを具体的に書く" +
   " (例: 「どこが正本か読めない」→「同じ結論が3か所にあり、どれを直せばよいか決まらない」)";
 
+const COPY_ADVICE =
+  "「写す」「写し」→「重複」と書き、重複では不自然なら「コピー」と書く" +
+  " (例: 「同じ定数を3か所に写している」→「同じ定数が3か所で重複している」/「本番設定の写し」→「本番設定のコピー」)";
+
+// 「意見が食い違う」のように、人の見方どうしが合わないことを言う定着した形。
+const VIEWS = new Set(["意見", "主張", "証言", "認識", "見解", "言い分", "供述", "解釈"]);
+const MISMATCH_ADVICE =
+  "「食い違う」→ 何と何がどう違うのかを具体的に書くか、「一致しない」「異なる」と書く" +
+  " (例: 「READMEと実装が食い違う」→「READMEはタイムアウトを3秒と書いているが、実装は5秒」" +
+  " /「値が食い違っている」→「値が一致しない」)";
+
+const HIT_ADVICE = {
+  default:
+    "「当たる」→「該当する」「相当する」と書くか、「AはBです」と言い切る。指摘や見方の評価なら「正しい」「妥当」と書く" +
+    " (例: 「既存機能の修正に当たります」→「既存機能の修正です」/「却下された案に当たる」→「却下された案に該当する」)",
+  correct:
+    "「指摘が当たっている」→「正しい」「妥当」と書く (例: 「指摘はどちらも当たっていました」→「指摘はどちらも正しかった」)",
+  limit:
+    "「上限に当たる」→「上限に達する」「上限を超える」「タイムアウトする」と書く" +
+    " (例: 「100件の上限に当たります」→「100件の上限に達します」)",
+  match:
+    "「キャッシュ / ルール / CSSに当たる」→「ヒットする」「一致する」「適用される」と書く" +
+    " (例: 「毎回キャッシュに当たりません」→「毎回キャッシュにヒットしません」/「CSSが当たっていない」→「CSSが適用されていない」)",
+  search: "「〜を当たる」→「調べる」「確認する」と書く (例: 「新しい参照先を当たりました」→「新しい参照先を調べました」)",
+};
+const HIT_CORRECT = /(?:指摘|見方|予想|予測|推測|読み|見立て)$/;
+const HIT_LIMIT = /(?:上限|下限|制限|リミット|クォータ|タイムアウト)$/;
+const HIT_MATCH = /(?:キャッシュ|ルール|パターン|正規表現|セレクタ|CSS|スタイル|WAF)$/i;
+// 「パッチが当たる」と、「遅い回に当たる」「コールドスタートに当たる確率」のように確率的に起きることを言う形は自然なので対象外。
+const HIT_NATURAL = /(?:パッチ|回|コールドスタート)$/;
+
+/** 「当たる」の係り元。同じ節の中で、「に」の前の名詞、「が」「は」の主語、「を」の目的語をそれぞれ最初の一つだけ拾う。 */
+const hitArguments = (tokens, i) => {
+  const args = { に: "", が: "", を: "" };
+  for (let j = neighborIndex(tokens, i, -1); j >= 0; j = neighborIndex(tokens, j, -1)) {
+    const token = tokens[j];
+    if (token.pos === "記号" && ["読点", "句点"].includes(token.pos_detail_1)) break;
+    if (token.pos === "動詞" && token.pos_detail_1 === "自立") break;
+    if (token.pos !== "助詞") continue;
+    const key = token.surface_form === "は" ? "が" : token.surface_form;
+    if (key in args && !args[key]) args[key] = nounBefore(tokens, j);
+  }
+  return args;
+};
+
+const isNaturalHit = (tokens, i) => {
+  const args = hitArguments(tokens, i);
+  return (
+    [args.に, args.が].some((noun) => HIT_NATURAL.test(noun)) || dictionaryForm(neighbor(tokens, i, 1)) === "確率"
+  );
+};
+
+const hitAdvice = (tokens, i) => {
+  const args = hitArguments(tokens, i);
+  if (HIT_LIMIT.test(args.に)) return HIT_ADVICE.limit;
+  if ([args.に, args.が].some((noun) => HIT_MATCH.test(noun))) return HIT_ADVICE.match;
+  // 「指摘がこれに当たる」は該当の意味なので、「に」の係り元がないときだけ評価として扱う。
+  if (!args.に && HIT_CORRECT.test(args.が)) return HIT_ADVICE.correct;
+  if (args.を) return HIT_ADVICE.search;
+  return HIT_ADVICE.default;
+};
+
 const INSUFFICIENT_ADVICE =
   "「〜では足りない」→ 何が欠けていて何が起きるのかを具体的に書く" +
   " (例: 「単体テストだけでは足りない」→「単体テストだけではDB接続の失敗を検出できない」)";
@@ -147,6 +209,12 @@ const VERB_RULES = {
       "「断る」→ システムが実際に何をするのかを書く" +
       " (例: 「上限を超えると断る」→「上限を超えると集計せずに422を返す」)",
   },
+  写す: { advice: COPY_ADVICE },
+  食い違う: {
+    skip: (tokens, i) => precedingNouns(tokens, i, 4).some((n) => VIEWS.has(n)),
+    advice: MISMATCH_ADVICE,
+  },
+  当たる: { skip: isNaturalHit, advice: hitAdvice },
   足りる: {
     skip: (tokens, i) => !isInsufficient(tokens, i),
     advice: INSUFFICIENT_ADVICE,
@@ -217,6 +285,11 @@ const NOUN_RULES = {
       " (例: 「このガードは保険という整理です」→「このガードは保険です」)",
   },
   正本: { advice: CANON_ADVICE },
+  写し: { advice: COPY_ADVICE },
+  食い違い: {
+    skip: (tokens, i) => precedingNouns(tokens, i, 4).some((n) => VIEWS.has(n)),
+    advice: MISMATCH_ADVICE,
+  },
   帰結: {
     // 「〜に帰結する」という動詞用法は対象外で、「〜の帰結」「この帰結」「必然的帰結」を拾う。
     skip: (tokens, i) => dictionaryForm(neighbor(tokens, i, 1)) === "する",
@@ -235,6 +308,8 @@ const POTENTIAL_FORMS = {
   払える: "払う",
   足せる: "足す",
   断れる: "断る",
+  写せる: "写す",
+  当る: "当たる",
 };
 
 // テストの成否の比喩でしか使わない語。単独で出ても指摘する。大文字小文字は問わない。
@@ -364,6 +439,11 @@ const objectNoun = (tokens, i) => {
   const particle = neighborIndex(tokens, i, -1);
   if (particle < 0 || tokens[particle].pos !== "助詞") return "";
   if (!["を", "は", "も"].includes(tokens[particle].surface_form)) return "";
+  return nounBefore(tokens, particle);
+};
+
+/** 助詞の直前に連なる名詞をつないだ複合名詞。 */
+const nounBefore = (tokens, particle) => {
   let noun = "";
   for (let j = neighborIndex(tokens, particle, -1); j >= 0 && tokens[j].pos === "名詞"; j = neighborIndex(tokens, j, -1)) {
     noun = tokens[j].surface_form + noun;
@@ -489,7 +569,8 @@ function* findMatches(tokens) {
       const rule = VERB_RULES[form];
       if (rule.skip?.(tokens, i)) continue;
       const fix = typeof rule.fix === "function" ? rule.fix(tokens, i) : { replacement: rule.fix?.[surface] };
-      yield { ...hit, advice: rule.advice, ...fix };
+      const advice = typeof rule.advice === "function" ? rule.advice(tokens, i) : rule.advice;
+      yield { ...hit, advice, ...fix };
     } else if (token.pos === "名詞" && NOUN_RULES[form] && !NOUN_RULES[form].skip?.(tokens, i)) {
       yield { ...hit, advice: NOUN_RULES[form].advice };
     } else if (quiet >= 0) {

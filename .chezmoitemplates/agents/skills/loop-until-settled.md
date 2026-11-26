@@ -182,7 +182,7 @@ then continue, unless the user interrupts:
 ```
 ラウンドN: 訂正X件 / 新規Y件 / 未解決Z件
 今回分かったこと: (1-2行)
-次ラウンドで当たる対象: (1-2行)
+次ラウンドで調べる対象: (1-2行)
 ```
 
 Do not re-report the whole ledger between rounds. With `--auto`, skip these
