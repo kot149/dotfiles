@@ -115,7 +115,7 @@ zenz_auto_block_minimum_reject_percentage: 50
 zenz_deferred_presentation_timeout_msec: 250
 dim_pending_roman_input: false
 pending_roman_dimness_percent: 85
-use_zenz_feedback_min_key_length: true
+use_zenz_feedback_min_key_length: false
 zenz_feedback_min_key_length: 7
 use_zenz_feedback_recording: true
 use_zenz_feedback_reuse: true
